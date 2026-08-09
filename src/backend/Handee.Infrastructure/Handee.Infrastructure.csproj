@@ -5,7 +5,15 @@
     <ProjectReference Include="..\Handee.Domain\Handee.Domain.csproj" />
   </ItemGroup>
 
+<<<<<<< Updated upstream
   <ItemGroup>
+=======
+<<<<<<< Updated upstream
+=======
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Identity" Version="2.3.11" />
+    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.10" />
+>>>>>>> Stashed changes
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.10">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
@@ -14,6 +22,10 @@
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
   </ItemGroup>
 
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
