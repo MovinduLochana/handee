@@ -1,5 +1,6 @@
 using MediatR;
 using FluentValidation;
+using Handee.Application.Common.Behaviors;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Handee.Application;
@@ -13,7 +14,7 @@ public static class DependencyInjection
         {
             cfg.RegisterServicesFromAssembly(
                 typeof(DependencyInjection).Assembly);
-                
+
             cfg.AddOpenBehavior(
                 typeof(ValidationBehavior<,>));
         });
