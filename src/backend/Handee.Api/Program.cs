@@ -12,8 +12,6 @@ using handee.API.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
 // Register Database
@@ -90,6 +88,11 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
 builder.Services.AddScoped<IRefreshTokenGenerator, RefreshTokenGenerator>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IAdminService, AdminService>();
+
+builder.Services.AddControllers();
+builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
@@ -100,6 +103,25 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+// Check if roles exist; if not Add them
+using (var scope = app.Services.CreateScope())
+{
+    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole<Guid>>>();
+    await RoleSeeder.SeedRolesAsync(roleManager);
+}
+
+// apply pending migrations when the API starts up
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    await dbContext.Database.MigrateAsync();
+}
+
+app.UseAuthentication(); 
+app.UseAuthorization();  
+
+app.MapControllers();
 
 app.Run();
 
