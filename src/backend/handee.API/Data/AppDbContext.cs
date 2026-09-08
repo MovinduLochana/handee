@@ -6,7 +6,7 @@ using handee.API.Entities;
 namespace handee.API.Data;
 
 public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid>, Guid> {
-    // public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
     {
         
