@@ -1,0 +1,160 @@
+@handee_API_HostAddress = http://localhost:5057
+
+# After a successful login, copy the tokens here to use in subsequent requests
+@accessToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMWEwN2Y2OC1mMDFlLTcxNTktOGYxNS02OTU2OTdhNTgwODciLCJlbWFpbCI6ImFsaWNlQGV4YW1wbGUuY29tIiwianRpIjoiN2NhOGEzNjUtM2Q3ZS00MDc3LWE5YjItNTY0NjM0NzllZTA2Iiwicm9sZSI6IkN1c3RvbWVyIiwibmJmIjoxNzg4ODQ0MDUzLCJleHAiOjE3ODg4NDQ5NTMsImlhdCI6MTc4ODg0NDA1MywiaXNzIjoiSGFuZGVlIiwiYXVkIjoiV2ViIn0.jlPdKxDIiZ9l6r7Aet3h4kg2EOBjXZriZ8XNFJVUcf4
+@refreshToken = +2+lgrvMBeuSpjPEf5wEN6Yl27fk82FmSr/E+DeDaQc=
+
+###
+# ─────────────────────────────────────────────────────────────
+#  AUTH — Register (Customer)
+# ─────────────────────────────────────────────────────────────
+# Registers a new customer account.
+# Expected: 201 Created — { id, email, fullName, role }
+POST {{handee_API_HostAddress}}/auth/register
+Content-Type: application/json
+
+{
+  "fullName": "Alice Customer",
+  "email": "alice@example.com",
+  "password": "Password@123",
+  "role": "Customer"
+}
+
+###
+# ─────────────────────────────────────────────────────────────
+#  AUTH — Register (Provider)
+# ─────────────────────────────────────────────────────────────
+# Registers a new service-provider account.
+# Expected: 201 Created — { id, email, fullName, role }
+POST {{handee_API_HostAddress}}/auth/register
+Content-Type: application/json
+
+{
+  "fullName": "Bob Provider",
+  "email": "bob@example.com",
+  "password": "Password@123",
+  "role": "Provider"
+}
+
+###
+# ─────────────────────────────────────────────────────────────
+#  AUTH — Register (Bad Role — should fail validation)
+# ─────────────────────────────────────────────────────────────
+# Expected: 400 Bad Request — role validation error
+POST {{handee_API_HostAddress}}/auth/register
+Content-Type: application/json
+
+{
+  "fullName": "Charlie Unknown",
+  "email": "charlie@example.com",
+  "password": "Password@123",
+  "role": "Admin"
+}
+
+###
+# ─────────────────────────────────────────────────────────────
+#  AUTH — Login (valid credentials)
+# ─────────────────────────────────────────────────────────────
+# Login with the customer account registered above.
+# Expected: 200 OK — { accessToken, refreshToken }
+# Copy both tokens into @accessToken / @refreshToken at the top of this file.
+POST {{handee_API_HostAddress}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "alice@example.com",
+  "password": "Password@123"
+}
+
+###
+# ─────────────────────────────────────────────────────────────
+#  AUTH — Login (wrong password)
+# ─────────────────────────────────────────────────────────────
+# Expected: 401 Unauthorized — "Invalid credentials."
+POST {{handee_API_HostAddress}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "alice@example.com",
+  "password": "WrongPassword!"
+}
+
+###
+# ─────────────────────────────────────────────────────────────
+#  AUTH — Login (non-existent user)
+# ─────────────────────────────────────────────────────────────
+# Expected: 401 Unauthorized — "Invalid credentials."
+POST {{handee_API_HostAddress}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "nobody@example.com",
+  "password": "Password@123"
+}
+
+###
+# ─────────────────────────────────────────────────────────────
+#  AUTH — Refresh token (rotate)
+# ─────────────────────────────────────────────────────────────
+# Uses the refresh token obtained from login to get a new access + refresh token pair.
+# Expected: 200 OK — { accessToken, refreshToken }
+# Update @accessToken and @refreshToken after each successful refresh.
+POST {{handee_API_HostAddress}}/auth/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "{{refreshToken}}"
+}
+
+###
+# ─────────────────────────────────────────────────────────────
+#  AUTH — Refresh (reuse detection — replay attack)
+# ─────────────────────────────────────────────────────────────
+# Send the SAME refresh token a second time after already rotating it above.
+# Expected: 401 Unauthorized — "Refresh token reuse detected. All sessions have been revoked."
+POST {{handee_API_HostAddress}}/auth/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "{{refreshToken}}"
+}
+
+###
+# ─────────────────────────────────────────────────────────────
+#  AUTH — Refresh (invalid / garbage token)
+# ─────────────────────────────────────────────────────────────
+# Expected: 401 Unauthorized — "Invalid or expired refresh token."
+POST {{handee_API_HostAddress}}/auth/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "this-is-not-a-valid-token"
+}
+
+###
+# ─────────────────────────────────────────────────────────────
+#  AUTH — Logout (requires valid access token)
+# ─────────────────────────────────────────────────────────────
+# Revokes the current refresh token and ends the session.
+# Expected: 204 No Content
+POST {{handee_API_HostAddress}}/auth/logout
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "refreshToken": "{{refreshToken}}"
+}
+
+###
+# ─────────────────────────────────────────────────────────────
+#  AUTH — Logout without Bearer token (should be blocked)
+# ─────────────────────────────────────────────────────────────
+# Expected: 401 Unauthorized (endpoint is [Authorize])
+POST {{handee_API_HostAddress}}/auth/logout
+Content-Type: application/json
+
+{
+  "refreshToken": "{{refreshToken}}"
+}
+
+###
