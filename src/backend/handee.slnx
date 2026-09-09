@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="handee.API/handee.API.csproj" />
+  <Project Path="handee.Tests/handee.Tests.csproj" />
+</Solution>
