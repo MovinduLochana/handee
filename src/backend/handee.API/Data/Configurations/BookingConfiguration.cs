@@ -20,6 +20,11 @@ public class BookingConfiguration : IEntityTypeConfiguration<Booking>
             .HasForeignKey(b => b.ProviderId)
             .OnDelete(DeleteBehavior.Restrict);
 
+        builder.HasOne(b => b.Customer)
+            .WithMany()
+            .HasForeignKey(b => b.CustomerId)
+            .OnDelete(DeleteBehavior.Restrict);
+
         builder.Property(b => b.Status)
             .HasConversion<string>()
             .HasMaxLength(20)

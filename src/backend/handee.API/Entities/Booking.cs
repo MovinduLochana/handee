@@ -28,6 +28,12 @@ public class Booking
     /// </summary>
     public Guid ProviderId { get; set; }
 
+    // Direct FK, not inferred through JobRequestId: JobRequestId is nullable
+    // (a future ServiceListing-path booking has no JobRequest), but a
+    // ServiceListing belongs to the provider, not the customer, so the
+    // customer must always be identifiable independent of that path.
+    public Guid CustomerId { get; set; }
+
     public BookingStatus Status { get; set; } = BookingStatus.Requested;
 
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
@@ -36,4 +42,5 @@ public class Booking
     // Navigation properties
     public JobRequest? JobRequest { get; set; }
     public ApplicationUser Provider { get; set; } = default!;
+    public ApplicationUser Customer { get; set; } = default!;
 }

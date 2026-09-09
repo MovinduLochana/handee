@@ -13,7 +13,7 @@ using handee.API.Data;
 namespace handee.API.Data.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260909085355_AddBookingAndJobRequest")]
+    [Migration("20260909090500_AddBookingAndJobRequest")]
     partial class AddBookingAndJobRequest
     {
         /// <inheritdoc />
@@ -246,6 +246,9 @@ namespace handee.API.Data.Migrations
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<Guid>("CustomerId")
+                        .HasColumnType("uuid");
+
                     b.Property<Guid?>("JobRequestId")
                         .HasColumnType("uuid");
 
@@ -264,6 +267,8 @@ namespace handee.API.Data.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("CustomerId");
 
                     b.HasIndex("JobRequestId");
 
@@ -435,6 +440,12 @@ namespace handee.API.Data.Migrations
 
             modelBuilder.Entity("handee.API.Entities.Booking", b =>
                 {
+                    b.HasOne("handee.API.Entities.ApplicationUser", "Customer")
+                        .WithMany()
+                        .HasForeignKey("CustomerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("handee.API.Entities.JobRequest", "JobRequest")
                         .WithMany()
                         .HasForeignKey("JobRequestId")
@@ -445,6 +456,8 @@ namespace handee.API.Data.Migrations
                         .HasForeignKey("ProviderId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.Navigation("Customer");
 
                     b.Navigation("JobRequest");
 

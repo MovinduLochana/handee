@@ -243,6 +243,9 @@ namespace handee.API.Data
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<Guid>("CustomerId")
+                        .HasColumnType("uuid");
+
                     b.Property<Guid?>("JobRequestId")
                         .HasColumnType("uuid");
 
@@ -261,6 +264,8 @@ namespace handee.API.Data
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("CustomerId");
 
                     b.HasIndex("JobRequestId");
 
@@ -432,6 +437,12 @@ namespace handee.API.Data
 
             modelBuilder.Entity("handee.API.Entities.Booking", b =>
                 {
+                    b.HasOne("handee.API.Entities.ApplicationUser", "Customer")
+                        .WithMany()
+                        .HasForeignKey("CustomerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("handee.API.Entities.JobRequest", "JobRequest")
                         .WithMany()
                         .HasForeignKey("JobRequestId")
@@ -442,6 +453,8 @@ namespace handee.API.Data
                         .HasForeignKey("ProviderId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.Navigation("Customer");
 
                     b.Navigation("JobRequest");
 
