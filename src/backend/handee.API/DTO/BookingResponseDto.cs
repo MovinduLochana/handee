@@ -7,6 +7,7 @@ public record BookingResponseDto(
     Guid ProviderId,
     Guid CustomerId,
     string Status,
+    DateTimeOffset? ScheduledAt,
     DateTimeOffset CreatedAt,
     DateTimeOffset? UpdatedAt
 );

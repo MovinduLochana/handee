@@ -36,6 +36,10 @@ public class Booking
 
     public BookingStatus Status { get; set; } = BookingStatus.Requested;
 
+    // Nullable: a booking can exist before a time is confirmed (e.g. still
+    // Requested, awaiting provider acceptance).
+    public DateTimeOffset? ScheduledAt { get; set; }
+
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
     public DateTimeOffset? UpdatedAt { get; set; }
 
