@@ -16,6 +16,25 @@ public class ProviderController(
     IConfiguration config,
     ILogger<ProviderController> logger) : ControllerBase
 {
+    // ─── GET /api/providers/me ────────────────────────────────────────────
+    // Provider only — resolves their own profile from the JWT
+    [HttpGet("me")]
+    [Authorize(Roles = "Provider")]
+    public async Task<IActionResult> GetMyProfile(CancellationToken ct)
+    {
+        var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+
+        try
+        {
+            var profile = await profileService.GetProfileByUserIdAsync(userId, ct);
+            return Ok(profile);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { error = ex.Message });
+        }
+    }
+
     // ─── GET /api/providers/{id} ──────────────────────────────────────────
     // Provider (own), Admin (any), Customer (public projection)
     [HttpGet("{id:guid}")]

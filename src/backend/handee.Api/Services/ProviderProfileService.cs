@@ -30,6 +30,14 @@ public class ProviderProfileService(
         };
     }
 
+    public async Task<ProviderProfileProviderDto> GetProfileByUserIdAsync(Guid userId, CancellationToken ct = default)
+    {
+        var profile = await profileRepo.GetByUserIdAsync(userId, ct)
+            ?? throw new KeyNotFoundException($"No provider profile found for user {userId}.");
+
+        return MapToProviderDto(profile);
+    }
+
     // ─── Update profile ───────────────────────────────────────────────────
 
     public async Task UpdateProfileAsync(Guid id, UpdateProviderProfileDto dto, CancellationToken ct = default)
