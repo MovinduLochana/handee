@@ -127,6 +127,13 @@ using (var scope = app.Services.CreateScope())
     await RoleSeeder.SeedRolesAsync(roleManager);
 }
 
+// Seed default admin account
+using (var scope = app.Services.CreateScope())
+{
+    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+    await AdminSeeder.SeedAdminAsync(userManager, builder.Configuration);
+}
+
 // Auto-apply pending migrations
 using (var scope = app.Services.CreateScope())
 {
