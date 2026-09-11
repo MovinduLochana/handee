@@ -21,19 +21,62 @@ public class BookingServiceTests
         return new AppDbContext(options);
     }
 
-    [Fact]
-    public async Task GetByIdAsync_Returns_Matching_Booking()
+    private static async Task<(AppDbContext Db, Booking Booking, Guid CustomerId, Guid ProviderId)>
+        SeedBookingAsync(BookingStatus status = BookingStatus.Requested)
     {
-        using var db = CreateContext();
-        var booking = new Booking { ProviderId = Guid.NewGuid(), CustomerId = Guid.NewGuid() };
+        var db = CreateContext();
+        var customerId = Guid.NewGuid();
+        var providerId = Guid.NewGuid();
+        var booking = new Booking { ProviderId = providerId, CustomerId = customerId, Status = status };
         db.Bookings.Add(booking);
         await db.SaveChangesAsync();
+        return (db, booking, customerId, providerId);
+    }
 
+    // ── GetByIdAsync ─────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task GetByIdAsync_Customer_Can_View()
+    {
+        var (db, booking, customerId, _) = await SeedBookingAsync();
         var sut = new BookingService(db);
-        var result = await sut.GetByIdAsync(booking.Id);
+
+        var result = await sut.GetByIdAsync(booking.Id, customerId, isRequesterAdmin: false);
 
         Assert.NotNull(result);
-        Assert.Equal(booking.Id, result!.Id);
+    }
+
+    [Fact]
+    public async Task GetByIdAsync_Provider_Can_View()
+    {
+        var (db, booking, _, providerId) = await SeedBookingAsync();
+        var sut = new BookingService(db);
+
+        var result = await sut.GetByIdAsync(booking.Id, providerId, isRequesterAdmin: false);
+
+        Assert.NotNull(result);
+    }
+
+    [Fact]
+    public async Task GetByIdAsync_Admin_Can_View_Anyones_Booking()
+    {
+        var (db, booking, _, _) = await SeedBookingAsync();
+        var sut = new BookingService(db);
+
+        var result = await sut.GetByIdAsync(booking.Id, Guid.NewGuid(), isRequesterAdmin: true);
+
+        Assert.NotNull(result);
+    }
+
+    [Fact]
+    public async Task GetByIdAsync_NonParty_Gets_Null()
+    {
+        var (db, booking, _, _) = await SeedBookingAsync();
+        var sut = new BookingService(db);
+
+        var result = await sut.GetByIdAsync(booking.Id, Guid.NewGuid(), isRequesterAdmin: false);
+
+        Assert.Null(result);
     }
 
     [Fact]
@@ -42,7 +85,7 @@ public class BookingServiceTests
         using var db = CreateContext();
         var sut = new BookingService(db);
 
-        var result = await sut.GetByIdAsync(Guid.NewGuid());
+        var result = await sut.GetByIdAsync(Guid.NewGuid(), Guid.NewGuid(), isRequesterAdmin: false);
 
         Assert.Null(result);
     }
@@ -107,19 +150,140 @@ public class BookingServiceTests
         Assert.All(result.Items, b => Assert.Equal("Requested", b.Status));
     }
 
-    [Fact]
-    public async Task UpdateStatusAsync_Updates_Status_And_UpdatedAt()
-    {
-        using var db = CreateContext();
-        var booking = new Booking { ProviderId = Guid.NewGuid(), CustomerId = Guid.NewGuid() };
-        db.Bookings.Add(booking);
-        await db.SaveChangesAsync();
+    // ── UpdateStatusAsync: legal transitions by the right party ─────────────
 
+    [Fact]
+    public async Task UpdateStatusAsync_Provider_Can_Accept_Requested_Booking()
+    {
+        var (db, booking, _, providerId) = await SeedBookingAsync(BookingStatus.Requested);
         var sut = new BookingService(db);
-        var result = await sut.UpdateStatusAsync(booking.Id, new UpdateBookingStatusDto(BookingStatus.Accepted));
+
+        var result = await sut.UpdateStatusAsync(
+            booking.Id, new UpdateBookingStatusDto(BookingStatus.Accepted), providerId, isRequesterAdmin: false);
 
         Assert.Equal("Accepted", result.Status);
         Assert.NotNull(result.UpdatedAt);
+    }
+
+    [Fact]
+    public async Task UpdateStatusAsync_Provider_Can_Start_Accepted_Booking()
+    {
+        var (db, booking, _, providerId) = await SeedBookingAsync(BookingStatus.Accepted);
+        var sut = new BookingService(db);
+
+        var result = await sut.UpdateStatusAsync(
+            booking.Id, new UpdateBookingStatusDto(BookingStatus.InProgress), providerId, isRequesterAdmin: false);
+
+        Assert.Equal("InProgress", result.Status);
+    }
+
+    [Fact]
+    public async Task UpdateStatusAsync_Provider_Can_Complete_InProgress_Booking()
+    {
+        var (db, booking, _, providerId) = await SeedBookingAsync(BookingStatus.InProgress);
+        var sut = new BookingService(db);
+
+        var result = await sut.UpdateStatusAsync(
+            booking.Id, new UpdateBookingStatusDto(BookingStatus.Completed), providerId, isRequesterAdmin: false);
+
+        Assert.Equal("Completed", result.Status);
+    }
+
+    [Fact]
+    public async Task UpdateStatusAsync_Customer_Can_Dispute_Booking()
+    {
+        var (db, booking, customerId, _) = await SeedBookingAsync(BookingStatus.Accepted);
+        var sut = new BookingService(db);
+
+        var result = await sut.UpdateStatusAsync(
+            booking.Id, new UpdateBookingStatusDto(BookingStatus.Disputed), customerId, isRequesterAdmin: false);
+
+        Assert.Equal("Disputed", result.Status);
+    }
+
+    [Fact]
+    public async Task UpdateStatusAsync_Provider_Can_Dispute_Booking()
+    {
+        var (db, booking, _, providerId) = await SeedBookingAsync(BookingStatus.InProgress);
+        var sut = new BookingService(db);
+
+        var result = await sut.UpdateStatusAsync(
+            booking.Id, new UpdateBookingStatusDto(BookingStatus.Disputed), providerId, isRequesterAdmin: false);
+
+        Assert.Equal("Disputed", result.Status);
+    }
+
+    [Fact]
+    public async Task UpdateStatusAsync_Admin_Can_Resolve_Disputed_Booking()
+    {
+        var (db, booking, _, _) = await SeedBookingAsync(BookingStatus.Disputed);
+        var sut = new BookingService(db);
+
+        var result = await sut.UpdateStatusAsync(
+            booking.Id, new UpdateBookingStatusDto(BookingStatus.InProgress), Guid.NewGuid(), isRequesterAdmin: true);
+
+        Assert.Equal("InProgress", result.Status);
+    }
+
+    // ── UpdateStatusAsync: wrong party for an otherwise-legal transition ───
+
+    [Fact]
+    public async Task UpdateStatusAsync_Customer_Cannot_Accept_Booking_On_Providers_Behalf()
+    {
+        var (db, booking, customerId, _) = await SeedBookingAsync(BookingStatus.Requested);
+        var sut = new BookingService(db);
+
+        await Assert.ThrowsAsync<ForbiddenException>(() =>
+            sut.UpdateStatusAsync(
+                booking.Id, new UpdateBookingStatusDto(BookingStatus.Accepted), customerId, isRequesterAdmin: false));
+    }
+
+    [Fact]
+    public async Task UpdateStatusAsync_NonAdmin_Cannot_Change_Disputed_Booking()
+    {
+        var (db, booking, _, providerId) = await SeedBookingAsync(BookingStatus.Disputed);
+        var sut = new BookingService(db);
+
+        await Assert.ThrowsAsync<ForbiddenException>(() =>
+            sut.UpdateStatusAsync(
+                booking.Id, new UpdateBookingStatusDto(BookingStatus.InProgress), providerId, isRequesterAdmin: false));
+    }
+
+    // ── UpdateStatusAsync: illegal transition even for the right-ish role ──
+
+    [Fact]
+    public async Task UpdateStatusAsync_Provider_Cannot_Skip_Straight_To_Completed()
+    {
+        var (db, booking, _, providerId) = await SeedBookingAsync(BookingStatus.Requested);
+        var sut = new BookingService(db);
+
+        await Assert.ThrowsAsync<ValidationException>(() =>
+            sut.UpdateStatusAsync(
+                booking.Id, new UpdateBookingStatusDto(BookingStatus.Completed), providerId, isRequesterAdmin: false));
+    }
+
+    [Fact]
+    public async Task UpdateStatusAsync_Admin_Cannot_Skip_Straight_To_Completed_Either()
+    {
+        // Legality is enforced for everyone, admins included — only the
+        // party/role layer on top is bypassed for admins.
+        var (db, booking, _, _) = await SeedBookingAsync(BookingStatus.Requested);
+        var sut = new BookingService(db);
+
+        await Assert.ThrowsAsync<ValidationException>(() =>
+            sut.UpdateStatusAsync(
+                booking.Id, new UpdateBookingStatusDto(BookingStatus.Completed), Guid.NewGuid(), isRequesterAdmin: true));
+    }
+
+    [Fact]
+    public async Task UpdateStatusAsync_NonParty_Gets_NotFound_Not_Forbidden()
+    {
+        var (db, booking, _, _) = await SeedBookingAsync(BookingStatus.Requested);
+        var sut = new BookingService(db);
+
+        await Assert.ThrowsAsync<NotFoundException>(() =>
+            sut.UpdateStatusAsync(
+                booking.Id, new UpdateBookingStatusDto(BookingStatus.Accepted), Guid.NewGuid(), isRequesterAdmin: false));
     }
 
     [Fact]
@@ -129,23 +293,75 @@ public class BookingServiceTests
         var sut = new BookingService(db);
 
         await Assert.ThrowsAsync<NotFoundException>(() =>
-            sut.UpdateStatusAsync(Guid.NewGuid(), new UpdateBookingStatusDto(BookingStatus.Accepted)));
+            sut.UpdateStatusAsync(
+                Guid.NewGuid(), new UpdateBookingStatusDto(BookingStatus.Accepted), Guid.NewGuid(), isRequesterAdmin: false));
     }
 
-    [Fact]
-    public async Task UpdateScheduleAsync_Updates_ScheduledAt_And_UpdatedAt()
-    {
-        using var db = CreateContext();
-        var booking = new Booking { ProviderId = Guid.NewGuid(), CustomerId = Guid.NewGuid() };
-        db.Bookings.Add(booking);
-        await db.SaveChangesAsync();
+    // ── UpdateScheduleAsync ──────────────────────────────────────────────────
 
-        var scheduledAt = DateTimeOffset.UtcNow.AddDays(2);
+    [Fact]
+    public async Task UpdateScheduleAsync_Customer_Can_Reschedule_While_Requested()
+    {
+        var (db, booking, customerId, _) = await SeedBookingAsync(BookingStatus.Requested);
         var sut = new BookingService(db);
-        var result = await sut.UpdateScheduleAsync(booking.Id, new UpdateBookingScheduleDto(scheduledAt));
+        var scheduledAt = DateTimeOffset.UtcNow.AddDays(2);
+
+        var result = await sut.UpdateScheduleAsync(
+            booking.Id, new UpdateBookingScheduleDto(scheduledAt), customerId, isRequesterAdmin: false);
 
         Assert.Equal(scheduledAt, result.ScheduledAt);
         Assert.NotNull(result.UpdatedAt);
+    }
+
+    [Fact]
+    public async Task UpdateScheduleAsync_Provider_Can_Reschedule_While_Accepted()
+    {
+        var (db, booking, _, providerId) = await SeedBookingAsync(BookingStatus.Accepted);
+        var sut = new BookingService(db);
+        var scheduledAt = DateTimeOffset.UtcNow.AddDays(3);
+
+        var result = await sut.UpdateScheduleAsync(
+            booking.Id, new UpdateBookingScheduleDto(scheduledAt), providerId, isRequesterAdmin: false);
+
+        Assert.Equal(scheduledAt, result.ScheduledAt);
+    }
+
+    [Theory]
+    [InlineData(BookingStatus.InProgress)]
+    [InlineData(BookingStatus.Completed)]
+    [InlineData(BookingStatus.Disputed)]
+    public async Task UpdateScheduleAsync_NonAdmin_Cannot_Reschedule_Past_Accepted(BookingStatus status)
+    {
+        var (db, booking, customerId, _) = await SeedBookingAsync(status);
+        var sut = new BookingService(db);
+
+        await Assert.ThrowsAsync<ValidationException>(() =>
+            sut.UpdateScheduleAsync(
+                booking.Id, new UpdateBookingScheduleDto(DateTimeOffset.UtcNow), customerId, isRequesterAdmin: false));
+    }
+
+    [Fact]
+    public async Task UpdateScheduleAsync_Admin_Can_Reschedule_Regardless_Of_Status()
+    {
+        var (db, booking, _, _) = await SeedBookingAsync(BookingStatus.Completed);
+        var sut = new BookingService(db);
+        var scheduledAt = DateTimeOffset.UtcNow.AddDays(1);
+
+        var result = await sut.UpdateScheduleAsync(
+            booking.Id, new UpdateBookingScheduleDto(scheduledAt), Guid.NewGuid(), isRequesterAdmin: true);
+
+        Assert.Equal(scheduledAt, result.ScheduledAt);
+    }
+
+    [Fact]
+    public async Task UpdateScheduleAsync_NonParty_Gets_NotFound()
+    {
+        var (db, booking, _, _) = await SeedBookingAsync(BookingStatus.Requested);
+        var sut = new BookingService(db);
+
+        await Assert.ThrowsAsync<NotFoundException>(() =>
+            sut.UpdateScheduleAsync(
+                booking.Id, new UpdateBookingScheduleDto(DateTimeOffset.UtcNow), Guid.NewGuid(), isRequesterAdmin: false));
     }
 
     [Fact]
@@ -155,7 +371,8 @@ public class BookingServiceTests
         var sut = new BookingService(db);
 
         await Assert.ThrowsAsync<NotFoundException>(() =>
-            sut.UpdateScheduleAsync(Guid.NewGuid(), new UpdateBookingScheduleDto(DateTimeOffset.UtcNow)));
+            sut.UpdateScheduleAsync(
+                Guid.NewGuid(), new UpdateBookingScheduleDto(DateTimeOffset.UtcNow), Guid.NewGuid(), isRequesterAdmin: false));
     }
 
     [Fact]

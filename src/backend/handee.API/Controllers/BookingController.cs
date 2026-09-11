@@ -24,7 +24,10 @@ public class BookingController : ControllerBase
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetById(Guid id)
     {
-        var result = await _bookingService.GetByIdAsync(id);
+        var userId = GetUserId();
+        if (userId is null) return Unauthorized();
+
+        var result = await _bookingService.GetByIdAsync(id, userId.Value, User.IsInRole("Admin"));
         return result is null ? NotFound() : Ok(result);
     }
 
@@ -67,14 +70,25 @@ public class BookingController : ControllerBase
     [HttpPut("{id:guid}/status")]
     public async Task<IActionResult> UpdateStatus(Guid id, [FromBody] UpdateBookingStatusDto dto)
     {
+        var userId = GetUserId();
+        if (userId is null) return Unauthorized();
+
         try
         {
-            var result = await _bookingService.UpdateStatusAsync(id, dto);
+            var result = await _bookingService.UpdateStatusAsync(id, dto, userId.Value, User.IsInRole("Admin"));
             return Ok(result);
         }
         catch (NotFoundException ex)
         {
             return NotFound(ex.Message);
+        }
+        catch (ValidationException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch (ForbiddenException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, ex.Message);
         }
     }
 
@@ -82,14 +96,21 @@ public class BookingController : ControllerBase
     [HttpPut("{id:guid}/schedule")]
     public async Task<IActionResult> UpdateSchedule(Guid id, [FromBody] UpdateBookingScheduleDto dto)
     {
+        var userId = GetUserId();
+        if (userId is null) return Unauthorized();
+
         try
         {
-            var result = await _bookingService.UpdateScheduleAsync(id, dto);
+            var result = await _bookingService.UpdateScheduleAsync(id, dto, userId.Value, User.IsInRole("Admin"));
             return Ok(result);
         }
         catch (NotFoundException ex)
         {
             return NotFound(ex.Message);
+        }
+        catch (ValidationException ex)
+        {
+            return BadRequest(ex.Message);
         }
     }
 

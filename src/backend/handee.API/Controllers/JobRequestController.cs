@@ -34,7 +34,10 @@ public class JobRequestController : ControllerBase
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetById(Guid id)
     {
-        var result = await _jobRequestService.GetByIdAsync(id);
+        var userId = GetUserId();
+        if (userId is null) return Unauthorized();
+
+        var result = await _jobRequestService.GetByIdAsync(id, userId.Value, User.IsInRole("Admin"));
         return result is null ? NotFound() : Ok(result);
     }
 

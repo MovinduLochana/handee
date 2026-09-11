@@ -46,25 +46,60 @@ public class JobRequestServiceTests
     }
 
     [Fact]
-    public async Task GetByIdAsync_Returns_Matching_JobRequest()
+    public async Task GetByIdAsync_Owner_Can_View()
     {
         using var db = CreateContext();
+        var customerId = Guid.NewGuid();
         var jobRequest = new JobRequest
         {
             Category = "Electrical",
             Description = "Flickering lights.",
             Location = "456 Oak Ave",
-            CustomerId = Guid.NewGuid()
+            CustomerId = customerId
         };
         db.JobRequests.Add(jobRequest);
         await db.SaveChangesAsync();
 
         var sut = new JobRequestService(db);
-        var result = await sut.GetByIdAsync(jobRequest.Id);
+        var result = await sut.GetByIdAsync(jobRequest.Id, customerId, isRequesterAdmin: false);
 
         Assert.NotNull(result);
         Assert.Equal(jobRequest.Id, result!.Id);
         Assert.Equal("Electrical", result.Category);
+    }
+
+    [Fact]
+    public async Task GetByIdAsync_Admin_Can_View_Anyones_Request()
+    {
+        using var db = CreateContext();
+        var jobRequest = new JobRequest
+        {
+            Category = "Electrical", Description = "d", Location = "l", CustomerId = Guid.NewGuid()
+        };
+        db.JobRequests.Add(jobRequest);
+        await db.SaveChangesAsync();
+
+        var sut = new JobRequestService(db);
+        var result = await sut.GetByIdAsync(jobRequest.Id, Guid.NewGuid(), isRequesterAdmin: true);
+
+        Assert.NotNull(result);
+    }
+
+    [Fact]
+    public async Task GetByIdAsync_NonOwner_NonAdmin_Gets_Null()
+    {
+        using var db = CreateContext();
+        var jobRequest = new JobRequest
+        {
+            Category = "Electrical", Description = "d", Location = "l", CustomerId = Guid.NewGuid()
+        };
+        db.JobRequests.Add(jobRequest);
+        await db.SaveChangesAsync();
+
+        var sut = new JobRequestService(db);
+        var result = await sut.GetByIdAsync(jobRequest.Id, Guid.NewGuid(), isRequesterAdmin: false);
+
+        Assert.Null(result);
     }
 
     [Fact]
@@ -73,7 +108,7 @@ public class JobRequestServiceTests
         using var db = CreateContext();
         var sut = new JobRequestService(db);
 
-        var result = await sut.GetByIdAsync(Guid.NewGuid());
+        var result = await sut.GetByIdAsync(Guid.NewGuid(), Guid.NewGuid(), isRequesterAdmin: false);
 
         Assert.Null(result);
     }

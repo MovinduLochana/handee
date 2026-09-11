@@ -35,10 +35,17 @@ public class JobRequestService : IJobRequestService
         return ToDto(jobRequest);
     }
 
-    public async Task<JobRequestResponseDto?> GetByIdAsync(Guid id)
+    public async Task<JobRequestResponseDto?> GetByIdAsync(Guid id, Guid requestingUserId, bool isRequesterAdmin)
     {
         var jobRequest = await _db.JobRequests.FindAsync(id);
-        return jobRequest is null ? null : ToDto(jobRequest);
+        if (jobRequest is null)
+            return null;
+
+        var isOwner = jobRequest.CustomerId == requestingUserId;
+        if (!isRequesterAdmin && !isOwner)
+            return null;
+
+        return ToDto(jobRequest);
     }
 
     public async Task<List<JobRequestResponseDto>> GetForCustomerAsync(Guid customerId)
