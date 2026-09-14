@@ -52,8 +52,21 @@ public class ProviderController(
                 return Forbid();
         }
 
-        var result = await profileService.GetProfileAsync(id, role, ct);
-        return Ok(result);
+        try
+        {
+            var result = await profileService.GetProfileAsync(id, role, ct);
+            if (result is null)
+            {
+                return NotFound(new { error = $"ProviderProfile {id} not found." });
+            }
+
+            return Ok(result);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            // Keep existing behavior for other callers that still throw KeyNotFoundException
+            return NotFound(new { error = ex.Message });
+        }
     }
 
     // ─── PUT /api/providers/{id} ──────────────────────────────────────────

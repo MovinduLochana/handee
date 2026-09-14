@@ -116,7 +116,8 @@ public record UpdateProviderProfileDto(
     List<Guid>? SkillCategoryIds,
     double? ServiceAreaLatitude,
     double? ServiceAreaLongitude,
-    string? ServiceAreaAddress);     // address string to geocode if lat/lng not supplied
+    string? ServiceAreaAddress,      // address string to geocode if lat/lng not supplied
+    double? ServiceRadiusKm);
 
 /// <summary>PATCH /api/providers/{id}/verification — Admin transition.</summary>
 public record VerificationActionDto(
