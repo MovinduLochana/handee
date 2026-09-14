@@ -19,6 +19,7 @@ public class AuthService : IAuthService
     private readonly IRefreshTokenGenerator _refreshTokenGenerator;
     private readonly AppDbContext _db;
     private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly ProviderProfileService _providerProfileService;
 
     private static readonly HashSet<string> AllowedRoles =
         new(StringComparer.OrdinalIgnoreCase) { "Customer", "Provider" };
@@ -29,7 +30,8 @@ public class AuthService : IAuthService
         IJwtTokenGenerator jwtTokenGenerator,
         IRefreshTokenGenerator refreshTokenGenerator,
         AppDbContext db,
-        IHttpContextAccessor httpContextAccessor)
+        IHttpContextAccessor httpContextAccessor,
+        ProviderProfileService providerProfileService)
     {
         _userManager = userManager;
         _signInManager = signInManager;
@@ -37,6 +39,7 @@ public class AuthService : IAuthService
         _refreshTokenGenerator = refreshTokenGenerator;
         _db = db;
         _httpContextAccessor = httpContextAccessor;
+        _providerProfileService = providerProfileService;
     }
 
     // ── Register ─────────────────────────────────────────────────────────────
@@ -65,6 +68,10 @@ public class AuthService : IAuthService
         }
 
         await _userManager.AddToRoleAsync(user, dto.Role);
+
+        // Auto-create a blank ProviderProfile so the profile always exists
+        if (dto.Role == "Provider")
+            await _providerProfileService.CreateProfileAsync(user.Id);
 
         return new RegisterResult(user.Id, user.Email!, user.FullName, dto.Role);
     }
