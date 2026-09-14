@@ -234,3 +234,46 @@ Content-Type: application/json
 GET {{handee_API_HostAddress}}/api/providers/00000000-0000-0000-0000-000000000000
 
 ###
+# ─────────────────────────────────────────────────────────────────────────────
+#  STEP 20 — Admin: approve a specific certification document
+#  Paste the cert ID returned by STEP 1 (POST /documents) below.
+#  Expected: 204 No Content — Certification.ReviewStatus becomes "Approved"
+# ─────────────────────────────────────────────────────────────────────────────
+@certificationId = PASTE_CERTIFICATION_ID_HERE
+
+PATCH {{handee_API_HostAddress}}/admin/certifications/{{certificationId}}/review
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "status": "Approved"
+}
+
+###
+# ─────────────────────────────────────────────────────────────────────────────
+#  STEP 21 — Admin: reject a specific certification document
+#  Expected: 204 No Content — Certification.ReviewStatus becomes "Rejected"
+# ─────────────────────────────────────────────────────────────────────────────
+PATCH {{handee_API_HostAddress}}/admin/certifications/{{certificationId}}/review
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "status": "Rejected"
+}
+
+###
+# ─────────────────────────────────────────────────────────────────────────────
+#  STEP 22 — Admin: review unknown certification ID
+#  Expected: 404 Not Found
+# ─────────────────────────────────────────────────────────────────────────────
+PATCH {{handee_API_HostAddress}}/admin/certifications/00000000-0000-0000-0000-000000000000/review
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "status": "Approved"
+}
+
+###
+
