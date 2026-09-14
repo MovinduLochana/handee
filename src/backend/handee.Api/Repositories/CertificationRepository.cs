@@ -7,6 +7,9 @@ namespace handee.API.Repositories;
 
 public class CertificationRepository(AppDbContext db) : ICertificationRepository
 {
+    public async Task<Certification?> GetByIdAsync(Guid certificationId, CancellationToken ct = default) =>
+        await db.Certifications.FindAsync([certificationId], ct);
+
     public async Task<List<Certification>> GetForProviderAsync(Guid providerProfileId, CancellationToken ct = default) =>
         await db.Certifications
             .Where(c => c.ProviderProfileId == providerProfileId)

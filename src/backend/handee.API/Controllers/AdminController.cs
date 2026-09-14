@@ -60,9 +60,26 @@ public class AdminController : ControllerBase
             return BadRequest(ex.Message);
         }
     }
+
+    // PATCH /admin/certifications/{certId}/review
+    [HttpPatch("certifications/{certId:guid}/review")]
+    public async Task<IActionResult> ReviewCertification(
+        Guid certId, [FromBody] ReviewCertificationDto dto, CancellationToken ct)
+    {
+        try
+        {
+            await _adminService.ReviewCertificationAsync(certId, dto.Status, ct);
+            return NoContent();
+        }
+        catch (NotFoundException ex)
+        {
+            return NotFound(ex.Message);
+        }
+    }
 }
 
 // ── Inline request DTOs (simple, admin-only) ─────────────────────────────────
 
 public record SetUserStatusDto(bool IsActive);
 public record SetVerificationStatusDto(ProviderVerificationStatus Status);
+public record ReviewCertificationDto(DocumentReviewStatus Status);

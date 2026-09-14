@@ -10,10 +10,12 @@ namespace handee.API.Services;
 public class AdminService : IAdminService
 {
     private readonly UserManager<ApplicationUser> _userManager;
+    private readonly ICertificationRepository _certRepo;
 
-    public AdminService(UserManager<ApplicationUser> userManager)
+    public AdminService(UserManager<ApplicationUser> userManager, ICertificationRepository certRepo)
     {
         _userManager = userManager;
+        _certRepo = certRepo;
     }
 
     public async Task<IList<AdminUserResult>> GetUsersAsync()
@@ -63,5 +65,15 @@ public class AdminService : IAdminService
         user.ProviderVerificationStatus = status;
 
         await _userManager.UpdateAsync(user);
+    }
+
+    public async Task ReviewCertificationAsync(
+        Guid certificationId, DocumentReviewStatus status, CancellationToken ct = default)
+    {
+        var cert = await _certRepo.GetByIdAsync(certificationId, ct)
+            ?? throw new NotFoundException($"Certification {certificationId} not found.");
+
+        cert.ReviewStatus = status;
+        await _certRepo.SaveChangesAsync(ct);
     }
 }
