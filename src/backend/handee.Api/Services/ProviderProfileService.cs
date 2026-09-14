@@ -17,10 +17,14 @@ public class ProviderProfileService(
 {
     // ─── Reads ────────────────────────────────────────────────────────────
 
-    public async Task<object> GetProfileAsync(Guid id, string callerRole, CancellationToken ct = default)
+    public async Task<object?> GetProfileAsync(Guid id, string callerRole, CancellationToken ct = default)
     {
-        var profile = await profileRepo.GetByIdAsync(id, ct)
-            ?? throw new KeyNotFoundException($"ProviderProfile {id} not found.");
+        var profile = await profileRepo.GetByIdAsync(id, ct);
+        if (profile is null)
+        {
+            // Return null so callers (controllers) can decide how to respond (404 Not Found)
+            return null;
+        }
 
         return callerRole switch
         {
@@ -84,6 +88,8 @@ public class ProviderProfileService(
                 logger.LogWarning("Geocoding failed for address: {Address} — service area not updated", dto.ServiceAreaAddress);
             }
         }
+
+        if (dto.ServiceRadiusKm.HasValue)      profile.ServiceRadiusKm = dto.ServiceRadiusKm.Value;
 
         await profileRepo.SaveChangesAsync(ct);
     }

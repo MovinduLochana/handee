@@ -108,8 +108,11 @@ builder.Services.AddScoped<IGoogleMapsService, GoogleMapsService>();
 builder.Services.AddScoped<VerificationService>();
 builder.Services.AddScoped<ProviderProfileService>();
 builder.Services.AddScoped<ProviderTrustService>();
+builder.Services.AddScoped<SkillCategoryService>();
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(opts =>
+        opts.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter()));
 builder.Services.AddAuthorization();
 
 var app = builder.Build();
