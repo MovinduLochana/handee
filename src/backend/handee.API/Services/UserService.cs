@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using handee.API.DTO;
 using handee.API.Entities;
@@ -9,10 +10,12 @@ namespace handee.API.Services;
 public class UserService : IUserService
 {
     private readonly UserManager<ApplicationUser> _userManager;
+    private readonly IStorageService _storage;
 
-    public UserService(UserManager<ApplicationUser> userManager)
+    public UserService(UserManager<ApplicationUser> userManager, IStorageService storage)
     {
         _userManager = userManager;
+        _storage     = storage;
     }
 
     public async Task<UserProfileResult> GetProfileAsync(string userId)
@@ -51,5 +54,24 @@ public class UserService : IUserService
             var errors = string.Join(" | ", result.Errors.Select(e => e.Description));
             throw new ValidationException(errors);
         }
+    }
+
+    public async Task<string> UploadPhotoAsync(
+        string userId, IFormFile photo, CancellationToken ct = default)
+    {
+        var user = await _userManager.FindByIdAsync(userId)
+            ?? throw new NotFoundException("User not found.");
+
+        var photoUrl = await _storage.UploadAsync(photo, "photos", ct);
+        user.ProfilePictureUrl = photoUrl;
+
+        var result = await _userManager.UpdateAsync(user);
+        if (!result.Succeeded)
+        {
+            var errors = string.Join(" | ", result.Errors.Select(e => e.Description));
+            throw new ValidationException(errors);
+        }
+
+        return photoUrl;
     }
 }
