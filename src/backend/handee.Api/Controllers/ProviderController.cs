@@ -104,6 +104,7 @@ public class ProviderController(
         });
     }
 
+
     // ─── PATCH /api/providers/{id}/verification ───────────────────────────
     // Admin only — approve / reject
     [HttpPatch("{id:guid}/verification")]

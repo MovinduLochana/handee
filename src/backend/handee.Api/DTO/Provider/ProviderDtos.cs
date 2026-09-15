@@ -34,7 +34,7 @@ public record ProviderProfileProviderDto(
     string? Bio,
     string? Description,
     int YearsOfExperience,
-    string? ProfilePhotoUrl,
+    string? ProfilePictureUrl,
     List<string> Languages,
     List<string> ServicesOffered,
     bool IsAvailableForWork,
@@ -60,7 +60,7 @@ public record ProviderProfileAdminDto(
     string? Bio,
     string? Description,
     int YearsOfExperience,
-    string? ProfilePhotoUrl,
+    string? ProfilePictureUrl,
     List<string> Languages,
     List<string> ServicesOffered,
     bool IsAvailableForWork,
@@ -88,7 +88,7 @@ public record ProviderProfileCustomerDto(
     string? Bio,
     string? Description,
     int YearsOfExperience,
-    string? ProfilePhotoUrl,
+    string? ProfilePictureUrl,
     List<string> Languages,
     List<string> ServicesOffered,
     bool IsAvailableForWork,
@@ -128,6 +128,8 @@ public record VerificationActionDto(
 public record DocumentUploadDto(
     IFormFile File,
     CertificationType Type);
+
+
 
 /// <summary>Internal trust-signal payload consumed by the Python Agentic AI service.</summary>
 public record TrustSignalDto(

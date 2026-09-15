@@ -134,6 +134,7 @@ public class ProviderProfileService(
         return cert;
     }
 
+
     // ─── Create profile (called on provider first registration) ──────────
 
     public async Task<ProviderProfile> CreateProfileAsync(Guid userId, CancellationToken ct = default)
@@ -181,7 +182,7 @@ public class ProviderProfileService(
         Bio: p.Bio,
         Description: p.Description,
         YearsOfExperience: p.YearsOfExperience,
-        ProfilePhotoUrl: p.ProfilePhotoUrl,
+        ProfilePictureUrl: p.User.ProfilePictureUrl,
         Languages: p.Languages,
         ServicesOffered: p.ServicesOffered,
         IsAvailableForWork: p.IsAvailableForWork,
@@ -203,7 +204,7 @@ public class ProviderProfileService(
         Bio: p.Bio,
         Description: p.Description,
         YearsOfExperience: p.YearsOfExperience,
-        ProfilePhotoUrl: p.ProfilePhotoUrl,
+        ProfilePictureUrl: p.User.ProfilePictureUrl,
         Languages: p.Languages,
         ServicesOffered: p.ServicesOffered,
         IsAvailableForWork: p.IsAvailableForWork,
@@ -229,7 +230,7 @@ public class ProviderProfileService(
         Bio: p.Bio,
         Description: p.Description,
         YearsOfExperience: p.YearsOfExperience,
-        ProfilePhotoUrl: p.ProfilePhotoUrl,
+        ProfilePictureUrl: p.User.ProfilePictureUrl,
         Languages: p.Languages,
         ServicesOffered: p.ServicesOffered,
         IsAvailableForWork: p.IsAvailableForWork,

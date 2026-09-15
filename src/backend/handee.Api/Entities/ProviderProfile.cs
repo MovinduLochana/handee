@@ -19,7 +19,7 @@ public class ProviderProfile
     public string? Bio { get; set; }
     public string? Description { get; set; }
     public int YearsOfExperience { get; set; }
-    public string? ProfilePhotoUrl { get; set; }
+
     public List<string> Languages { get; set; } = [];
     public List<string> ServicesOffered { get; set; } = [];
     public bool IsAvailableForWork { get; set; } = true;
