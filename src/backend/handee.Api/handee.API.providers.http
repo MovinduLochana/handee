@@ -153,17 +153,17 @@ GET {{handee_API_HostAddress}}/api/providers/{{profileId}}
 # ─────────────────────────────────────────────────────────────────────────────
 #  STEP 11 — Search providers (skill + area)
 #  Returns Verified + available providers within 25 km of Colombo.
-#  Expected: 200 OK — array of ProviderProfileCustomerDto
+#  Expected: 200 OK — paged result { items, totalCount, page, pageSize }
 # ─────────────────────────────────────────────────────────────────────────────
-GET {{handee_API_HostAddress}}/api/providers/search?skillCategoryId={{skillCategoryId}}&lat=6.9271&lng=79.8612&radiusKm=25
+GET {{handee_API_HostAddress}}/api/providers/search?skillCategoryId={{skillCategoryId}}&lat=6.9271&lng=79.8612&radiusKm=25&page=1&pageSize=20
 Authorization: Bearer {{providerToken}}
 
 ###
 # ─────────────────────────────────────────────────────────────────────────────
 #  STEP 12 — Search providers (no filter — all verified + available)
-#  Expected: 200 OK — full list
+#  Expected: 200 OK — paged result { items, totalCount, page, pageSize }
 # ─────────────────────────────────────────────────────────────────────────────
-GET {{handee_API_HostAddress}}/api/providers/search
+GET {{handee_API_HostAddress}}/api/providers/search?page=1&pageSize=20
 Authorization: Bearer {{customerToken}}
 
 ###
@@ -276,4 +276,3 @@ Content-Type: application/json
 }
 
 ###
-
