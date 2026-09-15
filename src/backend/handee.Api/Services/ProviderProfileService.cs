@@ -1,4 +1,5 @@
 using handee.API.Data;
+using handee.API.DTO;
 using handee.API.DTO.Provider;
 using handee.API.Entities;
 using handee.API.Interfaces;
@@ -158,11 +159,17 @@ public class ProviderProfileService(
     public async Task<Guid?> GetOwnerUserIdAsync(Guid profileId, CancellationToken ct = default) =>
         await profileRepo.GetOwnerUserIdAsync(profileId, ct);
 
-    public async Task<List<ProviderProfileCustomerDto>> SearchAsync(
-        Guid? skillCategoryId, double? lat, double? lng, double radiusKm, CancellationToken ct = default)
+    public async Task<PagedResult<ProviderProfileCustomerDto>> SearchAsync(
+        Guid? skillCategoryId, double? lat, double? lng, double radiusKm,
+        int skip, int take, CancellationToken ct = default)
     {
-        var results = await profileRepo.SearchAsync(skillCategoryId, lat, lng, radiusKm, ct);
-        return results.Select(MapToCustomerDto).ToList();
+        var (items, totalCount) = await profileRepo.SearchAsync(skillCategoryId, lat, lng, radiusKm, skip, take, ct);
+        var page = skip / take + 1;
+        return new PagedResult<ProviderProfileCustomerDto>(
+            items.Select(MapToCustomerDto).ToList(),
+            totalCount,
+            page,
+            take);
     }
 
     // ─── Mapping helpers ─────────────────────────────────────────────────

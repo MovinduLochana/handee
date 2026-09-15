@@ -8,11 +8,13 @@ public interface IProviderProfileRepository
     Task<ProviderProfile?> GetByUserIdAsync(Guid userId, CancellationToken ct = default);
     Task AddAsync(ProviderProfile profile, CancellationToken ct = default);
     Task SaveChangesAsync(CancellationToken ct = default);
-    Task<List<ProviderProfile>> SearchAsync(
+    Task<(List<ProviderProfile> Items, int TotalCount)> SearchAsync(
         Guid? skillCategoryId,
         double? lat,
         double? lng,
         double radiusKm,
+        int skip,
+        int take,
         CancellationToken ct = default);
     Task<Guid?> GetOwnerUserIdAsync(Guid profileId, CancellationToken ct = default);
 }

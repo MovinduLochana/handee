@@ -134,9 +134,22 @@ public class ProviderController(
         [FromQuery] double? lat,
         [FromQuery] double? lng,
         [FromQuery] double radiusKm = 25,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20,
         CancellationToken ct = default)
     {
-        var results = await profileService.SearchAsync(skillCategoryId, lat, lng, radiusKm, ct);
+        var normalizedPage = Math.Max(page, 1);
+        var normalizedPageSize = Math.Clamp(pageSize, 1, 100);
+        var skip = (normalizedPage - 1) * normalizedPageSize;
+
+        var results = await profileService.SearchAsync(
+            skillCategoryId,
+            lat,
+            lng,
+            radiusKm,
+            skip,
+            normalizedPageSize,
+            ct);
         return Ok(results);
     }
 

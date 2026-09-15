@@ -35,11 +35,13 @@ public class ProviderProfileRepository(AppDbContext db) : IProviderProfileReposi
             .Select(p => (Guid?)p.UserId)
             .FirstOrDefaultAsync(ct);
 
-    public async Task<List<ProviderProfile>> SearchAsync(
+    public async Task<(List<ProviderProfile> Items, int TotalCount)> SearchAsync(
         Guid? skillCategoryId,
         double? lat,
         double? lng,
         double radiusKm,
+        int skip,
+        int take,
         CancellationToken ct = default)
     {
         var query = db.ProviderProfiles
@@ -65,6 +67,9 @@ public class ProviderProfileRepository(AppDbContext db) : IProviderProfileReposi
                 p.ServiceAreaLongitude <= lng + lngDelta);
         }
 
-        return await query.ToListAsync(ct);
+        var totalCount = await query.CountAsync(ct);
+        var items = await query.Skip(skip).Take(take).ToListAsync(ct);
+
+        return (items, totalCount);
     }
 }
