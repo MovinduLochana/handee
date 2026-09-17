@@ -14,6 +14,7 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid
     public DbSet<Certification> Certifications => Set<Certification>();
     public DbSet<SkillCategory> SkillCategories => Set<SkillCategory>();
     public DbSet<VerificationAuditLog> VerificationAuditLogs => Set<VerificationAuditLog>();
+    public DbSet<Review> Reviews => Set<Review>();
 
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
