@@ -1,0 +1,108 @@
+.landing-container {
+    min-height: 100vh;
+    background-color: var(--bg);
+    color: var(--text);
+    display: flex;
+    flex-direction: column;
+}
+
+.landing-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem 3rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.landing-nav .brand {
+    font-family: var(--heading);
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--text-h);
+    letter-spacing: -0.05em;
+}
+
+.landing-nav .nav-actions a {
+    margin-left: 1.5rem;
+    text-decoration: none;
+    font-weight: 500;
+    color: var(--text-h);
+}
+
+.landing-hero {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 4rem 2rem;
+}
+
+.hero-title {
+    font-size: 4rem;
+    line-height: 1.1;
+    font-family: var(--heading);
+    color: var(--text-h);
+    max-width: 800px;
+    margin-bottom: 1.5rem;
+    letter-spacing: -0.02em;
+}
+
+.hero-subtitle {
+    font-size: 1.25rem;
+    max-width: 600px;
+    line-height: 1.6;
+    margin-bottom: 3rem;
+}
+
+.hero-actions {
+    display: flex;
+    gap: 1rem;
+}
+
+.btn-hero-primary,
+.btn-hero-secondary {
+    padding: 1rem 2rem;
+    border-radius: 8px;
+    font-size: 1.125rem;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.btn-hero-primary {
+    background-color: var(--text-h);
+    color: var(--bg);
+    border: 2px solid var(--text-h);
+}
+
+.btn-hero-primary:hover {
+    opacity: 0.9;
+}
+
+.btn-hero-secondary {
+    background-color: transparent;
+    color: var(--text-h);
+    border: 2px solid var(--border);
+}
+
+.btn-hero-secondary:hover {
+    border-color: var(--text-h);
+}
+
+.trust-badges {
+    margin-top: 4rem;
+    display: flex;
+    gap: 2rem;
+    opacity: 0.8;
+}
+
+.trust-badge {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 500;
+    color: var(--text-h);
+    font-size: 0.9rem;
+}
