@@ -5,23 +5,27 @@ using handee.API.Entities;
 
 namespace handee.API.Data;
 
-public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid>, Guid> {
+public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid>, Guid>
+{
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+// Provider Verification & Profiles
+    public DbSet<ProviderProfile> ProviderProfiles => Set<ProviderProfile>();
+    public DbSet<Certification> Certifications => Set<Certification>();
+    public DbSet<SkillCategory> SkillCategories => Set<SkillCategory>();
+    public DbSet<VerificationAuditLog> VerificationAuditLogs => Set<VerificationAuditLog>();
+    public DbSet<Review> Reviews => Set<Review>();
+
     public DbSet<JobRequest> JobRequests => Set<JobRequest>();
     public DbSet<Booking> Bookings => Set<Booking>();
+
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
     {
-        
     }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
 
-        // Apply Configurations
-        modelBuilder.ApplyConfigurationsFromAssembly(
-            typeof(AppDbContext).Assembly
-        );
+        modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
     }
-    
 }

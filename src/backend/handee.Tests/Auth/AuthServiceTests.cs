@@ -24,6 +24,7 @@ public class AuthServiceTests : IDisposable
     private readonly Mock<IRefreshTokenGenerator> _refreshGeneratorMock;
     private readonly Mock<IHttpContextAccessor> _httpContextAccessorMock;
     private readonly AppDbContext _db;
+    private readonly Mock<IProviderProfileRepository> _profileRepoForAuth;
     private readonly AuthService _sut;
 
     public AuthServiceTests()
@@ -64,13 +65,36 @@ public class AuthServiceTests : IDisposable
             .Options;
         _db = new AppDbContext(dbOptions);
 
+        // Real ProviderProfileService with a stub repo — CreateProfileAsync only needs
+        // GetByUserIdAsync (returns null = no existing profile) + AddAsync + SaveChangesAsync.
+        _profileRepoForAuth = new Mock<IProviderProfileRepository>();
+        _profileRepoForAuth
+            .Setup(r => r.GetByUserIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((handee.API.Entities.ProviderProfile?)null);
+        _profileRepoForAuth
+            .Setup(r => r.AddAsync(It.IsAny<handee.API.Entities.ProviderProfile>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+        _profileRepoForAuth
+            .Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        var profileServiceForAuth = new ProviderProfileService(
+            _profileRepoForAuth.Object,
+            certRepo: null!,
+            storage: null!,
+            maps: null!,
+            verificationService: null!,
+            db: null!,
+            Microsoft.Extensions.Logging.Abstractions.NullLogger<ProviderProfileService>.Instance);
+
         _sut = new AuthService(
             _userManagerMock.Object,
             _signInManagerMock.Object,
             _jwtGeneratorMock.Object,
             _refreshGeneratorMock.Object,
             _db,
-            _httpContextAccessorMock.Object);
+            _httpContextAccessorMock.Object,
+            profileServiceForAuth);
     }
 
     public void Dispose() => _db.Dispose();

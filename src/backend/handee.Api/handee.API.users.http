@@ -1,0 +1,61 @@
+@handee_API_HostAddress = http://localhost:5057
+
+# After login copy your JWT here
+@accessToken = <paste-jwt-here>
+
+###
+# ─────────────────────────────────────────────────────────────
+#  USERS — Get own profile (any role)
+# ─────────────────────────────────────────────────────────────
+# Expected: 200 OK — UserProfileResult (includes profilePictureUrl)
+GET {{handee_API_HostAddress}}/users/me
+Authorization: Bearer {{accessToken}}
+
+###
+# ─────────────────────────────────────────────────────────────
+#  USERS — Update profile (any role)
+# ─────────────────────────────────────────────────────────────
+# Expected: 204 No Content
+PUT {{handee_API_HostAddress}}/users/me
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "fullName": "Alice Updated",
+  "phoneNumber": "+94771234567"
+}
+
+###
+# ─────────────────────────────────────────────────────────────
+#  STEP 1 — Upload profile picture (Customer or Provider)
+# ─────────────────────────────────────────────────────────────
+# Works for ANY authenticated role.
+# Expected: 200 OK — { "profilePictureUrl": "/uploads/photos/<filename>" }
+# Replace <path-to-image> with an actual file path, e.g. C:/Users/you/avatar.jpg
+POST {{handee_API_HostAddress}}/users/me/photo
+Authorization: Bearer {{accessToken}}
+Content-Type: multipart/form-data; boundary=----Boundary
+
+------Boundary
+Content-Disposition: form-data; name="photo"; filename="avatar.jpg"
+Content-Type: image/jpeg
+
+< C:/path/to/your/avatar.jpg
+------Boundary--
+
+###
+# ─────────────────────────────────────────────────────────────
+#  STEP 2 — Upload without auth (should be blocked)
+# ─────────────────────────────────────────────────────────────
+# Expected: 401 Unauthorized
+POST {{handee_API_HostAddress}}/users/me/photo
+Content-Type: multipart/form-data; boundary=----Boundary
+
+------Boundary
+Content-Disposition: form-data; name="photo"; filename="avatar.jpg"
+Content-Type: image/jpeg
+
+< C:/path/to/your/avatar.jpg
+------Boundary--
+
+###

@@ -10,11 +10,11 @@ using handee.API.Data;
 
 #nullable disable
 
-namespace handee.API.Data.Migrations
+namespace Handee.Api.Data.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260909090500_AddBookingAndJobRequest")]
-    partial class AddBookingAndJobRequest
+    [Migration("20260917131309_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -156,6 +156,21 @@ namespace handee.API.Data.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("ProviderProfileSkillCategory", b =>
+                {
+                    b.Property<Guid>("ProvidersId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("SkillCategoriesId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("ProvidersId", "SkillCategoriesId");
+
+                    b.HasIndex("SkillCategoriesId");
+
+                    b.ToTable("ProviderSkillCategories", (string)null);
+                });
+
             modelBuilder.Entity("handee.API.Entities.ApplicationUser", b =>
                 {
                     b.Property<Guid>("Id")
@@ -255,6 +270,9 @@ namespace handee.API.Data.Migrations
                     b.Property<Guid>("ProviderId")
                         .HasColumnType("uuid");
 
+                    b.Property<DateTimeOffset?>("ScheduledAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<Guid?>("ServiceListingId")
                         .HasColumnType("uuid");
 
@@ -279,6 +297,44 @@ namespace handee.API.Data.Migrations
                     b.HasIndex("Status");
 
                     b.ToTable("Bookings");
+                });
+
+            modelBuilder.Entity("handee.API.Entities.Certification", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("FileUrl")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("OriginalFileName")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<Guid>("ProviderProfileId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ReviewStatus")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<DateTimeOffset>("UploadedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProviderProfileId");
+
+                    b.ToTable("Certifications", (string)null);
                 });
 
             modelBuilder.Entity("handee.API.Entities.JobRequest", b =>
@@ -340,6 +396,83 @@ namespace handee.API.Data.Migrations
                     b.ToTable("JobRequests");
                 });
 
+            modelBuilder.Entity("handee.API.Entities.ProviderProfile", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("AvailabilityNote")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("Bio")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(3000)
+                        .HasColumnType("character varying(3000)");
+
+                    b.Property<string>("Headline")
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<bool>("IsAvailableForWork")
+                        .HasColumnType("boolean");
+
+                    b.PrimitiveCollection<List<string>>("Languages")
+                        .IsRequired()
+                        .HasColumnType("text[]");
+
+                    b.Property<decimal>("RatingAggregate")
+                        .HasPrecision(3, 2)
+                        .HasColumnType("numeric(3,2)");
+
+                    b.Property<string>("ServiceAreaDisplayName")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<double?>("ServiceAreaLatitude")
+                        .HasColumnType("double precision");
+
+                    b.Property<double?>("ServiceAreaLongitude")
+                        .HasColumnType("double precision");
+
+                    b.Property<double>("ServiceRadiusKm")
+                        .HasColumnType("double precision");
+
+                    b.PrimitiveCollection<List<string>>("ServicesOffered")
+                        .IsRequired()
+                        .HasColumnType("text[]");
+
+                    b.Property<int>("TotalReviewCount")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("VerificationStatus")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<int>("YearsOfExperience")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId")
+                        .IsUnique();
+
+                    b.HasIndex("ServiceAreaLatitude", "ServiceAreaLongitude");
+
+                    b.ToTable("ProviderProfiles", (string)null);
+                });
+
             modelBuilder.Entity("handee.API.Entities.RefreshToken", b =>
                 {
                     b.Property<Guid>("RefreshTokenId")
@@ -385,6 +518,109 @@ namespace handee.API.Data.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("RefreshTokens");
+                });
+
+            modelBuilder.Entity("handee.API.Entities.Review", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Comment")
+                        .HasMaxLength(1500)
+                        .HasColumnType("character varying(1500)");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("CustomerId")
+                        .HasColumnType("uuid");
+
+                    b.PrimitiveCollection<List<string>>("PhotoUrls")
+                        .IsRequired()
+                        .HasColumnType("text[]");
+
+                    b.Property<Guid>("ProviderProfileId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Rating")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CustomerId");
+
+                    b.HasIndex("ProviderProfileId", "CustomerId")
+                        .IsUnique();
+
+                    b.ToTable("Reviews", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_Review_Rating", "\"Rating\" >= 1 AND \"Rating\" <= 5");
+                        });
+                });
+
+            modelBuilder.Entity("handee.API.Entities.SkillCategory", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("IconUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.ToTable("SkillCategories", (string)null);
+                });
+
+            modelBuilder.Entity("handee.API.Entities.VerificationAuditLog", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AdminUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("NewStatus")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("PreviousStatus")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<Guid>("ProviderProfileId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("Timestamp")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProviderProfileId");
+
+                    b.HasIndex("Timestamp");
+
+                    b.ToTable("VerificationAuditLogs", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<System.Guid>", b =>
@@ -438,6 +674,21 @@ namespace handee.API.Data.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("ProviderProfileSkillCategory", b =>
+                {
+                    b.HasOne("handee.API.Entities.ProviderProfile", null)
+                        .WithMany()
+                        .HasForeignKey("ProvidersId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("handee.API.Entities.SkillCategory", null)
+                        .WithMany()
+                        .HasForeignKey("SkillCategoriesId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("handee.API.Entities.Booking", b =>
                 {
                     b.HasOne("handee.API.Entities.ApplicationUser", "Customer")
@@ -464,6 +715,17 @@ namespace handee.API.Data.Migrations
                     b.Navigation("Provider");
                 });
 
+            modelBuilder.Entity("handee.API.Entities.Certification", b =>
+                {
+                    b.HasOne("handee.API.Entities.ProviderProfile", "ProviderProfile")
+                        .WithMany("Certifications")
+                        .HasForeignKey("ProviderProfileId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ProviderProfile");
+                });
+
             modelBuilder.Entity("handee.API.Entities.JobRequest", b =>
                 {
                     b.HasOne("handee.API.Entities.ApplicationUser", "Customer")
@@ -475,6 +737,17 @@ namespace handee.API.Data.Migrations
                     b.Navigation("Customer");
                 });
 
+            modelBuilder.Entity("handee.API.Entities.ProviderProfile", b =>
+                {
+                    b.HasOne("handee.API.Entities.ApplicationUser", "User")
+                        .WithOne()
+                        .HasForeignKey("handee.API.Entities.ProviderProfile", "UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("handee.API.Entities.RefreshToken", b =>
                 {
                     b.HasOne("handee.API.Entities.ApplicationUser", "User")
@@ -484,6 +757,45 @@ namespace handee.API.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("handee.API.Entities.Review", b =>
+                {
+                    b.HasOne("handee.API.Entities.ApplicationUser", "Customer")
+                        .WithMany()
+                        .HasForeignKey("CustomerId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .IsRequired();
+
+                    b.HasOne("handee.API.Entities.ProviderProfile", "ProviderProfile")
+                        .WithMany("Reviews")
+                        .HasForeignKey("ProviderProfileId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Customer");
+
+                    b.Navigation("ProviderProfile");
+                });
+
+            modelBuilder.Entity("handee.API.Entities.VerificationAuditLog", b =>
+                {
+                    b.HasOne("handee.API.Entities.ProviderProfile", "ProviderProfile")
+                        .WithMany("AuditLogs")
+                        .HasForeignKey("ProviderProfileId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ProviderProfile");
+                });
+
+            modelBuilder.Entity("handee.API.Entities.ProviderProfile", b =>
+                {
+                    b.Navigation("AuditLogs");
+
+                    b.Navigation("Certifications");
+
+                    b.Navigation("Reviews");
                 });
 #pragma warning restore 612, 618
         }

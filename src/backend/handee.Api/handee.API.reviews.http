@@ -1,0 +1,116 @@
+@handee_API_HostAddress = http://localhost:5057
+
+# ─── Token \& IDs store ──────────────────────────────────────────────────────────
+# 1. Run "AUTH — Login (Customer)" from handee.API.auth.http first.
+# 2. Paste the returned token here.
+@customerToken  = PASTE_CUSTOMER_ACCESS_TOKEN_HERE
+@adminToken     = PASTE_ADMIN_ACCESS_TOKEN_HERE
+
+# 3. Paste the target Provider Profile ID here.
+@providerId      = PASTE_PROVIDER_PROFILE_ID_HERE
+
+# 4. Paste the Review ID here after creating a review in STEP 1.
+@reviewId        = PASTE_REVIEW_ID_HERE
+
+###
+# ─────────────────────────────────────────────────────────────────────────────
+#  STEP 1 — Create a Review for a Provider
+#  Customer posts a review for a specific provider.
+#  Expected: 201 Created — ReviewDto with updated rating and customer details
+# ─────────────────────────────────────────────────────────────────────────────
+POST {{handee_API_HostAddress}}/api/providers/{{providerId}}/reviews
+Authorization: Bearer {{customerToken}}
+Content-Type: application/json
+
+{
+  "rating": 5,
+  "comment": "Excellent service, very professional and quick!"
+}
+
+###
+# ─────────────────────────────────────────────────────────────────────────────
+#  STEP 2 — Create a duplicate Review for the same Provider (ILLEGAL)
+#  Customer tries to review the same provider twice.
+#  Expected: 409 Conflict — "Customer has already reviewed this provider."
+# ─────────────────────────────────────────────────────────────────────────────
+POST {{handee_API_HostAddress}}/api/providers/{{providerId}}/reviews
+Authorization: Bearer {{customerToken}}
+Content-Type: application/json
+
+{
+  "rating": 4,
+  "comment": "Trying to leave a second review!"
+}
+
+###
+# ─────────────────────────────────────────────────────────────────────────────
+#  STEP 3 — Get Reviews for a Provider
+#  Public read of all reviews for a provider, paginated.
+#  Expected: 200 OK — PagedResult<ReviewDto>
+# ─────────────────────────────────────────────────────────────────────────────
+GET {{handee_API_HostAddress}}/api/providers/{{providerId}}/reviews?page=1&pageSize=10
+
+###
+# ─────────────────────────────────────────────────────────────────────────────
+#  STEP 4 — Update a Review
+#  Customer updates their own review. Updates RatingAggregate automatically.
+#  Expected: 200 OK — Updated ReviewDto
+# ─────────────────────────────────────────────────────────────────────────────
+PUT {{handee_API_HostAddress}}/api/reviews/{{reviewId}}
+Authorization: Bearer {{customerToken}}
+Content-Type: application/json
+
+{
+  "rating": 4,
+  "comment": "Updating my review. The service was good, but they arrived slightly late."
+}
+
+###
+# ─────────────────────────────────────────────────────────────────────────────
+#  STEP 5 — Try to update a Review belonging to someone else (ILLEGAL)
+#  Using another customer's token or admin token instead of the owner's token.
+#  Expected: 403 Forbidden or 401 Unauthorized exceptions depending on controller handling.
+# ─────────────────────────────────────────────────────────────────────────────
+PUT {{handee_API_HostAddress}}/api/reviews/{{reviewId}}
+Authorization: Bearer PASTE_ANOTHER_CUSTOMER_TOKEN_HERE
+Content-Type: application/json
+
+{
+  "rating": 1,
+  "comment": "Maliciously changing the comment."
+}
+
+###
+# ─────────────────────────────────────────────────────────────────────────────
+#  STEP 6 — Delete a Review (As Customer)
+#  Customer removes their own review, automatically recalculates and shifts the Provider rating downward.
+#  Expected: 204 No Content
+# ─────────────────────────────────────────────────────────────────────────────
+DELETE {{handee_API_HostAddress}}/api/reviews/{{reviewId}}
+Authorization: Bearer {{customerToken}}
+
+###
+# ─────────────────────────────────────────────────────────────────────────────
+#  STEP 7 — Delete a Review (As Admin)
+#  Admin removes a dangerous or offensive review.
+#  Expected: 204 No Content
+# ─────────────────────────────────────────────────────────────────────────────
+DELETE {{handee_API_HostAddress}}/api/reviews/{{reviewId}}
+Authorization: Bearer {{adminToken}}
+
+###
+# ─────────────────────────────────────────────────────────────────────────────
+#  STEP 8 — Upload Photo for a Review
+#  Customer uploads an attachment to their previously authored review.
+#  Expected: 200 OK — ReviewDto containing the updated PhotoUrls list.
+# ─────────────────────────────────────────────────────────────────────────────
+POST {{handee_API_HostAddress}}/api/reviews/{{reviewId}}/photos
+Authorization: Bearer {{customerToken}}
+Content-Type: multipart/form-data; boundary=----Boundary
+
+------Boundary
+Content-Disposition: form-data; name="file"; filename="sample-work.jpg"
+Content-Type: image/jpeg
+
+< ./sample-work.jpg
+------Boundary--

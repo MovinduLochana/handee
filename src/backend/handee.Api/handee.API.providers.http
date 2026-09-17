@@ -1,0 +1,277 @@
+@handee_API_HostAddress = http://localhost:5057
+
+# ─── Token store ─────────────────────────────────────────────────────────────
+# 1. Run "AUTH — Login (Provider)" from handee.API.auth.http first.
+# 2. Paste the returned tokens here.
+@providerToken  = PASTE_PROVIDER_ACCESS_TOKEN_HERE
+@adminToken     = PASTE_ADMIN_ACCESS_TOKEN_HERE
+@customerToken  = PASTE_CUSTOMER_ACCESS_TOKEN_HERE
+
+# 3. After creating a profile, paste its ID here.
+@profileId      = PASTE_PROVIDER_PROFILE_ID_HERE
+
+# Internal API key (must match InternalApi:SharedSecret in appsettings.json)
+@internalApiKey = dev-internal-secret-change-in-prod
+
+# Skill category ID (seed one via DB or the seed endpoint, then paste here)
+@skillCategoryId = PASTE_SKILL_CATEGORY_ID_HERE
+
+###
+# ─────────────────────────────────────────────────────────────────────────────
+#  STEP 1 — Create a provider profile (first document upload)
+#  Provider registers a profile by uploading their NIC.
+#  Expected: 201 Created — { id, type, fileUrl, uploadedAt, reviewStatus }
+#  The profile is created in "Pending" status automatically.
+# ─────────────────────────────────────────────────────────────────────────────
+POST {{handee_API_HostAddress}}/api/providers/{{profileId}}/documents
+Authorization: Bearer {{providerToken}}
+Content-Type: multipart/form-data; boundary=----Boundary
+
+------Boundary
+Content-Disposition: form-data; name="Type"
+
+NIC
+------Boundary
+Content-Disposition: form-data; name="File"; filename="nic.pdf"
+Content-Type: application/pdf
+
+< ./sample-nic.pdf
+------Boundary--
+
+###
+# ─────────────────────────────────────────────────────────────────────────────
+#  STEP 2 — Get profile as Provider (own view — full data, includes doc URLs)
+#  Expected: 200 OK — ProviderProfileProviderDto (certifications visible)
+# ─────────────────────────────────────────────────────────────────────────────
+GET {{handee_API_HostAddress}}/api/providers/{{profileId}}
+Authorization: Bearer {{providerToken}}
+
+###
+# ─────────────────────────────────────────────────────────────────────────────
+#  STEP 3 — Update own profile (headline, bio, skills, service area)
+#  Expected: 204 No Content
+# ─────────────────────────────────────────────────────────────────────────────
+PUT {{handee_API_HostAddress}}/api/providers/{{profileId}}
+Authorization: Bearer {{providerToken}}
+Content-Type: application/json
+
+{
+  "headline": "Certified Plumber & Pipe Fitter",
+  "bio": "10+ years experience in residential and commercial plumbing.",
+  "description": "I specialise in leak repairs, bathroom installations, and full pipeline replacements. Available across Colombo and surrounding districts.",
+  "yearsOfExperience": 10,
+  "languages": ["Sinhala", "English"],
+  "servicesOffered": ["Leak Repair", "Pipe Installation", "Bathroom Fitting", "Water Heater Setup"],
+  "isAvailableForWork": true,
+  "availabilityNote": "Weekdays 8am–6pm, weekends by appointment",
+  "skillCategoryIds": ["{{skillCategoryId}}"],
+  "serviceAreaAddress": "Colombo 03, Sri Lanka",
+  "serviceRadiusKm": 30
+}
+
+###
+# ─────────────────────────────────────────────────────────────────────────────
+#  STEP 4 — Get profile as Admin (full data + audit log)
+#  Expected: 200 OK — ProviderProfileAdminDto (auditLogs array present)
+# ─────────────────────────────────────────────────────────────────────────────
+GET {{handee_API_HostAddress}}/api/providers/{{profileId}}
+Authorization: Bearer {{adminToken}}
+
+###
+# ─────────────────────────────────────────────────────────────────────────────
+#  STEP 5 — Admin: move to InReview
+#  Expected: 204 No Content; next GET should show verificationStatus "InReview"
+# ─────────────────────────────────────────────────────────────────────────────
+PATCH {{handee_API_HostAddress}}/api/providers/{{profileId}}/verification
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "newStatus": "InReview",
+  "note": "Documents received, starting review."
+}
+
+###
+# ─────────────────────────────────────────────────────────────────────────────
+#  STEP 6 — Admin: approve (Verified)
+#  Expected: 204 No Content; trust-signal endpoint should now return "Verified"
+# ─────────────────────────────────────────────────────────────────────────────
+PATCH {{handee_API_HostAddress}}/api/providers/{{profileId}}/verification
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "newStatus": "Verified",
+  "note": "NIC and trade certification confirmed."
+}
+
+###
+# ─────────────────────────────────────────────────────────────────────────────
+#  STEP 7 — Admin: reject (alternative to STEP 6)
+#  Expected: 204 No Content; verificationStatus becomes "Rejected"
+# ─────────────────────────────────────────────────────────────────────────────
+PATCH {{handee_API_HostAddress}}/api/providers/{{profileId}}/verification
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "newStatus": "Rejected",
+  "note": "Uploaded NIC image is blurry — cannot verify identity."
+}
+
+###
+# ─────────────────────────────────────────────────────────────────────────────
+#  STEP 8 — ILLEGAL: Admin tries Rejected → Verified directly
+#  Expected: 400 Bad Request — "Transition from Rejected to Verified is not permitted."
+# ─────────────────────────────────────────────────────────────────────────────
+PATCH {{handee_API_HostAddress}}/api/providers/{{profileId}}/verification
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "newStatus": "Verified",
+  "note": "Attempt to skip resubmission — should be blocked."
+}
+
+###
+# ─────────────────────────────────────────────────────────────────────────────
+#  STEP 9 — Get profile as Customer (public projection)
+#  Expected: 200 OK — ProviderProfileCustomerDto
+#  VERIFY: response must NOT contain "fileUrl", "email", or "auditLogs".
+# ─────────────────────────────────────────────────────────────────────────────
+GET {{handee_API_HostAddress}}/api/providers/{{profileId}}
+Authorization: Bearer {{customerToken}}
+
+###
+# ─────────────────────────────────────────────────────────────────────────────
+#  STEP 10 — Get profile anonymously (Customer projection, no token)
+#  Expected: 200 OK — same public projection (endpoint is AllowAnonymous)
+# ─────────────────────────────────────────────────────────────────────────────
+GET {{handee_API_HostAddress}}/api/providers/{{profileId}}
+
+###
+# ─────────────────────────────────────────────────────────────────────────────
+#  STEP 11 — Search providers (skill + area)
+#  Returns Verified + available providers within 25 km of Colombo.
+#  Expected: 200 OK — paged result { items, totalCount, page, pageSize }
+# ─────────────────────────────────────────────────────────────────────────────
+GET {{handee_API_HostAddress}}/api/providers/search?skillCategoryId={{skillCategoryId}}&lat=6.9271&lng=79.8612&radiusKm=25&page=1&pageSize=20
+Authorization: Bearer {{providerToken}}
+
+###
+# ─────────────────────────────────────────────────────────────────────────────
+#  STEP 12 — Search providers (no filter — all verified + available)
+#  Expected: 200 OK — paged result { items, totalCount, page, pageSize }
+# ─────────────────────────────────────────────────────────────────────────────
+GET {{handee_API_HostAddress}}/api/providers/search?page=1&pageSize=20
+Authorization: Bearer {{customerToken}}
+
+###
+# ─────────────────────────────────────────────────────────────────────────────
+#  STEP 13 — Internal trust-signal endpoint (Python AI service simulation)
+#  Protected by X-Internal-Api-Key, NOT by JWT.
+#  Expected: 200 OK — TrustSignalDto
+#  { providerId, verificationStatus, ratingAggregate, totalReviewCount, accountAgeDays, isAvailableForWork }
+# ─────────────────────────────────────────────────────────────────────────────
+GET {{handee_API_HostAddress}}/api/internal/providers/{{profileId}}/trust-signals
+X-Internal-Api-Key: {{internalApiKey}}
+
+###
+# ─────────────────────────────────────────────────────────────────────────────
+#  STEP 14 — Internal trust-signal: wrong key
+#  Expected: 401 Unauthorized — "Invalid or missing internal API key."
+# ─────────────────────────────────────────────────────────────────────────────
+GET {{handee_API_HostAddress}}/api/internal/providers/{{profileId}}/trust-signals
+X-Internal-Api-Key: wrong-key
+
+###
+# ─────────────────────────────────────────────────────────────────────────────
+#  STEP 15 — Internal trust-signal: no key at all
+#  Expected: 401 Unauthorized
+# ─────────────────────────────────────────────────────────────────────────────
+GET {{handee_API_HostAddress}}/api/internal/providers/{{profileId}}/trust-signals
+
+###
+# ─────────────────────────────────────────────────────────────────────────────
+#  STEP 16 — Provider tries to access another provider's profile
+#  Expected: 403 Forbidden
+# ─────────────────────────────────────────────────────────────────────────────
+GET {{handee_API_HostAddress}}/api/providers/00000000-0000-0000-0000-000000000001
+Authorization: Bearer {{providerToken}}
+
+###
+# ─────────────────────────────────────────────────────────────────────────────
+#  STEP 17 — Provider tries to update another provider's profile
+#  Expected: 403 Forbidden
+# ─────────────────────────────────────────────────────────────────────────────
+PUT {{handee_API_HostAddress}}/api/providers/00000000-0000-0000-0000-000000000001
+Authorization: Bearer {{providerToken}}
+Content-Type: application/json
+
+{
+  "headline": "Unauthorized update attempt"
+}
+
+###
+# ─────────────────────────────────────────────────────────────────────────────
+#  STEP 18 — Customer tries to call the Admin verification endpoint
+#  Expected: 403 Forbidden (only Admin role can PATCH /verification)
+# ─────────────────────────────────────────────────────────────────────────────
+PATCH {{handee_API_HostAddress}}/api/providers/{{profileId}}/verification
+Authorization: Bearer {{customerToken}}
+Content-Type: application/json
+
+{
+  "newStatus": "Verified",
+  "note": "Should not work — customer trying to approve provider."
+}
+
+###
+# ─────────────────────────────────────────────────────────────────────────────
+#  STEP 19 — Get non-existent profile
+#  Expected: 404 Not Found
+# ─────────────────────────────────────────────────────────────────────────────
+GET {{handee_API_HostAddress}}/api/providers/00000000-0000-0000-0000-000000000000
+
+###
+# ─────────────────────────────────────────────────────────────────────────────
+#  STEP 20 — Admin: approve a specific certification document
+#  Paste the cert ID returned by STEP 1 (POST /documents) below.
+#  Expected: 204 No Content — Certification.ReviewStatus becomes "Approved"
+# ─────────────────────────────────────────────────────────────────────────────
+@certificationId = PASTE_CERTIFICATION_ID_HERE
+
+PATCH {{handee_API_HostAddress}}/admin/certifications/{{certificationId}}/review
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "status": "Approved"
+}
+
+###
+# ─────────────────────────────────────────────────────────────────────────────
+#  STEP 21 — Admin: reject a specific certification document
+#  Expected: 204 No Content — Certification.ReviewStatus becomes "Rejected"
+# ─────────────────────────────────────────────────────────────────────────────
+PATCH {{handee_API_HostAddress}}/admin/certifications/{{certificationId}}/review
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "status": "Rejected"
+}
+
+###
+# ─────────────────────────────────────────────────────────────────────────────
+#  STEP 22 — Admin: review unknown certification ID
+#  Expected: 404 Not Found
+# ─────────────────────────────────────────────────────────────────────────────
+PATCH {{handee_API_HostAddress}}/admin/certifications/00000000-0000-0000-0000-000000000000/review
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "status": "Approved"
+}
+

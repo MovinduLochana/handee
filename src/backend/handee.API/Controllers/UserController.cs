@@ -13,10 +13,12 @@ namespace handee.API.Controllers;
 public class UserController : ControllerBase
 {
     private readonly IUserService _userService;
+    private readonly IStorageService _storage;
 
-    public UserController(IUserService userService)
+    public UserController(IUserService userService, IStorageService storage)
     {
         _userService = userService;
+        _storage     = storage;
     }
 
     // GET /users/me
@@ -56,6 +58,27 @@ public class UserController : ControllerBase
         catch (ValidationException ex)
         {
             return BadRequest(ex.Message);
+        }
+    }
+
+    // POST /users/me/photo
+    // Any authenticated user (Customer, Provider, Admin) — multipart/form-data
+    [HttpPost("me/photo")]
+    [Consumes("multipart/form-data")]
+    public async Task<IActionResult> UploadPhoto(
+        [FromForm] IFormFile photo, CancellationToken ct)
+    {
+        var userId = GetUserId();
+        if (userId is null) return Unauthorized();
+
+        try
+        {
+            var photoUrl = await _userService.UploadPhotoAsync(userId, photo, ct);
+            return Ok(new { profilePictureUrl = photoUrl });
+        }
+        catch (NotFoundException ex)
+        {
+            return NotFound(ex.Message);
         }
     }
 
