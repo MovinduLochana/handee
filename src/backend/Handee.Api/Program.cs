@@ -110,6 +110,10 @@ builder.Services.AddScoped<ProviderProfileService>();
 builder.Services.AddScoped<ProviderTrustService>();
 builder.Services.AddScoped<SkillCategoryService>();
 
+// Reviews
+builder.Services.AddScoped<IReviewRepository, ReviewRepository>();
+builder.Services.AddScoped<ReviewService>();
+
 builder.Services.AddControllers()
     .AddJsonOptions(opts =>
         opts.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter()));
