@@ -3,105 +3,120 @@
     min-height: 100vh;
     align-items: center;
     justify-content: center;
-    background-color: var(--bg);
-    padding: 2rem;
+    background-color: var(--bg-surface-elevated);
+    /* A slightly darker background emphasizing the white card */
+    padding: 4rem 2rem;
     box-sizing: border-box;
 }
 
 .auth-card {
     width: 100%;
-    max-width: 420px;
-    background-color: var(--bg);
+    max-width: 480px;
+    background-color: var(--bg-surface);
     border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 2.5rem;
-    box-shadow: var(--shadow);
+    border-radius: 16px;
+    padding: 4rem 3.5rem;
+    /* Massive internal spatial padding */
+    box-shadow: var(--shadow-xl);
+    /* Big, dramatic soft shadow */
     text-align: left;
+    animation: fadeUp 0.8s var(--ease-out-expo);
 }
 
 .auth-card .brand {
-    font-family: var(--heading);
-    font-size: 1.75rem;
-    font-weight: 600;
+    font-family: var(--font-sans);
+    font-size: 2.25rem;
+    font-weight: 900;
     color: var(--text-h);
     text-align: center;
-    margin-bottom: 2rem;
-    letter-spacing: -0.03em;
+    margin-bottom: 3rem;
+    letter-spacing: -0.04em;
 }
 
 .auth-card h2 {
-    margin-top: 0;
-    font-size: 1.25rem;
+    font-size: 2rem;
+    font-weight: 700;
     margin-bottom: 0.5rem;
+    letter-spacing: -0.03em;
+    color: var(--text-h);
 }
 
 .auth-card p.subtitle {
-    color: var(--text);
-    font-size: 0.9rem;
-    margin-bottom: 2rem;
+    color: var(--text-muted);
+    font-size: 1.05rem;
+    margin-bottom: 3rem;
+    line-height: 1.6;
 }
 
 .form-group {
-    margin-bottom: 1.25rem;
+    margin-bottom: 1.5rem;
 }
 
 .form-group label {
     display: block;
-    font-size: 0.85rem;
-    font-weight: 500;
+    font-size: 0.95rem;
+    font-weight: 600;
     color: var(--text-h);
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.75rem;
 }
 
 .form-group input {
     width: 100%;
-    padding: 0.75rem 1rem;
-    border: 1px solid var(--border);
-    border-radius: 6px;
+    padding: 1rem 1.25rem;
+    border: 2px solid var(--border);
+    border-radius: 8px;
     background-color: var(--bg);
-    color: var(--text);
-    font-size: 0.95rem;
+    color: var(--text-h);
+    font-size: 1rem;
     box-sizing: border-box;
-    font-family: var(--sans);
-    transition: border-color 0.2s;
+    font-family: var(--font-sans);
+    transition: all 0.2s var(--ease-spring);
 }
 
 .form-group input:focus {
     outline: none;
     border-color: var(--accent);
-    /* keeping the subtle accent for focus */
+    box-shadow: 0 0 0 4px var(--accent-light);
+    transform: translateY(-2px);
 }
 
 .btn-primary {
     width: 100%;
-    padding: 0.75rem 1.5rem;
-    background-color: var(--text-h);
-    color: var(--bg);
+    padding: 1.125rem;
+    background-color: var(--accent);
+    color: #fff;
     border: none;
-    border-radius: 6px;
-    font-size: 1rem;
-    font-weight: 500;
+    border-radius: 8px;
+    font-size: 1.125rem;
+    font-weight: 700;
     cursor: pointer;
-    margin-top: 1rem;
-    transition: opacity 0.2s;
+    margin-top: 1.5rem;
+    transition: transform 0.2s, box-shadow 0.2s;
+    box-shadow: 0 4px 14px 0 rgba(37, 99, 235, 0.39);
 }
 
 .btn-primary:hover {
-    opacity: 0.9;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(37, 99, 235, 0.3);
+    background-color: var(--accent-hover);
 }
 
 .auth-links {
-    margin-top: 1.5rem;
+    margin-top: 2rem;
     text-align: center;
-    font-size: 0.85rem;
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--text-muted);
 }
 
 .auth-links a {
-    color: var(--text-h);
+    color: var(--accent);
     text-decoration: none;
-    font-weight: 500;
+    font-weight: 700;
+    transition: color 0.2s;
 }
 
 .auth-links a:hover {
+    color: var(--accent-hover);
     text-decoration: underline;
 }

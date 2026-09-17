@@ -1,108 +1,161 @@
 .landing-container {
     min-height: 100vh;
-    background-color: var(--bg);
-    color: var(--text);
     display: flex;
     flex-direction: column;
+    overflow: hidden;
 }
 
+/* Navigation - breaking away from boring borders to a floating, confident header */
 .landing-nav {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 1.5rem 3rem;
-    border-bottom: 1px solid var(--border);
+    padding: 2rem 4vw;
+    animation: fadeUp 0.8s var(--ease-out-expo);
 }
 
 .landing-nav .brand {
-    font-family: var(--heading);
-    font-size: 1.75rem;
-    font-weight: 700;
+    font-size: 2rem;
+    font-weight: 900;
+    letter-spacing: -0.04em;
     color: var(--text-h);
-    letter-spacing: -0.05em;
+}
+
+.landing-nav .nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
 }
 
 .landing-nav .nav-actions a {
-    margin-left: 1.5rem;
-    text-decoration: none;
     font-weight: 500;
-    color: var(--text-h);
+    font-size: 1.05rem;
+    transition: opacity 0.2s;
 }
 
+.landing-nav .nav-actions a:hover {
+    opacity: 0.7;
+}
+
+.login-link {
+    background-color: var(--text-h);
+    color: var(--bg) !important;
+    padding: 0.75rem 1.5rem;
+    border-radius: 99px;
+}
+
+/* HERO SECTION - Spatial Drama and Typographic Scale */
 .landing-hero {
     flex: 1;
     display: flex;
-    flex-direction: column;
-    justify-content: center;
     align-items: center;
-    text-align: center;
-    padding: 4rem 2rem;
+    padding: 4rem 4vw 8rem;
+    position: relative;
 }
 
-.hero-title {
-    font-size: 4rem;
-    line-height: 1.1;
-    font-family: var(--heading);
-    color: var(--text-h);
+.hero-content {
     max-width: 800px;
-    margin-bottom: 1.5rem;
-    letter-spacing: -0.02em;
+    position: relative;
+    z-index: 10;
+}
+
+/* Extreme typography scaling (3x-5x differences) */
+.hero-title {
+    font-size: clamp(3.5rem, 8vw, 6.5rem);
+    font-weight: 900;
+    line-height: 0.95;
+    letter-spacing: -0.04em;
+    margin-bottom: 2rem;
+    color: var(--text-h);
+}
+
+.hero-title .highlight {
+    color: var(--accent);
 }
 
 .hero-subtitle {
-    font-size: 1.25rem;
+    font-size: clamp(1.25rem, 2vw, 1.5rem);
+    font-weight: 400;
+    line-height: 1.5;
+    color: var(--text);
     max-width: 600px;
-    line-height: 1.6;
-    margin-bottom: 3rem;
+    margin-bottom: 3.5rem;
 }
 
 .hero-actions {
     display: flex;
-    gap: 1rem;
-}
-
-.btn-hero-primary,
-.btn-hero-secondary {
-    padding: 1rem 2rem;
-    border-radius: 8px;
-    font-size: 1.125rem;
-    font-weight: 500;
-    text-decoration: none;
-    transition: all 0.2s ease;
+    gap: 1.5rem;
+    align-items: center;
 }
 
 .btn-hero-primary {
-    background-color: var(--text-h);
-    color: var(--bg);
-    border: 2px solid var(--text-h);
+    background-color: var(--accent);
+    color: #fff;
+    padding: 1.25rem 2.5rem;
+    border-radius: 99px;
+    font-size: 1.125rem;
+    font-weight: 700;
+    transition: transform 0.3s var(--ease-spring), background-color 0.2s;
+    box-shadow: 0 10px 25px -5px rgba(37, 99, 235, 0.4);
 }
 
 .btn-hero-primary:hover {
-    opacity: 0.9;
+    transform: translateY(-4px);
+    background-color: var(--accent-hover);
 }
 
 .btn-hero-secondary {
-    background-color: transparent;
     color: var(--text-h);
-    border: 2px solid var(--border);
+    font-weight: 700;
+    font-size: 1.125rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: gap 0.3s var(--ease-spring);
 }
 
 .btn-hero-secondary:hover {
-    border-color: var(--text-h);
+    gap: 1rem;
 }
 
+/* Trust Badges - shifted to asymmetrical stark alignment */
 .trust-badges {
-    margin-top: 4rem;
+    margin-top: 6rem;
     display: flex;
-    gap: 2rem;
-    opacity: 0.8;
+    gap: 3rem;
+    flex-wrap: wrap;
 }
 
 .trust-badge {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    font-weight: 500;
+    gap: 0.75rem;
+    font-weight: 600;
+    font-size: 1rem;
     color: var(--text-h);
-    font-size: 0.9rem;
+}
+
+.trust-badge svg {
+    color: var(--accent);
+}
+
+/* Decorative Spatial Elements - breaking the rigid box */
+.hero-decoration {
+    position: absolute;
+    right: -5%;
+    top: 10%;
+    width: 45vw;
+    height: 45vw;
+    background: radial-gradient(circle, var(--accent-light) 0%, transparent 70%);
+    border-radius: 50%;
+    z-index: 1;
+    opacity: 0.8;
+    pointer-events: none;
+}
+
+@media (max-width: 768px) {
+    .hero-actions {
+        flex-direction: column;
+        align-items: flex-start;
+    }
 }

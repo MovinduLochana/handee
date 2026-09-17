@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ShieldCheck, Clock, Award } from 'lucide-react';
+import { ShieldCheck, Clock, Award, ArrowRight } from 'lucide-react';
 import './Landing.css';
 
 export default function Landing() {
@@ -15,28 +15,38 @@ export default function Landing() {
             </nav>
 
             <main className="landing-hero">
-                <h1 className="hero-title">Trusted Professionals for Every Job.</h1>
-                <p className="hero-subtitle">
-                    Whether it's an urgent repair or routine maintenance, Handee connects you with verified tradespeople across Sri Lanka at transparent, AI-estimated prices.
-                </p>
+                <div className="hero-decoration"></div>
+                <div className="hero-content">
+                    <h1 className="hero-title animate-fade-up">
+                        Trustworthy Service, <br />
+                        <span className="highlight">Instantly.</span>
+                    </h1>
+                    <p className="hero-subtitle animate-fade-up animate-delay-100">
+                        Handee connects you with verified tradespeople across Sri Lanka at transparent, AI-estimated prices. Skip the guesswork.
+                    </p>
 
-                <div className="hero-actions">
-                    <Link to="/register/customer" className="btn-hero-primary">Find a Professional</Link>
-                    <Link to="/register/provider" className="btn-hero-secondary">Become a Provider</Link>
-                </div>
+                    <div className="hero-actions animate-fade-up animate-delay-200">
+                        <Link to="/register/customer" className="btn-hero-primary">
+                            Find a Professional
+                        </Link>
+                        <Link to="/register/provider" className="btn-hero-secondary">
+                            Become a Provider <ArrowRight size={20} />
+                        </Link>
+                    </div>
 
-                <div className="trust-badges">
-                    <div className="trust-badge">
-                        <ShieldCheck size={20} />
-                        <span>Verified Experts</span>
-                    </div>
-                    <div className="trust-badge">
-                        <Award size={20} />
-                        <span>Transparent Pricing</span>
-                    </div>
-                    <div className="trust-badge">
-                        <Clock size={20} />
-                        <span>Fast Matching</span>
+                    <div className="trust-badges animate-fade-up animate-delay-300">
+                        <div className="trust-badge">
+                            <ShieldCheck size={24} strokeWidth={2.5} />
+                            <span>100% Verified Experts</span>
+                        </div>
+                        <div className="trust-badge">
+                            <Award size={24} strokeWidth={2.5} />
+                            <span>Clear Pricing</span>
+                        </div>
+                        <div className="trust-badge">
+                            <Clock size={24} strokeWidth={2.5} />
+                            <span>Fast Matching</span>
+                        </div>
                     </div>
                 </div>
             </main>
