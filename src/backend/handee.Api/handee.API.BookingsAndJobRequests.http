@@ -1,0 +1,92 @@
+@handee_API_HostAddress = http://localhost:5057
+
+# Replace this with the access token retrieved from the login endpoint in auth.http
+@accessToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+# Variables for IDs to use across requests
+@jobRequestId = 00000000-0000-0000-0000-000000000000
+@bookingId = 00000000-0000-0000-0000-000000000000
+
+###
+# ─────────────────────────────────────────────────────────────
+#  JOB REQUESTS
+# ─────────────────────────────────────────────────────────────
+
+# Create a new Job Request (Customer role required)
+POST {{handee_API_HostAddress}}/job-requests
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "category": "Plumbing",
+  "description": "Leaky faucet in the kitchen sink that needs repair.",
+  "photoUrls": [
+    "https://example.com/photos/faucet1.jpg"
+  ],
+  "location": "123 Main St, Springfield",
+  "urgency": 2, 
+  "budgetMin": 50.00,
+  "budgetMax": 150.00
+}
+# Urgency Enum values: 0=Low, 1=Medium, 2=High, 3=Emergency
+
+###
+# Get my Job Requests (Customer role required)
+GET {{handee_API_HostAddress}}/job-requests/mine
+Authorization: Bearer {{accessToken}}
+
+###
+# Get a specific Job Request by ID (Customer/Participant or Admin role required)
+GET {{handee_API_HostAddress}}/job-requests/{{jobRequestId}}
+Authorization: Bearer {{accessToken}}
+
+###
+# Get paginated Job Requests for Staff (Admin role required)
+# Query Parameters: status (0=PendingAiReview, 1=Open, 2=Cancelled), urgency, sortDescending, page, pageSize
+GET {{handee_API_HostAddress}}/job-requests?status=1&urgency=2&page=1&pageSize=10
+Authorization: Bearer {{accessToken}}
+
+###
+# ─────────────────────────────────────────────────────────────
+#  BOOKINGS
+# ─────────────────────────────────────────────────────────────
+
+# Get my Bookings as a Customer (Customer role required)
+GET {{handee_API_HostAddress}}/bookings/mine
+Authorization: Bearer {{accessToken}}
+
+###
+# Get my Bookings as a Provider (Provider role required)
+GET {{handee_API_HostAddress}}/bookings/provider-mine
+Authorization: Bearer {{accessToken}}
+
+###
+# Get a specific Booking by ID (Participant or Admin role required)
+GET {{handee_API_HostAddress}}/bookings/{{bookingId}}
+Authorization: Bearer {{accessToken}}
+
+###
+# Get paginated Bookings for Staff (Admin role required)
+# Query Parameters: status (0=Requested, 1=Accepted, 2=InProgress, 3=Completed, 4=Disputed), sortDescending, page, pageSize
+GET {{handee_API_HostAddress}}/bookings?status=0&page=1&pageSize=10
+Authorization: Bearer {{accessToken}}
+
+###
+# Update Booking Status
+# Status Enum values: 0=Requested, 1=Accepted, 2=InProgress, 3=Completed, 4=Disputed
+PUT {{handee_API_HostAddress}}/bookings/{{bookingId}}/status
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "status": 1
+}
+
+###
+# Update Booking Schedule (Participant or Admin role required)
+PUT {{handee_API_HostAddress}}/bookings/{{bookingId}}/schedule
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "scheduledAt": "2026-10-01T10:00:00+00:00"
+}

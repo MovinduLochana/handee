@@ -11,3 +11,6 @@ public class AccountLockedException(string message) : Exception(message);
 
 /// <summary>Thrown when a resource cannot be found (maps to 404).</summary>
 public class NotFoundException(string message) : Exception(message);
+
+/// <summary>Thrown when an authenticated, identified party lacks permission for the requested action (maps to 403).</summary>
+public class ForbiddenException(string message) : Exception(message);
