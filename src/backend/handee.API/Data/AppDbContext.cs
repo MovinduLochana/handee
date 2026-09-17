@@ -17,6 +17,8 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid
 
     public DbSet<JobRequest> JobRequests => Set<JobRequest>();
     public DbSet<Booking> Bookings => Set<Booking>();
+    public DbSet<ServiceCategory> ServiceCategories => Set<ServiceCategory>();
+    public DbSet<ProviderAvailabilitySlot> ProviderAvailabilitySlots => Set<ProviderAvailabilitySlot>();
 
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
     {

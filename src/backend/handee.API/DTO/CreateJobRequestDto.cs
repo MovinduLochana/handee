@@ -6,8 +6,7 @@ namespace handee.API.DTO;
 public class CreateJobRequestDto
 {
     [Required]
-    [MaxLength(100)]
-    public string Category { get; set; } = default!;
+    public Guid ServiceCategoryId { get; set; }
 
     [Required]
     [MaxLength(2000)]
