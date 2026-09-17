@@ -8,6 +8,7 @@ using handee.API.DTO;
 using handee.API.Entities;
 using handee.API.Exceptions;
 using handee.API.Interfaces;
+using Microsoft.AspNetCore.WebUtilities;
 
 namespace handee.API.Services;
 
@@ -20,6 +21,7 @@ public class AuthService : IAuthService
     private readonly AppDbContext _db;
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly ProviderProfileService _providerProfileService;
+    private readonly IEmailService _emailService;
 
     private static readonly HashSet<string> AllowedRoles =
         new(StringComparer.OrdinalIgnoreCase) { "Customer", "Provider" };
@@ -31,7 +33,8 @@ public class AuthService : IAuthService
         IRefreshTokenGenerator refreshTokenGenerator,
         AppDbContext db,
         IHttpContextAccessor httpContextAccessor,
-        ProviderProfileService providerProfileService)
+        ProviderProfileService providerProfileService,
+        IEmailService emailService)
     {
         _userManager = userManager;
         _signInManager = signInManager;
@@ -40,6 +43,7 @@ public class AuthService : IAuthService
         _db = db;
         _httpContextAccessor = httpContextAccessor;
         _providerProfileService = providerProfileService;
+        _emailService = emailService;
     }
 
     // ── Register ─────────────────────────────────────────────────────────────
@@ -185,6 +189,62 @@ public class AuthService : IAuthService
         token.Used = true;
         token.RevokedAt = DateTimeOffset.UtcNow;
         await _db.SaveChangesAsync();
+    }
+
+    // ── Password Reset ────────────────────────────────────────────────────────
+
+    public async Task ForgotPasswordAsync(ForgotPasswordDto dto)
+    {
+        var user = await _userManager.FindByEmailAsync(dto.Email);
+        if (user == null || !user.IsActive)
+        {
+            // Do not reveal that the user does not exist or is inactive
+            return;
+        }
+
+        var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+        
+        // Encode token to be URL-safe
+        var encodedToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
+
+        // Note: The frontend route can be configured as needed.
+        // Assuming hitting localhost:5173 for local frontend testing.
+        var resetLink = $"http://localhost:5173/reset-password?token={encodedToken}&email={user.Email}";
+        
+        var body = $@"
+            <h3>Password Reset Request</h3>
+            <p>You requested a password reset for your handee account.</p>
+            <p>Click the link below to reset your password:</p>
+            <a href='{resetLink}'>Reset Password</a>
+            <p>If you did not request this, you can safely ignore this email.</p>";
+
+        await _emailService.SendEmailAsync(user.Email, "Reset your password", body);
+    }
+
+    public async Task ResetPasswordAsync(ResetPasswordDto dto)
+    {
+        var user = await _userManager.FindByEmailAsync(dto.Email);
+        if (user == null)
+            throw new ValidationException("Invalid email or token.");
+
+        // Decode the URL-safe token
+        string decodedToken;
+        try
+        {
+            decodedToken = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(dto.Token));
+        }
+        catch (FormatException)
+        {
+            throw new ValidationException("Invalid token format.");
+        }
+
+        var result = await _userManager.ResetPasswordAsync(user, decodedToken, dto.NewPassword);
+
+        if (!result.Succeeded)
+        {
+            var errors = string.Join(" | ", result.Errors.Select(e => e.Description));
+            throw new ValidationException(errors);
+        }
     }
 
     // ── Private helpers ───────────────────────────────────────────────────────
