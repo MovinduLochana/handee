@@ -43,4 +43,5 @@ public class ProviderProfile
 
     public ICollection<Certification> Certifications { get; set; } = [];
     public ICollection<VerificationAuditLog> AuditLogs { get; set; } = [];
+    public ICollection<Review> Reviews { get; set; } = [];
 }
