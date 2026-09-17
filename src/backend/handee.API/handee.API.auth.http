@@ -158,3 +158,30 @@ Content-Type: application/json
 }
 
 ###
+# ─────────────────────────────────────────────────────────────
+#  AUTH — Forgot Password
+# ─────────────────────────────────────────────────────────────
+# Expected: 200 OK — "If an account with that email exists and is active, a reset link will be sent."
+POST {{handee_API_HostAddress}}/auth/forgot-password
+Content-Type: application/json
+
+{
+  "email": "alice@example.com"
+}
+
+###
+# ─────────────────────────────────────────────────────────────
+#  AUTH — Reset Password
+# ─────────────────────────────────────────────────────────────
+# Note: You need to extract the token from the backend terminal output or email
+# Expected: 200 OK — "Password has been successfully reset."
+POST {{handee_API_HostAddress}}/auth/reset-password
+Content-Type: application/json
+
+{
+  "email": "alice@example.com",
+  "token": "REPLACE_WITH_URL_SAFE_TOKEN",
+  "newPassword": "NewPassword@123!"
+}
+
+###

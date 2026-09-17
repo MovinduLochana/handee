@@ -82,6 +82,7 @@ builder.Services.AddAuthentication(options =>
     });
 
 builder.Services.Configure<AuthOptions>(builder.Configuration.GetSection(AuthOptions.SectionName));
+builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection(EmailSettings.SectionName));
 
 // ── Redis Cache ───────────────────────────────────────────────────────────────
 builder.Services.AddStackExchangeRedisCache(options =>
@@ -110,6 +111,7 @@ builder.Services.AddScoped<IRefreshTokenGenerator, RefreshTokenGenerator>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IAdminService, AdminService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IJobRequestService, JobRequestService>();
 builder.Services.AddScoped<IBookingService, BookingService>();
 
