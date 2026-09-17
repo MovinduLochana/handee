@@ -62,9 +62,9 @@ export default function AppShell() {
                     <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginRight: '1.5rem', gap: '0.75rem' }}>
                         {userProfile && (
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }} className="animate-fade-up">
-                                <div style={{ textAlign: 'right' }}>
-                                    <div style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--text-h)' }}>{userProfile.fullName}</div>
-                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'capitalize' }}>{userProfile.role}</div>
+                                <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', gap: '2px', marginRight: '0.25rem' }}>
+                                    <div style={{ fontWeight: 600, fontSize: '0.95rem', color: 'var(--text-h)' }}>{userProfile.fullName}</div>
+                                    <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700 }}>{userProfile.roles?.[0] || 'Member'}</div>
                                 </div>
                                 {userProfile.profilePictureUrl ? (
                                     <img
