@@ -138,7 +138,18 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 
 app.UseHttpsRedirection();
-app.UseStaticFiles();  // serves wwwroot/uploads/ for local document storage
+
+// CORS must be called before UseStaticFiles so that CORS headers apply to the images
+app.UseCors();
+
+var uploadsDir = Path.Combine(builder.Environment.ContentRootPath, "uploads");
+Directory.CreateDirectory(uploadsDir); // Prevent errors if folder doesn't exist yet
+
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(uploadsDir),
+    RequestPath = "/uploads"
+});
 
 // Seed roles
 using (var scope = app.Services.CreateScope())
@@ -160,8 +171,6 @@ using (var scope = app.Services.CreateScope())
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     await dbContext.Database.MigrateAsync();
 }
-
-app.UseCors();
 
 app.UseAuthentication();
 app.UseAuthorization();
