@@ -28,16 +28,16 @@ export default function AccountSettings() {
 
                 <form onSubmit={handleSave}>
                     <div className="form-group" style={{ marginBottom: '1.25rem' }}>
-                        <label style={{ display: 'block', fontSize: '0.95rem', marginBottom: '0.5rem', fontWeight: 600, color: 'var(--text-h)' }}>Full Name</label>
-                        <input type="text" defaultValue="John Doe" style={{ width: '100%', padding: '1rem 1.25rem', borderRadius: '8px', border: '2px solid var(--border)', backgroundColor: 'var(--bg)', color: 'var(--text-h)', fontSize: '1rem', transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)' }} />
+                        <label htmlFor="settings-name" style={{ display: 'block', fontSize: '0.95rem', marginBottom: '0.5rem', fontWeight: 600, color: 'var(--text-h)' }}>Full Name</label>
+                        <input id="settings-name" type="text" defaultValue="John Doe" style={{ width: '100%', padding: '1rem 1.25rem', borderRadius: '8px', border: '2px solid var(--border)', backgroundColor: 'var(--bg)', color: 'var(--text-h)', fontSize: '1rem', transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)', boxSizing: 'border-box' }} className="truncate" />
                     </div>
                     <div className="form-group" style={{ marginBottom: '1.25rem' }}>
-                        <label style={{ display: 'block', fontSize: '0.95rem', marginBottom: '0.5rem', fontWeight: 600, color: 'var(--text-h)' }}>Email Address</label>
-                        <input type="email" defaultValue="john@example.com" style={{ width: '100%', padding: '1rem 1.25rem', borderRadius: '8px', border: '2px solid var(--border)', backgroundColor: 'var(--bg)', color: 'var(--text-h)', fontSize: '1rem', transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)' }} />
+                        <label htmlFor="settings-email" style={{ display: 'block', fontSize: '0.95rem', marginBottom: '0.5rem', fontWeight: 600, color: 'var(--text-h)' }}>Email Address</label>
+                        <input id="settings-email" type="email" defaultValue="john@example.com" style={{ width: '100%', padding: '1rem 1.25rem', borderRadius: '8px', border: '2px solid var(--border)', backgroundColor: 'var(--bg)', color: 'var(--text-h)', fontSize: '1rem', transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)', boxSizing: 'border-box' }} className="truncate" />
                     </div>
                     <div className="form-group" style={{ marginBottom: '2.5rem' }}>
-                        <label style={{ display: 'block', fontSize: '0.95rem', marginBottom: '0.5rem', fontWeight: 600, color: 'var(--text-h)' }}>Notification Preferences</label>
-                        <select style={{ width: '100%', padding: '1rem 1.25rem', borderRadius: '8px', border: '2px solid var(--border)', backgroundColor: 'var(--bg)', color: 'var(--text-h)', fontSize: '1rem', transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)' }}>
+                        <label htmlFor="settings-notifications" style={{ display: 'block', fontSize: '0.95rem', marginBottom: '0.5rem', fontWeight: 600, color: 'var(--text-h)' }}>Notification Preferences</label>
+                        <select id="settings-notifications" style={{ width: '100%', padding: '1rem 1.25rem', borderRadius: '8px', border: '2px solid var(--border)', backgroundColor: 'var(--bg)', color: 'var(--text-h)', fontSize: '1rem', transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)', boxSizing: 'border-box' }}>
                             <option>Push & Email</option>
                             <option>Push Only</option>
                             <option>Email Only</option>

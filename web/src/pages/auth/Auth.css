@@ -4,8 +4,8 @@
     align-items: center;
     justify-content: center;
     background-color: var(--bg-surface-elevated);
-    /* A slightly darker background emphasizing the white card */
-    padding: 4rem 2rem;
+    /* Adaptive outer padding */
+    padding: clamp(1rem, 5vw, 4rem) clamp(1rem, 3vw, 2rem);
     box-sizing: border-box;
 }
 
@@ -15,8 +15,8 @@
     background-color: var(--bg-surface);
     border: 1px solid var(--border);
     border-radius: 16px;
-    padding: 4rem 3.5rem;
-    /* Massive internal spatial padding */
+    /* Adaptive internal spatial padding preventing text crush on 320px screens */
+    padding: clamp(2.5rem, 8vw, 4rem) clamp(1.5rem, 6vw, 3.5rem);
     box-shadow: var(--shadow-xl);
     /* Big, dramatic soft shadow */
     text-align: left;

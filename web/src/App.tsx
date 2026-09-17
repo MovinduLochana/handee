@@ -17,10 +17,12 @@ import DashboardHome from './pages/dashboard/DashboardHome';
 import AccountSettings from './pages/dashboard/AccountSettings';
 import Notifications from './pages/dashboard/Notifications';
 import AgentWorkflow from './pages/dashboard/AgentWorkflow';
+import ThemeToggle from './components/ThemeToggle';
 
 function App() {
   return (
     <BrowserRouter>
+      <ThemeToggle />
       <Routes>
         {/* PUBLIC ROUTES (No Auth Required) */}
         <Route path="/" element={<Landing />} />
