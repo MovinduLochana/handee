@@ -99,6 +99,8 @@ builder.Services.AddScoped<IRefreshTokenGenerator, RefreshTokenGenerator>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IAdminService, AdminService>();
+builder.Services.AddScoped<IJobRequestService, JobRequestService>();
+builder.Services.AddScoped<IBookingService, BookingService>();
 
 // Provider Verification & Profiles
 builder.Services.AddScoped<IProviderProfileRepository, ProviderProfileRepository>();
