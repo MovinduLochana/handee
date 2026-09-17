@@ -1,15 +1,34 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useMutation } from '@tanstack/react-query';
+import { authApi } from '../../api/auth';
+import { Loader2, AlertCircle } from 'lucide-react';
 import './Auth.css';
 
 export default function RegisterProvider() {
     const navigate = useNavigate();
+    const [authError, setAuthError] = useState('');
 
-    const handleRegister = (e: React.FormEvent) => {
+    const registerMutation = useMutation({
+        mutationFn: authApi.register,
+        onSuccess: () => {
+            navigate('/login');
+        },
+        onError: (error: any) => {
+            setAuthError(error.response?.data?.message || Object.values(error.response?.data?.errors || {})?.[0]?.[0] || error.message || 'Registration failed.');
+        }
+    });
+
+    const handleRegister = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        // Provider registration hands off to the verification workflow
-        // Here we'll simulate progressing to dashboard/verification
-        navigate('/login');
+        setAuthError('');
+        const formData = new FormData(e.currentTarget);
+        registerMutation.mutate({
+            fullName: formData.get('fullName') as string,
+            email: formData.get('email') as string,
+            password: formData.get('password') as string,
+            role: 'Provider',
+        });
     };
 
     return (
@@ -19,24 +38,29 @@ export default function RegisterProvider() {
                 <h2>Join Handee as a Pro</h2>
                 <p className="subtitle">Grow your business with verified service leads.</p>
 
+                {authError && (
+                    <div style={{ backgroundColor: '#FEE2E2', color: '#B91C1C', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.9rem', fontWeight: 500 }} className="animate-fade-up">
+                        <AlertCircle size={20} />
+                        <div>{authError}</div>
+                    </div>
+                )}
+
                 <form onSubmit={handleRegister}>
                     <div className="form-group">
-                        <label htmlFor="name">Full Name (or Business Name)</label>
-                        <input type="text" id="name" placeholder="Acme Services" required />
+                        <label htmlFor="fullName">Full Name (or Business Name)</label>
+                        <input type="text" id="fullName" name="fullName" placeholder="Acme Services" required disabled={registerMutation.isPending} />
                     </div>
                     <div className="form-group">
                         <label htmlFor="email">Email address</label>
-                        <input type="email" id="email" placeholder="contact@example.com" required />
-                    </div>
-                    <div className="form-group">
-                        <label htmlFor="phone">Phone Number</label>
-                        <input type="tel" id="phone" placeholder="07XXXXXXXX" required />
+                        <input type="email" id="email" name="email" placeholder="contact@example.com" required disabled={registerMutation.isPending} />
                     </div>
                     <div className="form-group">
                         <label htmlFor="password">Password</label>
-                        <input type="password" id="password" placeholder="••••••••" required />
+                        <input type="password" id="password" name="password" placeholder="••••••••" required disabled={registerMutation.isPending} />
                     </div>
-                    <button type="submit" className="btn-primary">Register & Verify</button>
+                    <button type="submit" className="btn-primary" disabled={registerMutation.isPending} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem' }}>
+                        {registerMutation.isPending ? <><Loader2 size={20} className="animate-spin" /> Registering...</> : 'Register & Verify'}
+                    </button>
                 </form>
 
                 <div className="auth-links">
