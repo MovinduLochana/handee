@@ -1,8 +1,9 @@
 import React from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { Home, Bell, Settings, Activity, LogOut } from 'lucide-react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { authApi } from '../../api/auth';
+import { usersApi } from '../../api/users';
 import { getRefreshToken } from '../../lib/tokenManager';
 import './AppShell.css';
 
@@ -10,7 +11,6 @@ export default function AppShell() {
     const navigate = useNavigate();
     const queryClient = useQueryClient();
 
-    // Default structure for AppShell routing hooks
     const navigation = [
         { name: 'Dashboard', to: '/dashboard', icon: Home },
         { name: 'Notifications', to: '/notifications', icon: Bell },
@@ -18,15 +18,19 @@ export default function AppShell() {
         { name: 'Settings', to: '/account', icon: Settings },
     ];
 
+    const { data: userProfile } = useQuery({
+        queryKey: ['userProfile'],
+        queryFn: usersApi.getProfile,
+        retry: false
+    });
+
     const logoutMutation = useMutation({
         mutationFn: () => {
             const token = getRefreshToken();
-            // If they implicitly lack a refresh token, immediately resolve
             if (!token) return Promise.resolve();
             return authApi.logout(token);
         },
         onSettled: () => {
-            // Ensure all cached frontend sensitive data is nuked from memory
             queryClient.clear();
             navigate('/login');
         }
@@ -55,6 +59,27 @@ export default function AppShell() {
 
             <div className="shell-main">
                 <header className="shell-header">
+                    <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginRight: '1.5rem', gap: '0.75rem' }}>
+                        {userProfile && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }} className="animate-fade-up">
+                                <div style={{ textAlign: 'right' }}>
+                                    <div style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--text-h)' }}>{userProfile.fullName}</div>
+                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'capitalize' }}>{userProfile.role}</div>
+                                </div>
+                                {userProfile.profilePictureUrl ? (
+                                    <img
+                                        src={userProfile.profilePictureUrl.startsWith('http') ? userProfile.profilePictureUrl : `http://localhost:5057${userProfile.profilePictureUrl}`}
+                                        alt="Avatar"
+                                        style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--border)' }}
+                                    />
+                                ) : (
+                                    <div style={{ width: 36, height: 36, borderRadius: '50%', backgroundColor: 'var(--accent)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
+                                        {userProfile.fullName.charAt(0).toUpperCase()}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
                     <button
                         onClick={() => logoutMutation.mutate()}
                         disabled={logoutMutation.isPending}
