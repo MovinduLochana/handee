@@ -1,6 +1,6 @@
 # Provider Verification & Profiles — Technical & Business Walkthrough
 
-> **Last audited:** 2026-09-14 · Build: ✅ `Passed — 45/45 tests, 0 failures` (27 auth + 18 provider)
+> **Last audited:** 2026-09-17 · Build: ✅ `Passed — 56/56 tests, 0 failures` (30 auth + 23 provider + 3 admin)
 > This document is structured to be updated in place. Each section header links to the relevant source file.
 
 ---
@@ -25,7 +25,7 @@ This component implements the entire trust pipeline:
 |---|---|---|
 | **Provider** | Manage their public profile; know their verification status; resubmit if rejected | `GET /me`, `PUT /{id}`, `POST /{id}/documents` |
 | **Customer** | Find trustworthy, nearby providers; see public profile | `GET /{id}` (public projection), `GET /search` |
-| **Admin** | Review documents; approve/reject providers; have a full audit trail | `GET /{id}` (admin projection), `PATCH /{id}/verification` |
+| **Admin** | Review documents; approve/reject providers; have a full audit trail | `GET /{id}` (admin projection), `PATCH /{id}/verification`, `PATCH /admin/certifications/{certId}/review` |
 | **AI Service** | Structured trust data for ranking and personalisation | `GET /api/internal/{id}/trust-signals` |
 
 ---
@@ -93,6 +93,8 @@ erDiagram
     ApplicationUser ||--o| ProviderProfile : "1:1"
     ProviderProfile ||--o{ Certification : "1:N (cascade delete)"
     ProviderProfile ||--o{ VerificationAuditLog : "1:N (cascade delete)"
+    ProviderProfile ||--o{ Review : "1:N (cascade delete)"
+    ApplicationUser ||--o{ Review : "1:N (cascade delete)"
     ProviderProfile }o--o{ SkillCategory : "M:N via ProviderSkillCategories"
 ```
 
@@ -106,7 +108,7 @@ erDiagram
 | `Bio` | `string?` | `varchar(500)` | Medium summary |
 | `Description` | `string?` | `varchar(3000)` | Full rich-text description |
 | `YearsOfExperience` | `int` | | |
-| `ProfilePhotoUrl` | `string?` | | |
+
 | `Languages` | `List<string>` | `text[]` | PostgreSQL native array column |
 | `ServicesOffered` | `List<string>` | `text[]` | PostgreSQL native array column |
 | `IsAvailableForWork` | `bool` | default `true` | Excluded from search when `false` |
@@ -132,6 +134,23 @@ Represents a single uploaded document. A provider can upload multiple documents 
 | `ReviewStatus` | `DocumentReviewStatus` | `Pending \| Approved \| Rejected` — per-document, independent of profile status |
 | `UploadedAt` | `DateTimeOffset` | UTC |
 
+### 3.6 [Review](file:///d:/SLIIT/Year%203%20Semester%201/SE3090%20-%20Software%20Engineering%20Frameworks/Assignment/handee/src/backend/handee.Api/Entities/Review.cs)
+
+Represents a single customer review left on a provider's profile.
+
+| Field | Type | Notes |
+|---|---|---|
+| `Id` | `Guid` | PK |
+| `ProviderProfileId` | `Guid` | FK → `ProviderProfiles` (Cascade) |
+| `CustomerId` | `Guid` | FK → `AspNetUsers` (Cascade) |
+| `Rating` | `int` | Between 1-5 |
+| `Comment` | `string?` | Max 1500 chars |
+| `PhotoUrls` | `List<string>` | `text[]` — Array of relative photo URLs |
+| `CreatedAt` | `DateTimeOffset` | UTC |
+| `UpdatedAt` | `DateTimeOffset?` | UTC |
+
+*Validation:* A unique composite index `(ProviderProfileId, CustomerId)` guarantees one review per provider per customer.
+
 ### 3.4 [VerificationAuditLog](file:///d:/SLIIT/Year%203%20Semester%201/SE3090%20-%20Software%20Engineering%20Frameworks/Assignment/handee/src/backend/handee.Api/Entities/VerificationAuditLog.cs)
 
 An **immutable** append-only row written every time an Admin changes a provider's status. Never deleted, never updated. Provides a full compliance trail.
@@ -144,7 +163,7 @@ An **immutable** append-only row written every time an Admin changes a provider'
 | `Timestamp` | `DateTimeOffset` | UTC — indexed for time-range queries |
 | `Note` | `string?` | Admin's reason (up to 500 chars) |
 
-### 3.5 [SkillCategory](file:///d:/SLIIT/Year%203%20Semester%201/SE3090%20-%20Software%20Engineering%20Frameworks/Assignment/handee/src/backend/handee.Api/Entities/SkillCategory.cs)
+### 3.7 [SkillCategory](file:///d:/SLIIT/Year%203%20Semester%201/SE3090%20-%20Software%20Engineering%20Frameworks/Assignment/handee/src/backend/handee.Api/Entities/SkillCategory.cs)
 
 A reference table of trade categories (Plumbing, Electrical, etc.). Name is a **unique index** to prevent duplicates. Linked to profiles via the auto-configured `ProviderSkillCategories` join table.
 
@@ -275,7 +294,7 @@ Returns `201 Created` with the certification's `id`, `type`, `fileUrl`, `origina
 
 ---
 
-### 5.5 `PATCH /api/providers/{id}/verification` — Admin Verification Action
+### 5.5 `PATCH /api/providers/{id}/verification` — Admin: Change Profile Verification Status
 
 ```
 Authorization: Bearer {admin-jwt}
@@ -293,7 +312,31 @@ Returns `204 No Content` on success, `400 Bad Request` with `{ "error": "..." }`
 
 ---
 
-### 5.6 `GET /api/providers/search` — Provider Search
+### 5.6 `PATCH /admin/certifications/{certId}/review` — Admin: Review Individual Document
+
+```
+Authorization: Bearer {admin-jwt}
+Content-Type: application/json
+
+{ "status": "Approved" }
+```
+
+Sets `Certification.ReviewStatus` on a **single uploaded document** (`Pending | Approved | Rejected`). This is independent of the profile-level `VerificationStatus`:
+
+- A provider can upload multiple documents (NIC, Trade Cert, Other); each gets its own review status.
+- Typical admin workflow: mark each cert `Approved`/`Rejected` individually, then flip the profile to `Verified` via `PATCH /{id}/verification`.
+
+| Response | Condition |
+|---|---|
+| `204 No Content` | Status updated successfully |
+| `404 Not Found` | `certId` does not exist |
+| `403 Forbidden` | Caller does not have the `Admin` role |
+
+**Route lives under `/admin/`** (not `/api/providers/`) to make the Admin-only scope explicit at the routing level.
+
+---
+
+### 5.7 `GET /api/providers/search` — Provider Search
 
 ```
 Authorization: Bearer {jwt}
@@ -318,7 +361,7 @@ Returns a list of `ProviderProfileCustomerDto`.
 
 ---
 
-### 5.7 `GET /api/internal/providers/{id}/trust-signals` — AI Trust Payload
+### 5.8 `GET /api/internal/providers/{id}/trust-signals` — AI Trust Payload
 
 ```
 X-Internal-Api-Key: {shared-secret}
@@ -345,6 +388,36 @@ GET /api/internal/providers/{id}/trust-signals
 ```
 
 ---
+
+### 5.9 `GET /api/providers/{providerId}/reviews` — Get Reviews (Paginated)
+
+**Auth:** Anonymous / Bearer {jwt}
+
+Returns a `PagedResult<ReviewDto>` representing customer reviews for a provider profile.
+
+---
+
+### 5.10 `POST /api/providers/{providerId}/reviews` — Submit Review
+
+**Auth:** Bearer {customer-jwt}
+
+Creates a new review, enforcing 1 per customer. Re-calculates and caches `RatingAggregate`.
+
+---
+
+### 5.11 `PUT /api/reviews/{id}` and `DELETE /api/reviews/{id}` — Manage Review
+
+**Auth:** Bearer {customer-jwt} or Bearer {admin-jwt}
+
+Updates or removes a review. Always cascades the aggregate mutation back to `ProviderProfile` and invalidates AI cache.
+
+---
+
+### 5.12 `POST /api/reviews/{id}/photos` — Upload Review Photo
+
+**Auth:** Bearer {customer-jwt}
+
+Accepts a `multipart/form-data` payload containing an image attachment. Validates ownership and pipes the file through `LocalStorageService`, appending the resulting path to `Review.PhotoUrls`.
 
 ## 6. External Services
 
@@ -417,7 +490,7 @@ All keys live in [`appsettings.json`](file:///d:/SLIIT/Year%203%20Semester%201/S
 
 ## 10. Tests
 
-**Location:** `handee.Tests/Providers/` · **Total: 18 tests, all passing**
+**Location:** `handee.Tests/Providers/` · **Total: 21 tests, all passing**
 
 ### 10.1 VerificationServiceTests (9 tests)
 
@@ -435,7 +508,17 @@ Uses an **in-memory EF Core database** (fresh per test via `Guid.NewGuid()` DB n
 | 8 | `Resubmit_From_Pending_Should_Throw` | `ResubmitAsync` only valid from `Rejected` |
 | 9 | `Transition_Unknown_Profile_Should_Throw_KeyNotFound` | `KeyNotFoundException` on missing profile |
 
-### 10.2 ProviderTrustServiceTests (9 tests)
+### 10.2 AdminServiceTests (3 tests)
+
+Uses mocks for `UserManager<ApplicationUser>` and `ICertificationRepository`. No DB required.
+
+| # | Test | Validates |
+|---|---|---|
+| 1 | `ReviewCertification_Approve_Updates_Status` | `ReviewStatus` set to `Approved`; `SaveChangesAsync` called once |
+| 2 | `ReviewCertification_Reject_Updates_Status` | `ReviewStatus` set to `Rejected` |
+| 3 | `ReviewCertification_UnknownId_Throws_NotFoundException` | `NotFoundException` thrown; `SaveChangesAsync` never called |
+
+### 10.3 ProviderTrustServiceTests (9 tests)
 
 Uses mocks for `IProviderProfileRepository` and `IDistributedCache` (configured to always miss, so the DB-load path is exercised).
 
@@ -479,13 +562,13 @@ Uses mocks for `IProviderProfileRepository` and `IDistributedCache` (configured 
 
 | # | Gap | Priority | Notes |
 |---|---|---|---|
-| 1 | **Document review status** is stored per-`Certification` but no Admin endpoint exists to update it | Medium | Admins currently rely on the profile-level `VerificationStatus` only |
+| 1 | ~~**Document review status** is stored per-`Certification` but no Admin endpoint exists to update it~~ | ~~Medium~~ | ✅ **Fixed** — `PATCH /admin/certifications/{certId}/review` added |
 | 2 | **Geo search is bounding-box only** (rectangular approximation) | Low | Accurate enough for <50 km; add Haversine post-filter for precise results |
 | 3 | **`LocalStorageService`** is not production-ready | High | Swap to Azure Blob / S3 via the `IStorageService` interface |
 | 4 | **Internal trust-signal endpoint uses shared secret** | High | Migrate to mTLS or service-to-service OAuth in production |
-| 5 | **Rating fields** (`RatingAggregate`, `TotalReviewCount`) have no write path in this component | Medium | Must be updated by the future Reviews component |
-| 6 | **No pagination on search results** | Medium | `SearchAsync` returns all matching profiles; add `skip`/`take` before go-live |
-| 7 | **`ProfilePhotoUrl`** is stored as a URL string but there is no dedicated upload endpoint for profile photos | Low | Provider must supply a URL directly; add a `POST /photo` endpoint |
+| 5 | ~~**Rating fields** (`RatingAggregate`, `TotalReviewCount`) have no write path in this component~~ | ~~Medium~~ | ✅ **Fixed** — Updated via new Reviews Component (`ReviewService`) on POST/PUT/DELETE. |
+| 6 | ~~**No pagination on search results**~~ | ~~Medium~~ | ✅ **Fixed** — `GET /search` now accepts `page`/`pageSize` query params (defaults 1/20, capped at 100); returns `PagedResult<ProviderProfileCustomerDto>` with `totalCount`, `page`, `pageSize`. Repository applies `CountAsync` + `Skip`/`Take`. |
+| 7 | ~~**`ProfilePhotoUrl`** is stored as a URL string but there is no dedicated upload endpoint for profile photos~~ | ~~Low~~ | ✅ **Fixed** — Removed the field from `ProviderProfile`. Providers now share the centralized `ApplicationUser.ProfilePictureUrl` via `POST /users/me/photo`. |
 
 ---
 
@@ -510,10 +593,22 @@ Uses mocks for `IProviderProfileRepository` and `IDistributedCache` (configured 
 | [VerificationService.cs](file:///d:/SLIIT/Year%203%20Semester%201/SE3090%20-%20Software%20Engineering%20Frameworks/Assignment/handee/src/backend/handee.Api/Services/VerificationService.cs) | `Services/` |
 | [ProviderTrustService.cs](file:///d:/SLIIT/Year%203%20Semester%201/SE3090%20-%20Software%20Engineering%20Frameworks/Assignment/handee/src/backend/handee.Api/Services/ProviderTrustService.cs) | `Services/` |
 | [ProviderController.cs](file:///d:/SLIIT/Year%203%20Semester%201/SE3090%20-%20Software%20Engineering%20Frameworks/Assignment/handee/src/backend/handee.Api/Controllers/ProviderController.cs) | `Controllers/` |
+| [AdminController.cs](file:///d:/SLIIT/Year%203%20Semester%201/SE3090%20-%20Software%20Engineering%20Frameworks/Assignment/handee/src/backend/handee.Api/Controllers/AdminController.cs) | `Controllers/` |
+| [AdminService.cs](file:///d:/SLIIT/Year%203%20Semester%201/SE3090%20-%20Software%20Engineering%20Frameworks/Assignment/handee/src/backend/handee.Api/Services/AdminService.cs) | `Services/` |
 | [GoogleMapsService.cs](file:///d:/SLIIT/Year%203%20Semester%201/SE3090%20-%20Software%20Engineering%20Frameworks/Assignment/handee/src/backend/handee.Api/Common/ExternalServices/GoogleMapsService.cs) | `Common/ExternalServices/` |
 | [LocalStorageService.cs](file:///d:/SLIIT/Year%203%20Semester%201/SE3090%20-%20Software%20Engineering%20Frameworks/Assignment/handee/src/backend/handee.Api/Common/ExternalServices/LocalStorageService.cs) | `Common/ExternalServices/` |
 | [VerificationServiceTests.cs](file:///d:/SLIIT/Year%203%20Semester%201/SE3090%20-%20Software%20Engineering%20Frameworks/Assignment/handee/src/backend/handee.Tests/Providers/VerificationServiceTests.cs) | `handee.Tests/Providers/` |
 | [ProviderTrustServiceTests.cs](file:///d:/SLIIT/Year%203%20Semester%201/SE3090%20-%20Software%20Engineering%20Frameworks/Assignment/handee/src/backend/handee.Tests/Providers/ProviderTrustServiceTests.cs) | `handee.Tests/Providers/` |
+| [AdminServiceTests.cs](file:///d:/SLIIT/Year%203%20Semester%201/SE3090%20-%20Software%20Engineering%20Frameworks/Assignment/handee/src/backend/handee.Tests/Providers/AdminServiceTests.cs) | `handee.Tests/Providers/` |
+| [Review.cs](file:///d:/SLIIT/Year%203%20Semester%201/SE3090%20-%20Software%20Engineering%20Frameworks/Assignment/handee/src/backend/handee.Api/Entities/Review.cs) | `Entities/` |
+| [ReviewEntityConfiguration.cs](file:///d:/SLIIT/Year%203%20Semester%201/SE3090%20-%20Software%20Engineering%20Frameworks/Assignment/handee/src/backend/handee.Api/Data/Configurations/ReviewEntityConfiguration.cs) | `Data/Configurations/` |
+| [ReviewDtos.cs](file:///d:/SLIIT/Year%203%20Semester%201/SE3090%20-%20Software%20Engineering%20Frameworks/Assignment/handee/src/backend/handee.Api/DTO/Review/ReviewDtos.cs) | `DTO/Review/` |
+| [IReviewRepository.cs](file:///d:/SLIIT/Year%203%20Semester%201/SE3090%20-%20Software%20Engineering%20Frameworks/Assignment/handee/src/backend/handee.Api/Interfaces/IReviewRepository.cs) | `Interfaces/` |
+| [ReviewRepository.cs](file:///d:/SLIIT/Year%203%20Semester%201/SE3090%20-%20Software%20Engineering%20Frameworks/Assignment/handee/src/backend/handee.Api/Repositories/ReviewRepository.cs) | `Repositories/` |
+| [ReviewService.cs](file:///d:/SLIIT/Year%203%20Semester%201/SE3090%20-%20Software%20Engineering%20Frameworks/Assignment/handee/src/backend/handee.Api/Services/ReviewService.cs) | `Services/` |
+| [ReviewController.cs](file:///d:/SLIIT/Year%203%20Semester%201/SE3090%20-%20Software%20Engineering%20Frameworks/Assignment/handee/src/backend/handee.Api/Controllers/ReviewController.cs) | `Controllers/` |
+| [ReviewActionController.cs](file:///d:/SLIIT/Year%203%20Semester%201/SE3090%20-%20Software%20Engineering%20Frameworks/Assignment/handee/src/backend/handee.Api/Controllers/ReviewActionController.cs) | `Controllers/` |
+| [ReviewServiceTests.cs](file:///d:/SLIIT/Year%203%20Semester%201/SE3090%20-%20Software%20Engineering%20Frameworks/Assignment/handee/src/backend/handee.Tests/Providers/ReviewServiceTests.cs) | `handee.Tests/Providers/` |
 
 ---
 
