@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import { authApi } from '../../api/auth';
+import { extractApiError } from '../../lib/api';
 import { Loader2, AlertCircle } from 'lucide-react';
 import './Auth.css';
 
@@ -15,8 +16,7 @@ export default function RegisterCustomer() {
             navigate('/login'); // Natively redirect directly into authentication portal upon successful account creation
         },
         onError: (error: any) => {
-            // Defensively pull any deeply embedded ASP.NET Identity API errors 
-            setAuthError(error.response?.data?.message || Object.values(error.response?.data?.errors || {})?.[0]?.[0] || error.message || 'Registration failed.');
+            setAuthError(extractApiError(error, 'Registration failed.'));
         }
     });
 

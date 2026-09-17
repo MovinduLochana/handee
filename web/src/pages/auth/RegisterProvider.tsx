@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import { authApi } from '../../api/auth';
+import { extractApiError } from '../../lib/api';
 import { Loader2, AlertCircle } from 'lucide-react';
 import './Auth.css';
 
@@ -15,7 +16,7 @@ export default function RegisterProvider() {
             navigate('/login');
         },
         onError: (error: any) => {
-            setAuthError(error.response?.data?.message || Object.values(error.response?.data?.errors || {})?.[0]?.[0] || error.message || 'Registration failed.');
+            setAuthError(extractApiError(error, 'Registration failed.'));
         }
     });
 
