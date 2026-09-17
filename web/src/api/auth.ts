@@ -25,6 +25,12 @@ export interface TokenResponse {
     refreshToken: string;
 }
 
+export interface ResetPasswordPayload {
+    email: string;
+    token: string;
+    newPassword: string;
+}
+
 export const authApi = {
     /**
      * Registers a new account depending on the requested role.
@@ -61,5 +67,23 @@ export const authApi = {
             // Regardless of network state, the client must drop its state natively
             clearTokens();
         }
+    },
+
+    /**
+     * Emits a backend instruction to transmit a recovery email if an active account is matched.
+     * Expected: 200 OK
+     */
+    async forgotPassword(email: string): Promise<string> {
+        const response = await api.post('/auth/forgot-password', { email });
+        return response.data || 'Success';
+    },
+
+    /**
+     * Executes a physical password overwrite using a secure tokenized payload.
+     * Expected: 200 OK
+     */
+    async resetPassword(data: ResetPasswordPayload): Promise<string> {
+        const response = await api.post('/auth/reset-password', data);
+        return response.data || 'Success';
     }
 };

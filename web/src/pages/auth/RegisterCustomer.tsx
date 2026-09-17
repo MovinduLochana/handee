@@ -40,7 +40,7 @@ export default function RegisterCustomer() {
                 <p className="subtitle">Find and book verified professionals instantly.</p>
 
                 {authError && (
-                    <div style={{ backgroundColor: '#FEE2E2', color: '#B91C1C', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.9rem', fontWeight: 500 }} className="animate-fade-up">
+                    <div style={{ backgroundColor: 'var(--bg-danger)', color: 'var(--text-danger)', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.9rem', fontWeight: 500 }} className="animate-fade-up">
                         <AlertCircle size={20} />
                         <div>{authError}</div>
                     </div>
