@@ -21,6 +21,8 @@ public class VerificationService(
     private static readonly HashSet<(VerificationStatus From, VerificationStatus To)> LegalAdminTransitions =
     [
         (VerificationStatus.Pending,  VerificationStatus.InReview),
+        (VerificationStatus.Pending,  VerificationStatus.Verified),
+        (VerificationStatus.Pending,  VerificationStatus.Rejected),
         (VerificationStatus.InReview, VerificationStatus.Verified),
         (VerificationStatus.InReview, VerificationStatus.Rejected),
     ];
