@@ -41,7 +41,7 @@ Content-Type: application/pdf
 ###
 # ─────────────────────────────────────────────────────────────────────────────
 #  STEP 2 — Get profile as Provider (own view — full data, includes doc URLs)
-#  Expected: 200 OK — ProviderProfileProviderDto (certifications and auditLogs visible)
+#  Expected: 200 OK — ProviderProfileProviderDto (certifications visible)
 # ─────────────────────────────────────────────────────────────────────────────
 GET {{handee_API_HostAddress}}/api/providers/{{profileId}}
 Authorization: Bearer {{providerToken}}
@@ -290,3 +290,4 @@ Authorization: Bearer {{adminToken}}
 # ─────────────────────────────────────────────────────────────────────────────
 GET {{handee_API_HostAddress}}/admin/verifications/summary
 Authorization: Bearer {{adminToken}}
+
