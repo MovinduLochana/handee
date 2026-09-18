@@ -1,7 +1,7 @@
-import React, { useRef, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Clock, CheckCircle, AlertOctagon, Upload } from "lucide-react";
+import { Clock, CheckCircle, AlertOctagon } from "lucide-react";
 import { providerApi } from "../../api/providers";
 import { extractApiError } from "../../lib/api";
 import StatusBadge from "../../components/provider/StatusBadge";
@@ -12,7 +12,6 @@ import "./VerificationStatus.css";
 export default function VerificationStatusTracker() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
 
   // We use getMyProfile to get the ID, then fetch the full Admin projection to get AuditLogs
@@ -27,11 +26,11 @@ export default function VerificationStatusTracker() {
     enabled: !!myProfile?.id,
   });
 
-  // Handle Rejected Resubmission
+  // Handle Rejected Resubmission line-by-line
   const resubmitMutation = useMutation({
-    mutationFn: async (file: File) => {
+    mutationFn: async ({ file, type }: { file: File; type: any }) => {
       if (!fullProfile) throw new Error("No profile state");
-      await providerApi.uploadDocument(fullProfile.id, file, "NIC");
+      await providerApi.uploadDocument(fullProfile.id, file, type);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["myProfile"] });
@@ -43,11 +42,8 @@ export default function VerificationStatusTracker() {
     },
   });
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      resubmitMutation.mutate(e.target.files[0]);
-    }
-    if (fileInputRef.current) fileInputRef.current.value = "";
+  const handleResubmit = (file: File, type: string) => {
+    resubmitMutation.mutate({ file, type });
   };
 
   if (isMeLoading || isFullLoading) {
@@ -224,35 +220,6 @@ export default function VerificationStatusTracker() {
               </div>
             )}
           </div>
-
-          {verificationStatus === "Rejected" && (
-            <div className="resubmit-panel animate-fade-up">
-              <h3>Resubmit Documents</h3>
-              <p className="text-muted resubmit-desc">
-                Please upload a clear photo or PDF of your National Identity Card (NIC) to re-open
-                your application.
-              </p>
-
-              <input
-                type="file"
-                hidden
-                ref={fileInputRef}
-                accept="image/*,application/pdf"
-                onChange={handleFileSelect}
-              />
-
-              <button
-                className="wizard-btn wizard-btn-primary"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={resubmitMutation.isPending}
-              >
-                <Upload size={16} />
-                {resubmitMutation.isPending ? "Uploading..." : "Upload New Document"}
-              </button>
-
-              {uploadError && <div className="text-danger mt-2">{uploadError}</div>}
-            </div>
-          )}
         </div>
 
         <div className="status-column-right">
@@ -263,8 +230,22 @@ export default function VerificationStatusTracker() {
             ) : (
               <div className="documents-list">
                 {certifications.map((cert) => (
-                  <DocumentCard key={cert.id} certification={cert} />
+                  <DocumentCard key={cert.id} certification={cert} onResubmit={handleResubmit} />
                 ))}
+              </div>
+            )}
+
+            {(resubmitMutation.isPending || uploadError) && (
+              <div
+                style={{
+                  marginTop: "1rem",
+                  padding: "0.75rem",
+                  background: "var(--bg-card)",
+                  borderRadius: "var(--radius-md)",
+                }}
+              >
+                {resubmitMutation.isPending && <p>Uploading document...</p>}
+                {uploadError && <p className="text-danger">{uploadError}</p>}
               </div>
             )}
           </div>

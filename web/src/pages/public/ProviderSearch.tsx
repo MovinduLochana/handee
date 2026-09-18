@@ -16,7 +16,7 @@ export default function ProviderSearch() {
   const [searchTerm, setSearchTerm] = useState("");
   const [skillCategoryId, setSkillCategoryId] = useState("");
   const [page, setPage] = useState(1);
-  const pageSize = 12;
+  const pageSize = 15;
 
   const [appliedFilters, setAppliedFilters] = useState<ProviderSearchParams>({
     status: "Verified",

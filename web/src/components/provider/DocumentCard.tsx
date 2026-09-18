@@ -110,7 +110,7 @@ export default function DocumentCard({
               title="Resubmit Document"
               style={{ color: "var(--accent)", borderColor: "var(--border)" }}
             >
-              <Upload size={14} style={{ marginTop: '2px' }} />
+              <Upload size={14} style={{ marginTop: "2px" }} />
             </button>
           </>
         )}
