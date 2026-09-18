@@ -7,6 +7,7 @@ import { skillCategoryApi } from "../../api/skillCategories";
 import StepIndicator from "../../components/provider/StepIndicator";
 import SkillCategoryTag from "../../components/provider/SkillCategoryTag";
 import { extractApiError } from "../../lib/api";
+import LocationPicker from "../../components/provider/LocationPicker";
 import "./ProviderOnboarding.css";
 
 const STEPS = [
@@ -19,6 +20,8 @@ const STEPS = [
 export default function ProviderOnboarding() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+
+
 
   const { data: profile, isLoading: isProfileLoading } = useQuery({
     queryKey: ["myProfile"],
@@ -50,6 +53,8 @@ export default function ProviderOnboarding() {
 
   // Step 3: Service Area
   const [serviceAreaAddress, setServiceAreaAddress] = useState("");
+  const [serviceAreaLatitude, setServiceAreaLatitude] = useState<number | null>(null);
+  const [serviceAreaLongitude, setServiceAreaLongitude] = useState<number | null>(null);
   const [serviceRadiusKm, setServiceRadiusKm] = useState(25);
 
   useEffect(() => {
@@ -65,6 +70,8 @@ export default function ProviderOnboarding() {
       }
       if (profile.serviceAreaDisplayName) setServiceAreaAddress(profile.serviceAreaDisplayName);
       if (profile.serviceRadiusKm) setServiceRadiusKm(profile.serviceRadiusKm);
+      if (profile.serviceAreaLatitude) setServiceAreaLatitude(profile.serviceAreaLatitude);
+      if (profile.serviceAreaLongitude) setServiceAreaLongitude(profile.serviceAreaLongitude);
     }
   }, [profile]);
 
@@ -81,6 +88,8 @@ export default function ProviderOnboarding() {
         servicesOffered,
         skillCategoryIds: Array.from(selectedSkillIds),
         serviceAreaAddress,
+        serviceAreaLatitude: serviceAreaLatitude !== null ? serviceAreaLatitude : undefined,
+        serviceAreaLongitude: serviceAreaLongitude !== null ? serviceAreaLongitude : undefined,
         serviceRadiusKm,
       });
     },
@@ -108,7 +117,7 @@ export default function ProviderOnboarding() {
       }
     } else if (currentStep === 2) {
       if (!serviceAreaAddress) {
-        setError("Please define your service area address.");
+        setError("Please define your service area by selecting an address from the drop-down, or by clicking on the map.");
         return;
       }
 
@@ -156,6 +165,8 @@ export default function ProviderOnboarding() {
       return next;
     });
   };
+
+
 
   if (isProfileLoading)
     return <div style={{ padding: "2rem", textAlign: "center" }}>Loading onboarding...</div>;
@@ -308,32 +319,19 @@ export default function ProviderOnboarding() {
               Where are you based, and how far are you willing to travel?
             </p>
 
-            <div className="wizard-field">
-              <label htmlFor="address">Base City / Address (required)</label>
-              <input
-                id="address"
-                type="text"
-                placeholder="e.g. Colombo 03"
-                value={serviceAreaAddress}
-                onChange={(e) => setServiceAreaAddress(e.target.value)}
-              />
-            </div>
-
-            <div className="wizard-field" style={{ marginTop: "2rem" }}>
-              <label>Travel Radius (kilometers)</label>
-              <div className="radius-slider-container">
-                <input
-                  type="range"
-                  className="radius-slider"
-                  min="5"
-                  max="100"
-                  step="5"
-                  value={serviceRadiusKm}
-                  onChange={(e) => setServiceRadiusKm(parseInt(e.target.value))}
-                />
-                <span className="radius-value">{serviceRadiusKm} km</span>
-              </div>
-            </div>
+            <LocationPicker
+              lat={serviceAreaLatitude}
+              lng={serviceAreaLongitude}
+              address={serviceAreaAddress}
+              radiusKm={serviceRadiusKm}
+              isEditing={true}
+              onChange={(lat, lng, addr, rkm) => {
+                setServiceAreaLatitude(lat);
+                setServiceAreaLongitude(lng);
+                setServiceAreaAddress(addr);
+                setServiceRadiusKm(rkm);
+              }}
+            />
           </div>
         )}
 

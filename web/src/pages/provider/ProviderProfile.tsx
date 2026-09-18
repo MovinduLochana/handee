@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { User, Eye, CheckCircle2 } from "lucide-react";
+import { User, Eye, CheckCircle2, MapPin } from "lucide-react";
 import { providerApi } from "../../api/providers";
 import { skillCategoryApi } from "../../api/skillCategories";
 import SkillCategoryTag from "../../components/provider/SkillCategoryTag";
 import StatusBadge from "../../components/provider/StatusBadge";
 import { extractApiError } from "../../lib/api";
+import LocationPicker from "../../components/provider/LocationPicker";
 import "./ProviderProfile.css";
 
 export default function ProviderProfile() {
@@ -41,6 +42,8 @@ export default function ProviderProfile() {
   const [serviceInput, setServiceInput] = useState("");
 
   const [serviceAreaAddress, setServiceAreaAddress] = useState("");
+  const [serviceAreaLatitude, setServiceAreaLatitude] = useState<number | null>(null);
+  const [serviceAreaLongitude, setServiceAreaLongitude] = useState<number | null>(null);
   const [serviceRadiusKm, setServiceRadiusKm] = useState(25);
   const [isAvailableForWork, setIsAvailableForWork] = useState(true);
   const [availabilityNote, setAvailabilityNote] = useState("");
@@ -56,6 +59,8 @@ export default function ProviderProfile() {
       setSelectedSkillIds(new Set(myProfile.skillCategories?.map((s) => s.id) || []));
       setServiceAreaAddress(myProfile.serviceAreaDisplayName || "");
       setServiceRadiusKm(myProfile.serviceRadiusKm || 25);
+      setServiceAreaLatitude(myProfile.serviceAreaLatitude ?? null);
+      setServiceAreaLongitude(myProfile.serviceAreaLongitude ?? null);
       setIsAvailableForWork(myProfile.isAvailableForWork ?? true);
       setAvailabilityNote(myProfile.availabilityNote || "");
     }
@@ -73,6 +78,8 @@ export default function ProviderProfile() {
         servicesOffered,
         skillCategoryIds: Array.from(selectedSkillIds),
         serviceAreaAddress,
+        serviceAreaLatitude: serviceAreaLatitude !== null ? serviceAreaLatitude : undefined,
+        serviceAreaLongitude: serviceAreaLongitude !== null ? serviceAreaLongitude : undefined,
         serviceRadiusKm,
         isAvailableForWork,
         availabilityNote: availabilityNote || undefined,
@@ -124,6 +131,8 @@ export default function ProviderProfile() {
     });
   };
 
+
+
   if (isLoading)
     return <div style={{ padding: "2rem", textAlign: "center" }}>Loading profile...</div>;
 
@@ -172,8 +181,24 @@ export default function ProviderProfile() {
             {myProfile.fullName}
             <StatusBadge status={myProfile.verificationStatus} size="sm" />
           </h1>
-          <div className="profile-roles">
-            {myProfile.headline ?? "Complete your profile headline"}
+          <div
+            className="profile-roles"
+            style={{ display: "flex", alignItems: "center", gap: "10px" }}
+          >
+            <span>{myProfile.headline ?? "Complete your profile headline"}</span>
+            {myProfile.serviceAreaDisplayName && (
+              <span
+                style={{
+                  fontSize: "0.9em",
+                  color: "var(--text-muted)",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "4px",
+                }}
+              >
+                <MapPin size={14} /> {myProfile.serviceAreaDisplayName}
+              </span>
+            )}
           </div>
         </div>
 
@@ -370,36 +395,19 @@ export default function ProviderProfile() {
           <h3 className="edit-card-title">Service Area</h3>
         </div>
         <div className="edit-card-body">
-          <div className="form-row">
-            <div className="form-col" style={{ flex: 2 }}>
-              <div className="wizard-field" style={{ marginBottom: 0 }}>
-                <label>Base City</label>
-                <input
-                  type="text"
-                  value={serviceAreaAddress}
-                  onChange={(e) => setServiceAreaAddress(e.target.value)}
-                  disabled={!isEditing}
-                />
-              </div>
-            </div>
-            <div className="form-col" style={{ flex: 1 }}>
-              <div className="wizard-field" style={{ marginBottom: 0 }}>
-                <label>Travel Radius ({serviceRadiusKm} km)</label>
-                <div className="radius-slider-container" style={{ opacity: isEditing ? 1 : 0.5 }}>
-                  <input
-                    type="range"
-                    className="radius-slider"
-                    min="5"
-                    max="100"
-                    step="5"
-                    value={serviceRadiusKm}
-                    onChange={(e) => setServiceRadiusKm(parseInt(e.target.value))}
-                    disabled={!isEditing}
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
+          <LocationPicker
+            lat={serviceAreaLatitude}
+            lng={serviceAreaLongitude}
+            address={serviceAreaAddress}
+            radiusKm={serviceRadiusKm}
+            isEditing={isEditing}
+            onChange={(lat, lng, addr, rkm) => {
+              setServiceAreaLatitude(lat);
+              setServiceAreaLongitude(lng);
+              setServiceAreaAddress(addr);
+              setServiceRadiusKm(rkm);
+            }}
+          />
         </div>
       </div>
 
