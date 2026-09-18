@@ -1,0 +1,121 @@
+.reviews-container {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding-bottom: 4rem;
+}
+
+/* ── Summary Header ── */
+.reviews-summary-card {
+  padding: 2rem 0;
+  display: flex;
+  gap: 3rem;
+  align-items: center;
+  margin-bottom: 2rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.reviews-aggregate {
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.aggregate-score {
+  font-size: 3.5rem;
+  font-weight: 800;
+  color: var(--text-h);
+  line-height: 1;
+  margin-bottom: 0.5rem;
+}
+
+.aggregate-stars {
+  margin-bottom: 0.5rem;
+}
+
+.aggregate-count {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.reviews-distribution {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-left: 1px solid var(--border);
+  padding-left: 3rem;
+}
+
+.dist-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.dist-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  width: 24px;
+  text-align: right;
+}
+
+.dist-bar-container {
+  flex: 1;
+  height: 8px;
+  background: var(--bg-surface-elevated);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.dist-bar-fill {
+  height: 100%;
+  background: #f59e0b;
+  border-radius: 4px;
+}
+
+.dist-count {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  width: 32px;
+}
+
+/* ── Reviews List ── */
+.reviews-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.provider-review-card {
+  padding: 1.5rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.provider-review-card:last-child {
+  border-bottom: none;
+}
+
+.provider-review-reply {
+  margin-top: 1.5rem;
+  padding: 1rem 1.25rem;
+  background: var(--bg-surface-elevated);
+  border-left: 3px solid var(--border-strong);
+  border-radius: 0 8px 8px 0;
+}
+
+@media (max-width: 768px) {
+  .reviews-summary-card {
+    flex-direction: column;
+    gap: 1.5rem;
+    padding: 1.5rem;
+  }
+
+  .reviews-distribution {
+    border-left: none;
+    padding-left: 0;
+    border-top: 1px solid var(--border);
+    padding-top: 1.5rem;
+    width: 100%;
+  }
+}
