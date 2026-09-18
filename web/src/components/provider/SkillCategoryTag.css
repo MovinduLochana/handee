@@ -7,9 +7,9 @@
   font-size: 0.82rem;
   font-weight: 600;
   font-family: var(--font-sans);
-  background: var(--bg-surface-elevated);
-  color: var(--text);
-  border: 1px solid var(--border);
+  background: var(--accent-warm-light);
+  color: var(--accent-warm);
+  border: 1px solid var(--accent-warm-light);
   transition: all 0.2s ease;
   user-select: none;
 }
@@ -26,9 +26,9 @@
 }
 
 .skill-tag-clickable:hover {
-  border-color: var(--accent);
-  color: var(--accent);
-  background: var(--accent-light);
+  border-color: var(--accent-warm);
+  color: var(--bg-surface);
+  background: var(--accent-warm);
 }
 
 .skill-tag-selected {

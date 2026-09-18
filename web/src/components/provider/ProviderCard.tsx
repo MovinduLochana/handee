@@ -18,42 +18,48 @@ export default function ProviderCard({ provider }: ProviderCardProps) {
 
   return (
     <Link to={`/providers/${provider.id}`} className="provider-card">
-      <div className="provider-card-header">
-        {avatarUrl ? (
-          <img
-            src={avatarUrl}
-            alt={provider.fullName}
-            loading="lazy"
-            className="provider-card-avatar"
-          />
-        ) : (
-          <div className="provider-card-fallback-avatar">
-            {provider.fullName.charAt(0).toUpperCase()}
-          </div>
-        )}
+      <div className="provider-card-hero"></div>
 
-        <div className="provider-card-info">
-          <h3 className="provider-card-name">
-            {provider.fullName}
-            {provider.verificationStatus === "Verified" && (
-              <span title="Verified Provider" style={{ display: "flex" }}>
-                <CheckCircle size={16} strokeWidth={2.5} color="var(--accent)" />
-              </span>
-            )}
-          </h3>
-          <p className="provider-card-headline">{provider.headline || "Professional Provider"}</p>
-          <div className="provider-card-stats">
+      <div className="provider-card-content">
+        <div className="provider-card-avatar-wrapper">
+          {avatarUrl ? (
+            <img
+              src={avatarUrl}
+              alt={provider.fullName}
+              loading="lazy"
+              className="provider-card-avatar"
+            />
+          ) : (
+            <div className="provider-card-fallback-avatar">
+              {provider.fullName.charAt(0).toUpperCase()}
+            </div>
+          )}
+        </div>
+
+        <h3 className="provider-card-name">
+          {provider.fullName}
+          {provider.verificationStatus === "Verified" && (
+            <span title="Verified Provider" className="provider-verified-badge">
+              <CheckCircle size={14} strokeWidth={2.5} color="var(--success)" />
+            </span>
+          )}
+        </h3>
+
+        <p className="provider-card-headline">{provider.headline || "Professional Provider"}</p>
+
+        <div className="provider-card-metrics">
+          <div className="provider-metric-pill" title="Rating">
             <StarRating
               rating={provider.ratingAggregate}
               count={provider.totalReviewCount}
-              size={14}
+              size={12}
               showValue
             />
+          </div>
 
-            <div className="provider-card-stat-item" title="Service Area">
-              <MapPin size={14} />
-              <span>{provider.serviceAreaDisplayName || "Flexible Area"}</span>
-            </div>
+          <div className="provider-metric-pill" title="Service Area">
+            <MapPin size={12} />
+            <span>{provider.serviceAreaDisplayName || "Flexible"}</span>
           </div>
         </div>
       </div>
@@ -70,14 +76,7 @@ export default function ProviderCard({ provider }: ProviderCardProps) {
             </span>
           )}
           {provider.skillCategories.length > 3 && (
-            <span
-              style={{
-                fontSize: "0.8rem",
-                color: "var(--text-muted)",
-                display: "flex",
-                alignItems: "center",
-              }}
-            >
+            <span className="provider-card-tag-overflow">
               +{provider.skillCategories.length - 3} more
             </span>
           )}
