@@ -150,14 +150,29 @@ export default function VerificationStatusTracker() {
                 {[...auditLogs]
                   .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
                   .map((log) => {
-                    const dotClass =
-                      log.newStatus === "Rejected"
-                        ? "dot-rejected"
-                        : log.newStatus === "Verified"
-                          ? "dot-verified"
-                          : log.newStatus === "InReview"
-                            ? "dot-review"
-                            : "dot-pending";
+                    const isDocumentAudit = log.previousStatus === log.newStatus;
+                    const docApproved =
+                      isDocumentAudit && log.note && log.note.includes("status set to Approved");
+                    const docRejected =
+                      isDocumentAudit && log.note && log.note.includes("status set to Rejected");
+
+                    let dotClass = "dot-pending";
+                    if (isDocumentAudit) {
+                      dotClass = docApproved
+                        ? "dot-verified"
+                        : docRejected
+                          ? "dot-rejected"
+                          : "dot-review";
+                    } else {
+                      dotClass =
+                        log.newStatus === "Rejected"
+                          ? "dot-rejected"
+                          : log.newStatus === "Verified"
+                            ? "dot-verified"
+                            : log.newStatus === "InReview"
+                              ? "dot-review"
+                              : "dot-pending";
+                    }
 
                     const ts = new Date(log.timestamp).toLocaleString("en-LK", {
                       dateStyle: "medium",
@@ -170,7 +185,30 @@ export default function VerificationStatusTracker() {
                         <div className="timeline-content">
                           <div className="timeline-header">
                             <div>
-                              <StatusBadge status={log.newStatus} size="sm" />
+                              {log.previousStatus !== log.newStatus ? (
+                                <StatusBadge status={log.newStatus} size="sm" />
+                              ) : (
+                                <span
+                                  style={{
+                                    fontWeight: 600,
+                                    padding: "4px 10px",
+                                    borderRadius: "99px",
+                                    fontSize: "0.75rem",
+                                    backgroundColor: docApproved
+                                      ? "var(--bg-success)"
+                                      : docRejected
+                                        ? "var(--bg-danger)"
+                                        : "var(--bg-card)",
+                                    color: docApproved
+                                      ? "var(--text-success)"
+                                      : docRejected
+                                        ? "var(--text-danger)"
+                                        : "var(--text-h)",
+                                  }}
+                                >
+                                  {docApproved ? "Approved" : docRejected ? "Rejected" : "Audited"}
+                                </span>
+                              )}
                             </div>
                             <span className="timeline-date">{ts}</span>
                           </div>

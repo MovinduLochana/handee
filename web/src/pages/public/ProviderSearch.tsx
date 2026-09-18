@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Search, Filter, RefreshCcw } from "lucide-react";
+import { Search, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { providerApi } from "../../api/providers";
 import { skillCategoryApi } from "../../api/skillCategories";
 import type {
@@ -13,26 +13,22 @@ import PublicNavbar from "../../components/layout/PublicNavbar";
 import "./ProviderSearch.css";
 
 export default function ProviderSearch() {
-  // URL or state-based filters
   const [searchTerm, setSearchTerm] = useState("");
   const [skillCategoryId, setSkillCategoryId] = useState("");
   const [page, setPage] = useState(1);
   const pageSize = 12;
 
-  // We keep a separate applied filter state so the query only runs when we hit "Search"
   const [appliedFilters, setAppliedFilters] = useState<ProviderSearchParams>({
     status: "Verified",
     page: 1,
     pageSize,
   });
 
-  // Fetch categories for the filter sidebar
   const { data: categories = [], isLoading: categoriesLoading } = useQuery({
     queryKey: ["skillCategories"],
     queryFn: skillCategoryApi.getSkillCategories,
   });
 
-  // Fetch providers based on applied filters
   const {
     data: searchResults,
     isLoading: searchLoading,
@@ -48,7 +44,7 @@ export default function ProviderSearch() {
       status: "Verified",
       searchTerm: searchTerm || undefined,
       skillCategoryId: skillCategoryId || undefined,
-      page: 1, // Reset to page 1 on new search
+      page: 1,
       pageSize,
     };
     setAppliedFilters(newFilters);
@@ -76,34 +72,43 @@ export default function ProviderSearch() {
   return (
     <div className="page-container">
       <PublicNavbar />
+
       <div className="provider-search-layout animate-fade-up">
-        {/* Sidebar Filters */}
-        <aside className="provider-search-sidebar">
-          <div className="sidebar-header">
-            <Filter size={18} /> Filters
+        {/* HERO EXPEREINCE */}
+        <header className="search-hero">
+          <div className="provider-search-header">
+            <h1>Find a Professional</h1>
+            <p>
+              {searchResults
+                ? `Showing ${searchResults.items.length} of ${searchResults.totalCount} results`
+                : "Loading professionals..."}
+            </p>
           </div>
 
-          <form onSubmit={handleSearch}>
-            <div className="search-field">
-              <label htmlFor="searchTerm">Keywords</label>
+          <form onSubmit={handleSearch} className="search-pill-container">
+            <div className="search-segment">
               <input
                 id="searchTerm"
                 type="text"
-                placeholder="e.g. Plumber, Electrician..."
+                className="search-pill-input"
+                placeholder="What service do you need?"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
 
-            <div className="search-field">
-              <label htmlFor="category">Service Category</label>
+            <div className="search-segment">
               <select
                 id="category"
+                className="search-pill-select"
                 value={skillCategoryId}
-                onChange={(e) => setSkillCategoryId(e.target.value)}
+                onChange={(e) => {
+                  setSkillCategoryId(e.target.value);
+                  // auto trigger search if needed, but manual is fine for unified bar too
+                }}
                 disabled={categoriesLoading}
               >
-                <option value="">All Categories</option>
+                <option value="">Any Category</option>
                 {categories.map((cat) => (
                   <option key={cat.id} value={cat.id}>
                     {cat.name}
@@ -112,42 +117,45 @@ export default function ProviderSearch() {
               </select>
             </div>
 
-            <div className="search-actions">
-              <button
-                type="button"
-                className="clear-btn"
-                onClick={handleClear}
-                title="Clear Filters"
-              >
-                <RefreshCcw size={16} />
-              </button>
-              <button type="submit" className="search-btn flex-center" style={{ gap: "0.5rem" }}>
-                <Search size={16} /> Search
+            <div className="search-segment-actions">
+              {(searchTerm || skillCategoryId) && (
+                <button
+                  type="button"
+                  className="clear-btn-pill"
+                  onClick={handleClear}
+                  title="Clear Filters"
+                >
+                  <X size={18} />
+                </button>
+              )}
+              <button type="submit" className="search-btn-pill">
+                <Search size={18} /> Search
               </button>
             </div>
           </form>
-        </aside>
+        </header>
 
-        {/* Main Content Area */}
+        {/* Main Content Grid */}
         <main className="provider-search-main">
-          <header className="provider-search-header">
-            <h1>Find a Professional</h1>
-            <p>
-              {searchResults
-                ? `Showing ${searchResults.items.length} of ${searchResults.totalCount} results`
-                : "Loading professionals..."}
-            </p>
-          </header>
-
           {searchLoading ? (
-            <div className="state-container">Searching...</div>
+            <div
+              className="state-container animate-pulse-gentle"
+              style={{ margin: "4rem auto" }}
+            ></div>
           ) : isError ? (
             <div className="state-error">Failed to fetch providers. Please try again.</div>
           ) : searchResults?.items.length === 0 ? (
             <div className="empty-state">
-              <Search size={32} className="empty-state-icon" />
-              <h3>No providers found</h3>
-              <p>Try adjusting your search keywords or filters.</p>
+              <Search size={48} className="empty-state-icon" />
+              <h3>No providers match your search</h3>
+              <p>Try adjusting your search keywords or broadening your category.</p>
+              <button
+                className="wizard-btn wizard-btn-primary"
+                style={{ marginTop: "1.5rem" }}
+                onClick={handleClear}
+              >
+                Clear Filters
+              </button>
             </div>
           ) : (
             <>
@@ -157,7 +165,7 @@ export default function ProviderSearch() {
                 ))}
               </div>
 
-              {/* Pagination */}
+              {/* Enhanced Pagination */}
               {searchResults && searchResults.totalCount > pageSize && (
                 <div className="pagination-controls">
                   <button
@@ -165,7 +173,7 @@ export default function ProviderSearch() {
                     disabled={page === 1}
                     onClick={() => handlePageChange(page - 1)}
                   >
-                    Previous
+                    <ChevronLeft size={16} /> Prev
                   </button>
 
                   <span className="pagination-info">
@@ -177,7 +185,7 @@ export default function ProviderSearch() {
                     disabled={page >= Math.ceil(searchResults.totalCount / pageSize)}
                     onClick={() => handlePageChange(page + 1)}
                   >
-                    Next
+                    Next <ChevronRight size={16} />
                   </button>
                 </div>
               )}

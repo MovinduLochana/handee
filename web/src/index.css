@@ -1,9 +1,9 @@
 :root,
 [data-theme="light"] {
-  /* TINTED NEUTRALS: Sophisticated crisp white and cool-slate blend */
-  --bg: #fbfbfc;
-  --bg-surface: #ffffff;
-  --bg-surface-elevated: #f4f5f7;
+  /* TINTED NEUTRALS: Warm alabaster and tinted white to inject subtle personality */
+  --bg: oklch(98% 0.005 70);
+  --bg-surface: oklch(99.5% 0.002 70);
+  --bg-surface-elevated: oklch(96% 0.008 70);
 
   /* HIGH-CONTRAST TYPOGRAPHY: Deep navy-slate instead of pure black */
   --text-h: #0d1424;
@@ -11,13 +11,17 @@
   --text-muted: #737d92;
 
   /* BORDERS: Barely-there, crisp delineations */
-  --border: #e8ebf2;
-  --border-strong: #d0d5e0;
+  --border: oklch(92% 0.01 70);
+  --border-strong: oklch(85% 0.01 70);
 
-  /* BRAND ACCENT: Commanding, premium electric blue */
-  --accent: #1956e3;
-  --accent-hover: #1240ab;
-  --accent-light: #ebf0ff;
+  /* BRAND ACCENTS: Commanding electric blue contrasting with energetic amber */
+  --accent: oklch(45% 0.2 260);
+  /* equivalent to original #1956e3 but adjusted for uniformity */
+  --accent-hover: oklch(40% 0.2 260);
+  --accent-light: oklch(95% 0.05 260);
+  --accent-warm: oklch(75% 0.15 45);
+  /* Energetic Amber/Coral for warmth */
+  --accent-warm-light: oklch(96% 0.03 45);
 
   /* SEMANTIC STATUS TOKENS */
   --success: #10b981;
@@ -311,7 +315,7 @@ a {
 .empty-state {
   padding: var(--space-16);
   text-align: center;
-  background-color: var(--bg-surface);
+  background-color: var(--bg-surface-elevated);
   border-radius: 12px;
   border: 1px dashed var(--border-strong);
   display: flex;
@@ -322,7 +326,8 @@ a {
 
 .empty-state-icon {
   margin: 0 auto var(--space-4) auto;
-  color: var(--text-muted);
+  color: var(--accent);
+  /* Colorizing the icon instead of gray */
 }
 
 .empty-state h2,

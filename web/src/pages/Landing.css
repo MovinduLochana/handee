@@ -137,10 +137,6 @@
   color: var(--text-h);
 }
 
-.trust-badge svg {
-  color: var(--accent);
-}
-
 /* Decorative Spatial Elements - breaking the rigid box */
 .hero-decoration {
   position: absolute;
@@ -149,11 +145,17 @@
   width: 45vw;
   height: 45vw;
   /* Enhancing the gradient contrast for light mode visibility using color-mix */
-  background: radial-gradient(
-    circle,
-    color-mix(in srgb, var(--accent) 15%, transparent) 0%,
-    transparent 70%
-  );
+  background:
+    radial-gradient(
+      circle at 30% 30%,
+      color-mix(in srgb, var(--accent) 15%, transparent) 0%,
+      transparent 60%
+    ),
+    radial-gradient(
+      circle at 70% 70%,
+      color-mix(in srgb, var(--accent-warm) 15%, transparent) 0%,
+      transparent 60%
+    );
   border-radius: 50%;
   z-index: 1;
   opacity: 0.8;

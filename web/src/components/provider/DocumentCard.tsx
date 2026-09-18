@@ -1,4 +1,5 @@
-import { FileText, Download } from "lucide-react";
+import { useRef } from "react";
+import { FileText, Download, Upload } from "lucide-react";
 import StatusBadge from "./StatusBadge";
 import type { CertificationDto } from "../../api/types";
 import "./DocumentCard.css";
@@ -7,6 +8,7 @@ interface DocumentCardProps {
   certification: CertificationDto;
   onApprove?: (id: string) => void;
   onReject?: (id: string) => void;
+  onResubmit?: (file: File, type: string) => void;
   showActions?: boolean;
 }
 
@@ -21,8 +23,17 @@ export default function DocumentCard({
   certification,
   onApprove,
   onReject,
+  onResubmit,
   showActions = false,
 }: DocumentCardProps) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      onResubmit?.(e.target.files[0], certification.type);
+    }
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
   const uploadDate = new Date(certification.uploadedAt).toLocaleDateString("en-LK", {
     year: "numeric",
     month: "short",
@@ -82,6 +93,25 @@ export default function DocumentCard({
                 ✕
               </button>
             )}
+          </>
+        )}
+        {onResubmit && certification.reviewStatus === "Rejected" && (
+          <>
+            <input
+              type="file"
+              hidden
+              ref={fileInputRef}
+              accept="image/*,application/pdf"
+              onChange={handleFileChange}
+            />
+            <button
+              className="document-action-btn"
+              onClick={() => fileInputRef.current?.click()}
+              title="Resubmit Document"
+              style={{ color: "var(--accent)", borderColor: "var(--border)" }}
+            >
+              <Upload size={14} style={{ marginTop: '2px' }} />
+            </button>
           </>
         )}
       </div>

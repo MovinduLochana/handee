@@ -103,7 +103,7 @@ export default function PublicProviderProfile() {
             />
 
             <div className="public-stat">
-              <MapPin size={16} color="var(--text-muted)" />
+              <MapPin size={16} color="var(--accent)" />
               {profile.serviceAreaDisplayName || "Flexible Area"}
             </div>
           </div>
@@ -115,7 +115,7 @@ export default function PublicProviderProfile() {
         <div className="public-main-content">
           <section className="public-section animate-fade-up animate-delay-200">
             <h2>
-              <User size={20} /> About
+              <User size={20} color="var(--accent)" /> About
             </h2>
 
             <div className="public-info-grid">
@@ -139,7 +139,7 @@ export default function PublicProviderProfile() {
 
           <section className="public-section animate-fade-up animate-delay-300">
             <h2>
-              <Briefcase size={20} /> Skills & Services
+              <Briefcase size={20} color="var(--accent-warm)" /> Skills & Services
             </h2>
 
             {profile.skillCategories.length > 0 && (

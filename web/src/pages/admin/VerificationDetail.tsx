@@ -229,11 +229,46 @@ export default function VerificationDetail() {
                           </td>
                           <td>
                             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                              <span style={{ color: "var(--text-muted)", fontSize: "0.8rem" }}>
-                                {log.previousStatus}
-                              </span>
-                              <span>→</span>
-                              <StatusBadge status={log.newStatus} size="sm" />
+                              {log.previousStatus !== log.newStatus ? (
+                                <>
+                                  <span style={{ color: "var(--text-muted)", fontSize: "0.8rem" }}>
+                                    {log.previousStatus}
+                                  </span>
+                                  <span style={{ color: "var(--text-muted)" }}>→</span>
+                                  <StatusBadge status={log.newStatus} size="sm" />
+                                </>
+                              ) : (
+                                (() => {
+                                  const docApproved = log.note?.includes("status set to Approved");
+                                  const docRejected = log.note?.includes("status set to Rejected");
+                                  return (
+                                    <span
+                                      style={{
+                                        fontWeight: 600,
+                                        padding: "4px 10px",
+                                        borderRadius: "99px",
+                                        fontSize: "0.75rem",
+                                        backgroundColor: docApproved
+                                          ? "var(--bg-success)"
+                                          : docRejected
+                                            ? "var(--bg-danger)"
+                                            : "var(--bg-card)",
+                                        color: docApproved
+                                          ? "var(--text-success)"
+                                          : docRejected
+                                            ? "var(--text-danger)"
+                                            : "var(--text-h)",
+                                      }}
+                                    >
+                                      {docApproved
+                                        ? "Approved"
+                                        : docRejected
+                                          ? "Rejected"
+                                          : "Audit"}
+                                    </span>
+                                  );
+                                })()
+                              )}
                             </div>
                           </td>
                           <td style={{ maxWidth: 300 }}>{log.note || "-"}</td>

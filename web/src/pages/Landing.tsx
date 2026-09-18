@@ -55,15 +55,15 @@ export default function Landing() {
 
           <div className="trust-badges animate-fade-up animate-delay-300">
             <div className="trust-badge">
-              <ShieldCheck size={24} strokeWidth={2.5} />
+              <ShieldCheck size={24} strokeWidth={2.5} color="var(--success)" />
               <span>100% Verified Experts</span>
             </div>
             <div className="trust-badge">
-              <Award size={24} strokeWidth={2.5} />
+              <Award size={24} strokeWidth={2.5} color="var(--accent-warm)" />
               <span>Clear Pricing</span>
             </div>
             <div className="trust-badge">
-              <Clock size={24} strokeWidth={2.5} />
+              <Clock size={24} strokeWidth={2.5} color="var(--accent)" />
               <span>Fast Matching</span>
             </div>
           </div>

@@ -105,19 +105,33 @@ public class ProviderProfileService(
 
         var fileUrl = await storage.UploadAsync(dto.File, "certifications", ct);
 
-        var cert = new Certification
+        var existingCert = profile.Certifications.FirstOrDefault(c => c.Type == dto.Type);
+        Certification cert;
+        
+        if (existingCert != null)
         {
-            Id = Guid.NewGuid(),
-            ProviderProfileId = profileId,
-            Type = dto.Type,
-            FileUrl = fileUrl,
-            OriginalFileName = dto.File.FileName,
-            UploadedAt = DateTimeOffset.UtcNow,
-            ReviewStatus = DocumentReviewStatus.Pending
-        };
-
-        await certRepo.AddAsync(cert, ct);
-        await certRepo.SaveChangesAsync(ct);
+            existingCert.FileUrl = fileUrl;
+            existingCert.OriginalFileName = dto.File.FileName;
+            existingCert.UploadedAt = DateTimeOffset.UtcNow;
+            existingCert.ReviewStatus = DocumentReviewStatus.Pending;
+            cert = existingCert;
+            await certRepo.SaveChangesAsync(ct);
+        }
+        else
+        {
+            cert = new Certification
+            {
+                Id = Guid.NewGuid(),
+                ProviderProfileId = profileId,
+                Type = dto.Type,
+                FileUrl = fileUrl,
+                OriginalFileName = dto.File.FileName,
+                UploadedAt = DateTimeOffset.UtcNow,
+                ReviewStatus = DocumentReviewStatus.Pending
+            };
+            await certRepo.AddAsync(cert, ct);
+            await certRepo.SaveChangesAsync(ct);
+        }
 
         // If provider was Rejected, a new document submission moves them back to Pending
         if (profile.VerificationStatus == VerificationStatus.Rejected)
