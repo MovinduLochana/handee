@@ -48,7 +48,8 @@ public record ProviderProfileProviderDto(
     decimal RatingAggregate,
     int TotalReviewCount,
     DateTimeOffset CreatedAt,
-    List<CertificationDto> Certifications);
+    List<CertificationDto> Certifications,
+    List<AuditLogDto> AuditLogs);
 
 /// <summary>Admin view — adds audit log and document URLs.</summary>
 public record ProviderProfileAdminDto(

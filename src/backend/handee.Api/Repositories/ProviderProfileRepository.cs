@@ -72,4 +72,49 @@ public class ProviderProfileRepository(AppDbContext db) : IProviderProfileReposi
 
         return (items, totalCount);
     }
+
+    public async Task<(List<ProviderProfile> Items, int TotalCount)> GetVerificationQueueAsync(
+        VerificationStatus? status,
+        int skip,
+        int take,
+        CancellationToken ct = default)
+    {
+        var query = db.ProviderProfiles
+            .Include(p => p.SkillCategories)
+            .Include(p => p.User)
+            .AsQueryable();
+
+        if (status.HasValue)
+        {
+            query = query.Where(p => p.VerificationStatus == status.Value);
+        }
+
+        var totalCount = await query.CountAsync(ct);
+        var items = await query.OrderByDescending(p => p.CreatedAt).Skip(skip).Take(take).ToListAsync(ct);
+
+        return (items, totalCount);
+    }
+
+    public async Task<Dictionary<VerificationStatus, int>> GetVerificationSummaryAsync(CancellationToken ct = default)
+    {
+        var grouped = await db.ProviderProfiles
+            .GroupBy(p => p.VerificationStatus)
+            .Select(g => new { Status = g.Key, Count = g.Count() })
+            .ToListAsync(ct);
+
+        var result = new Dictionary<VerificationStatus, int>
+        {
+            { VerificationStatus.Pending, 0 },
+            { VerificationStatus.InReview, 0 },
+            { VerificationStatus.Verified, 0 },
+            { VerificationStatus.Rejected, 0 }
+        };
+
+        foreach (var item in grouped)
+        {
+            result[item.Status] = item.Count;
+        }
+
+        return result;
+    }
 }

@@ -219,9 +219,11 @@ public class ProviderProfileService(
         TotalReviewCount: p.TotalReviewCount,
         CreatedAt: p.CreatedAt,
         Certifications: p.Certifications.Select(c => new CertificationDto(
-            c.Id, c.Type, c.FileUrl, c.OriginalFileName, c.UploadedAt, c.ReviewStatus)).ToList());
+            c.Id, c.Type, c.FileUrl, c.OriginalFileName, c.UploadedAt, c.ReviewStatus)).ToList(),
+        AuditLogs: p.AuditLogs.OrderByDescending(a => a.Timestamp).Select(a => new AuditLogDto(
+            a.Id, a.AdminUserId, a.PreviousStatus, a.NewStatus, a.Timestamp, a.Note)).ToList());
 
-    private static ProviderProfileAdminDto MapToAdminDto(ProviderProfile p) => new(
+    public static ProviderProfileAdminDto MapToAdminDto(ProviderProfile p) => new(
         Id: p.Id,
         UserId: p.UserId,
         FullName: p.User.FullName,
