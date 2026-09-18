@@ -17,4 +17,12 @@ public interface IProviderProfileRepository
         int take,
         CancellationToken ct = default);
     Task<Guid?> GetOwnerUserIdAsync(Guid profileId, CancellationToken ct = default);
+    
+    Task<(List<ProviderProfile> Items, int TotalCount)> GetVerificationQueueAsync(
+        VerificationStatus? status,
+        int skip,
+        int take,
+        CancellationToken ct = default);
+        
+    Task<Dictionary<VerificationStatus, int>> GetVerificationSummaryAsync(CancellationToken ct = default);
 }
