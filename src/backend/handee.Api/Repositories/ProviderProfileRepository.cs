@@ -36,6 +36,7 @@ public class ProviderProfileRepository(AppDbContext db) : IProviderProfileReposi
             .FirstOrDefaultAsync(ct);
 
     public async Task<(List<ProviderProfile> Items, int TotalCount)> SearchAsync(
+        string? searchTerm,
         Guid? skillCategoryId,
         double? lat,
         double? lng,
@@ -53,6 +54,13 @@ public class ProviderProfileRepository(AppDbContext db) : IProviderProfileReposi
 
         if (skillCategoryId.HasValue)
             query = query.Where(p => p.SkillCategories.Any(s => s.Id == skillCategoryId.Value));
+
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            var term = searchTerm.ToLower();
+            query = query.Where(p => (p.User.FullName != null && p.User.FullName.ToLower().Contains(term)) ||
+                                     (p.User.Email != null && p.User.Email.ToLower().Contains(term)));
+        }
 
         if (lat.HasValue && lng.HasValue)
         {
@@ -75,6 +83,8 @@ public class ProviderProfileRepository(AppDbContext db) : IProviderProfileReposi
 
     public async Task<(List<ProviderProfile> Items, int TotalCount)> GetVerificationQueueAsync(
         VerificationStatus? status,
+        string? searchTerm,
+        Guid? skillCategoryId,
         int skip,
         int take,
         CancellationToken ct = default)
@@ -87,6 +97,16 @@ public class ProviderProfileRepository(AppDbContext db) : IProviderProfileReposi
         if (status.HasValue)
         {
             query = query.Where(p => p.VerificationStatus == status.Value);
+        }
+
+        if (skillCategoryId.HasValue)
+            query = query.Where(p => p.SkillCategories.Any(s => s.Id == skillCategoryId.Value));
+
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            var term = searchTerm.ToLower();
+            query = query.Where(p => (p.User.FullName != null && p.User.FullName.ToLower().Contains(term)) ||
+                                     (p.User.Email != null && p.User.Email.ToLower().Contains(term)));
         }
 
         var totalCount = await query.CountAsync(ct);

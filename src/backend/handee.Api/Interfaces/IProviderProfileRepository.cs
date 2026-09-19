@@ -9,6 +9,7 @@ public interface IProviderProfileRepository
     Task AddAsync(ProviderProfile profile, CancellationToken ct = default);
     Task SaveChangesAsync(CancellationToken ct = default);
     Task<(List<ProviderProfile> Items, int TotalCount)> SearchAsync(
+        string? searchTerm,
         Guid? skillCategoryId,
         double? lat,
         double? lng,
@@ -20,6 +21,8 @@ public interface IProviderProfileRepository
     
     Task<(List<ProviderProfile> Items, int TotalCount)> GetVerificationQueueAsync(
         VerificationStatus? status,
+        string? searchTerm,
+        Guid? skillCategoryId,
         int skip,
         int take,
         CancellationToken ct = default);
