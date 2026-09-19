@@ -39,6 +39,7 @@
     margin-bottom: 0.5rem;
     letter-spacing: -0.03em;
     color: var(--text-h);
+    text-align: center;
 }
 
 .auth-card p.subtitle {
@@ -46,6 +47,7 @@
     font-size: 1.05rem;
     margin-bottom: 3rem;
     line-height: 1.6;
+    text-align: center;
 }
 
 .form-group {
