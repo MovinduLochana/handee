@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using handee.API.Entities;
@@ -61,20 +62,40 @@ public class AdminController : ControllerBase
         }
     }
 
-    // PATCH /admin/certifications/{certId}/review
     [HttpPatch("certifications/{certId:guid}/review")]
     public async Task<IActionResult> ReviewCertification(
         Guid certId, [FromBody] ReviewCertificationDto dto, CancellationToken ct)
     {
+        var adminId = Guid.Parse(User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier)!);
         try
         {
-            await _adminService.ReviewCertificationAsync(certId, dto.Status, ct);
+            await _adminService.ReviewCertificationAsync(certId, adminId, dto.Status, ct);
             return NoContent();
         }
         catch (NotFoundException ex)
         {
             return NotFound(ex.Message);
         }
+    }
+
+    // GET /admin/verifications
+    [HttpGet("verifications")]
+    public async Task<IActionResult> GetVerificationQueue(
+        [FromQuery] VerificationStatus? status,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 50,
+        CancellationToken ct = default)
+    {
+        var result = await _adminService.GetVerificationQueueAsync(status, page, pageSize, ct);
+        return Ok(result);
+    }
+
+    // GET /admin/verifications/summary
+    [HttpGet("verifications/summary")]
+    public async Task<IActionResult> GetVerificationSummary(CancellationToken ct = default)
+    {
+        var result = await _adminService.GetVerificationSummaryAsync(ct);
+        return Ok(result);
     }
 }
 

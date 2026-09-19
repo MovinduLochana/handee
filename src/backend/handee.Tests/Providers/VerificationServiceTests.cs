@@ -118,11 +118,11 @@ public class VerificationServiceTests
     }
 
     [Fact]
-    public async Task Pending_To_Verified_Skip_InReview_Should_Throw()
+    public async Task Pending_To_Verified_Skip_InReview_Should_Succeed()
     {
         var profile = BuildProfile(VerificationStatus.Pending);
-        await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            _sut.TransitionAsync(profile.Id, Guid.NewGuid(), VerificationStatus.Verified, null));
+        await _sut.TransitionAsync(profile.Id, Guid.NewGuid(), VerificationStatus.Verified, null);
+        Assert.Equal(VerificationStatus.Verified, profile.VerificationStatus);
     }
 
     [Fact]

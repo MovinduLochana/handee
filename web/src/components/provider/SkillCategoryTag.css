@@ -1,0 +1,44 @@
+.skill-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 100px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  font-family: var(--font-sans);
+  background: var(--accent-warm-light);
+  color: var(--accent-warm);
+  border: 1px solid var(--accent-warm-light);
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.skill-tag-icon {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  object-fit: contain;
+}
+
+.skill-tag-clickable {
+  cursor: pointer;
+}
+
+.skill-tag-clickable:hover {
+  border-color: var(--accent-warm);
+  color: var(--bg-surface);
+  background: var(--accent-warm);
+}
+
+.skill-tag-selected {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+.skill-tag-selected:hover {
+  background: var(--accent-hover);
+  color: #fff;
+  border-color: var(--accent-hover);
+}

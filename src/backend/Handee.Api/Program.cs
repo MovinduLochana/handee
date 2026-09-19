@@ -172,6 +172,9 @@ using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     await dbContext.Database.MigrateAsync();
+    
+    // Seed skill categories
+    await SkillCategorySeeder.SeedAsync(dbContext);
 }
 
 app.UseAuthentication();

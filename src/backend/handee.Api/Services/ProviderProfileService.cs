@@ -105,19 +105,33 @@ public class ProviderProfileService(
 
         var fileUrl = await storage.UploadAsync(dto.File, "certifications", ct);
 
-        var cert = new Certification
+        var existingCert = profile.Certifications.FirstOrDefault(c => c.Type == dto.Type);
+        Certification cert;
+        
+        if (existingCert != null)
         {
-            Id = Guid.NewGuid(),
-            ProviderProfileId = profileId,
-            Type = dto.Type,
-            FileUrl = fileUrl,
-            OriginalFileName = dto.File.FileName,
-            UploadedAt = DateTimeOffset.UtcNow,
-            ReviewStatus = DocumentReviewStatus.Pending
-        };
-
-        await certRepo.AddAsync(cert, ct);
-        await certRepo.SaveChangesAsync(ct);
+            existingCert.FileUrl = fileUrl;
+            existingCert.OriginalFileName = dto.File.FileName;
+            existingCert.UploadedAt = DateTimeOffset.UtcNow;
+            existingCert.ReviewStatus = DocumentReviewStatus.Pending;
+            cert = existingCert;
+            await certRepo.SaveChangesAsync(ct);
+        }
+        else
+        {
+            cert = new Certification
+            {
+                Id = Guid.NewGuid(),
+                ProviderProfileId = profileId,
+                Type = dto.Type,
+                FileUrl = fileUrl,
+                OriginalFileName = dto.File.FileName,
+                UploadedAt = DateTimeOffset.UtcNow,
+                ReviewStatus = DocumentReviewStatus.Pending
+            };
+            await certRepo.AddAsync(cert, ct);
+            await certRepo.SaveChangesAsync(ct);
+        }
 
         // If provider was Rejected, a new document submission moves them back to Pending
         if (profile.VerificationStatus == VerificationStatus.Rejected)
@@ -219,9 +233,11 @@ public class ProviderProfileService(
         TotalReviewCount: p.TotalReviewCount,
         CreatedAt: p.CreatedAt,
         Certifications: p.Certifications.Select(c => new CertificationDto(
-            c.Id, c.Type, c.FileUrl, c.OriginalFileName, c.UploadedAt, c.ReviewStatus)).ToList());
+            c.Id, c.Type, c.FileUrl, c.OriginalFileName, c.UploadedAt, c.ReviewStatus)).ToList(),
+        AuditLogs: p.AuditLogs.OrderByDescending(a => a.Timestamp).Select(a => new AuditLogDto(
+            a.Id, a.AdminUserId, a.PreviousStatus, a.NewStatus, a.Timestamp, a.Note)).ToList());
 
-    private static ProviderProfileAdminDto MapToAdminDto(ProviderProfile p) => new(
+    public static ProviderProfileAdminDto MapToAdminDto(ProviderProfile p) => new(
         Id: p.Id,
         UserId: p.UserId,
         FullName: p.User.FullName,

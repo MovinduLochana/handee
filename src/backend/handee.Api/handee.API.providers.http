@@ -41,7 +41,7 @@ Content-Type: application/pdf
 ###
 # ─────────────────────────────────────────────────────────────────────────────
 #  STEP 2 — Get profile as Provider (own view — full data, includes doc URLs)
-#  Expected: 200 OK — ProviderProfileProviderDto (certifications visible)
+#  Expected: 200 OK — ProviderProfileProviderDto (certifications and auditLogs visible)
 # ─────────────────────────────────────────────────────────────────────────────
 GET {{handee_API_HostAddress}}/api/providers/{{profileId}}
 Authorization: Bearer {{providerToken}}
@@ -275,3 +275,18 @@ Content-Type: application/json
   "status": "Approved"
 }
 
+###
+# ─────────────────────────────────────────────────────────────────────────────
+#  STEP 23 — Admin: Get Verification Queue (Pending filtering)
+#  Expected: 200 OK — Paged list of ProviderProfiles
+# ─────────────────────────────────────────────────────────────────────────────
+GET {{handee_API_HostAddress}}/admin/verifications?status=Pending&page=1&pageSize=50
+Authorization: Bearer {{adminToken}}
+
+###
+# ─────────────────────────────────────────────────────────────────────────────
+#  STEP 24 — Admin: Get Verification Summary
+#  Expected: 200 OK — Dictionary of counts by status
+# ─────────────────────────────────────────────────────────────────────────────
+GET {{handee_API_HostAddress}}/admin/verifications/summary
+Authorization: Bearer {{adminToken}}
