@@ -8,6 +8,8 @@ export const adminApi = {
    */
   async getVerificationQueue(params: {
     status?: VerificationStatus;
+    searchTerm?: string;
+    skillCategoryId?: string;
     page?: number;
     pageSize?: number;
   }): Promise<PagedResult<ProviderProfileAdminDto>> {
