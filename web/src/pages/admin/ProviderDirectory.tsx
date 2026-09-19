@@ -5,20 +5,17 @@ import { Search, MapPin, Star, Eye } from "lucide-react";
 import { providerApi } from "../../api/providers";
 import { skillCategoryApi } from "../../api/skillCategories";
 import StatusBadge from "../../components/provider/StatusBadge";
-import type { VerificationStatus } from "../../api/types";
 import "./ProviderDirectory.css";
 
 export default function ProviderDirectory() {
   // Search State
   const [page, setPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState<VerificationStatus | "">("");
   const [skillFilter, setSkillFilter] = useState("");
 
   // Values to trigger query refetch on Search click
   const [appliedFilters, setAppliedFilters] = useState({
     searchTerm: "",
-    status: "" as VerificationStatus | "",
     skill: "",
   });
 
@@ -36,14 +33,13 @@ export default function ProviderDirectory() {
         page,
         pageSize,
         searchTerm: appliedFilters.searchTerm || undefined,
-        status: appliedFilters.status || undefined,
         skillCategoryId: appliedFilters.skill || undefined,
       }),
   });
 
   const handleSearch = () => {
     setPage(1);
-    setAppliedFilters({ searchTerm, status: statusFilter, skill: skillFilter });
+    setAppliedFilters({ searchTerm, skill: skillFilter });
   };
 
   const items = data?.items || [];
@@ -79,20 +75,7 @@ export default function ProviderDirectory() {
           </div>
         </div>
 
-        <div className="filter-group">
-          <label>Status</label>
-          <select
-            className="filter-input"
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as VerificationStatus | "")}
-          >
-            <option value="">All Statuses</option>
-            <option value="Verified">Verified</option>
-            <option value="Pending">Pending</option>
-            <option value="InReview">In Review</option>
-            <option value="Rejected">Rejected</option>
-          </select>
-        </div>
+
 
         <div className="filter-group">
           <label>Skill Category</label>

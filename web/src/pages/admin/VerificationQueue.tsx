@@ -1,25 +1,49 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Users, Clock, AlertOctagon, CheckCircle } from "lucide-react";
+import { Users, Clock, AlertOctagon, CheckCircle, Eye, Search } from "lucide-react";
 import { adminApi } from "../../api/admin";
+import { skillCategoryApi } from "../../api/skillCategories";
 import StatusBadge from "../../components/provider/StatusBadge";
 import type { VerificationStatus } from "../../api/types";
 import "./VerificationQueue.css";
 
 export default function VerificationQueue() {
-  const navigate = useNavigate();
-  const [statusFilter, setStatusFilter] = useState<VerificationStatus | "All">("Pending");
+  const [statusFilter, setStatusFilter] = useState<VerificationStatus | "All">("All");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [skillFilter, setSkillFilter] = useState("");
+
+  const [appliedFilters, setAppliedFilters] = useState({
+    status: "All" as VerificationStatus | "All",
+    searchTerm: "",
+    skill: "",
+  });
+
+  const { data: categories = [] } = useQuery({
+    queryKey: ["skillCategories"],
+    queryFn: skillCategoryApi.getSkillCategories,
+  });
 
   const { data: queueData, isLoading: isLoadingQueue } = useQuery({
-    queryKey: ["verificationQueue", statusFilter],
+    queryKey: ["verificationQueue", appliedFilters],
     queryFn: () =>
       adminApi.getVerificationQueue({
-        status: statusFilter === "All" ? undefined : statusFilter,
+        status: appliedFilters.status === "All" ? undefined : appliedFilters.status,
+        searchTerm: appliedFilters.searchTerm || undefined,
+        skillCategoryId: appliedFilters.skill || undefined,
         page: 1,
         pageSize: 50,
       }),
   });
+
+  const handleSearch = () => {
+    setAppliedFilters({ status: statusFilter, searchTerm, skill: skillFilter });
+  };
+
+  const handleKpiClick = (status: VerificationStatus) => {
+    setStatusFilter(status);
+    setAppliedFilters((prev) => ({ ...prev, status }));
+  };
 
   const { data: summaryData, isLoading: isLoadingSummary } = useQuery({
     queryKey: ["verificationSummary"],
@@ -52,7 +76,7 @@ export default function VerificationQueue() {
         <button
           type="button"
           className="kpi-card kpi-pending hover-lift"
-          onClick={() => setStatusFilter("Pending")}
+          onClick={() => handleKpiClick("Pending")}
           style={{
             cursor: "pointer",
             textAlign: "left",
@@ -73,7 +97,7 @@ export default function VerificationQueue() {
         <button
           type="button"
           className="kpi-card kpi-review hover-lift"
-          onClick={() => setStatusFilter("InReview")}
+          onClick={() => handleKpiClick("InReview")}
           style={{
             cursor: "pointer",
             textAlign: "left",
@@ -94,7 +118,7 @@ export default function VerificationQueue() {
         <button
           type="button"
           className="kpi-card kpi-verified hover-lift"
-          onClick={() => setStatusFilter("Verified")}
+          onClick={() => handleKpiClick("Verified")}
           style={{
             cursor: "pointer",
             textAlign: "left",
@@ -115,7 +139,7 @@ export default function VerificationQueue() {
         <button
           type="button"
           className="kpi-card kpi-rejected hover-lift"
-          onClick={() => setStatusFilter("Rejected")}
+          onClick={() => handleKpiClick("Rejected")}
           style={{
             cursor: "pointer",
             textAlign: "left",
@@ -135,10 +159,27 @@ export default function VerificationQueue() {
         </button>
       </div>
 
-      <div className="admin-table-card animate-fade-up animate-delay-100">
-        <div className="table-toolbar">
+      <div className="directory-toolbar animate-fade-up">
+        <div className="filter-group">
+          <label>Search Provider</label>
+          <div style={{ position: "relative" }}>
+            <Search size={16} style={{ position: "absolute", left: 12, top: 13, color: "var(--text-muted)" }} />
+            <input
+              type="text"
+              className="filter-input"
+              style={{ paddingLeft: "2.5rem" }}
+              placeholder="Name or email..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+            />
+          </div>
+        </div>
+
+        <div className="filter-group">
+          <label>Status</label>
           <select
-            className="toolbar-select"
+            className="filter-input"
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value as any)}
           >
@@ -150,14 +191,30 @@ export default function VerificationQueue() {
           </select>
         </div>
 
-        <table className="data-table">
+        <div className="filter-group">
+          <label>Skill Category</label>
+          <select className="filter-input" value={skillFilter} onChange={(e) => setSkillFilter(e.target.value)}>
+            <option value="">All Categories</option>
+            {categories.map((c) => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </select>
+        </div>
+
+        <button className="filter-btn" onClick={handleSearch}>
+          <Search size={16} /> Search
+        </button>
+      </div>
+
+      <div className="directory-table-card animate-fade-up animate-delay-100">
+        <table className="directory-table">
           <thead>
             <tr>
               <th>Provider</th>
               <th>Skills</th>
               <th>Signed Up</th>
               <th>Status</th>
-              <th></th>
+              <th style={{ textAlign: "right" }}>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -243,13 +300,9 @@ export default function VerificationQueue() {
                     <StatusBadge status={provider.verificationStatus} size="sm" />
                   </td>
                   <td style={{ textAlign: "right" }}>
-                    <button
-                      className="wizard-btn wizard-btn-secondary"
-                      onClick={() => navigate(`/admin/verifications/${provider.id}`)}
-                      style={{ padding: "0.4rem 0.8rem", fontSize: "0.8rem" }}
-                    >
-                      View
-                    </button>
+                    <Link to={`/admin/verifications/${provider.id}`} className="table-action-btn">
+                      <Eye size={14} /> View
+                    </Link>
                   </td>
                 </tr>
               ))

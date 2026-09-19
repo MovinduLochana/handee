@@ -92,68 +92,7 @@
   font-weight: 600;
 }
 
-/* ── Data Table ── */
-.admin-table-card {
-  border-top: 2px solid var(--border);
-  padding-top: 1rem;
-}
-
-.table-toolbar {
-  padding: 1rem 1.5rem;
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  gap: 1rem;
-  background: var(--bg-surface-elevated);
-}
-
-.toolbar-select {
-  padding: 0.5rem 1rem;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--bg-surface);
-  color: var(--text);
-  font-size: 0.85rem;
-  outline: none;
-  cursor: pointer;
-}
-
-.toolbar-select:focus {
-  border-color: var(--accent);
-}
-
-.data-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.data-table th {
-  text-align: left;
-  padding: 1rem 1.5rem;
-  background: var(--bg-surface-elevated);
-  border-bottom: 1px solid var(--border);
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.data-table td {
-  padding: 1rem 1.5rem;
-  border-bottom: 1px solid var(--border);
-  font-size: 0.9rem;
-  color: var(--text);
-  vertical-align: middle;
-}
-
-.data-table tbody tr {
-  transition: background 0.2s ease;
-  cursor: pointer;
-}
-
-.data-table tbody tr:hover {
-  background: var(--bg-surface-elevated);
-}
+/* ── Data Table Overrides ── */
 
 .provider-cell {
   display: flex;

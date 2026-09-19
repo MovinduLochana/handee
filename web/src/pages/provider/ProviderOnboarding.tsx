@@ -57,6 +57,14 @@ export default function ProviderOnboarding() {
   const [serviceAreaLongitude, setServiceAreaLongitude] = useState<number | null>(null);
   const [serviceRadiusKm, setServiceRadiusKm] = useState(25);
 
+  // Address fields
+  const [addressLine1, setAddressLine1] = useState("");
+  const [addressLine2, setAddressLine2] = useState("");
+  const [city, setCity] = useState("");
+  const [addrState, setAddrState] = useState("");
+  const [postalCode, setPostalCode] = useState("");
+  const [country, setCountry] = useState("");
+
   useEffect(() => {
     if (profile) {
       if (profile.headline) setHeadline(profile.headline);
@@ -72,6 +80,12 @@ export default function ProviderOnboarding() {
       if (profile.serviceRadiusKm) setServiceRadiusKm(profile.serviceRadiusKm);
       if (profile.serviceAreaLatitude) setServiceAreaLatitude(profile.serviceAreaLatitude);
       if (profile.serviceAreaLongitude) setServiceAreaLongitude(profile.serviceAreaLongitude);
+      setAddressLine1(profile.addressLine1 || "");
+      setAddressLine2(profile.addressLine2 || "");
+      setCity(profile.city || "");
+      setAddrState(profile.state || "");
+      setPostalCode(profile.postalCode || "");
+      setCountry(profile.country || "");
     }
   }, [profile]);
 
@@ -87,10 +101,15 @@ export default function ProviderOnboarding() {
         languages,
         servicesOffered,
         skillCategoryIds: Array.from(selectedSkillIds),
-        serviceAreaAddress,
         serviceAreaLatitude: serviceAreaLatitude !== null ? serviceAreaLatitude : undefined,
         serviceAreaLongitude: serviceAreaLongitude !== null ? serviceAreaLongitude : undefined,
         serviceRadiusKm,
+        addressLine1: addressLine1 || undefined,
+        addressLine2: addressLine2 || undefined,
+        city: city || undefined,
+        state: addrState || undefined,
+        postalCode: postalCode || undefined,
+        country: country || undefined,
       });
     },
     onSuccess: () => {
@@ -257,6 +276,76 @@ export default function ProviderOnboarding() {
                   onChange={(e) => setLangInput(e.target.value)}
                   onKeyDown={handleAddLang}
                 />
+              </div>
+            </div>
+
+            <h3 style={{ marginTop: "2rem", marginBottom: "0.5rem" }}>Address</h3>
+            <div className="wizard-field">
+              <label htmlFor="addressLine1">Address Line 1</label>
+              <input
+                id="addressLine1"
+                type="text"
+                placeholder="Street address"
+                value={addressLine1}
+                onChange={(e) => setAddressLine1(e.target.value)}
+              />
+            </div>
+            <div className="wizard-field">
+              <label htmlFor="addressLine2">Address Line 2</label>
+              <input
+                id="addressLine2"
+                type="text"
+                placeholder="Apt, suite, unit, etc. (optional)"
+                value={addressLine2}
+                onChange={(e) => setAddressLine2(e.target.value)}
+              />
+            </div>
+            <div className="form-row">
+              <div className="form-col" style={{ flex: 1 }}>
+                <div className="wizard-field">
+                  <label htmlFor="city">City</label>
+                  <input
+                    id="city"
+                    type="text"
+                    value={city}
+                    onChange={(e) => setCity(e.target.value)}
+                  />
+                </div>
+              </div>
+              <div className="form-col" style={{ flex: 1 }}>
+                <div className="wizard-field">
+                  <label htmlFor="state">State / Province</label>
+                  <input
+                    id="state"
+                    type="text"
+                    value={addrState}
+                    onChange={(e) => setAddrState(e.target.value)}
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="form-row">
+              <div className="form-col" style={{ flex: 1 }}>
+                <div className="wizard-field">
+                  <label htmlFor="postalCode">Postal Code</label>
+                  <input
+                    id="postalCode"
+                    type="text"
+                    value={postalCode}
+                    onChange={(e) => setPostalCode(e.target.value)}
+                  />
+                </div>
+              </div>
+              <div className="form-col" style={{ flex: 1 }}>
+                <div className="wizard-field">
+                  <label htmlFor="country">Country</label>
+                  <input
+                    id="country"
+                    type="text"
+                    value={country}
+                    onChange={(e) => setCountry(e.target.value)}
+                  />
+                </div>
               </div>
             </div>
           </div>
