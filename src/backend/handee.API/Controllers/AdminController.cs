@@ -78,15 +78,16 @@ public class AdminController : ControllerBase
         }
     }
 
-    // GET /admin/verifications
     [HttpGet("verifications")]
     public async Task<IActionResult> GetVerificationQueue(
         [FromQuery] VerificationStatus? status,
+        [FromQuery] string? searchTerm,
+        [FromQuery] Guid? skillCategoryId,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 50,
         CancellationToken ct = default)
     {
-        var result = await _adminService.GetVerificationQueueAsync(status, page, pageSize, ct);
+        var result = await _adminService.GetVerificationQueueAsync(status, searchTerm, skillCategoryId, page, pageSize, ct);
         return Ok(result);
     }
 
