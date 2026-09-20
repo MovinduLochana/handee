@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { User, Eye, CheckCircle2, MapPin } from "lucide-react";
+import { User, Eye, CheckCircle2, MapPin, Home } from "lucide-react";
 import { providerApi } from "../../api/providers";
 import { skillCategoryApi } from "../../api/skillCategories";
 import SkillCategoryTag from "../../components/provider/SkillCategoryTag";
@@ -48,6 +48,14 @@ export default function ProviderProfile() {
   const [isAvailableForWork, setIsAvailableForWork] = useState(true);
   const [availabilityNote, setAvailabilityNote] = useState("");
 
+  // Address fields
+  const [addressLine1, setAddressLine1] = useState("");
+  const [addressLine2, setAddressLine2] = useState("");
+  const [city, setCity] = useState("");
+  const [addrState, setAddrState] = useState("");
+  const [postalCode, setPostalCode] = useState("");
+  const [country, setCountry] = useState("");
+
   useEffect(() => {
     if (myProfile) {
       setHeadline(myProfile.headline || "");
@@ -63,6 +71,12 @@ export default function ProviderProfile() {
       setServiceAreaLongitude(myProfile.serviceAreaLongitude ?? null);
       setIsAvailableForWork(myProfile.isAvailableForWork ?? true);
       setAvailabilityNote(myProfile.availabilityNote || "");
+      setAddressLine1(myProfile.addressLine1 || "");
+      setAddressLine2(myProfile.addressLine2 || "");
+      setCity(myProfile.city || "");
+      setAddrState(myProfile.state || "");
+      setPostalCode(myProfile.postalCode || "");
+      setCountry(myProfile.country || "");
     }
   }, [myProfile]);
 
@@ -77,12 +91,17 @@ export default function ProviderProfile() {
         languages,
         servicesOffered,
         skillCategoryIds: Array.from(selectedSkillIds),
-        serviceAreaAddress,
         serviceAreaLatitude: serviceAreaLatitude !== null ? serviceAreaLatitude : undefined,
         serviceAreaLongitude: serviceAreaLongitude !== null ? serviceAreaLongitude : undefined,
         serviceRadiusKm,
         isAvailableForWork,
         availabilityNote: availabilityNote || undefined,
+        addressLine1: addressLine1 || undefined,
+        addressLine2: addressLine2 || undefined,
+        city: city || undefined,
+        state: addrState || undefined,
+        postalCode: postalCode || undefined,
+        country: country || undefined,
       });
     },
     onSuccess: () => {
@@ -328,6 +347,85 @@ export default function ProviderProfile() {
               />
             </div>
           )}
+        </div>
+      </div>
+
+      {/* ── Address Card ── */}
+      <div className="edit-card">
+        <div className="edit-card-header">
+          <h3 className="edit-card-title">
+            <Home size={20} /> Address
+          </h3>
+        </div>
+        <div className="edit-card-body">
+          <div className="wizard-field">
+            <label>Address Line 1</label>
+            <input
+              type="text"
+              placeholder="Street address"
+              value={addressLine1}
+              onChange={(e) => setAddressLine1(e.target.value)}
+              disabled={!isEditing}
+            />
+          </div>
+          <div className="wizard-field">
+            <label>Address Line 2</label>
+            <input
+              type="text"
+              placeholder="Apt, suite, unit, etc. (optional)"
+              value={addressLine2}
+              onChange={(e) => setAddressLine2(e.target.value)}
+              disabled={!isEditing}
+            />
+          </div>
+          <div className="form-row">
+            <div className="form-col" style={{ flex: 1 }}>
+              <div className="wizard-field">
+                <label>City</label>
+                <input
+                  type="text"
+                  value={city}
+                  onChange={(e) => setCity(e.target.value)}
+                  disabled={!isEditing}
+                />
+              </div>
+            </div>
+            <div className="form-col" style={{ flex: 1 }}>
+              <div className="wizard-field">
+                <label>State / Province</label>
+                <input
+                  type="text"
+                  value={addrState}
+                  onChange={(e) => setAddrState(e.target.value)}
+                  disabled={!isEditing}
+                />
+              </div>
+            </div>
+          </div>
+          <div className="form-row">
+            <div className="form-col" style={{ flex: 1 }}>
+              <div className="wizard-field">
+                <label>Postal Code</label>
+                <input
+                  type="text"
+                  value={postalCode}
+                  onChange={(e) => setPostalCode(e.target.value)}
+                  disabled={!isEditing}
+                />
+              </div>
+            </div>
+            <div className="form-col" style={{ flex: 1 }}>
+              <div className="wizard-field">
+                <label>Country</label>
+                <input
+                  type="text"
+                  value={country}
+                  onChange={(e) => setCountry(e.target.value)}
+                  disabled={!isEditing}
+                />
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 

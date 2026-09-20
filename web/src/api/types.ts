@@ -48,6 +48,12 @@ export interface ProviderProfileProviderDto {
   serviceAreaLongitude: number | null;
   serviceAreaDisplayName: string | null;
   serviceRadiusKm: number;
+  addressLine1: string | null;
+  addressLine2: string | null;
+  city: string | null;
+  state: string | null;
+  postalCode: string | null;
+  country: string | null;
   verificationStatus: VerificationStatus;
   ratingAggregate: number;
   totalReviewCount: number;
@@ -92,8 +98,13 @@ export interface UpdateProviderProfileDto {
   skillCategoryIds?: string[];
   serviceAreaLatitude?: number;
   serviceAreaLongitude?: number;
-  serviceAreaAddress?: string;
   serviceRadiusKm?: number;
+  addressLine1?: string;
+  addressLine2?: string;
+  city?: string;
+  state?: string;
+  postalCode?: string;
+  country?: string;
 }
 
 export interface VerificationActionDto {

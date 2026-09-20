@@ -105,13 +105,13 @@ public class AdminService : IAdminService
     }
 
     public async Task<PagedResult<handee.API.DTO.Provider.ProviderProfileAdminDto>> GetVerificationQueueAsync(
-        VerificationStatus? status, int page, int pageSize, CancellationToken ct = default)
+        VerificationStatus? status, string? searchTerm, Guid? skillCategoryId, int page, int pageSize, CancellationToken ct = default)
     {
         var normalizedPage = Math.Max(page, 1);
         var normalizedPageSize = Math.Clamp(pageSize, 1, 100);
         var skip = (normalizedPage - 1) * normalizedPageSize;
 
-        var (items, totalCount) = await _providerRepo.GetVerificationQueueAsync(status, skip, normalizedPageSize, ct);
+        var (items, totalCount) = await _providerRepo.GetVerificationQueueAsync(status, searchTerm, skillCategoryId, skip, normalizedPageSize, ct);
 
         var dtos = items.Select(ProviderProfileService.MapToAdminDto).ToList();
 

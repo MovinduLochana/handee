@@ -39,6 +39,7 @@
   color: var(--text);
   font-size: 0.95rem;
   width: 100%;
+  box-sizing: border-box;
 }
 
 .filter-input:focus {

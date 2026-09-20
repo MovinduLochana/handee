@@ -73,24 +73,17 @@ public class ProviderProfileService(
         {
             profile.ServiceAreaLatitude = dto.ServiceAreaLatitude.Value;
             profile.ServiceAreaLongitude = dto.ServiceAreaLongitude.Value;
-            profile.ServiceAreaDisplayName = dto.ServiceAreaAddress;
-        }
-        else if (!string.IsNullOrEmpty(dto.ServiceAreaAddress))
-        {
-            var geoResult = await maps.GeocodeAsync(dto.ServiceAreaAddress, ct);
-            if (geoResult.HasValue)
-            {
-                profile.ServiceAreaLatitude = geoResult.Value.Lat;
-                profile.ServiceAreaLongitude = geoResult.Value.Lng;
-                profile.ServiceAreaDisplayName = geoResult.Value.DisplayName;
-            }
-            else
-            {
-                logger.LogWarning("Geocoding failed for address: {Address} — service area not updated", dto.ServiceAreaAddress);
-            }
         }
 
         if (dto.ServiceRadiusKm.HasValue)      profile.ServiceRadiusKm = dto.ServiceRadiusKm.Value;
+
+        // Address fields
+        if (dto.AddressLine1 is not null)  profile.AddressLine1 = dto.AddressLine1;
+        if (dto.AddressLine2 is not null)  profile.AddressLine2 = dto.AddressLine2;
+        if (dto.City is not null)          { profile.City = dto.City; profile.ServiceAreaDisplayName = dto.City; }
+        if (dto.State is not null)         profile.State = dto.State;
+        if (dto.PostalCode is not null)    profile.PostalCode = dto.PostalCode;
+        if (dto.Country is not null)       profile.Country = dto.Country;
 
         await profileRepo.SaveChangesAsync(ct);
     }
@@ -175,10 +168,10 @@ public class ProviderProfileService(
         await profileRepo.GetOwnerUserIdAsync(profileId, ct);
 
     public async Task<PagedResult<ProviderProfileCustomerDto>> SearchAsync(
-        Guid? skillCategoryId, double? lat, double? lng, double radiusKm,
+        string? searchTerm, Guid? skillCategoryId, double? lat, double? lng, double radiusKm,
         int skip, int take, CancellationToken ct = default)
     {
-        var (items, totalCount) = await profileRepo.SearchAsync(skillCategoryId, lat, lng, radiusKm, skip, take, ct);
+        var (items, totalCount) = await profileRepo.SearchAsync(searchTerm, skillCategoryId, lat, lng, radiusKm, skip, take, ct);
         var page = skip / take + 1;
         return new PagedResult<ProviderProfileCustomerDto>(
             items.Select(MapToCustomerDto).ToList(),
@@ -228,6 +221,12 @@ public class ProviderProfileService(
         ServiceAreaLongitude: p.ServiceAreaLongitude,
         ServiceAreaDisplayName: p.ServiceAreaDisplayName,
         ServiceRadiusKm: p.ServiceRadiusKm,
+        AddressLine1: p.AddressLine1,
+        AddressLine2: p.AddressLine2,
+        City: p.City,
+        State: p.State,
+        PostalCode: p.PostalCode,
+        Country: p.Country,
         VerificationStatus: p.VerificationStatus,
         RatingAggregate: p.RatingAggregate,
         TotalReviewCount: p.TotalReviewCount,
@@ -256,6 +255,12 @@ public class ProviderProfileService(
         ServiceAreaLongitude: p.ServiceAreaLongitude,
         ServiceAreaDisplayName: p.ServiceAreaDisplayName,
         ServiceRadiusKm: p.ServiceRadiusKm,
+        AddressLine1: p.AddressLine1,
+        AddressLine2: p.AddressLine2,
+        City: p.City,
+        State: p.State,
+        PostalCode: p.PostalCode,
+        Country: p.Country,
         VerificationStatus: p.VerificationStatus,
         RatingAggregate: p.RatingAggregate,
         TotalReviewCount: p.TotalReviewCount,
