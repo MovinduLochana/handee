@@ -90,8 +90,14 @@ builder.Services.AddStackExchangeRedisCache(options =>
     options.Configuration = builder.Configuration.GetConnectionString("Redis") ?? "localhost:6379";
 });
 
-// ── Google Maps HTTP Client ───────────────────────────────────────────────────
+// ── HTTP Clients ─────────────────────────────────────────────────────────────
 builder.Services.AddHttpClient("GoogleMaps");
+builder.Services.AddHttpClient("AgentService", client =>
+{
+    var baseUrl = builder.Configuration["AgentService:BaseUrl"] ?? "http://localhost:8000";
+    client.BaseAddress = new Uri(baseUrl);
+    client.Timeout = TimeSpan.FromSeconds(15);
+});
 
 // ── OpenTelemetry ─────────────────────────────────────────────────────────────
 builder.Services.AddOpenTelemetry()
@@ -112,6 +118,7 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IAdminService, AdminService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<IAgentWorkflowService, AgentWorkflowService>();
 builder.Services.AddScoped<IJobRequestService, JobRequestService>();
 builder.Services.AddScoped<IBookingService, BookingService>();
 
@@ -153,6 +160,16 @@ app.UseStaticFiles(new StaticFileOptions
     RequestPath = "/uploads"
 });
 
+// Auto-apply pending migrations
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    await dbContext.Database.MigrateAsync();
+    
+    // Seed skill categories
+    await SkillCategorySeeder.SeedAsync(dbContext);
+}
+
 // Seed roles
 using (var scope = app.Services.CreateScope())
 {
@@ -165,16 +182,6 @@ using (var scope = app.Services.CreateScope())
 {
     var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
     await AdminSeeder.SeedAdminAsync(userManager, builder.Configuration);
-}
-
-// Auto-apply pending migrations
-using (var scope = app.Services.CreateScope())
-{
-    var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    await dbContext.Database.MigrateAsync();
-    
-    // Seed skill categories
-    await SkillCategorySeeder.SeedAsync(dbContext);
 }
 
 app.UseAuthentication();

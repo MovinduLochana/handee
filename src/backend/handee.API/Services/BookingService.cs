@@ -65,7 +65,12 @@ public class BookingService : IBookingService
 
     public async Task<BookingResponseDto?> GetByIdAsync(Guid id, Guid requestingUserId, bool isRequesterAdmin)
     {
-        var booking = await _db.Bookings.FindAsync(id);
+        var booking = await _db.Bookings
+            .Include(b => b.Customer)
+            .Include(b => b.Provider)
+            .Include(b => b.JobRequest)
+            .FirstOrDefaultAsync(b => b.Id == id);
+
         if (booking is null)
             return null;
 
@@ -79,6 +84,9 @@ public class BookingService : IBookingService
     public async Task<List<BookingResponseDto>> GetForCustomerAsync(Guid customerId)
     {
         var bookings = await _db.Bookings
+            .Include(b => b.Customer)
+            .Include(b => b.Provider)
+            .Include(b => b.JobRequest)
             .Where(b => b.CustomerId == customerId)
             .OrderByDescending(b => b.CreatedAt)
             .ToListAsync();
@@ -89,7 +97,23 @@ public class BookingService : IBookingService
     public async Task<List<BookingResponseDto>> GetForProviderAsync(Guid providerId)
     {
         var bookings = await _db.Bookings
+            .Include(b => b.Customer)
+            .Include(b => b.Provider)
+            .Include(b => b.JobRequest)
             .Where(b => b.ProviderId == providerId)
+            .OrderByDescending(b => b.CreatedAt)
+            .ToListAsync();
+
+        return bookings.Select(ToDto).ToList();
+    }
+
+    public async Task<List<BookingResponseDto>> GetProviderOffersAsync(Guid providerId)
+    {
+        var bookings = await _db.Bookings
+            .Include(b => b.Customer)
+            .Include(b => b.Provider)
+            .Include(b => b.JobRequest)
+            .Where(b => b.ProviderId == providerId && b.Status == BookingStatus.Requested)
             .OrderByDescending(b => b.CreatedAt)
             .ToListAsync();
 
@@ -212,5 +236,12 @@ public class BookingService : IBookingService
         b.Status.ToString(),
         b.ScheduledAt,
         b.CreatedAt,
-        b.UpdatedAt);
+        b.UpdatedAt,
+        CustomerName: b.Customer?.FullName,
+        CustomerPhone: b.Customer?.PhoneNumber,
+        ProviderName: b.Provider?.FullName,
+        ServiceLocation: b.JobRequest?.Location,
+        Price: b.JobRequest?.BudgetMax ?? b.JobRequest?.BudgetMin ?? 3500m,
+        Category: b.JobRequest?.Category,
+        Description: b.JobRequest?.Description);
 }

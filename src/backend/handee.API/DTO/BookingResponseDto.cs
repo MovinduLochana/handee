@@ -9,5 +9,12 @@ public record BookingResponseDto(
     string Status,
     DateTimeOffset? ScheduledAt,
     DateTimeOffset CreatedAt,
-    DateTimeOffset? UpdatedAt
+    DateTimeOffset? UpdatedAt,
+    string? CustomerName = null,
+    string? CustomerPhone = null,
+    string? ProviderName = null,
+    string? ServiceLocation = null,
+    decimal? Price = null,
+    string? Category = null,
+    string? Description = null
 );

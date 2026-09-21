@@ -53,6 +53,17 @@ public class BookingController : ControllerBase
         return Ok(result);
     }
 
+    // GET /bookings/provider-offers
+    [HttpGet("provider-offers")]
+    public async Task<IActionResult> GetProviderOffers()
+    {
+        var providerId = GetUserId();
+        if (providerId is null) return Unauthorized();
+
+        var result = await _bookingService.GetProviderOffersAsync(providerId.Value);
+        return Ok(result);
+    }
+
     // GET /bookings
     [HttpGet]
     [Authorize(Roles = "Admin")]

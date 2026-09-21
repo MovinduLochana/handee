@@ -9,10 +9,12 @@ namespace handee.API.Services;
 public class JobRequestService : IJobRequestService
 {
     private readonly AppDbContext _db;
+    private readonly IAgentWorkflowService _agentWorkflowService;
 
-    public JobRequestService(AppDbContext db)
+    public JobRequestService(AppDbContext db, IAgentWorkflowService agentWorkflowService)
     {
         _db = db;
+        _agentWorkflowService = agentWorkflowService;
     }
 
     public async Task<JobRequestResponseDto> CreateAsync(Guid customerId, CreateJobRequestDto dto)
@@ -26,11 +28,15 @@ public class JobRequestService : IJobRequestService
             Urgency = dto.Urgency,
             BudgetMin = dto.BudgetMin,
             BudgetMax = dto.BudgetMax,
-            CustomerId = customerId
+            CustomerId = customerId,
+            Status = JobRequestStatus.PendingAiReview
         };
 
         _db.JobRequests.Add(jobRequest);
         await _db.SaveChangesAsync();
+
+        // Trigger 4-agent LangGraph workflow
+        await _agentWorkflowService.DispatchWorkflowAsync(jobRequest);
 
         return ToDto(jobRequest);
     }
