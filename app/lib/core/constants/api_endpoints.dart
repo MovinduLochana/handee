@@ -17,6 +17,9 @@ class ApiEndpoints {
   // User Profile (UserController)
   static const String userProfile = '/users/me';
 
+  // Service Categories
+  static const String serviceCategories = '/api/service-categories';
+
   // Job Requests (JobRequestController)
   static const String jobRequests = '/job-requests';
   static const String myJobRequests = '/job-requests/mine';
@@ -34,7 +37,12 @@ class ApiEndpoints {
   static const String assistantQuery = '/assistant/query';
 
   // Provider & Verification (ProviderController)
-  static const String providerVerification = '/provider/verification';
-  static const String providerProfile = '/provider/profile';
-  static String providerById(String id) => '/providers/$id';
+  static const String providerVerification = '/api/providers/verification'; // Wait, it's actually api/providers/{id}/verification based on controller. We'll leave the constant if they used it structurally differently, but let's fix what we added.
+  static const String providerProfile = '/api/providers/me'; 
+  static String providerById(String id) => '/api/providers/$id';
+  static const String providersSearch = '/api/providers/search';
+
+  // Service Listings (ServiceListingsController)
+  static const String serviceListings = '/api/service-listings';
+  static String providerServiceListings(String providerId) => '/api/service-listings/provider/$providerId';
 }
