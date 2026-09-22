@@ -128,8 +128,9 @@ public class ProviderController(
     }
 
     // ─── GET /api/providers/search ────────────────────────────────────────
-    // Authenticated — for Job Feed component / internal
+    // Public / Authenticated — for Directory listing
     [HttpGet("search")]
+    [AllowAnonymous]
     public async Task<IActionResult> Search(
         [FromQuery] string? searchTerm,
         [FromQuery] Guid? serviceCategoryId,

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/constants/colors.dart';
 import '../../providers/job_request_provider.dart';
+import '../../providers/service_category_provider.dart';
 import '../../widgets/custom_button.dart';
 import 'booking_tracker_screen.dart';
 
@@ -17,7 +18,7 @@ class CreateJobScreen extends StatefulWidget {
 
 class _CreateJobScreenState extends State<CreateJobScreen> {
   final _formKey = GlobalKey<FormState>();
-  late String _selectedCategory;
+  String? _selectedCategory;
   final _descController = TextEditingController();
   final _minBudgetController = TextEditingController(text: '3000');
   final _maxBudgetController = TextEditingController(text: '8000');
@@ -28,7 +29,7 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
   @override
   void initState() {
     super.initState();
-    _selectedCategory = widget.initialCategory ?? AppConstants.serviceCategories.first['name'] as String;
+    _selectedCategory = widget.initialCategory;
   }
 
   @override
@@ -47,13 +48,14 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
 
   Future<void> _submitJob() async {
     if (!_formKey.currentState!.validate()) return;
+    if (_selectedCategory == null) return; // Add null check for category
 
     final provider = context.read<JobRequestProvider>();
     final minBudget = double.tryParse(_minBudgetController.text.trim());
     final maxBudget = double.tryParse(_maxBudgetController.text.trim());
 
     final request = await provider.submitInstantMatch(
-      category: _selectedCategory,
+      category: _selectedCategory!,
       description: _descController.text.trim(),
       location: _selectedLocation,
       urgency: _selectedUrgency,
@@ -122,12 +124,18 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                 decoration: const InputDecoration(
                   prefixIcon: Icon(Icons.category_outlined, color: AppColors.textMuted),
                 ),
-                items: AppConstants.serviceCategories.map((c) {
+                items: [
+                  if (_selectedCategory == 'Unknown Category')
+                    DropdownMenuItem<String>(
+                      value: 'Unknown Category',
+                      child: Text('Unknown Category'), 
+                    ),
+                  ...context.watch<ServiceCategoryProvider>().categories.map((c) {
                   return DropdownMenuItem<String>(
-                    value: c['name'] as String,
-                    child: Text(c['name'] as String),
+                    value: c.name,
+                    child: Text(c.name),
                   );
-                }).toList(),
+                })],
                 onChanged: (val) {
                   if (val != null) setState(() => _selectedCategory = val);
                 },
