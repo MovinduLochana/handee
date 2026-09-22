@@ -11,7 +11,6 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid
 // Provider Verification & Profiles
     public DbSet<ProviderProfile> ProviderProfiles => Set<ProviderProfile>();
     public DbSet<Certification> Certifications => Set<Certification>();
-    public DbSet<SkillCategory> SkillCategories => Set<SkillCategory>();
     public DbSet<VerificationAuditLog> VerificationAuditLogs => Set<VerificationAuditLog>();
     public DbSet<Review> Reviews => Set<Review>();
 

@@ -59,13 +59,13 @@ public class ProviderProfileService(
         if (dto.IsAvailableForWork.HasValue)   profile.IsAvailableForWork = dto.IsAvailableForWork.Value;
         if (dto.AvailabilityNote is not null)  profile.AvailabilityNote = dto.AvailabilityNote;
 
-        // Update skill categories
-        if (dto.SkillCategoryIds is not null)
+        // Update service categories
+        if (dto.ServiceCategoryIds is not null)
         {
-            var categories = await db.SkillCategories
-                .Where(s => dto.SkillCategoryIds.Contains(s.Id))
+            var categories = await db.ServiceCategories
+                .Where(s => dto.ServiceCategoryIds.Contains(s.Id))
                 .ToListAsync(ct);
-            profile.SkillCategories = categories;
+            profile.ServiceCategories = categories;
         }
 
         // Update service area
@@ -194,7 +194,7 @@ public class ProviderProfileService(
         ServicesOffered: p.ServicesOffered,
         IsAvailableForWork: p.IsAvailableForWork,
         AvailabilityNote: p.AvailabilityNote,
-        SkillCategories: p.SkillCategories.Select(s => new SkillCategoryDto(s.Id, s.Name, s.IconUrl)).ToList(),
+        ServiceCategories: p.ServiceCategories.Select(s => new ServiceCategoryResponseDto(s.Id, s.Name, s.IconUrl, s.PriceBandMin, s.PriceBandMax)).ToList(),
         ServiceAreaDisplayName: p.ServiceAreaDisplayName,
         ServiceRadiusKm: p.ServiceRadiusKm,
         VerificationStatus: p.VerificationStatus,
@@ -216,7 +216,7 @@ public class ProviderProfileService(
         ServicesOffered: p.ServicesOffered,
         IsAvailableForWork: p.IsAvailableForWork,
         AvailabilityNote: p.AvailabilityNote,
-        SkillCategories: p.SkillCategories.Select(s => new SkillCategoryDto(s.Id, s.Name, s.IconUrl)).ToList(),
+        ServiceCategories: p.ServiceCategories.Select(s => new ServiceCategoryResponseDto(s.Id, s.Name, s.IconUrl, s.PriceBandMin, s.PriceBandMax)).ToList(),
         ServiceAreaLatitude: p.ServiceAreaLatitude,
         ServiceAreaLongitude: p.ServiceAreaLongitude,
         ServiceAreaDisplayName: p.ServiceAreaDisplayName,
@@ -250,7 +250,7 @@ public class ProviderProfileService(
         ServicesOffered: p.ServicesOffered,
         IsAvailableForWork: p.IsAvailableForWork,
         AvailabilityNote: p.AvailabilityNote,
-        SkillCategories: p.SkillCategories.Select(s => new SkillCategoryDto(s.Id, s.Name, s.IconUrl)).ToList(),
+        ServiceCategories: p.ServiceCategories.Select(s => new ServiceCategoryResponseDto(s.Id, s.Name, s.IconUrl, s.PriceBandMin, s.PriceBandMax)).ToList(),
         ServiceAreaLatitude: p.ServiceAreaLatitude,
         ServiceAreaLongitude: p.ServiceAreaLongitude,
         ServiceAreaDisplayName: p.ServiceAreaDisplayName,

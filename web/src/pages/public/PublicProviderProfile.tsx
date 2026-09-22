@@ -13,7 +13,7 @@ import {
 import { providerApi } from "../../api/providers";
 import type { ProviderProfileCustomerDto } from "../../api/types";
 import StarRating from "../../components/provider/StarRating";
-import SkillCategoryTag from "../../components/provider/SkillCategoryTag";
+import ServiceCategoryTag from "../../components/provider/ServiceCategoryTag";
 import EmptyState from "../../components/provider/EmptyState";
 import "./PublicProviderProfile.css";
 
@@ -142,11 +142,11 @@ export default function PublicProviderProfile() {
               <Briefcase size={20} color="var(--accent-warm)" /> Skills & Services
             </h2>
 
-            {profile.skillCategories.length > 0 && (
+            {profile.serviceCategories.length > 0 && (
               <div className="mb-6">
                 <div className="skill-tags">
-                  {profile.skillCategories.map((cat) => (
-                    <SkillCategoryTag key={cat.id} category={cat} />
+                  {profile.serviceCategories.map((cat) => (
+                    <ServiceCategoryTag key={cat.id} category={cat} />
                   ))}
                 </div>
               </div>

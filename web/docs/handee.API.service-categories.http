@@ -12,7 +12,7 @@
 #  STEP 1 — List all skill categories (public, no token required)
 #  Expected: 200 OK — array of { id, name, iconUrl } sorted alphabetically
 # ─────────────────────────────────────────────────────────────────────────────
-GET {{handee_API_HostAddress}}/api/skill-categories
+GET {{handee_API_HostAddress}}/api/service-categories
 
 ###
 # ─────────────────────────────────────────────────────────────────────────────
@@ -20,7 +20,7 @@ GET {{handee_API_HostAddress}}/api/skill-categories
 #  Expected: 201 Created — { id, name, iconUrl }
 #  Copy the returned `id` into @skillCategoryId above.
 # ─────────────────────────────────────────────────────────────────────────────
-POST {{handee_API_HostAddress}}/api/skill-categories
+POST {{handee_API_HostAddress}}/api/service-categories
 Authorization: Bearer {{adminToken}}
 Content-Type: application/json
 
@@ -34,7 +34,7 @@ Content-Type: application/json
 #  STEP 3 — Admin: create another category
 #  Expected: 201 Created
 # ─────────────────────────────────────────────────────────────────────────────
-POST {{handee_API_HostAddress}}/api/skill-categories
+POST {{handee_API_HostAddress}}/api/service-categories
 Authorization: Bearer {{adminToken}}
 Content-Type: application/json
 
@@ -48,7 +48,7 @@ Content-Type: application/json
 #  STEP 4 — Admin: duplicate name guard
 #  Expected: 409 Conflict — "A skill category named 'Plumbing' already exists."
 # ─────────────────────────────────────────────────────────────────────────────
-POST {{handee_API_HostAddress}}/api/skill-categories
+POST {{handee_API_HostAddress}}/api/service-categories
 Authorization: Bearer {{adminToken}}
 Content-Type: application/json
 
@@ -60,9 +60,9 @@ Content-Type: application/json
 ###
 # ─────────────────────────────────────────────────────────────────────────────
 #  STEP 5 — Admin: rename a category + set an icon URL
-#  Expected: 204 No Content; GET /api/skill-categories should reflect the change
+#  Expected: 204 No Content; GET /api/service-categories should reflect the change
 # ─────────────────────────────────────────────────────────────────────────────
-PUT {{handee_API_HostAddress}}/api/skill-categories/{{skillCategoryId}}
+PUT {{handee_API_HostAddress}}/api/service-categories/{{skillCategoryId}}
 Authorization: Bearer {{adminToken}}
 Content-Type: application/json
 
@@ -76,7 +76,7 @@ Content-Type: application/json
 #  STEP 6 — Admin: delete a category (safe — no providers assigned)
 #  Expected: 204 No Content
 # ─────────────────────────────────────────────────────────────────────────────
-DELETE {{handee_API_HostAddress}}/api/skill-categories/{{skillCategoryId}}
+DELETE {{handee_API_HostAddress}}/api/service-categories/{{skillCategoryId}}
 Authorization: Bearer {{adminToken}}
 
 ###
@@ -85,7 +85,7 @@ Authorization: Bearer {{adminToken}}
 #  Expected: 409 Conflict — "Cannot delete '...' — N provider(s) still reference it."
 #  (Assign the category to a provider first via PUT /api/providers/{id}, then retry)
 # ─────────────────────────────────────────────────────────────────────────────
-DELETE {{handee_API_HostAddress}}/api/skill-categories/{{skillCategoryId}}
+DELETE {{handee_API_HostAddress}}/api/service-categories/{{skillCategoryId}}
 Authorization: Bearer {{adminToken}}
 
 ###
@@ -93,7 +93,7 @@ Authorization: Bearer {{adminToken}}
 #  STEP 8 — Admin: delete a non-existent category
 #  Expected: 404 Not Found
 # ─────────────────────────────────────────────────────────────────────────────
-DELETE {{handee_API_HostAddress}}/api/skill-categories/00000000-0000-0000-0000-000000000000
+DELETE {{handee_API_HostAddress}}/api/service-categories/00000000-0000-0000-0000-000000000000
 Authorization: Bearer {{adminToken}}
 
 ###
@@ -101,7 +101,7 @@ Authorization: Bearer {{adminToken}}
 #  STEP 9 — Non-admin tries to create a category
 #  Expected: 403 Forbidden
 # ─────────────────────────────────────────────────────────────────────────────
-POST {{handee_API_HostAddress}}/api/skill-categories
+POST {{handee_API_HostAddress}}/api/service-categories
 Authorization: Bearer PASTE_PROVIDER_OR_CUSTOMER_TOKEN_HERE
 Content-Type: application/json
 

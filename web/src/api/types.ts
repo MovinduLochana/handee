@@ -4,7 +4,7 @@ export type CertificationType = "NIC" | "TradeCertification" | "BusinessRegistra
 export type DocumentReviewStatus = "Pending" | "Approved" | "Rejected";
 
 // ─── Shared Sub-Objects ────────────────────────────────────────────────────
-export interface SkillCategoryDto {
+export interface ServiceCategoryDto {
   id: string;
   name: string;
   iconUrl: string | null;
@@ -43,7 +43,7 @@ export interface ProviderProfileProviderDto {
   servicesOffered: string[];
   isAvailableForWork: boolean;
   availabilityNote: string | null;
-  skillCategories: SkillCategoryDto[];
+  serviceCategories: ServiceCategoryDto[];
   serviceAreaLatitude: number | null;
   serviceAreaLongitude: number | null;
   serviceAreaDisplayName: string | null;
@@ -76,7 +76,7 @@ export interface ProviderProfileCustomerDto {
   servicesOffered: string[];
   isAvailableForWork: boolean;
   availabilityNote: string | null;
-  skillCategories: SkillCategoryDto[];
+  serviceCategories: ServiceCategoryDto[];
   serviceAreaDisplayName: string | null;
   serviceRadiusKm: number;
   verificationStatus: VerificationStatus;
@@ -95,7 +95,7 @@ export interface UpdateProviderProfileDto {
   servicesOffered?: string[];
   isAvailableForWork?: boolean;
   availabilityNote?: string;
-  skillCategoryIds?: string[];
+  serviceCategoryIds?: string[];
   serviceAreaLatitude?: number;
   serviceAreaLongitude?: number;
   serviceRadiusKm?: number;
@@ -143,7 +143,7 @@ export interface PagedResult<T> {
 export interface ProviderSearchParams {
   searchTerm?: string;
   status?: VerificationStatus;
-  skillCategoryId?: string;
+  serviceCategoryId?: string;
   lat?: number;
   lng?: number;
   radiusKm?: number;

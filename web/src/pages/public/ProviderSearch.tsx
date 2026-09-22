@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Search, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { providerApi } from "../../api/providers";
-import { skillCategoryApi } from "../../api/skillCategories";
+import { serviceCategoryApi } from "../../api/serviceCategories";
 import type {
   ProviderSearchParams,
   PagedResult,
@@ -14,7 +14,7 @@ import "./ProviderSearch.css";
 
 export default function ProviderSearch() {
   const [searchTerm, setSearchTerm] = useState("");
-  const [skillCategoryId, setSkillCategoryId] = useState("");
+  const [serviceCategoryId, setServiceCategoryId] = useState("");
   const [page, setPage] = useState(1);
   const pageSize = 15;
 
@@ -25,8 +25,8 @@ export default function ProviderSearch() {
   });
 
   const { data: categories = [], isLoading: categoriesLoading } = useQuery({
-    queryKey: ["skillCategories"],
-    queryFn: skillCategoryApi.getSkillCategories,
+    queryKey: ["serviceCategories"],
+    queryFn: serviceCategoryApi.getServiceCategories,
   });
 
   const {
@@ -43,7 +43,7 @@ export default function ProviderSearch() {
     const newFilters: ProviderSearchParams = {
       status: "Verified",
       searchTerm: searchTerm || undefined,
-      skillCategoryId: skillCategoryId || undefined,
+      serviceCategoryId: serviceCategoryId || undefined,
       page: 1,
       pageSize,
     };
@@ -53,7 +53,7 @@ export default function ProviderSearch() {
 
   const handleClear = () => {
     setSearchTerm("");
-    setSkillCategoryId("");
+    setServiceCategoryId("");
     const newFilters: ProviderSearchParams = {
       status: "Verified",
       page: 1,
@@ -101,9 +101,9 @@ export default function ProviderSearch() {
               <select
                 id="category"
                 className="search-pill-select"
-                value={skillCategoryId}
+                value={serviceCategoryId}
                 onChange={(e) => {
-                  setSkillCategoryId(e.target.value);
+                  setServiceCategoryId(e.target.value);
                   // auto trigger search if needed, but manual is fine for unified bar too
                 }}
                 disabled={categoriesLoading}
@@ -118,7 +118,7 @@ export default function ProviderSearch() {
             </div>
 
             <div className="search-segment-actions">
-              {(searchTerm || skillCategoryId) && (
+              {(searchTerm || serviceCategoryId) && (
                 <button
                   type="button"
                   className="clear-btn-pill"

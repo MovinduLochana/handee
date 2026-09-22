@@ -3,8 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { User, Eye, CheckCircle2, MapPin, Home } from "lucide-react";
 import { providerApi } from "../../api/providers";
-import { skillCategoryApi } from "../../api/skillCategories";
-import SkillCategoryTag from "../../components/provider/SkillCategoryTag";
+import { serviceCategoryApi } from "../../api/serviceCategories";
+import ServiceCategoryTag from "../../components/provider/ServiceCategoryTag";
 import StatusBadge from "../../components/provider/StatusBadge";
 import { extractApiError } from "../../lib/api";
 import LocationPicker from "../../components/provider/LocationPicker";
@@ -25,8 +25,8 @@ export default function ProviderProfile() {
   });
 
   const { data: categories = [] } = useQuery({
-    queryKey: ["skillCategories"],
-    queryFn: skillCategoryApi.getSkillCategories,
+    queryKey: ["serviceCategories"],
+    queryFn: serviceCategoryApi.getServiceCategories,
   });
 
   // Form State
@@ -64,7 +64,7 @@ export default function ProviderProfile() {
       setYearsOfExperience(myProfile.yearsOfExperience || "");
       setLanguages(myProfile.languages || []);
       setServicesOffered(myProfile.servicesOffered || []);
-      setSelectedSkillIds(new Set(myProfile.skillCategories?.map((s) => s.id) || []));
+      setSelectedSkillIds(new Set(myProfile.serviceCategories?.map((s) => s.id) || []));
       setServiceAreaAddress(myProfile.serviceAreaDisplayName || "");
       setServiceRadiusKm(myProfile.serviceRadiusKm || 25);
       setServiceAreaLatitude(myProfile.serviceAreaLatitude ?? null);
@@ -90,7 +90,7 @@ export default function ProviderProfile() {
         yearsOfExperience: typeof yearsOfExperience === "number" ? yearsOfExperience : undefined,
         languages,
         servicesOffered,
-        skillCategoryIds: Array.from(selectedSkillIds),
+        serviceCategoryIds: Array.from(selectedSkillIds),
         serviceAreaLatitude: serviceAreaLatitude !== null ? serviceAreaLatitude : undefined,
         serviceAreaLongitude: serviceAreaLongitude !== null ? serviceAreaLongitude : undefined,
         serviceRadiusKm,
@@ -436,10 +436,10 @@ export default function ProviderProfile() {
         </div>
         <div className="edit-card-body">
           <div className="wizard-field">
-            <label>Skill Categories</label>
+            <label>Service Categories</label>
             <div className="skill-grid">
               {categories.map((cat) => (
-                <SkillCategoryTag
+                <ServiceCategoryTag
                   key={cat.id}
                   category={cat}
                   selected={selectedSkillIds.has(cat.id)}

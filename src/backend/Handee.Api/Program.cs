@@ -133,7 +133,6 @@ builder.Services.AddScoped<IGoogleMapsService, GoogleMapsService>();
 builder.Services.AddScoped<VerificationService>();
 builder.Services.AddScoped<ProviderProfileService>();
 builder.Services.AddScoped<ProviderTrustService>();
-builder.Services.AddScoped<SkillCategoryService>();
 
 // Reviews
 builder.Services.AddScoped<IReviewRepository, ReviewRepository>();
@@ -168,9 +167,6 @@ using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     await dbContext.Database.MigrateAsync();
-    
-    // Seed skill categories
-    await SkillCategorySeeder.SeedAsync(dbContext);
 }
 
 // Seed roles

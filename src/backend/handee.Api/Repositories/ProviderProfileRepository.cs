@@ -9,7 +9,7 @@ public class ProviderProfileRepository(AppDbContext db) : IProviderProfileReposi
 {
     public async Task<ProviderProfile?> GetByIdAsync(Guid id, CancellationToken ct = default) =>
         await db.ProviderProfiles
-            .Include(p => p.SkillCategories)
+            .Include(p => p.ServiceCategories)
             .Include(p => p.Certifications)
             .Include(p => p.AuditLogs)
             .Include(p => p.User)
@@ -17,7 +17,7 @@ public class ProviderProfileRepository(AppDbContext db) : IProviderProfileReposi
 
     public async Task<ProviderProfile?> GetByUserIdAsync(Guid userId, CancellationToken ct = default) =>
         await db.ProviderProfiles
-            .Include(p => p.SkillCategories)
+            .Include(p => p.ServiceCategories)
             .Include(p => p.Certifications)
             .Include(p => p.AuditLogs)
             .Include(p => p.User)
@@ -46,14 +46,14 @@ public class ProviderProfileRepository(AppDbContext db) : IProviderProfileReposi
         CancellationToken ct = default)
     {
         var query = db.ProviderProfiles
-            .Include(p => p.SkillCategories)
+            .Include(p => p.ServiceCategories)
             .Include(p => p.User)
             .Where(p => p.VerificationStatus == VerificationStatus.Verified
                         && p.IsAvailableForWork)
             .AsQueryable();
 
         if (skillCategoryId.HasValue)
-            query = query.Where(p => p.SkillCategories.Any(s => s.Id == skillCategoryId.Value));
+            query = query.Where(p => p.ServiceCategories.Any(s => s.Id == skillCategoryId.Value));
 
         if (!string.IsNullOrWhiteSpace(searchTerm))
         {
@@ -90,7 +90,7 @@ public class ProviderProfileRepository(AppDbContext db) : IProviderProfileReposi
         CancellationToken ct = default)
     {
         var query = db.ProviderProfiles
-            .Include(p => p.SkillCategories)
+            .Include(p => p.ServiceCategories)
             .Include(p => p.User)
             .AsQueryable();
 
@@ -100,7 +100,7 @@ public class ProviderProfileRepository(AppDbContext db) : IProviderProfileReposi
         }
 
         if (skillCategoryId.HasValue)
-            query = query.Where(p => p.SkillCategories.Any(s => s.Id == skillCategoryId.Value));
+            query = query.Where(p => p.ServiceCategories.Any(s => s.Id == skillCategoryId.Value));
 
         if (!string.IsNullOrWhiteSpace(searchTerm))
         {

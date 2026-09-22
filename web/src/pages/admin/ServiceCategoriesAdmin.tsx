@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { skillCategoryApi } from "../../api/skillCategories";
+import { serviceCategoryApi } from "../../api/serviceCategories";
 import { Plus, Trash2, Edit2, Loader2, Save, X, Tag } from "lucide-react";
 
 // Curated set of trade/service-relevant emojis
@@ -299,20 +299,20 @@ function EditRow({
   );
 }
 
-export default function SkillCategoriesAdmin() {
+export default function ServiceCategoriesAdmin() {
   const queryClient = useQueryClient();
   const { data: categories = [], isLoading } = useQuery({
-    queryKey: ["skillCategories"],
-    queryFn: skillCategoryApi.getSkillCategories,
+    queryKey: ["serviceCategories"],
+    queryFn: serviceCategoryApi.getServiceCategories,
   });
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
 
   const createMutation = useMutation({
-    mutationFn: skillCategoryApi.createSkillCategory,
+    mutationFn: serviceCategoryApi.createServiceCategory,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["skillCategories"] });
+      queryClient.invalidateQueries({ queryKey: ["serviceCategories"] });
       setIsCreating(false);
     },
     onError: (err: any) =>
@@ -321,17 +321,17 @@ export default function SkillCategoriesAdmin() {
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: any }) =>
-      skillCategoryApi.updateSkillCategory(id, data),
+      serviceCategoryApi.updateServiceCategory(id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["skillCategories"] });
+      queryClient.invalidateQueries({ queryKey: ["serviceCategories"] });
       setEditingId(null);
     },
     onError: (err: any) => alert(err.response?.data?.error || "Error updating category."),
   });
 
   const deleteMutation = useMutation({
-    mutationFn: skillCategoryApi.deleteSkillCategory,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["skillCategories"] }),
+    mutationFn: serviceCategoryApi.deleteServiceCategory,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["serviceCategories"] }),
     onError: (err: any) =>
       alert(
         err.response?.data?.error || "Cannot delete — providers may still reference this category.",
@@ -350,7 +350,7 @@ export default function SkillCategoriesAdmin() {
         }}
       >
         <div>
-          <h2 style={{ margin: 0 }}>Skill Categories</h2>
+          <h2 style={{ margin: 0 }}>Service Categories</h2>
           <p style={{ margin: "4px 0 0", color: "#6b7280", fontSize: "0.875rem" }}>
             {categories.length} categor{categories.length === 1 ? "y" : "ies"} · Pick an emoji as
             the icon
