@@ -2,6 +2,7 @@ import logging
 from typing import Any, Dict, List, Optional
 import httpx
 from src.config import settings
+from src.schemas.contracts import PriceBreakdown, PriceEstimationInput, PriceEstimationOutput
 
 logger = logging.getLogger(__name__)
 
@@ -163,34 +164,78 @@ async def search_providers(
     return providers
 
 
+URGENCY_MULTIPLIERS: Dict[str, float] = {
+    "low": 0.95,
+    "normal": 1.0,
+    "medium": 1.05,
+    "high": 1.20,
+    "emergency": 1.40,
+}
+
+
+def estimate_price_detailed(input_data: PriceEstimationInput) -> PriceEstimationOutput:
+    base_benchmark = CATEGORY_BENCHMARKS.get(input_data.category, 3500.0)
+    complexity_mult = float(input_data.scope.get("price_multiplier", 1.0))
+    urgency_mult = URGENCY_MULTIPLIERS.get(input_data.urgency.lower(), 1.0)
+
+    subtotal = base_benchmark * complexity_mult * urgency_mult
+    raw_estimate = subtotal
+    is_budget_constrained = False
+
+    if input_data.budget_min is not None and input_data.budget_max is not None:
+        customer_midpoint = (input_data.budget_min + input_data.budget_max) / 2.0
+        blended = (0.6 * raw_estimate) + (0.4 * customer_midpoint)
+        if blended > input_data.budget_max:
+            is_budget_constrained = True
+        raw_estimate = max(input_data.budget_min, min(input_data.budget_max, blended))
+    elif input_data.budget_max is not None and raw_estimate > input_data.budget_max:
+        # Cap only if quote is within 25% over budget; otherwise let it exceed so safety agent flags the outlier
+        if raw_estimate <= input_data.budget_max * 1.25:
+            raw_estimate = input_data.budget_max
+            is_budget_constrained = True
+
+    final_price = round(raw_estimate, 2)
+    labor_fee = round(final_price * 0.85, 2)
+    platform_fee = round(final_price - labor_fee, 2)
+    urgency_surcharge = round(base_benchmark * complexity_mult * (urgency_mult - 1.0), 2) if urgency_mult > 1.0 else 0.0
+
+    breakdown = PriceBreakdown(
+        service_labor=labor_fee,
+        platform_fee=platform_fee,
+        urgency_surcharge=urgency_surcharge,
+        subtotal=round(subtotal, 2),
+        total_approved_amount=final_price,
+    )
+
+    return PriceEstimationOutput(
+        estimated_price=final_price,
+        currency="LKR",
+        base_benchmark=base_benchmark,
+        complexity_multiplier=complexity_mult,
+        urgency_multiplier=urgency_mult,
+        breakdown=breakdown,
+        is_budget_constrained=is_budget_constrained,
+        confidence_score=0.96 if input_data.category in CATEGORY_BENCHMARKS else 0.80,
+    )
+
+
 def estimate_price(
     category: str,
     scope: Dict[str, Any],
     urgency: str = "normal",
     budget_min: Optional[float] = None,
-    budget_max: Optional[float] = None
+    budget_max: Optional[float] = None,
 ) -> float:
-    """
-    Calculates fair market price estimate based on category benchmark,
-    complexity multiplier, urgency, and budget constraints.
-    """
-    base_benchmark = CATEGORY_BENCHMARKS.get(category, 3500.0)
-    multiplier = scope.get("price_multiplier", 1.0)
-    raw_estimate = base_benchmark * multiplier
+    return estimate_price_detailed(
+        PriceEstimationInput(
+            category=category,
+            scope=scope,
+            urgency=urgency,
+            budget_min=budget_min,
+            budget_max=budget_max,
+        )
+    ).estimated_price
 
-    # Align with customer budget range if reasonable
-    if budget_min is not None and budget_max is not None:
-        customer_midpoint = (budget_min + budget_max) / 2.0
-        # Blend benchmark with customer expectation (60% benchmark, 40% customer midpoint)
-        blended = (0.6 * raw_estimate) + (0.4 * customer_midpoint)
-        # Ensure within budget if possible
-        raw_estimate = max(budget_min, min(budget_max, blended))
-    elif budget_max is not None and raw_estimate > budget_max:
-        # If above max but within 20%, cap at budget_max
-        if raw_estimate <= budget_max * 1.2:
-            raw_estimate = budget_max
-
-    return round(raw_estimate, 2)
 
 
 def check_provider_rating(provider: Dict[str, Any]) -> Dict[str, Any]:
