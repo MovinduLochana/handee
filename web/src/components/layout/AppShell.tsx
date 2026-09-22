@@ -10,6 +10,7 @@ import {
   Star,
   Users,
   UserCircle,
+  Package,
 } from "lucide-react";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { authApi } from "../../api/auth";
@@ -61,6 +62,7 @@ export default function AppShell() {
     // Provider
     { name: "Verification Status", to: "/provider/status", icon: CheckSquare, show: isProvider },
     { name: "My Profile", to: "/provider/profile", icon: UserCircle, show: isProvider },
+    { name: "Service Listings", to: "/provider/service-listings", icon: Package, show: isProvider },
     { name: "My Reviews", to: "/provider/reviews", icon: Star, show: isProvider },
 
     { name: "Settings", to: "/account", icon: Settings, show: true },

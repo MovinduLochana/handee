@@ -11,9 +11,11 @@ import {
   Star,
 } from "lucide-react";
 import { providerApi } from "../../api/providers";
+import { serviceListingsApi } from "../../api/serviceListings";
 import type { ProviderProfileCustomerDto } from "../../api/types";
 import StarRating from "../../components/provider/StarRating";
 import ServiceCategoryTag from "../../components/provider/ServiceCategoryTag";
+import ServiceListingCard from "../../components/public/ServiceListingCard";
 import EmptyState from "../../components/provider/EmptyState";
 import "./PublicProviderProfile.css";
 
@@ -34,6 +36,12 @@ export default function PublicProviderProfile() {
   const { data: reviewsData, isLoading: reviewsLoading } = useQuery({
     queryKey: ["providerReviews", providerId],
     queryFn: () => providerApi.getReviews(providerId!, 1, 5),
+    enabled: !!providerId,
+  });
+
+  const { data: listingsData, isLoading: listingsLoading } = useQuery({
+    queryKey: ["providerListings", providerId],
+    queryFn: () => serviceListingsApi.getByProviderId(providerId!),
     enabled: !!providerId,
   });
 
@@ -153,13 +161,41 @@ export default function PublicProviderProfile() {
             )}
 
             {profile.servicesOffered.length > 0 && (
-              <div>
-                <h4 className="services-heading">Services</h4>
+              <div style={{ marginTop: "1.5rem" }}>
+                <h4 className="services-heading" style={{ fontSize: "1rem", marginBottom: "0.5rem" }}>Specific Services Offered</h4>
                 <ul className="services-list">
                   {profile.servicesOffered.map((srv, i) => (
                     <li key={i}>{srv}</li>
                   ))}
                 </ul>
+              </div>
+            )}
+
+            {listingsLoading ? (
+              <div style={{ marginTop: "var(--space-10)", display: "flex", justifyContent: "center" }}>
+                <div className="flex-center" style={{ padding: "var(--space-8)", gap: "var(--space-3)" }}>
+                  <p style={{ color: "var(--text-muted)", margin: 0 }}>Loading service catalogue...</p>
+                </div>
+              </div>
+            ) : (
+              <div style={{ marginTop: "var(--space-10)" }}>
+                <h4 className="services-heading" style={{ fontSize: "1.125rem", fontWeight: 700, marginBottom: "var(--space-4)", color: "var(--text-h)" }}>Fixed-Price Services</h4>
+                {listingsData && listingsData.filter(l => l.isActive).length > 0 ? (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 'var(--space-6)' }}>
+                    {listingsData.filter(l => l.isActive).map((listing, idx) => (
+                      <div key={listing.id} className="animate-fade-up" style={{ animationDelay: `${(idx % 10) * 50}ms` }}>
+                        <ServiceListingCard
+                          listing={listing}
+                          onBookClick={(lst) => alert(`Direct booking for ${lst.title} not implemented yet.`)}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="empty-state" style={{ padding: "var(--space-8)", background: "var(--bg-surface)", border: "1px dashed var(--border-strong)", borderRadius: "12px" }}>
+                    <p style={{ color: "var(--text-muted)", fontSize: "0.95rem", margin: 0 }}>This provider hasn't listed any fixed-price services yet.</p>
+                  </div>
+                )}
               </div>
             )}
           </section>

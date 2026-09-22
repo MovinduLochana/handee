@@ -62,7 +62,7 @@ export interface ProviderProfileProviderDto {
   auditLogs: AuditLogDto[];
 }
 
-export interface ProviderProfileAdminDto extends ProviderProfileProviderDto {}
+export interface ProviderProfileAdminDto extends ProviderProfileProviderDto { }
 
 export interface ProviderProfileCustomerDto {
   id: string;
@@ -154,4 +154,38 @@ export interface ProviderSearchParams {
 // ─── Certification Review ──────────────────────────────────────────────────
 export interface ReviewCertificationDto {
   status: DocumentReviewStatus;
+}
+
+// ─── Service Listings ───────────────────────────────────────────────────────
+export interface ServiceListingDto {
+  id: string;
+  providerId: string;
+  serviceCategoryId: string;
+  title: string;
+  description: string;
+  fixedPrice: number;
+  estimatedDuration: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string | null;
+  serviceCategoryName: string | null;
+  providerFullName: string | null;
+}
+
+export interface CreateServiceListingDto {
+  serviceCategoryId: string;
+  title: string;
+  description: string;
+  fixedPrice: number;
+  estimatedDuration: string;
+  isActive: boolean;
+}
+
+export interface UpdateServiceListingDto {
+  serviceCategoryId: string;
+  title: string;
+  description: string;
+  fixedPrice: number;
+  estimatedDuration: string;
+  isActive: boolean;
 }
