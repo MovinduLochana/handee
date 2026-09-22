@@ -20,4 +20,6 @@ public class ApplicationUser : IdentityUser<Guid>
     /// <summary>Only meaningful for Provider-role users.</summary>
     public ProviderVerificationStatus ProviderVerificationStatus { get; set; }
         = ProviderVerificationStatus.Unverified;
+
+    public virtual ICollection<ServiceListing> ServiceListings { get; set; } = new List<ServiceListing>();
 }
