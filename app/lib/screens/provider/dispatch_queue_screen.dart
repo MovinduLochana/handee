@@ -1,0 +1,214 @@
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+import '../../core/constants/colors.dart';
+import '../../providers/booking_provider.dart';
+import '../../providers/dispatch_provider.dart';
+import '../../widgets/custom_button.dart';
+import '../../widgets/urgency_badge.dart';
+import 'active_job_screen.dart';
+
+class DispatchQueueScreen extends StatelessWidget {
+  const DispatchQueueScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final dispatch = context.watch<DispatchProvider>();
+    final offers = dispatch.incomingOffers;
+    final countdown = dispatch.countdownSeconds;
+    final currencyFormat = NumberFormat('#,##0', 'en_US');
+
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        title: const Text('Live Dispatch Queue'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: () => dispatch.fetchOffers(),
+          ),
+        ],
+      ),
+      body: offers.isEmpty
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryUltraLight,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.radar, size: 48, color: AppColors.primary),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Searching for nearby requests...',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                  ),
+                  const SizedBox(height: 6),
+                  const Text(
+                    'Keep your app open and online status enabled.\nNew instant match requests will ring here.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                  ),
+                ],
+              ),
+            )
+          : ListView.builder(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              itemCount: offers.length,
+              itemBuilder: (context, index) {
+                final offer = offers[index];
+
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 16),
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(color: AppColors.primaryLight, width: 1.5),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.primary.withOpacity(0.08),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Countdown Header
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: AppColors.errorLight,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.timer, size: 14, color: AppColors.error),
+                                const SizedBox(width: 4),
+                                Text(
+                                  '${countdown}s remaining to accept',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.error,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          UrgencyBadge(urgency: offer.urgency),
+                        ],
+                      ),
+
+                      const SizedBox(height: 14),
+
+                      Text(
+                        offer.category,
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        offer.description,
+                        style: const TextStyle(fontSize: 13, color: AppColors.textSecondary, height: 1.4),
+                      ),
+
+                      const SizedBox(height: 14),
+
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AppColors.surfaceElevated,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(
+                              children: [
+                                const Icon(Icons.place, size: 16, color: AppColors.primary),
+                                const SizedBox(width: 6),
+                                Text(
+                                  offer.location,
+                                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                                ),
+                              ],
+                            ),
+                            Text(
+                              'Rs. ${currencyFormat.format(offer.estimatedPrice ?? 5000)}',
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 18),
+
+                      // Accept / Decline Buttons
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: () => dispatch.declineOffer(offer.id),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: AppColors.error,
+                                side: const BorderSide(color: AppColors.error),
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                              ),
+                              child: const Text('Decline', style: TextStyle(fontWeight: FontWeight.w600)),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            flex: 2,
+                            child: CustomButton(
+                              text: 'Accept Job',
+                              icon: Icons.check,
+                              onPressed: () async {
+                                final bookingProv = context.read<BookingProvider>();
+                                final messenger = ScaffoldMessenger.of(context);
+                                final nav = Navigator.of(context);
+                                final success = await dispatch.acceptOffer(offer.id);
+                                if (success) {
+                                  await bookingProv.fetchProviderBookings();
+                                  messenger.showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Job accepted! Added to your active assignments.'),
+                                      backgroundColor: AppColors.success,
+                                    ),
+                                  );
+
+                                  final active = bookingProv.activeBookings;
+                                  if (active.isNotEmpty) {
+                                    nav.push(
+                                      MaterialPageRoute(
+                                        builder: (_) => ActiveJobScreen(booking: active.first),
+                                      ),
+                                    );
+                                  }
+                                }
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+    );
+  }
+}

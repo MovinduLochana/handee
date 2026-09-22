@@ -94,7 +94,8 @@ public class AuthServiceTests : IDisposable
             _refreshGeneratorMock.Object,
             _db,
             _httpContextAccessorMock.Object,
-            profileServiceForAuth);
+            profileServiceForAuth,
+            new Mock<IEmailService>().Object);
     }
 
     public void Dispose() => _db.Dispose();

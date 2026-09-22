@@ -12,6 +12,7 @@ public interface IBookingService
 
     Task<List<BookingResponseDto>> GetForCustomerAsync(Guid customerId);
     Task<List<BookingResponseDto>> GetForProviderAsync(Guid providerId);
+    Task<List<BookingResponseDto>> GetProviderOffersAsync(Guid providerId);
 
     Task<PagedResult<BookingResponseDto>> GetForStaffAsync(
         BookingStatus? status,

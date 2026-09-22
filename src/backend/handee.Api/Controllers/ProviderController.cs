@@ -131,6 +131,7 @@ public class ProviderController(
     // Authenticated — for Job Feed component / internal
     [HttpGet("search")]
     public async Task<IActionResult> Search(
+        [FromQuery] string? searchTerm,
         [FromQuery] Guid? skillCategoryId,
         [FromQuery] double? lat,
         [FromQuery] double? lng,
@@ -144,6 +145,7 @@ public class ProviderController(
         var skip = (normalizedPage - 1) * normalizedPageSize;
 
         var results = await profileService.SearchAsync(
+            searchTerm,
             skillCategoryId,
             lat,
             lng,

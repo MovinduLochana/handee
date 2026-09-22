@@ -44,11 +44,18 @@ public record ProviderProfileProviderDto(
     double? ServiceAreaLongitude,
     string? ServiceAreaDisplayName,
     double ServiceRadiusKm,
+    string? AddressLine1,
+    string? AddressLine2,
+    string? City,
+    string? State,
+    string? PostalCode,
+    string? Country,
     VerificationStatus VerificationStatus,
     decimal RatingAggregate,
     int TotalReviewCount,
     DateTimeOffset CreatedAt,
-    List<CertificationDto> Certifications);
+    List<CertificationDto> Certifications,
+    List<AuditLogDto> AuditLogs);
 
 /// <summary>Admin view — adds audit log and document URLs.</summary>
 public record ProviderProfileAdminDto(
@@ -70,6 +77,12 @@ public record ProviderProfileAdminDto(
     double? ServiceAreaLongitude,
     string? ServiceAreaDisplayName,
     double ServiceRadiusKm,
+    string? AddressLine1,
+    string? AddressLine2,
+    string? City,
+    string? State,
+    string? PostalCode,
+    string? Country,
     VerificationStatus VerificationStatus,
     decimal RatingAggregate,
     int TotalReviewCount,
@@ -116,8 +129,13 @@ public record UpdateProviderProfileDto(
     List<Guid>? SkillCategoryIds,
     double? ServiceAreaLatitude,
     double? ServiceAreaLongitude,
-    string? ServiceAreaAddress,      // address string to geocode if lat/lng not supplied
-    double? ServiceRadiusKm);
+    double? ServiceRadiusKm,
+    string? AddressLine1,
+    string? AddressLine2,
+    string? City,
+    string? State,
+    string? PostalCode,
+    string? Country);
 
 /// <summary>PATCH /api/providers/{id}/verification — Admin transition.</summary>
 public record VerificationActionDto(

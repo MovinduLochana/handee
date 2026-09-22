@@ -73,24 +73,17 @@ public class ProviderProfileService(
         {
             profile.ServiceAreaLatitude = dto.ServiceAreaLatitude.Value;
             profile.ServiceAreaLongitude = dto.ServiceAreaLongitude.Value;
-            profile.ServiceAreaDisplayName = dto.ServiceAreaAddress;
-        }
-        else if (!string.IsNullOrEmpty(dto.ServiceAreaAddress))
-        {
-            var geoResult = await maps.GeocodeAsync(dto.ServiceAreaAddress, ct);
-            if (geoResult.HasValue)
-            {
-                profile.ServiceAreaLatitude = geoResult.Value.Lat;
-                profile.ServiceAreaLongitude = geoResult.Value.Lng;
-                profile.ServiceAreaDisplayName = geoResult.Value.DisplayName;
-            }
-            else
-            {
-                logger.LogWarning("Geocoding failed for address: {Address} — service area not updated", dto.ServiceAreaAddress);
-            }
         }
 
         if (dto.ServiceRadiusKm.HasValue)      profile.ServiceRadiusKm = dto.ServiceRadiusKm.Value;
+
+        // Address fields
+        if (dto.AddressLine1 is not null)  profile.AddressLine1 = dto.AddressLine1;
+        if (dto.AddressLine2 is not null)  profile.AddressLine2 = dto.AddressLine2;
+        if (dto.City is not null)          { profile.City = dto.City; profile.ServiceAreaDisplayName = dto.City; }
+        if (dto.State is not null)         profile.State = dto.State;
+        if (dto.PostalCode is not null)    profile.PostalCode = dto.PostalCode;
+        if (dto.Country is not null)       profile.Country = dto.Country;
 
         await profileRepo.SaveChangesAsync(ct);
     }
@@ -105,19 +98,33 @@ public class ProviderProfileService(
 
         var fileUrl = await storage.UploadAsync(dto.File, "certifications", ct);
 
-        var cert = new Certification
+        var existingCert = profile.Certifications.FirstOrDefault(c => c.Type == dto.Type);
+        Certification cert;
+        
+        if (existingCert != null)
         {
-            Id = Guid.NewGuid(),
-            ProviderProfileId = profileId,
-            Type = dto.Type,
-            FileUrl = fileUrl,
-            OriginalFileName = dto.File.FileName,
-            UploadedAt = DateTimeOffset.UtcNow,
-            ReviewStatus = DocumentReviewStatus.Pending
-        };
-
-        await certRepo.AddAsync(cert, ct);
-        await certRepo.SaveChangesAsync(ct);
+            existingCert.FileUrl = fileUrl;
+            existingCert.OriginalFileName = dto.File.FileName;
+            existingCert.UploadedAt = DateTimeOffset.UtcNow;
+            existingCert.ReviewStatus = DocumentReviewStatus.Pending;
+            cert = existingCert;
+            await certRepo.SaveChangesAsync(ct);
+        }
+        else
+        {
+            cert = new Certification
+            {
+                Id = Guid.NewGuid(),
+                ProviderProfileId = profileId,
+                Type = dto.Type,
+                FileUrl = fileUrl,
+                OriginalFileName = dto.File.FileName,
+                UploadedAt = DateTimeOffset.UtcNow,
+                ReviewStatus = DocumentReviewStatus.Pending
+            };
+            await certRepo.AddAsync(cert, ct);
+            await certRepo.SaveChangesAsync(ct);
+        }
 
         // If provider was Rejected, a new document submission moves them back to Pending
         if (profile.VerificationStatus == VerificationStatus.Rejected)
@@ -161,10 +168,10 @@ public class ProviderProfileService(
         await profileRepo.GetOwnerUserIdAsync(profileId, ct);
 
     public async Task<PagedResult<ProviderProfileCustomerDto>> SearchAsync(
-        Guid? skillCategoryId, double? lat, double? lng, double radiusKm,
+        string? searchTerm, Guid? skillCategoryId, double? lat, double? lng, double radiusKm,
         int skip, int take, CancellationToken ct = default)
     {
-        var (items, totalCount) = await profileRepo.SearchAsync(skillCategoryId, lat, lng, radiusKm, skip, take, ct);
+        var (items, totalCount) = await profileRepo.SearchAsync(searchTerm, skillCategoryId, lat, lng, radiusKm, skip, take, ct);
         var page = skip / take + 1;
         return new PagedResult<ProviderProfileCustomerDto>(
             items.Select(MapToCustomerDto).ToList(),
@@ -214,14 +221,22 @@ public class ProviderProfileService(
         ServiceAreaLongitude: p.ServiceAreaLongitude,
         ServiceAreaDisplayName: p.ServiceAreaDisplayName,
         ServiceRadiusKm: p.ServiceRadiusKm,
+        AddressLine1: p.AddressLine1,
+        AddressLine2: p.AddressLine2,
+        City: p.City,
+        State: p.State,
+        PostalCode: p.PostalCode,
+        Country: p.Country,
         VerificationStatus: p.VerificationStatus,
         RatingAggregate: p.RatingAggregate,
         TotalReviewCount: p.TotalReviewCount,
         CreatedAt: p.CreatedAt,
         Certifications: p.Certifications.Select(c => new CertificationDto(
-            c.Id, c.Type, c.FileUrl, c.OriginalFileName, c.UploadedAt, c.ReviewStatus)).ToList());
+            c.Id, c.Type, c.FileUrl, c.OriginalFileName, c.UploadedAt, c.ReviewStatus)).ToList(),
+        AuditLogs: p.AuditLogs.OrderByDescending(a => a.Timestamp).Select(a => new AuditLogDto(
+            a.Id, a.AdminUserId, a.PreviousStatus, a.NewStatus, a.Timestamp, a.Note)).ToList());
 
-    private static ProviderProfileAdminDto MapToAdminDto(ProviderProfile p) => new(
+    public static ProviderProfileAdminDto MapToAdminDto(ProviderProfile p) => new(
         Id: p.Id,
         UserId: p.UserId,
         FullName: p.User.FullName,
@@ -240,6 +255,12 @@ public class ProviderProfileService(
         ServiceAreaLongitude: p.ServiceAreaLongitude,
         ServiceAreaDisplayName: p.ServiceAreaDisplayName,
         ServiceRadiusKm: p.ServiceRadiusKm,
+        AddressLine1: p.AddressLine1,
+        AddressLine2: p.AddressLine2,
+        City: p.City,
+        State: p.State,
+        PostalCode: p.PostalCode,
+        Country: p.Country,
         VerificationStatus: p.VerificationStatus,
         RatingAggregate: p.RatingAggregate,
         TotalReviewCount: p.TotalReviewCount,

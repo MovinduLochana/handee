@@ -34,6 +34,14 @@ public class ProviderProfile
     public string? ServiceAreaDisplayName { get; set; }
     public double ServiceRadiusKm { get; set; } = 25;
 
+    // ── Physical / Business Address ──────────────────────────────────────
+    public string? AddressLine1 { get; set; }
+    public string? AddressLine2 { get; set; }
+    public string? City { get; set; }
+    public string? State { get; set; }
+    public string? PostalCode { get; set; }
+    public string? Country { get; set; }
+
     // ── Verification & Trust ──────────────────────────────────────────────
     public VerificationStatus VerificationStatus { get; set; } = VerificationStatus.Pending;
     public decimal RatingAggregate { get; set; } = 0m;

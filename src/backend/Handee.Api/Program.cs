@@ -16,6 +16,17 @@ using OpenTelemetry.Trace;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+    {
+        policy.WithOrigins("http://localhost:5173")
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials();
+    });
+});
+
 builder.Services.AddOpenApi();
 
 // ── Database ──────────────────────────────────────────────────────────────────
@@ -71,6 +82,7 @@ builder.Services.AddAuthentication(options =>
     });
 
 builder.Services.Configure<AuthOptions>(builder.Configuration.GetSection(AuthOptions.SectionName));
+builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection(EmailSettings.SectionName));
 
 // ── Redis Cache ───────────────────────────────────────────────────────────────
 builder.Services.AddStackExchangeRedisCache(options =>
@@ -78,8 +90,14 @@ builder.Services.AddStackExchangeRedisCache(options =>
     options.Configuration = builder.Configuration.GetConnectionString("Redis") ?? "localhost:6379";
 });
 
-// ── Google Maps HTTP Client ───────────────────────────────────────────────────
+// ── HTTP Clients ─────────────────────────────────────────────────────────────
 builder.Services.AddHttpClient("GoogleMaps");
+builder.Services.AddHttpClient("AgentService", client =>
+{
+    var baseUrl = builder.Configuration["AgentService:BaseUrl"] ?? "http://localhost:8000";
+    client.BaseAddress = new Uri(baseUrl);
+    client.Timeout = TimeSpan.FromSeconds(15);
+});
 
 // ── OpenTelemetry ─────────────────────────────────────────────────────────────
 builder.Services.AddOpenTelemetry()
@@ -99,6 +117,8 @@ builder.Services.AddScoped<IRefreshTokenGenerator, RefreshTokenGenerator>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IAdminService, AdminService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<IAgentWorkflowService, AgentWorkflowService>();
 builder.Services.AddScoped<IJobRequestService, JobRequestService>();
 builder.Services.AddScoped<IBookingService, BookingService>();
 builder.Services.AddScoped<IServiceCategoryService, ServiceCategoryService>();
@@ -129,7 +149,28 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 
 app.UseHttpsRedirection();
-app.UseStaticFiles();  // serves wwwroot/uploads/ for local document storage
+
+// CORS must be called before UseStaticFiles so that CORS headers apply to the images
+app.UseCors();
+
+var uploadsDir = Path.Combine(builder.Environment.ContentRootPath, "uploads");
+Directory.CreateDirectory(uploadsDir); // Prevent errors if folder doesn't exist yet
+
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(uploadsDir),
+    RequestPath = "/uploads"
+});
+
+// Auto-apply pending migrations
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    await dbContext.Database.MigrateAsync();
+    
+    // Seed skill categories
+    await SkillCategorySeeder.SeedAsync(dbContext);
+}
 
 // Seed roles
 using (var scope = app.Services.CreateScope())

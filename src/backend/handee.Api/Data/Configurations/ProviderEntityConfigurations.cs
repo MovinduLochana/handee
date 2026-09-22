@@ -33,6 +33,14 @@ public class ProviderProfileConfiguration : IEntityTypeConfiguration<ProviderPro
         builder.Property(p => p.ServiceAreaDisplayName).HasMaxLength(200);
         builder.Property(p => p.AvailabilityNote).HasMaxLength(200);
 
+        // Address fields
+        builder.Property(p => p.AddressLine1).HasMaxLength(200);
+        builder.Property(p => p.AddressLine2).HasMaxLength(200);
+        builder.Property(p => p.City).HasMaxLength(100);
+        builder.Property(p => p.State).HasMaxLength(100);
+        builder.Property(p => p.PostalCode).HasMaxLength(20);
+        builder.Property(p => p.Country).HasMaxLength(100);
+
         // Arrays stored as JSON column (EF Core 8+ / Npgsql supports this natively)
         builder.Property(p => p.Languages)
             .HasColumnType("text[]");

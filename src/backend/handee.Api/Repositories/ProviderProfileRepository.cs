@@ -36,6 +36,7 @@ public class ProviderProfileRepository(AppDbContext db) : IProviderProfileReposi
             .FirstOrDefaultAsync(ct);
 
     public async Task<(List<ProviderProfile> Items, int TotalCount)> SearchAsync(
+        string? searchTerm,
         Guid? skillCategoryId,
         double? lat,
         double? lng,
@@ -54,6 +55,13 @@ public class ProviderProfileRepository(AppDbContext db) : IProviderProfileReposi
         if (skillCategoryId.HasValue)
             query = query.Where(p => p.SkillCategories.Any(s => s.Id == skillCategoryId.Value));
 
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            var term = searchTerm.ToLower();
+            query = query.Where(p => (p.User.FullName != null && p.User.FullName.ToLower().Contains(term)) ||
+                                     (p.User.Email != null && p.User.Email.ToLower().Contains(term)));
+        }
+
         if (lat.HasValue && lng.HasValue)
         {
             double latDelta = radiusKm / 111.0;
@@ -71,5 +79,62 @@ public class ProviderProfileRepository(AppDbContext db) : IProviderProfileReposi
         var items = await query.Skip(skip).Take(take).ToListAsync(ct);
 
         return (items, totalCount);
+    }
+
+    public async Task<(List<ProviderProfile> Items, int TotalCount)> GetVerificationQueueAsync(
+        VerificationStatus? status,
+        string? searchTerm,
+        Guid? skillCategoryId,
+        int skip,
+        int take,
+        CancellationToken ct = default)
+    {
+        var query = db.ProviderProfiles
+            .Include(p => p.SkillCategories)
+            .Include(p => p.User)
+            .AsQueryable();
+
+        if (status.HasValue)
+        {
+            query = query.Where(p => p.VerificationStatus == status.Value);
+        }
+
+        if (skillCategoryId.HasValue)
+            query = query.Where(p => p.SkillCategories.Any(s => s.Id == skillCategoryId.Value));
+
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            var term = searchTerm.ToLower();
+            query = query.Where(p => (p.User.FullName != null && p.User.FullName.ToLower().Contains(term)) ||
+                                     (p.User.Email != null && p.User.Email.ToLower().Contains(term)));
+        }
+
+        var totalCount = await query.CountAsync(ct);
+        var items = await query.OrderByDescending(p => p.CreatedAt).Skip(skip).Take(take).ToListAsync(ct);
+
+        return (items, totalCount);
+    }
+
+    public async Task<Dictionary<VerificationStatus, int>> GetVerificationSummaryAsync(CancellationToken ct = default)
+    {
+        var grouped = await db.ProviderProfiles
+            .GroupBy(p => p.VerificationStatus)
+            .Select(g => new { Status = g.Key, Count = g.Count() })
+            .ToListAsync(ct);
+
+        var result = new Dictionary<VerificationStatus, int>
+        {
+            { VerificationStatus.Pending, 0 },
+            { VerificationStatus.InReview, 0 },
+            { VerificationStatus.Verified, 0 },
+            { VerificationStatus.Rejected, 0 }
+        };
+
+        foreach (var item in grouped)
+        {
+            result[item.Status] = item.Count;
+        }
+
+        return result;
     }
 }

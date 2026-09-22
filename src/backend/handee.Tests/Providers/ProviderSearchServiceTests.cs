@@ -47,12 +47,12 @@ public class ProviderSearchServiceTests
         var twoProfiles = Enumerable.Range(0, 2).Select(_ => MakeProfile()).ToList();
 
         _profileRepoMock
-            .Setup(r => r.SearchAsync(null, null, null, 25, 0, 2, It.IsAny<CancellationToken>()))
+            .Setup(r => r.SearchAsync(null, null, null, null, 25, 0, 2, It.IsAny<CancellationToken>()))
             .ReturnsAsync((twoProfiles, 5));  // 5 total, only 2 in this page
 
         var sut = BuildSut();
         PagedResult<ProviderProfileCustomerDto> result =
-            await sut.SearchAsync(null, null, null, radiusKm: 25, skip: 0, take: 2);
+            await sut.SearchAsync(null, null, null, null, radiusKm: 25, skip: 0, take: 2);
 
         Assert.Equal(2, result.Items.Count);
         Assert.Equal(5, result.TotalCount);
@@ -66,11 +66,11 @@ public class ProviderSearchServiceTests
     public async Task Search_PageBeyondTotal_Returns_EmptyItems()
     {
         _profileRepoMock
-            .Setup(r => r.SearchAsync(null, null, null, 25, 5, 5, It.IsAny<CancellationToken>()))
+            .Setup(r => r.SearchAsync(null, null, null, null, 25, 5, 5, It.IsAny<CancellationToken>()))
             .ReturnsAsync((new List<ProviderProfile>(), 2));  // 2 total, skip=5 → nothing
 
         var sut = BuildSut();
-        var result = await sut.SearchAsync(null, null, null, radiusKm: 25, skip: 5, take: 5);
+        var result = await sut.SearchAsync(null, null, null, null, radiusKm: 25, skip: 5, take: 5);
 
         Assert.Empty(result.Items);
         Assert.Equal(2, result.TotalCount);
@@ -83,15 +83,15 @@ public class ProviderSearchServiceTests
     public async Task Search_PassesTakeToRepo_Correctly()
     {
         _profileRepoMock
-            .Setup(r => r.SearchAsync(null, null, null, 25, 0, 100, It.IsAny<CancellationToken>()))
+            .Setup(r => r.SearchAsync(null, null, null, null, 25, 0, 100, It.IsAny<CancellationToken>()))
             .ReturnsAsync((new List<ProviderProfile>(), 0));
 
         var sut = BuildSut();
-        await sut.SearchAsync(null, null, null, radiusKm: 25, skip: 0, take: 100);
+        await sut.SearchAsync(null, null, null, null, radiusKm: 25, skip: 0, take: 100);
 
         // Verify the service forwarded take=100 unchanged to the repository
         _profileRepoMock.Verify(
-            r => r.SearchAsync(null, null, null, 25, 0, 100, It.IsAny<CancellationToken>()),
+            r => r.SearchAsync(null, null, null, null, 25, 0, 100, It.IsAny<CancellationToken>()),
             Times.Once);
     }
 }

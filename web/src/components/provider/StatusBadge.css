@@ -1,0 +1,82 @@
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  border-radius: 100px;
+  white-space: nowrap;
+  letter-spacing: 0.02em;
+}
+
+.status-badge-sm {
+  font-size: 0.7rem;
+  padding: 3px 10px;
+}
+
+.status-badge-md {
+  font-size: 0.78rem;
+  padding: 4px 14px;
+}
+
+.status-badge-lg {
+  font-size: 0.88rem;
+  padding: 6px 18px;
+}
+
+.badge-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* ── Pending (Amber) ────────────────────────────────────── */
+.badge-pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.badge-pending .badge-dot {
+  background: #f59e0b;
+}
+
+:root[data-theme="dark"] .badge-pending {
+  background: rgba(245, 158, 11, 0.15);
+  color: #fcd34d;
+}
+
+/* ── In Review (Blue) ───────────────────────────────────── */
+.badge-review {
+  background: var(--accent-light);
+  color: var(--accent);
+}
+
+.badge-review .badge-dot {
+  background: var(--accent);
+}
+
+/* ── Verified / Approved (Green) ────────────────────────── */
+.badge-verified {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.badge-verified .badge-dot {
+  background: var(--success);
+}
+
+:root[data-theme="dark"] .badge-verified {
+  background: rgba(16, 185, 129, 0.15);
+  color: #6ee7b7;
+}
+
+/* ── Rejected (Red) ─────────────────────────────────────── */
+.badge-rejected {
+  background: var(--bg-danger);
+  color: var(--text-danger);
+}
+
+.badge-rejected .badge-dot {
+  background: var(--text-danger);
+}
