@@ -122,6 +122,7 @@ builder.Services.AddScoped<IAgentWorkflowService, AgentWorkflowService>();
 builder.Services.AddScoped<IJobRequestService, JobRequestService>();
 builder.Services.AddScoped<IBookingService, BookingService>();
 builder.Services.AddScoped<IServiceCategoryService, ServiceCategoryService>();
+builder.Services.AddScoped<IServiceListingService, ServiceListingService>();
 builder.Services.AddScoped<IProviderAvailabilityService, ProviderAvailabilityService>();
 
 // Provider Verification & Profiles
