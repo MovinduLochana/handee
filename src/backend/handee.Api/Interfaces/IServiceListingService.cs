@@ -11,4 +11,6 @@ public interface IServiceListingService
     Task<IEnumerable<ServiceListingResponseDto>> SearchActiveListingsAsync(string? query, Guid? categoryId);
     Task DeleteListingAsync(Guid listingId, Guid providerId);
     Task<ServiceListingResponseDto> GetListingByIdAsync(Guid listingId);
+    Task ToggleActiveStatusAsync(Guid providerId, Guid listingId, bool isActive);
+    Task<IEnumerable<ServiceListingResponseDto>> GetListingsByProviderProfileIdAsync(Guid providerProfileId);
 }

@@ -37,7 +37,7 @@ public class ProviderProfileRepository(AppDbContext db) : IProviderProfileReposi
 
     public async Task<(List<ProviderProfile> Items, int TotalCount)> SearchAsync(
         string? searchTerm,
-        Guid? skillCategoryId,
+        Guid? serviceCategoryId,
         double? lat,
         double? lng,
         double radiusKm,
@@ -52,8 +52,8 @@ public class ProviderProfileRepository(AppDbContext db) : IProviderProfileReposi
                         && p.IsAvailableForWork)
             .AsQueryable();
 
-        if (skillCategoryId.HasValue)
-            query = query.Where(p => p.ServiceCategories.Any(s => s.Id == skillCategoryId.Value));
+        if (serviceCategoryId.HasValue)
+            query = query.Where(p => p.ServiceCategories.Any(s => s.Id == serviceCategoryId.Value));
 
         if (!string.IsNullOrWhiteSpace(searchTerm))
         {
@@ -84,7 +84,7 @@ public class ProviderProfileRepository(AppDbContext db) : IProviderProfileReposi
     public async Task<(List<ProviderProfile> Items, int TotalCount)> GetVerificationQueueAsync(
         VerificationStatus? status,
         string? searchTerm,
-        Guid? skillCategoryId,
+        Guid? serviceCategoryId,
         int skip,
         int take,
         CancellationToken ct = default)
@@ -99,8 +99,8 @@ public class ProviderProfileRepository(AppDbContext db) : IProviderProfileReposi
             query = query.Where(p => p.VerificationStatus == status.Value);
         }
 
-        if (skillCategoryId.HasValue)
-            query = query.Where(p => p.ServiceCategories.Any(s => s.Id == skillCategoryId.Value));
+        if (serviceCategoryId.HasValue)
+            query = query.Where(p => p.ServiceCategories.Any(s => s.Id == serviceCategoryId.Value));
 
         if (!string.IsNullOrWhiteSpace(searchTerm))
         {

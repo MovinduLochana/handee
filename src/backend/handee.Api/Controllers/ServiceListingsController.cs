@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace handee.API.Controllers;
 
 [ApiController]
-[Route("service-listings")]
+[Route("api/service-listings")]
 public class ServiceListingsController : ControllerBase
 {
     private readonly IServiceListingService _service;
@@ -27,7 +27,7 @@ public class ServiceListingsController : ControllerBase
     [HttpGet("provider/{providerId:guid}")]
     public async Task<IActionResult> GetProviderListings(Guid providerId)
     {
-        var result = await _service.GetProviderListingsAsync(providerId);
+        var result = await _service.GetListingsByProviderProfileIdAsync(providerId);
         return Ok(result);
     }
 
@@ -35,6 +35,17 @@ public class ServiceListingsController : ControllerBase
     public async Task<IActionResult> GetListingById(Guid id)
     {
         var result = await _service.GetListingByIdAsync(id);
+        return Ok(result);
+    }
+
+    [HttpGet("my-listings")]
+    [Authorize(Roles = "Provider,Admin")]
+    public async Task<IActionResult> GetMyListings()
+    {
+        var providerId = GetUserId();
+        if (providerId is null) return Unauthorized();
+
+        var result = await _service.GetProviderListingsAsync(providerId.Value);
         return Ok(result);
     }
 
@@ -58,6 +69,17 @@ public class ServiceListingsController : ControllerBase
 
         var result = await _service.UpdateListingAsync(id, providerId.Value, dto);
         return Ok(result);
+    }
+
+    [HttpPatch("{id:guid}/status")]
+    [Authorize(Roles = "Provider,Admin")]
+    public async Task<IActionResult> ToggleStatus(Guid id, [FromBody] handee.API.DTO.ServiceListing.ActiveStatusDto dto)
+    {
+        var providerId = GetUserId();
+        if (providerId is null) return Unauthorized();
+
+        await _service.ToggleActiveStatusAsync(providerId.Value, id, dto.IsActive);
+        return NoContent();
     }
 
     [HttpDelete("{id:guid}")]

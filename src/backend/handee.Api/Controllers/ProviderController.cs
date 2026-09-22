@@ -132,7 +132,7 @@ public class ProviderController(
     [HttpGet("search")]
     public async Task<IActionResult> Search(
         [FromQuery] string? searchTerm,
-        [FromQuery] Guid? skillCategoryId,
+        [FromQuery] Guid? serviceCategoryId,
         [FromQuery] double? lat,
         [FromQuery] double? lng,
         [FromQuery] double radiusKm = 25,
@@ -146,7 +146,7 @@ public class ProviderController(
 
         var results = await profileService.SearchAsync(
             searchTerm,
-            skillCategoryId,
+            serviceCategoryId,
             lat,
             lng,
             radiusKm,

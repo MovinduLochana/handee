@@ -168,10 +168,10 @@ public class ProviderProfileService(
         await profileRepo.GetOwnerUserIdAsync(profileId, ct);
 
     public async Task<PagedResult<ProviderProfileCustomerDto>> SearchAsync(
-        string? searchTerm, Guid? skillCategoryId, double? lat, double? lng, double radiusKm,
+        string? searchTerm, Guid? serviceCategoryId, double? lat, double? lng, double radiusKm,
         int skip, int take, CancellationToken ct = default)
     {
-        var (items, totalCount) = await profileRepo.SearchAsync(searchTerm, skillCategoryId, lat, lng, radiusKm, skip, take, ct);
+        var (items, totalCount) = await profileRepo.SearchAsync(searchTerm, serviceCategoryId, lat, lng, radiusKm, skip, take, ct);
         var page = skip / take + 1;
         return new PagedResult<ProviderProfileCustomerDto>(
             items.Select(MapToCustomerDto).ToList(),

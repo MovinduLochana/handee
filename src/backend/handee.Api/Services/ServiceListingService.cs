@@ -67,6 +67,18 @@ public class ServiceListingService : IServiceListingService
             .ToListAsync();
     }
 
+    public async Task<IEnumerable<ServiceListingResponseDto>> GetListingsByProviderProfileIdAsync(Guid providerProfileId)
+    {
+        var profileUserId = await _context.ProviderProfiles
+            .Where(p => p.Id == providerProfileId)
+            .Select(p => (Guid?)p.UserId)
+            .FirstOrDefaultAsync();
+
+        if (profileUserId == null) return Array.Empty<ServiceListingResponseDto>();
+
+        return await GetProviderListingsAsync(profileUserId.Value);
+    }
+
     public async Task<ServiceListingResponseDto> GetListingByIdAsync(Guid listingId)
     {
         var listing = await _context.ServiceListings
@@ -107,6 +119,17 @@ public class ServiceListingService : IServiceListingService
             throw new NotFoundException($"ServiceListing with ID {listingId} not found or you don't have access.");
 
         _context.ServiceListings.Remove(listing);
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task ToggleActiveStatusAsync(Guid providerId, Guid listingId, bool isActive)
+    {
+        var listing = await _context.ServiceListings.FirstOrDefaultAsync(l => l.Id == listingId && l.ProviderId == providerId);
+        if (listing == null)
+            throw new NotFoundException($"ServiceListing with ID {listingId} not found or you don't have access.");
+
+        listing.IsActive = isActive;
+        listing.UpdatedAt = DateTimeOffset.UtcNow;
         await _context.SaveChangesAsync();
     }
 
