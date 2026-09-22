@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using handee.API.Data;
@@ -12,9 +13,11 @@ using handee.API.Data;
 namespace Handee.Api.Data.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260917143551_AddServiceCategoryAndProviderAvailability")]
+    partial class AddServiceCategoryAndProviderAvailability
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -166,110 +169,6 @@ namespace Handee.Api.Data.Migrations
                     b.HasIndex("SkillCategoriesId");
 
                     b.ToTable("ProviderSkillCategories", (string)null);
-                });
-
-            modelBuilder.Entity("handee.API.Entities.AgentStepLog", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Action")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<string>("AgentName")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<Guid>("AgentWorkflowId")
-                        .HasColumnType("uuid");
-
-                    b.Property<long>("DurationMs")
-                        .HasColumnType("bigint");
-
-                    b.Property<string>("InputData")
-                        .HasColumnType("text");
-
-                    b.Property<string>("OutputData")
-                        .HasColumnType("text");
-
-                    b.Property<int>("StepNumber")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTimeOffset>("Timestamp")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("AgentWorkflowId");
-
-                    b.ToTable("AgentStepLogs");
-                });
-
-            modelBuilder.Entity("handee.API.Entities.AgentWorkflow", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("ApprovalStatus")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTimeOffset?>("DecidedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("DecidedByAdminId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("DecisionNote")
-                        .HasColumnType("text");
-
-                    b.Property<decimal?>("EstimatedPrice")
-                        .HasPrecision(10, 2)
-                        .HasColumnType("numeric(10,2)");
-
-                    b.Property<string>("FinalResultJson")
-                        .HasColumnType("text");
-
-                    b.Property<Guid>("JobRequestId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Objective")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.PrimitiveCollection<List<string>>("Plan")
-                        .IsRequired()
-                        .HasColumnType("text[]");
-
-                    b.Property<Guid?>("SelectedProviderId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("ValidationTier")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
-                    b.Property<string>("WorkflowId")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("JobRequestId");
-
-                    b.HasIndex("SelectedProviderId");
-
-                    b.ToTable("AgentWorkflows");
                 });
 
             modelBuilder.Entity("handee.API.Entities.ApplicationUser", b =>
@@ -534,14 +433,6 @@ namespace Handee.Api.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<string>("AddressLine1")
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
-
-                    b.Property<string>("AddressLine2")
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
-
                     b.Property<string>("AvailabilityNote")
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
@@ -549,14 +440,6 @@ namespace Handee.Api.Data.Migrations
                     b.Property<string>("Bio")
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
-
-                    b.Property<string>("City")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<string>("Country")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -575,10 +458,6 @@ namespace Handee.Api.Data.Migrations
                     b.PrimitiveCollection<List<string>>("Languages")
                         .IsRequired()
                         .HasColumnType("text[]");
-
-                    b.Property<string>("PostalCode")
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)");
 
                     b.Property<decimal>("RatingAggregate")
                         .HasPrecision(3, 2)
@@ -600,10 +479,6 @@ namespace Handee.Api.Data.Migrations
                     b.PrimitiveCollection<List<string>>("ServicesOffered")
                         .IsRequired()
                         .HasColumnType("text[]");
-
-                    b.Property<string>("State")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
 
                     b.Property<int>("TotalReviewCount")
                         .HasColumnType("integer");
@@ -878,35 +753,6 @@ namespace Handee.Api.Data.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("handee.API.Entities.AgentStepLog", b =>
-                {
-                    b.HasOne("handee.API.Entities.AgentWorkflow", "AgentWorkflow")
-                        .WithMany("StepLogs")
-                        .HasForeignKey("AgentWorkflowId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("AgentWorkflow");
-                });
-
-            modelBuilder.Entity("handee.API.Entities.AgentWorkflow", b =>
-                {
-                    b.HasOne("handee.API.Entities.JobRequest", "JobRequest")
-                        .WithMany()
-                        .HasForeignKey("JobRequestId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("handee.API.Entities.ApplicationUser", "SelectedProvider")
-                        .WithMany()
-                        .HasForeignKey("SelectedProviderId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.Navigation("JobRequest");
-
-                    b.Navigation("SelectedProvider");
-                });
-
             modelBuilder.Entity("handee.API.Entities.Booking", b =>
                 {
                     b.HasOne("handee.API.Entities.ApplicationUser", "Customer")
@@ -1024,11 +870,6 @@ namespace Handee.Api.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("ProviderProfile");
-                });
-
-            modelBuilder.Entity("handee.API.Entities.AgentWorkflow", b =>
-                {
-                    b.Navigation("StepLogs");
                 });
 
             modelBuilder.Entity("handee.API.Entities.ProviderProfile", b =>

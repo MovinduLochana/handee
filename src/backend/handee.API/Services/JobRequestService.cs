@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using handee.API.Data;
 using handee.API.DTO;
 using handee.API.Entities;
+using handee.API.Exceptions;
 using handee.API.Interfaces;
 
 namespace handee.API.Services;
@@ -19,9 +20,13 @@ public class JobRequestService : IJobRequestService
 
     public async Task<JobRequestResponseDto> CreateAsync(Guid customerId, CreateJobRequestDto dto)
     {
+        var categoryExists = await _db.ServiceCategories.AnyAsync(c => c.Id == dto.ServiceCategoryId);
+        if (!categoryExists)
+            throw new NotFoundException("Service category not found.");
+
         var jobRequest = new JobRequest
         {
-            Category = dto.Category,
+            ServiceCategoryId = dto.ServiceCategoryId,
             Description = dto.Description,
             PhotoUrls = dto.PhotoUrls,
             Location = dto.Location,
@@ -35,6 +40,9 @@ public class JobRequestService : IJobRequestService
         _db.JobRequests.Add(jobRequest);
         await _db.SaveChangesAsync();
 
+        // Load the category server-side so CategoryName is populated in the
+        // response — the client should never have to resolve it separately.
+        await _db.Entry(jobRequest).Reference(j => j.ServiceCategory).LoadAsync();
         // Trigger 4-agent LangGraph workflow
         await _agentWorkflowService.DispatchWorkflowAsync(jobRequest);
 
@@ -43,7 +51,9 @@ public class JobRequestService : IJobRequestService
 
     public async Task<JobRequestResponseDto?> GetByIdAsync(Guid id, Guid requestingUserId, bool isRequesterAdmin)
     {
-        var jobRequest = await _db.JobRequests.FindAsync(id);
+        var jobRequest = await _db.JobRequests
+            .Include(j => j.ServiceCategory)
+            .FirstOrDefaultAsync(j => j.Id == id);
         if (jobRequest is null)
             return null;
 
@@ -57,6 +67,7 @@ public class JobRequestService : IJobRequestService
     public async Task<List<JobRequestResponseDto>> GetForCustomerAsync(Guid customerId)
     {
         var jobRequests = await _db.JobRequests
+            .Include(j => j.ServiceCategory)
             .Where(j => j.CustomerId == customerId)
             .OrderByDescending(j => j.CreatedAt)
             .ToListAsync();
@@ -74,7 +85,7 @@ public class JobRequestService : IJobRequestService
         page = Math.Max(1, page);
         pageSize = Math.Clamp(pageSize, 1, 100);
 
-        var query = _db.JobRequests.AsQueryable();
+        var query = _db.JobRequests.Include(j => j.ServiceCategory).AsQueryable();
 
         if (status is not null)
             query = query.Where(j => j.Status == status);
@@ -102,7 +113,8 @@ public class JobRequestService : IJobRequestService
 
     private static JobRequestResponseDto ToDto(JobRequest j) => new(
         j.Id,
-        j.Category,
+        j.ServiceCategoryId,
+        j.ServiceCategory.Name,
         j.Description,
         j.PhotoUrls,
         j.Location,

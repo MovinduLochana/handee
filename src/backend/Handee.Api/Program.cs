@@ -121,6 +121,8 @@ builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IAgentWorkflowService, AgentWorkflowService>();
 builder.Services.AddScoped<IJobRequestService, JobRequestService>();
 builder.Services.AddScoped<IBookingService, BookingService>();
+builder.Services.AddScoped<IServiceCategoryService, ServiceCategoryService>();
+builder.Services.AddScoped<IProviderAvailabilityService, ProviderAvailabilityService>();
 
 // Provider Verification & Profiles
 builder.Services.AddScoped<IProviderProfileRepository, ProviderProfileRepository>();
@@ -182,6 +184,20 @@ using (var scope = app.Services.CreateScope())
 {
     var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
     await AdminSeeder.SeedAdminAsync(userManager, builder.Configuration);
+}
+
+// Auto-apply pending migrations
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    await dbContext.Database.MigrateAsync();
+}
+
+// Seed service categories (after migrations, since it needs the table to exist)
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    await ServiceCategorySeeder.SeedAsync(dbContext);
 }
 
 app.UseAuthentication();

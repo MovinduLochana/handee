@@ -1,6 +1,7 @@
 using handee.API.Data;
 using handee.API.DTO;
 using handee.API.Entities;
+using handee.API.Exceptions;
 using handee.API.Services;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
@@ -18,9 +19,17 @@ public class JobRequestServiceTests
         return new AppDbContext(options);
     }
 
-    private static CreateJobRequestDto SampleCreateDto() => new()
+    private static async Task<ServiceCategory> SeedCategoryAsync(AppDbContext db, string name = "Plumbing")
     {
-        Category = "Plumbing",
+        var category = new ServiceCategory { Name = name };
+        db.ServiceCategories.Add(category);
+        await db.SaveChangesAsync();
+        return category;
+    }
+
+    private static CreateJobRequestDto SampleCreateDto(Guid serviceCategoryId) => new()
+    {
+        ServiceCategoryId = serviceCategoryId,
         Description = "Leaking pipe under the sink.",
         PhotoUrls = ["https://example.com/photo1.jpg"],
         Location = "123 Main St",
@@ -33,26 +42,39 @@ public class JobRequestServiceTests
     public async Task CreateAsync_Persists_And_Returns_JobRequest_For_Given_Customer()
     {
         using var db = CreateContext();
+        var category = await SeedCategoryAsync(db);
         var sut = new JobRequestService(db);
         var customerId = Guid.NewGuid();
 
-        var result = await sut.CreateAsync(customerId, SampleCreateDto());
+        var result = await sut.CreateAsync(customerId, SampleCreateDto(category.Id));
 
         Assert.Equal(customerId, result.CustomerId);
-        Assert.Equal("Plumbing", result.Category);
+        Assert.Equal(category.Id, result.ServiceCategoryId);
+        Assert.Equal(category.Name, result.CategoryName);
         Assert.Equal(JobRequestStatus.PendingAiReview.ToString(), result.Status);
         Assert.Single(db.JobRequests);
         Assert.Equal(customerId, db.JobRequests.Single().CustomerId);
     }
 
     [Fact]
+    public async Task CreateAsync_Throws_NotFound_When_ServiceCategoryId_Invalid()
+    {
+        using var db = CreateContext();
+        var sut = new JobRequestService(db);
+
+        await Assert.ThrowsAsync<NotFoundException>(() =>
+            sut.CreateAsync(Guid.NewGuid(), SampleCreateDto(Guid.NewGuid())));
+    }
+
+    [Fact]
     public async Task GetByIdAsync_Owner_Can_View()
     {
         using var db = CreateContext();
+        var category = await SeedCategoryAsync(db, "Electrical");
         var customerId = Guid.NewGuid();
         var jobRequest = new JobRequest
         {
-            Category = "Electrical",
+            ServiceCategoryId = category.Id,
             Description = "Flickering lights.",
             Location = "456 Oak Ave",
             CustomerId = customerId
@@ -65,16 +87,17 @@ public class JobRequestServiceTests
 
         Assert.NotNull(result);
         Assert.Equal(jobRequest.Id, result!.Id);
-        Assert.Equal("Electrical", result.Category);
+        Assert.Equal("Electrical", result.CategoryName);
     }
 
     [Fact]
     public async Task GetByIdAsync_Admin_Can_View_Anyones_Request()
     {
         using var db = CreateContext();
+        var category = await SeedCategoryAsync(db);
         var jobRequest = new JobRequest
         {
-            Category = "Electrical", Description = "d", Location = "l", CustomerId = Guid.NewGuid()
+            ServiceCategoryId = category.Id, Description = "d", Location = "l", CustomerId = Guid.NewGuid()
         };
         db.JobRequests.Add(jobRequest);
         await db.SaveChangesAsync();
@@ -89,9 +112,10 @@ public class JobRequestServiceTests
     public async Task GetByIdAsync_NonOwner_NonAdmin_Gets_Null()
     {
         using var db = CreateContext();
+        var category = await SeedCategoryAsync(db);
         var jobRequest = new JobRequest
         {
-            Category = "Electrical", Description = "d", Location = "l", CustomerId = Guid.NewGuid()
+            ServiceCategoryId = category.Id, Description = "d", Location = "l", CustomerId = Guid.NewGuid()
         };
         db.JobRequests.Add(jobRequest);
         await db.SaveChangesAsync();
@@ -117,13 +141,14 @@ public class JobRequestServiceTests
     public async Task GetForCustomerAsync_Only_Returns_That_Customers_Requests()
     {
         using var db = CreateContext();
+        var category = await SeedCategoryAsync(db);
         var customerA = Guid.NewGuid();
         var customerB = Guid.NewGuid();
 
         db.JobRequests.AddRange(
-            new JobRequest { Category = "A1", Description = "d", Location = "l", CustomerId = customerA },
-            new JobRequest { Category = "A2", Description = "d", Location = "l", CustomerId = customerA },
-            new JobRequest { Category = "B1", Description = "d", Location = "l", CustomerId = customerB });
+            new JobRequest { ServiceCategoryId = category.Id, Description = "d", Location = "l", CustomerId = customerA },
+            new JobRequest { ServiceCategoryId = category.Id, Description = "d", Location = "l", CustomerId = customerA },
+            new JobRequest { ServiceCategoryId = category.Id, Description = "d", Location = "l", CustomerId = customerB });
         await db.SaveChangesAsync();
 
         var sut = new JobRequestService(db);
@@ -131,18 +156,19 @@ public class JobRequestServiceTests
 
         Assert.Equal(2, result.Count);
         Assert.All(result, r => Assert.Equal(customerA, r.CustomerId));
-        Assert.DoesNotContain(result, r => r.Category == "B1");
+        Assert.DoesNotContain(result, r => r.CustomerId == customerB);
     }
 
     [Fact]
     public async Task GetForStaffAsync_Returns_Paged_Result_With_Correct_Total()
     {
         using var db = CreateContext();
+        var category = await SeedCategoryAsync(db);
         for (var i = 0; i < 5; i++)
         {
             db.JobRequests.Add(new JobRequest
             {
-                Category = $"Cat{i}",
+                ServiceCategoryId = category.Id,
                 Description = "d",
                 Location = "l",
                 CustomerId = Guid.NewGuid()
@@ -164,20 +190,21 @@ public class JobRequestServiceTests
     public async Task GetForStaffAsync_Filters_By_Status_And_Urgency()
     {
         using var db = CreateContext();
+        var category = await SeedCategoryAsync(db);
         db.JobRequests.AddRange(
             new JobRequest
             {
-                Category = "Match", Description = "d", Location = "l",
+                ServiceCategoryId = category.Id, Description = "d", Location = "l",
                 CustomerId = Guid.NewGuid(), Status = JobRequestStatus.Open, Urgency = JobUrgency.High
             },
             new JobRequest
             {
-                Category = "WrongStatus", Description = "d", Location = "l",
+                ServiceCategoryId = category.Id, Description = "d", Location = "l",
                 CustomerId = Guid.NewGuid(), Status = JobRequestStatus.Cancelled, Urgency = JobUrgency.High
             },
             new JobRequest
             {
-                Category = "WrongUrgency", Description = "d", Location = "l",
+                ServiceCategoryId = category.Id, Description = "d", Location = "l",
                 CustomerId = Guid.NewGuid(), Status = JobRequestStatus.Open, Urgency = JobUrgency.Low
             });
         await db.SaveChangesAsync();
@@ -188,6 +215,6 @@ public class JobRequestServiceTests
             sortDescending: true, page: 1, pageSize: 20);
 
         Assert.Equal(1, result.TotalCount);
-        Assert.Equal("Match", result.Items.Single().Category);
+        Assert.Equal(category.Name, result.Items.Single().CategoryName);
     }
 }

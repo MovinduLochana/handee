@@ -22,9 +22,7 @@ public class JobRequest
 {
     public Guid Id { get; set; } = Guid.NewGuid();
 
-    // Free-text for now; should become a FK to a ServiceCategory entity once
-    // one exists.
-    public string Category { get; set; } = default!;
+    public Guid ServiceCategoryId { get; set; }
     public string Description { get; set; } = default!;
     public List<string> PhotoUrls { get; set; } = new();
     public string Location { get; set; } = default!;
@@ -40,6 +38,7 @@ public class JobRequest
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
     public DateTimeOffset? UpdatedAt { get; set; }
 
-    // Navigation property
+    // Navigation properties
     public ApplicationUser Customer { get; set; } = default!;
+    public ServiceCategory ServiceCategory { get; set; } = default!;
 }

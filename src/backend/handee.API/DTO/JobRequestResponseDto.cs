@@ -2,7 +2,8 @@ namespace handee.API.DTO;
 
 public record JobRequestResponseDto(
     Guid Id,
-    string Category,
+    Guid ServiceCategoryId,
+    string CategoryName,
     string Description,
     IList<string> PhotoUrls,
     string Location,

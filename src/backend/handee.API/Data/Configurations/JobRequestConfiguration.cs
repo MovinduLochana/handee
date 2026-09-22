@@ -15,9 +15,10 @@ public class JobRequestConfiguration : IEntityTypeConfiguration<JobRequest>
             .HasForeignKey(j => j.CustomerId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        builder.Property(j => j.Category)
-            .IsRequired()
-            .HasMaxLength(100);
+        builder.HasOne(j => j.ServiceCategory)
+            .WithMany()
+            .HasForeignKey(j => j.ServiceCategoryId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         builder.Property(j => j.Description)
             .IsRequired()
