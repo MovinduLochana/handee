@@ -163,6 +163,8 @@ export interface ServiceListingDto {
   serviceCategoryId: string;
   title: string;
   description: string;
+  scope: string;
+  availability: string;
   fixedPrice: number;
   estimatedDuration: string;
   isActive: boolean;
@@ -176,6 +178,8 @@ export interface CreateServiceListingDto {
   serviceCategoryId: string;
   title: string;
   description: string;
+  scope: string;
+  availability: string;
   fixedPrice: number;
   estimatedDuration: string;
   isActive: boolean;
@@ -185,6 +189,8 @@ export interface UpdateServiceListingDto {
   serviceCategoryId: string;
   title: string;
   description: string;
+  scope: string;
+  availability: string;
   fixedPrice: number;
   estimatedDuration: string;
   isActive: boolean;

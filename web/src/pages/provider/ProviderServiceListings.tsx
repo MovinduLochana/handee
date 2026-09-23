@@ -2,7 +2,8 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { serviceListingsApi } from "../../api/serviceListings";
 import ServiceListingForm from "../../components/provider/ServiceListingForm";
-import { Plus, Loader2, Edit2, Clock, CheckCircle, Package, Sparkles } from "lucide-react";
+import { Plus, Loader2, CheckCircle, Package, Sparkles } from "lucide-react";
+import ServiceListingCard from "../../components/public/ServiceListingCard";
 import "./ProviderServiceListings.css";
 
 export default function ProviderServiceListings() {
@@ -87,40 +88,17 @@ export default function ProviderServiceListings() {
                 {listings.map((listing, idx) => (
                     <div
                         key={listing.id}
-                        className={`listing-card hover-lift animate-fade-up ${!listing.isActive ? "inactive" : ""}`}
+                        className="animate-fade-up"
                         style={{ animationDelay: `${(idx % 10) * 50 + 200}ms` }}
                     >
-                        <div className="listing-card-header">
-                            <div className="listing-title">
-                                {listing.serviceCategoryName && <span className="cat-badge">{listing.serviceCategoryName}</span>}
-                                <h3 className="line-clamp-2">{listing.title}</h3>
-                            </div>
-                            <button
-                                onClick={() => {
-                                    setEditingListing(listing);
-                                    setIsModalOpen(true);
-                                }}
-                                className="btn-icon circle-edit-btn"
-                                aria-label="Edit Listing"
-                            >
-                                <Edit2 size={16} />
-                            </button>
-                        </div>
-
-                        <p className="listing-desc line-clamp-3">{listing.description}</p>
-
-                        <div className="listing-meta">
-                            <span className="price-tag">LKR {listing.fixedPrice.toFixed(2)}</span>
-                            <span className="duration-tag">
-                                <Clock size={14} /> {listing.estimatedDuration}
-                            </span>
-                        </div>
-
-                        {!listing.isActive && (
-                            <div className="status-banner">
-                                Paused • Hidden from profile
-                            </div>
-                        )}
+                        <ServiceListingCard
+                            listing={listing}
+                            mode="provider"
+                            onEditClick={(listing) => {
+                                setEditingListing(listing);
+                                setIsModalOpen(true);
+                            }}
+                        />
                     </div>
                 ))}
             </div>

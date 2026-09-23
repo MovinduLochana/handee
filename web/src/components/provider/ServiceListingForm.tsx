@@ -24,6 +24,8 @@ export default function ServiceListingForm({ initialData, onClose }: ServiceList
         title: "",
         serviceCategoryId: "",
         description: "",
+        scope: "",
+        availability: "",
         fixedPrice: "",
         estimatedDuration: "01:00:00", // Default to 1 hour (HH:mm:ss)
         isActive: true,
@@ -35,6 +37,8 @@ export default function ServiceListingForm({ initialData, onClose }: ServiceList
                 title: initialData.title,
                 serviceCategoryId: initialData.serviceCategoryId,
                 description: initialData.description,
+                scope: initialData.scope || "",
+                availability: initialData.availability || "",
                 fixedPrice: initialData.fixedPrice.toString(),
                 estimatedDuration: initialData.estimatedDuration,
                 isActive: initialData.isActive,
@@ -75,46 +79,34 @@ export default function ServiceListingForm({ initialData, onClose }: ServiceList
                 </div>
 
                 <form onSubmit={handleSubmit} className="listing-form">
-                    <div className="form-group">
-                        <label>Service Category</label>
-                        <select
-                            value={formData.serviceCategoryId}
-                            onChange={(e) => setFormData({ ...formData, serviceCategoryId: e.target.value })}
-                            required
-                        >
-                            {categories.map((c) => (
-                                <option key={c.id} value={c.id}>
-                                    {c.iconUrl} {c.name}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
+                    <div className="form-grid">
+                        <div className="form-group">
+                            <label>Service Category</label>
+                            <select
+                                value={formData.serviceCategoryId}
+                                onChange={(e) => setFormData({ ...formData, serviceCategoryId: e.target.value })}
+                                required
+                            >
+                                {categories.map((c) => (
+                                    <option key={c.id} value={c.id}>
+                                        {c.iconUrl} {c.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
 
-                    <div className="form-group">
-                        <label><Type size={16} /> Service Name</label>
-                        <input
-                            type="text"
-                            required
-                            value={formData.title}
-                            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                            placeholder="e.g. Deep Home Cleaning"
-                            maxLength={100}
-                        />
-                    </div>
+                        <div className="form-group">
+                            <label><Type size={16} /> Service Name</label>
+                            <input
+                                type="text"
+                                required
+                                value={formData.title}
+                                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                                placeholder="e.g. Deep Home Cleaning"
+                                maxLength={100}
+                            />
+                        </div>
 
-                    <div className="form-group">
-                        <label><AlignLeft size={16} /> Description</label>
-                        <textarea
-                            required
-                            rows={4}
-                            value={formData.description}
-                            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                            placeholder="Clearly describe what this service includes and any requirements..."
-                            maxLength={1000}
-                        />
-                    </div>
-
-                    <div className="form-row">
                         <div className="form-group">
                             <label><Banknote size={16} /> Fixed Price (LKR)</label>
                             <input
@@ -135,9 +127,45 @@ export default function ServiceListingForm({ initialData, onClose }: ServiceList
                                 required
                                 value={formData.estimatedDuration}
                                 onChange={(e) => setFormData({ ...formData, estimatedDuration: e.target.value })}
-                                placeholder="e.g. 02:00:00 (2 hours)"
+                                placeholder="02:00:00"
                                 pattern="^\d{2}:\d{2}:\d{2}$"
                                 title="Use exact time format: Hours:Minutes:Seconds"
+                            />
+                        </div>
+
+                        <div className="form-group col-span-2">
+                            <label><Clock size={16} /> Availability Details</label>
+                            <input
+                                type="text"
+                                required
+                                value={formData.availability}
+                                onChange={(e) => setFormData({ ...formData, availability: e.target.value })}
+                                placeholder="e.g., Weekdays 9 AM - 5 PM"
+                                maxLength={100}
+                            />
+                        </div>
+
+                        <div className="form-group col-span-2">
+                            <label><AlignLeft size={16} /> Description</label>
+                            <textarea
+                                required
+                                rows={4}
+                                value={formData.description}
+                                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                placeholder="Clearly describe what this service includes generally..."
+                                maxLength={1000}
+                            />
+                        </div>
+
+                        <div className="form-group col-span-2">
+                            <label><AlignLeft size={16} /> Scope of Work</label>
+                            <textarea
+                                required
+                                rows={2}
+                                value={formData.scope}
+                                onChange={(e) => setFormData({ ...formData, scope: e.target.value })}
+                                placeholder="Specifically define what is included (e.g., 2 hours of deep cleaning) and what is excluded."
+                                maxLength={500}
                             />
                         </div>
                     </div>
