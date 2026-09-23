@@ -243,7 +243,7 @@ class _CustomerHomeTab extends StatelessWidget {
               const SizedBox(height: 24),
 
               // Active Tracking Widget (if any)
-              if (activeRequest != null && activeRequest.isPendingReview) ...[
+              if (activeRequest != null && activeRequest.isPendingAiReview) ...[
                 const Text(
                   'In-Flight Request',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
@@ -278,7 +278,7 @@ class _CustomerHomeTab extends StatelessWidget {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              activeRequest.category,
+                              activeRequest.categoryName,
                               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
                             ),
                             StatusBadge(status: activeRequest.status),
@@ -341,7 +341,7 @@ class _CustomerHomeTab extends StatelessWidget {
                             ),
                             const SizedBox(height: 3),
                             Text(
-                              activeBooking.jobRequest?.category ?? 'Service in Progress',
+                              activeBooking.jobRequest?.categoryName ?? 'Service in Progress',
                               style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
                             ),
                           ],

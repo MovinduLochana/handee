@@ -1,13 +1,13 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import '../data/models/job_request_model.dart';
+import '../data/models/booking_model.dart';
 import '../data/models/provider_profile_model.dart';
 import '../data/repositories/dispatch_repository.dart';
 
 class DispatchProvider extends ChangeNotifier {
   final DispatchRepository repository;
 
-  List<JobRequestModel> _incomingOffers = [];
+  List<BookingModel> _incomingOffers = [];
   ProviderProfileModel? _providerProfile;
   bool _isOnline = true;
   bool _isLoading = false;
@@ -19,7 +19,7 @@ class DispatchProvider extends ChangeNotifier {
     fetchOffers();
   }
 
-  List<JobRequestModel> get incomingOffers => _incomingOffers;
+  List<BookingModel> get incomingOffers => _incomingOffers;
   ProviderProfileModel? get providerProfile => _providerProfile;
   bool get isOnline => _isOnline;
   bool get isLoading => _isLoading;

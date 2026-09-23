@@ -17,6 +17,9 @@ class ApiEndpoints {
   // User Profile (UserController)
   static const String userProfile = '/users/me';
 
+  // Service Categories (ServiceCategoryController) — public reference data
+  static const String serviceCategories = '/service-categories';
+
   // Job Requests (JobRequestController)
   static const String jobRequests = '/job-requests';
   static const String myJobRequests = '/job-requests/mine';

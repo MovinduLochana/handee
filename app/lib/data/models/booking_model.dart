@@ -18,6 +18,12 @@ class BookingModel {
   final String? serviceLocation;
   final double? price;
 
+  /// Flat fields on BookingResponseDto, resolved server-side from the linked
+  /// JobRequest. The nested [jobRequest] object is never sent by the backend,
+  /// so read category/description from these.
+  final String? category;
+  final String? description;
+
   BookingModel({
     required this.id,
     this.jobRequestId,
@@ -34,6 +40,8 @@ class BookingModel {
     this.customerPhone,
     this.serviceLocation,
     this.price,
+    this.category,
+    this.description,
   });
 
   bool get isRequested => status.toLowerCase() == 'requested';
@@ -87,6 +95,8 @@ class BookingModel {
       customerPhone: json['customerPhone']?.toString(),
       serviceLocation: json['serviceLocation']?.toString(),
       price: (json['price'] as num?)?.toDouble(),
+      category: json['category']?.toString(),
+      description: json['description']?.toString(),
     );
   }
 

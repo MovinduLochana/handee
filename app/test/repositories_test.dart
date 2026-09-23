@@ -61,17 +61,22 @@ void main() {
     expect(storage.getAccessToken(), 'jwt-abc-123');
   });
 
-  test('JobRequestRepository creates request against real backend API', () async {
+  test('JobRequestRepository posts serviceCategoryId and parses the real DTO', () async {
+    const categoryId = '8a1b2c3d-4e5f-6071-8293-a4b5c6d7e8f9';
+    Map<String, dynamic>? capturedBody;
+
     final mockClient = MockClient((request) async {
       if (request.url.path == '/job-requests') {
-        final body = jsonDecode(request.body);
+        capturedBody = jsonDecode(request.body) as Map<String, dynamic>;
         return http.Response(
           jsonEncode({
             'id': 'job-req-555',
-            'category': body['category'],
-            'description': body['description'],
-            'location': body['location'],
-            'urgency': body['urgency'],
+            'serviceCategoryId': capturedBody!['serviceCategoryId'],
+            'categoryName': 'Plumbing',
+            'description': capturedBody!['description'],
+            'photoUrls': <String>[],
+            'location': capturedBody!['location'],
+            'urgency': capturedBody!['urgency'],
             'status': 'PendingAiReview',
             'customerId': 'cust-001',
             'createdAt': DateTime.now().toIso8601String(),
@@ -86,15 +91,53 @@ void main() {
     final repo = JobRequestRepository(apiClient: apiClient, storage: storage);
 
     final result = await repo.createJobRequest(
-      category: 'Plumbing',
+      serviceCategoryId: categoryId,
       description: 'Major leak in bathroom pipe',
       location: 'Colombo 03',
       urgency: 'High',
     );
 
+    // The payload must match CreateJobRequestDto: a real Guid under
+    // 'serviceCategoryId', and no legacy 'category' string.
+    expect(capturedBody!['serviceCategoryId'], categoryId);
+    expect(capturedBody!.containsKey('category'), isFalse);
+
     expect(result.id, 'job-req-555');
-    expect(result.category, 'Plumbing');
+    expect(result.serviceCategoryId, categoryId);
+    expect(result.categoryName, 'Plumbing');
     expect(result.status, 'PendingAiReview');
+  });
+
+  test('BookingRepository reschedules via PUT /bookings/{id}/schedule', () async {
+    final scheduledAt = DateTime.utc(2026, 10, 1, 9, 30);
+    Map<String, dynamic>? capturedBody;
+
+    final mockClient = MockClient((request) async {
+      if (request.url.path == '/bookings/book-101/schedule' && request.method == 'PUT') {
+        capturedBody = jsonDecode(request.body) as Map<String, dynamic>;
+        return http.Response(
+          jsonEncode({
+            'id': 'book-101',
+            'providerId': 'prov-001',
+            'customerId': 'cust-001',
+            'status': 'Accepted',
+            'scheduledAt': scheduledAt.toIso8601String(),
+            'createdAt': DateTime.now().toIso8601String(),
+          }),
+          200,
+        );
+      }
+      return http.Response('Not Found', 404);
+    });
+
+    final apiClient = ApiClient(storage: storage, httpClient: mockClient, baseUrl: 'http://test');
+    final repo = BookingRepository(apiClient: apiClient);
+
+    final updated = await repo.updateBookingSchedule('book-101', scheduledAt);
+
+    expect(capturedBody!.containsKey('scheduledAt'), isTrue);
+    expect(updated.scheduledAt, isNotNull);
+    expect(updated.scheduledAt!.toUtc(), scheduledAt);
   });
 
   test('BookingRepository fetches and updates booking status', () async {

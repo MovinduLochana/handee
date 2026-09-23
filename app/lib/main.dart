@@ -9,6 +9,7 @@ import 'data/repositories/auth_repository.dart';
 import 'data/repositories/booking_repository.dart';
 import 'data/repositories/dispatch_repository.dart';
 import 'data/repositories/job_request_repository.dart';
+import 'data/repositories/service_category_repository.dart';
 import 'providers/assistant_provider.dart';
 import 'providers/auth_provider.dart';
 import 'providers/booking_provider.dart';
@@ -45,8 +46,13 @@ Widget buildHandeeApp({
     apiClient: client,
   );
 
+  final serviceCategoryRepository = ServiceCategoryRepository(
+    apiClient: client,
+  );
+
   return MultiProvider(
     providers: [
+      Provider<ServiceCategoryRepository>.value(value: serviceCategoryRepository),
       ChangeNotifierProvider<AuthProvider>(
         create: (_) => AuthProvider(
           authRepo: authRepository,

@@ -5,7 +5,7 @@ import '../../core/constants/colors.dart';
 import '../../providers/booking_provider.dart';
 import '../../providers/dispatch_provider.dart';
 import '../../widgets/custom_button.dart';
-import '../../widgets/urgency_badge.dart';
+import '../../widgets/status_badge.dart';
 import 'active_job_screen.dart';
 
 class DispatchQueueScreen extends StatelessWidget {
@@ -105,19 +105,19 @@ class DispatchQueueScreen extends StatelessWidget {
                               ],
                             ),
                           ),
-                          UrgencyBadge(urgency: offer.urgency),
+                          StatusBadge(status: offer.status),
                         ],
                       ),
 
                       const SizedBox(height: 14),
 
                       Text(
-                        offer.category,
+                        offer.category ?? 'Service Request',
                         style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        offer.description,
+                        offer.description ?? 'Service request awaiting confirmation',
                         style: const TextStyle(fontSize: 13, color: AppColors.textSecondary, height: 1.4),
                       ),
 
@@ -137,13 +137,13 @@ class DispatchQueueScreen extends StatelessWidget {
                                 const Icon(Icons.place, size: 16, color: AppColors.primary),
                                 const SizedBox(width: 6),
                                 Text(
-                                  offer.location,
+                                  offer.serviceLocation ?? 'Location not specified',
                                   style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
                                 ),
                               ],
                             ),
                             Text(
-                              'Rs. ${currencyFormat.format(offer.estimatedPrice ?? 5000)}',
+                              'Rs. ${currencyFormat.format(offer.price ?? 0)}',
                               style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w800,
