@@ -1,13 +1,19 @@
+import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, TargetPlatform;
+
 /// Centralized API Endpoints for Handee ASP.NET Core Backend.
 /// Matches the exact routes implemented in Handee.Api controllers.
 class ApiEndpoints {
   ApiEndpoints._();
 
   // Base URL configuration (Supports localhost, Android Emulator 10.0.2.2, or live backend)
-  // Default to emulator/localhost port 5000 (HTTP) or 5001 (HTTPS)
-  static const String defaultHost = '10.0.2.2'; // Standard Android emulator alias for localhost
-  static const int defaultPort = 5000;
-  static const String baseUrl = 'http://$defaultHost:$defaultPort';
+  // Default to emulator/localhost port 5057 (HTTP) as defined in backend launchSettings
+  static String get defaultHost {
+    if (kIsWeb) return 'localhost';
+    if (defaultTargetPlatform == TargetPlatform.android) return '10.0.2.2';
+    return 'localhost';
+  }
+  static const int defaultPort = 5057;
+  static String get baseUrl => 'http://$defaultHost:$defaultPort';
 
   // Auth endpoints (AuthController)
   static const String login = '/auth/login';

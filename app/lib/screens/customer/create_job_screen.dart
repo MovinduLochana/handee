@@ -125,17 +125,19 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                   prefixIcon: Icon(Icons.category_outlined, color: AppColors.textMuted),
                 ),
                 items: [
-                  if (_selectedCategory == 'Unknown Category')
+                  if (_selectedCategory != null &&
+                      !context.watch<ServiceCategoryProvider>().categories.any((c) => c.name == _selectedCategory))
                     DropdownMenuItem<String>(
-                      value: 'Unknown Category',
-                      child: Text('Unknown Category'), 
+                      value: _selectedCategory,
+                      child: Text(_selectedCategory!),
                     ),
                   ...context.watch<ServiceCategoryProvider>().categories.map((c) {
-                  return DropdownMenuItem<String>(
-                    value: c.name,
-                    child: Text(c.name),
-                  );
-                })],
+                    return DropdownMenuItem<String>(
+                      value: c.name,
+                      child: Text(c.name),
+                    );
+                  }),
+                ],
                 onChanged: (val) {
                   if (val != null) setState(() => _selectedCategory = val);
                 },

@@ -4,6 +4,7 @@ import '../../../core/constants/colors.dart';
 import '../../../providers/service_directory_provider.dart';
 import '../../../widgets/service_listing_card.dart';
 import 'create_job_screen.dart';
+import 'service_listing_details_screen.dart';
 
 class PublicProviderProfileScreen extends StatefulWidget {
   final String providerId;
@@ -256,7 +257,7 @@ class _PublicProviderProfileScreenState extends State<PublicProviderProfileScree
                         const Text("This provider hasn't added any services yet.", style: TextStyle(color: AppColors.textSecondary))
                       else
                         SizedBox(
-                          height: 174,
+                          height: 280,
                           child: ListView.separated(
                             padding: EdgeInsets.zero,
                             scrollDirection: Axis.horizontal,
@@ -272,7 +273,7 @@ class _PublicProviderProfileScreenState extends State<PublicProviderProfileScree
                                     Navigator.push(
                                       context,
                                       MaterialPageRoute(
-                                        builder: (_) => CreateJobScreen(initialCategory: listing.serviceCategoryName),
+                                        builder: (_) => ServiceListingDetailsScreen(listing: listing),
                                       ),
                                     );
                                   },

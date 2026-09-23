@@ -5,6 +5,8 @@ class ServiceListingModel {
   final String serviceCategoryId;
   final String title;
   final String description;
+  final String scope;
+  final String availability;
   final double fixedPrice;
   final String estimatedDuration;
   final bool isActive;
@@ -17,6 +19,8 @@ class ServiceListingModel {
     required this.serviceCategoryId,
     required this.title,
     required this.description,
+    required this.scope,
+    required this.availability,
     required this.fixedPrice,
     required this.estimatedDuration,
     required this.isActive,
@@ -31,6 +35,8 @@ class ServiceListingModel {
       serviceCategoryId: json['serviceCategoryId']?.toString() ?? '',
       title: json['title']?.toString() ?? '',
       description: json['description']?.toString() ?? '',
+      scope: json['scope']?.toString() ?? '',
+      availability: json['availability']?.toString() ?? '',
       fixedPrice: (json['fixedPrice'] as num?)?.toDouble() ?? 0.0,
       estimatedDuration: json['estimatedDuration']?.toString() ?? '00:00:00',
       isActive: json['isActive'] as bool? ?? false,
@@ -46,6 +52,8 @@ class ServiceListingModel {
       'serviceCategoryId': serviceCategoryId,
       'title': title,
       'description': description,
+      'scope': scope,
+      'availability': availability,
       'fixedPrice': fixedPrice,
       'estimatedDuration': estimatedDuration,
       'isActive': isActive,

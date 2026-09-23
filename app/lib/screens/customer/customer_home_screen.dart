@@ -12,6 +12,7 @@ import 'create_job_screen.dart';
 import 'customer_bookings_screen.dart';
 import 'service_search_screen.dart';
 import 'public_provider_profile_screen.dart';
+import 'service_listing_details_screen.dart';
 import '../shared/profile_screen.dart';
 import '../../providers/service_category_provider.dart';
 import '../../providers/service_directory_provider.dart';
@@ -502,7 +503,7 @@ class _CustomerHomeTab extends StatelessWidget {
                 builder: (context, dirProvider, _) {
                   if (dirProvider.isLoading && dirProvider.topProviders.isEmpty) {
                     return Container(
-                      height: 174,
+                      height: 240,
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
                         color: Colors.white,
@@ -519,7 +520,7 @@ class _CustomerHomeTab extends StatelessWidget {
                   
                   if (dirProvider.topProviders.isEmpty && !dirProvider.isLoading) {
                     return Container(
-                      height: 174,
+                      height: 240,
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
                         color: AppColors.background,
@@ -538,7 +539,7 @@ class _CustomerHomeTab extends StatelessWidget {
                   }
 
                   return SizedBox(
-                    height: 174,
+                    height: 240,
                     child: ListView.separated(
                       clipBehavior: Clip.none,
                       scrollDirection: Axis.horizontal,
@@ -578,7 +579,7 @@ class _CustomerHomeTab extends StatelessWidget {
                 builder: (context, dirProvider, _) {
                   if (dirProvider.isLoading && dirProvider.popularServices.isEmpty) {
                     return Container(
-                      height: 200,
+                      height: 280,
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
                         color: Colors.white,
@@ -595,7 +596,7 @@ class _CustomerHomeTab extends StatelessWidget {
                   
                   if (dirProvider.popularServices.isEmpty && !dirProvider.isLoading) {
                     return Container(
-                      height: 200,
+                      height: 280,
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
                         color: AppColors.background,
@@ -614,7 +615,7 @@ class _CustomerHomeTab extends StatelessWidget {
                   }
 
                   return SizedBox(
-                    height: 174,
+                    height: 280,
                     child: ListView.separated(
                       scrollDirection: Axis.horizontal,
                       itemCount: dirProvider.popularServices.length > 5 ? 5 : dirProvider.popularServices.length,
@@ -629,7 +630,7 @@ class _CustomerHomeTab extends StatelessWidget {
                                Navigator.push(
                                  context,
                                  MaterialPageRoute(
-                                   builder: (_) => CreateJobScreen(initialCategory: listing.serviceCategoryName),
+                                   builder: (_) => ServiceListingDetailsScreen(listing: listing),
                                  ),
                                );
                              },

@@ -7,6 +7,7 @@ import '../../../widgets/provider_listing_card.dart';
 import '../../../widgets/service_listing_card.dart';
 import 'public_provider_profile_screen.dart';
 import 'create_job_screen.dart';
+import 'service_listing_details_screen.dart';
 
 class ServiceSearchScreen extends StatefulWidget {
   final String? initialCategory;
@@ -304,7 +305,7 @@ class _ServiceSearchScreenState extends State<ServiceSearchScreen> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (_) => CreateJobScreen(initialCategory: listing.serviceCategoryName),
+                                builder: (_) => ServiceListingDetailsScreen(listing: listing),
                               ),
                             );
                           },
