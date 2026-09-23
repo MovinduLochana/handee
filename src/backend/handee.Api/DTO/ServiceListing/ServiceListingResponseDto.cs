@@ -7,6 +7,8 @@ public class ServiceListingResponseDto
     public Guid ServiceCategoryId { get; set; }
     public string Title { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
+    public string Scope { get; set; } = string.Empty;
+    public string Availability { get; set; } = string.Empty;
     public decimal FixedPrice { get; set; }
     public TimeSpan EstimatedDuration { get; set; }
     public bool IsActive { get; set; }

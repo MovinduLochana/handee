@@ -28,6 +28,8 @@ public class ServiceListingService : IServiceListingService
             ServiceCategoryId = dto.ServiceCategoryId,
             Title = dto.Title,
             Description = dto.Description,
+            Scope = dto.Scope,
+            Availability = dto.Availability,
             FixedPrice = dto.FixedPrice,
             EstimatedDuration = dto.EstimatedDuration,
             IsActive = true
@@ -46,8 +48,11 @@ public class ServiceListingService : IServiceListingService
         if (listing == null)
             throw new NotFoundException($"ServiceListing with ID {listingId} not found or you don't have access.");
 
+        listing.ServiceCategoryId = dto.ServiceCategoryId;
         listing.Title = dto.Title;
         listing.Description = dto.Description;
+        listing.Scope = dto.Scope;
+        listing.Availability = dto.Availability;
         listing.FixedPrice = dto.FixedPrice;
         listing.EstimatedDuration = dto.EstimatedDuration;
         listing.IsActive = dto.IsActive;
@@ -142,6 +147,8 @@ public class ServiceListingService : IServiceListingService
             ServiceCategoryId = listing.ServiceCategoryId,
             Title = listing.Title,
             Description = listing.Description,
+            Scope = listing.Scope,
+            Availability = listing.Availability,
             FixedPrice = listing.FixedPrice,
             EstimatedDuration = listing.EstimatedDuration,
             IsActive = listing.IsActive,

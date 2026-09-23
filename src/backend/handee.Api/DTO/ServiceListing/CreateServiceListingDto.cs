@@ -16,6 +16,14 @@ public class CreateServiceListingDto
     public string Description { get; set; } = string.Empty;
 
     [Required]
+    [StringLength(500)]
+    public string Scope { get; set; } = string.Empty;
+
+    [Required]
+    [StringLength(100)]
+    public string Availability { get; set; } = string.Empty;
+
+    [Required]
     [Range(0.01, 1000000.0)]
     public decimal FixedPrice { get; set; }
 

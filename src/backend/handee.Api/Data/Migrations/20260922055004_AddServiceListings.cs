@@ -52,11 +52,22 @@ namespace Handee.Api.Data.Migrations
                 name: "IX_ServiceListings_ServiceCategoryId",
                 table: "ServiceListings",
                 column: "ServiceCategoryId");
+
+            migrationBuilder.AddForeignKey(
+                name: "FK_Bookings_ServiceListings_ServiceListingId",
+                table: "Bookings",
+                column: "ServiceListingId",
+                principalTable: "ServiceListings",
+                principalColumn: "Id",
+                onDelete: ReferentialAction.SetNull);
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropForeignKey(
+                name: "FK_Bookings_ServiceListings_ServiceListingId",
+                table: "Bookings");
             migrationBuilder.DropTable(
                 name: "ServiceListings");
         }
