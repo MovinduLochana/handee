@@ -13,6 +13,7 @@ class JobRequestRepository {
   });
 
   Future<JobRequestModel> createJobRequest({
+    required String categoryId,
     required String category,
     required String description,
     required String location,
@@ -22,6 +23,7 @@ class JobRequestRepository {
     List<String> photoUrls = const [],
   }) async {
     final payload = {
+      'serviceCategoryId': categoryId,
       'category': category,
       'description': description,
       'location': location,

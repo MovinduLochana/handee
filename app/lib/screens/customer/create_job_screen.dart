@@ -30,6 +30,14 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
   void initState() {
     super.initState();
     _selectedCategory = widget.initialCategory;
+    
+    // Ensure we fetch categories when this screen is loaded just in case 
+    // it failed previously, this fixes category retrieval issues.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context.read<ServiceCategoryProvider>().fetchCategories();
+      }
+    });
   }
 
   @override
@@ -54,7 +62,14 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
     final minBudget = double.tryParse(_minBudgetController.text.trim());
     final maxBudget = double.tryParse(_maxBudgetController.text.trim());
 
+    final categoryList = context.read<ServiceCategoryProvider>().categories;
+    String categoryId = '';
+    try {
+      categoryId = categoryList.firstWhere((c) => c.name == _selectedCategory).id;
+    } catch (_) {}
+
     final request = await provider.submitInstantMatch(
+      categoryId: categoryId,
       category: _selectedCategory!,
       description: _descController.text.trim(),
       location: _selectedLocation,
@@ -118,28 +133,59 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                 style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
               ),
               const SizedBox(height: 8),
-              DropdownButtonFormField<String>(
-                initialValue: _selectedCategory,
-                isExpanded: true,
-                decoration: const InputDecoration(
-                  prefixIcon: Icon(Icons.category_outlined, color: AppColors.textMuted),
-                ),
-                items: [
-                  if (_selectedCategory != null &&
-                      !context.watch<ServiceCategoryProvider>().categories.any((c) => c.name == _selectedCategory))
-                    DropdownMenuItem<String>(
-                      value: _selectedCategory,
-                      child: Text(_selectedCategory!),
-                    ),
-                  ...context.watch<ServiceCategoryProvider>().categories.map((c) {
-                    return DropdownMenuItem<String>(
-                      value: c.name,
-                      child: Text(c.name),
+              Builder(
+                builder: (context) {
+                  final categoryProvider = context.watch<ServiceCategoryProvider>();
+                  final categories = categoryProvider.categories;
+                  
+                  final List<DropdownMenuItem<String>> items = [];
+                  if (_selectedCategory != null && !categories.any((c) => c.name == _selectedCategory)) {
+                    items.add(
+                      DropdownMenuItem<String>(
+                        value: _selectedCategory,
+                        child: Text(_selectedCategory!),
+                      ),
                     );
-                  }),
-                ],
-                onChanged: (val) {
-                  if (val != null) setState(() => _selectedCategory = val);
+                  }
+                  
+                  final seenNames = <String>{};
+                  for (final c in categories) {
+                    if (seenNames.add(c.name)) {
+                      items.add(
+                        DropdownMenuItem<String>(
+                          value: c.name,
+                          child: Text(c.name),
+                        ),
+                      );
+                    }
+                  }
+
+                  return DropdownButtonFormField<String>(
+                    value: _selectedCategory,
+                    isExpanded: true,
+                    decoration: const InputDecoration(
+                      prefixIcon: Icon(Icons.category_outlined, color: AppColors.textMuted),
+                    ),
+                    items: items,
+                    onChanged: (val) {
+                      if (val != null) {
+                        setState(() {
+                          _selectedCategory = val;
+                          try {
+                            final category = categories.firstWhere((c) => c.name == val);
+                            if (category.priceBandMin > 0) {
+                              _minBudgetController.text = category.priceBandMin.toStringAsFixed(0);
+                            }
+                            if (category.priceBandMax > 0) {
+                              _maxBudgetController.text = category.priceBandMax.toStringAsFixed(0);
+                            }
+                          } catch (e) {
+                            // Category not found or custom category
+                          }
+                        });
+                      }
+                    },
+                  );
                 },
               ),
 

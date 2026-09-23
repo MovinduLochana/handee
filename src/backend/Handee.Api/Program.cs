@@ -197,6 +197,17 @@ using (var scope = app.Services.CreateScope())
     await ServiceCategorySeeder.SeedAsync(dbContext);
 }
 
+if (app.Environment.IsDevelopment())
+{
+    // Seed mock data for development
+    using (var scope = app.Services.CreateScope())
+    {
+        var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+        await MockDataSeeder.SeedAsync(dbContext, userManager);
+    }
+}
+
 app.UseAuthentication();
 app.UseAuthorization();
 
