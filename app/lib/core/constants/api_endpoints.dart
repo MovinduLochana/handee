@@ -6,11 +6,17 @@ class ApiEndpoints {
   ApiEndpoints._();
 
   // Base URL configuration (Supports localhost, Android Emulator 10.0.2.2, or live backend)
-  // Default to emulator/localhost port 5057 (HTTP) as defined in backend launchSettings
+  // Default to the Android Emulator (10.0.2.2) or localhost.
+  // Use --dart-define=DEVICE=true to target a Physical Device over Wi-Fi
+  static const bool usePhysicalDevice = bool.fromEnvironment('DEVICE', defaultValue: false);
+  static const String physicalDeviceIp = '192.168.1.3';
+
   static String get defaultHost {
     if (kIsWeb) return 'localhost';
-    if (defaultTargetPlatform == TargetPlatform.android) return '10.0.2.2';
-    return 'localhost';
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      return usePhysicalDevice ? physicalDeviceIp : '10.0.2.2';
+    }
+    return usePhysicalDevice ? physicalDeviceIp : 'localhost';
   }
   static const int defaultPort = 5057;
   static String get baseUrl => 'http://$defaultHost:$defaultPort';

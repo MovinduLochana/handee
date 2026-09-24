@@ -1354,6 +1354,8 @@ namespace Handee.Api.Data.Migrations
             modelBuilder.Entity("handee.API.Entities.ApplicationUser", b =>
                 {
                     b.Navigation("ServiceListings");
+                });
+
             modelBuilder.Entity("handee.API.Entities.Invoice", b =>
                 {
                     b.Navigation("Payments");
