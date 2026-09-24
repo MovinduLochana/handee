@@ -51,11 +51,11 @@ public class PaymentService : IPaymentService
             CustomerId = customerId,
             Amount = invoice.TotalAmount,
             Currency = invoice.Currency,
-            GatewayProvider = string.IsNullOrWhiteSpace(dto.GatewayProvider) ? "Stripe" : dto.GatewayProvider,
+            GatewayProvider = string.IsNullOrWhiteSpace(dto.EffectiveGateway) ? "Stripe" : dto.EffectiveGateway,
             TransactionReference = txnRef,
             Status = PaymentStatus.Succeeded,
-            PaymentMethodType = dto.PaymentMethodType,
-            CardLast4 = dto.CardLast4 ?? "4242",
+            PaymentMethodType = dto.EffectivePaymentMethod,
+            CardLast4 = dto.EffectiveLast4,
             CreatedAt = DateTimeOffset.UtcNow,
             SettledAt = DateTimeOffset.UtcNow
         };
@@ -177,26 +177,102 @@ public class PaymentService : IPaymentService
         );
     }
 
+    public async Task<PaymentResponseDto?> GetPaymentByIdAsync(Guid id)
+    {
+        var payment = await _context.Payments.FirstOrDefaultAsync(p => p.Id == id);
+        return payment == null ? null : MapPaymentToDto(payment);
+    }
+
+    public async Task<PaymentResponseDto?> GetPaymentByInvoiceIdAsync(Guid invoiceId)
+    {
+        var payment = await _context.Payments
+            .OrderByDescending(p => p.CreatedAt)
+            .FirstOrDefaultAsync(p => p.InvoiceId == invoiceId);
+        return payment == null ? null : MapPaymentToDto(payment);
+    }
+
+    public async Task<AdminPayoutsOverviewDto> GetAdminPayoutsOverviewAsync()
+    {
+        var payouts = await _context.Payouts
+            .Include(p => p.Provider)
+            .OrderByDescending(p => p.CreatedAt)
+            .ToListAsync();
+
+        var totalGrossVolume = payouts.Sum(p => p.GrossAmount);
+        var totalPlatformFees = payouts.Sum(p => p.PlatformFeeDeducted);
+        var totalPaidOut = payouts.Where(p => p.Status == PayoutStatus.Completed).Sum(p => p.NetAmount);
+        var pendingPayoutCount = payouts.Count(p => p.Status == PayoutStatus.Pending || p.Status == PayoutStatus.Processing);
+
+        var recentPayoutDtos = payouts.Take(50).Select(MapPayoutToDto).ToList();
+
+        return new AdminPayoutsOverviewDto(
+            totalGrossVolume,
+            totalPlatformFees,
+            totalPaidOut,
+            pendingPayoutCount,
+            recentPayoutDtos
+        );
+    }
+
+    public async Task<PayoutResponseDto?> ProcessPayoutAsync(Guid payoutId)
+    {
+        var payout = await _context.Payouts
+            .Include(p => p.Provider)
+            .FirstOrDefaultAsync(p => p.Id == payoutId);
+
+        if (payout == null) return null;
+
+        payout.Status = PayoutStatus.Completed;
+        payout.DisbursedAt = DateTimeOffset.UtcNow;
+        if (string.IsNullOrWhiteSpace(payout.PayoutBatchId))
+        {
+            payout.PayoutBatchId = $"disb_{Guid.NewGuid():N}";
+        }
+
+        await _context.SaveChangesAsync();
+        return MapPayoutToDto(payout);
+    }
+
     public async Task<List<PayoutResponseDto>> GetProviderPayoutsAsync(Guid providerId)
     {
         return await _context.Payouts
             .Include(p => p.Provider)
             .Where(p => p.ProviderId == providerId)
             .OrderByDescending(p => p.CreatedAt)
-            .Select(p => new PayoutResponseDto(
-                p.Id,
-                p.ProviderId,
-                p.Provider.FullName,
-                p.BookingId,
-                p.GrossAmount,
-                p.PlatformFeeDeducted,
-                p.NetAmount,
-                p.Currency,
-                p.Status.ToString(),
-                p.PayoutBatchId,
-                p.DisbursedAt,
-                p.CreatedAt
-            ))
+            .Select(p => MapPayoutToDto(p))
             .ToListAsync();
     }
+
+    private static PaymentResponseDto MapPaymentToDto(Payment p) =>
+        new(
+            p.Id,
+            p.InvoiceId,
+            p.BookingId,
+            p.Amount,
+            p.Currency,
+            p.GatewayProvider,
+            p.TransactionReference,
+            p.Status.ToString(),
+            p.CardLast4,
+            p.FailureReason,
+            p.CreatedAt,
+            p.SettledAt
+        );
+
+    private static PayoutResponseDto MapPayoutToDto(Payout p) =>
+        new(
+            p.Id,
+            p.ProviderId,
+            p.Provider != null ? p.Provider.FullName : null,
+            p.BookingId,
+            p.GrossAmount,
+            p.PlatformFeeDeducted,
+            p.NetAmount,
+            p.Currency,
+            p.Status.ToString(),
+            p.PayoutBatchId,
+            p.DisbursedAt,
+            p.CreatedAt
+        );
 }
+

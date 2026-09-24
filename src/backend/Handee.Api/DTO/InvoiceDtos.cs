@@ -17,7 +17,11 @@ public record InvoiceResponseDto(
     DateTimeOffset? DueAt,
     DateTimeOffset? PaidAt,
     DateTimeOffset CreatedAt
-);
+)
+{
+    public DateTimeOffset IssuedAt => CreatedAt;
+}
+
 
 public record CreateInvoiceDto(
     Guid BookingId,

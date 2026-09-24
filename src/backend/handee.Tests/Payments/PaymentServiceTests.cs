@@ -133,4 +133,84 @@ public class PaymentServiceTests
         Assert.Equal(1500m, summary.PendingPayouts);
         Assert.Equal(3, summary.CompletedJobsCount);
     }
+
+    [Fact]
+    public async Task GetPaymentByInvoiceIdAsync_Returns_Payment_When_Exists()
+    {
+        var test = await SeedInvoiceAsync(3000m);
+        using var db = test.Db;
+        var sut = new PaymentService(db);
+
+        var req = new ProcessPaymentRequestDto(test.Invoice.Id, "card", null, "tok_123", null, "4242");
+        var processed = await sut.ProcessPaymentAsync(req, test.CustomerId);
+
+        var found = await sut.GetPaymentByInvoiceIdAsync(test.Invoice.Id);
+        Assert.NotNull(found);
+        Assert.Equal(processed.Id, found.Id);
+        Assert.Equal(test.Invoice.Id, found.InvoiceId);
+        Assert.Equal("Stripe", found.GatewayProvider);
+        Assert.Equal("4242", found.CardLast4);
+    }
+
+    [Fact]
+    public async Task GetAdminPayoutsOverviewAsync_Aggregates_Volume_And_Fees()
+    {
+        using var db = CreateContext();
+        var provider1 = Guid.NewGuid();
+        var provider2 = Guid.NewGuid();
+
+        db.Users.AddRange(
+            new ApplicationUser { Id = provider1, FullName = "Provider One", Email = "p1@test.com" },
+            new ApplicationUser { Id = provider2, FullName = "Provider Two", Email = "p2@test.com" }
+        );
+
+        db.Payouts.AddRange(
+            new Payout { ProviderId = provider1, GrossAmount = 5750m, PlatformFeeDeducted = 750m, NetAmount = 5000m, Status = PayoutStatus.Completed },
+            new Payout { ProviderId = provider2, GrossAmount = 3450m, PlatformFeeDeducted = 450m, NetAmount = 3000m, Status = PayoutStatus.Pending }
+        );
+        await db.SaveChangesAsync();
+
+        var sut = new PaymentService(db);
+        var overview = await sut.GetAdminPayoutsOverviewAsync();
+
+        Assert.Equal(9200m, overview.TotalGrossVolume);
+        Assert.Equal(1200m, overview.TotalPlatformFees);
+        Assert.Equal(5000m, overview.TotalPaidOut);
+        Assert.Equal(1, overview.PendingPayoutCount);
+        Assert.Equal(2, overview.RecentPayouts.Count);
+    }
+
+    [Fact]
+    public async Task ProcessPayoutAsync_Marks_Payout_Completed_And_Disburses()
+    {
+        using var db = CreateContext();
+        var payoutId = Guid.NewGuid();
+        var providerId = Guid.NewGuid();
+
+        db.Users.Add(new ApplicationUser { Id = providerId, FullName = "Provider Disburse", Email = "pdisb@test.com" });
+        db.Payouts.Add(new Payout
+        {
+            Id = payoutId,
+            ProviderId = providerId,
+            GrossAmount = 4600m,
+            PlatformFeeDeducted = 600m,
+            NetAmount = 4000m,
+            Status = PayoutStatus.Pending
+        });
+        await db.SaveChangesAsync();
+
+        var sut = new PaymentService(db);
+        var processed = await sut.ProcessPayoutAsync(payoutId);
+
+        Assert.NotNull(processed);
+        Assert.Equal(PayoutStatus.Completed.ToString(), processed.Status);
+        Assert.NotNull(processed.DisbursedAt);
+        Assert.StartsWith("disb_", processed.PayoutBatchId);
+
+        var updated = await db.Payouts.FindAsync(payoutId);
+        Assert.NotNull(updated);
+        Assert.Equal(PayoutStatus.Completed, updated.Status);
+    }
 }
+
+

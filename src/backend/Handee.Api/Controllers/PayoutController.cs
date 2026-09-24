@@ -7,6 +7,7 @@ namespace handee.API.Controllers;
 
 [ApiController]
 [Route("payouts")]
+[Route("api/payouts")]
 [Authorize]
 public class PayoutController : ControllerBase
 {
@@ -27,6 +28,19 @@ public class PayoutController : ControllerBase
         return Ok(summary);
     }
 
+    [HttpGet("provider/{providerId:guid}/summary")]
+    public async Task<IActionResult> GetProviderSummary(Guid providerId)
+    {
+        var currentUserId = GetUserId();
+        if (currentUserId is null) return Unauthorized();
+
+        if (currentUserId.Value != providerId && !User.IsInRole("Admin"))
+            return Forbid("You can only access your own earnings summary.");
+
+        var summary = await _paymentService.GetProviderEarningsSummaryAsync(providerId);
+        return Ok(summary);
+    }
+
     [HttpGet("history")]
     public async Task<IActionResult> GetHistory()
     {
@@ -38,12 +52,34 @@ public class PayoutController : ControllerBase
     }
 
     [HttpGet("provider/{providerId:guid}")]
-    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> GetByProvider(Guid providerId)
     {
+        var currentUserId = GetUserId();
+        if (currentUserId is null) return Unauthorized();
+
+        if (currentUserId.Value != providerId && !User.IsInRole("Admin"))
+            return Forbid("You can only access your own payouts.");
+
         var payouts = await _paymentService.GetProviderPayoutsAsync(providerId);
         return Ok(payouts);
     }
+
+    [HttpGet("admin/overview")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> GetAdminOverview()
+    {
+        var overview = await _paymentService.GetAdminPayoutsOverviewAsync();
+        return Ok(overview);
+    }
+
+    [HttpPost("{id:guid}/process")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> ProcessPayout(Guid id)
+    {
+        var updated = await _paymentService.ProcessPayoutAsync(id);
+        return updated == null ? NotFound(new { message = $"Payout {id} not found." }) : Ok(updated);
+    }
+
 
     private Guid? GetUserId()
     {

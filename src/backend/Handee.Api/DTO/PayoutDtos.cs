@@ -13,7 +13,11 @@ public record PayoutResponseDto(
     string? PayoutBatchId,
     DateTimeOffset? DisbursedAt,
     DateTimeOffset CreatedAt
-);
+)
+{
+    public DateTimeOffset? ProcessedAt => DisbursedAt;
+    public string? PayoutReference => PayoutBatchId;
+}
 
 public record ProviderEarningsSummaryDto(
     Guid ProviderId,
@@ -23,3 +27,12 @@ public record ProviderEarningsSummaryDto(
     int CompletedJobsCount,
     List<PayoutResponseDto> RecentPayouts
 );
+
+public record AdminPayoutsOverviewDto(
+    decimal TotalGrossVolume,
+    decimal TotalPlatformFees,
+    decimal TotalPaidOut,
+    int PendingPayoutCount,
+    List<PayoutResponseDto> RecentPayouts
+);
+

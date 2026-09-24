@@ -8,6 +8,7 @@ namespace handee.API.Controllers;
 
 [ApiController]
 [Route("invoices")]
+[Route("api/invoices")]
 [Authorize]
 public class InvoiceController : ControllerBase
 {
@@ -62,6 +63,20 @@ public class InvoiceController : ControllerBase
         var invoices = await _invoiceService.GetCustomerInvoicesAsync(customerId.Value);
         return Ok(invoices);
     }
+
+    [HttpGet("customer/{customerId:guid}")]
+    public async Task<IActionResult> GetByCustomer(Guid customerId)
+    {
+        var currentUserId = GetUserId();
+        if (currentUserId is null) return Unauthorized();
+
+        if (currentUserId.Value != customerId && !User.IsInRole("Admin"))
+            return Forbid("You can only access your own invoices.");
+
+        var invoices = await _invoiceService.GetCustomerInvoicesAsync(customerId);
+        return Ok(invoices);
+    }
+
 
     [HttpGet("provider-mine")]
     public async Task<IActionResult> GetProviderMine()

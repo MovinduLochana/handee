@@ -8,6 +8,7 @@ namespace handee.API.Controllers;
 
 [ApiController]
 [Route("payments")]
+[Route("api/payments")]
 [Authorize]
 public class PaymentController : ControllerBase
 {
@@ -18,6 +19,7 @@ public class PaymentController : ControllerBase
         _paymentService = paymentService;
     }
 
+    [HttpPost]
     [HttpPost("process")]
     public async Task<IActionResult> Process([FromBody] ProcessPaymentRequestDto dto)
     {
@@ -41,6 +43,20 @@ public class PaymentController : ControllerBase
         {
             return BadRequest(new { message = ex.Message });
         }
+    }
+
+    [HttpGet("{id:guid}")]
+    public async Task<IActionResult> GetById(Guid id)
+    {
+        var payment = await _paymentService.GetPaymentByIdAsync(id);
+        return payment == null ? NotFound() : Ok(payment);
+    }
+
+    [HttpGet("invoice/{invoiceId:guid}")]
+    public async Task<IActionResult> GetByInvoiceId(Guid invoiceId)
+    {
+        var payment = await _paymentService.GetPaymentByInvoiceIdAsync(invoiceId);
+        return payment == null ? NotFound() : Ok(payment);
     }
 
     [HttpGet("mine")]
