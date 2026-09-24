@@ -242,6 +242,6 @@ public class BookingService : IBookingService
         ProviderName: b.Provider?.FullName,
         ServiceLocation: b.JobRequest?.Location,
         Price: b.JobRequest?.BudgetMax ?? b.JobRequest?.BudgetMin ?? 3500m,
-        Category: b.JobRequest?.Category,
+        Category: b.JobRequest?.ServiceCategory?.Name,
         Description: b.JobRequest?.Description);
 }

@@ -4,9 +4,9 @@ from typing import Any, Dict, List, Optional
 from langgraph.graph import StateGraph, END
 
 from src.core.state import AgentWorkflowState
-from src.schemas.contracts import JobDispatchRequest
+from src.schemas.contracts import JobDispatchRequest, PriceEstimationInput
 from src.tools.domain_tools import classify_job_category, estimate_scope
-from src.tools.action_tools import search_providers, estimate_price
+from src.tools.action_tools import search_providers, estimate_price, estimate_price_detailed
 from src.tools.validation_rules import evaluate_validation_tier
 
 
@@ -48,34 +48,48 @@ async def domain_analysis_node(state: AgentWorkflowState) -> Dict[str, Any]:
     """
     Domain Analysis Agent:
     Analyzes job description to classify category and estimate complexity.
+    An ambiguous classification widens the scope's price multiplier range.
     Allowed Tools: classify_job_category, estimate_scope.
     """
     start_time = time.time()
     description = state.get("objective", "")
     current_category = state.get("category")
-    
+    urgency = state.get("urgency")
+
     # 1. Classify category
-    cat_result = classify_job_category(description, current_category)
-    category = cat_result["category"]
-    
+    classification = classify_job_category(description, current_category)
+
     # 2. Estimate scope
-    scope_result = estimate_scope(category, description)
-    
+    scope = estimate_scope(
+        classification.category,
+        description,
+        urgency=urgency,
+        category_is_ambiguous=classification.is_ambiguous,
+    )
+    classification_data = classification.model_dump()
+    scope_data = scope.model_dump()
+
     duration_ms = int((time.time() - start_time) * 1000)
     step_log = {
         "step_number": 2,
         "agent_name": "Domain Analysis Agent",
         "action": "classify_category_and_estimate_scope",
-        "input_data": {"description": description, "pre_selected": current_category},
-        "output_data": {"classification": cat_result, "scope": scope_result},
+        "input_data": {
+            "description": description,
+            "pre_selected": current_category,
+            "urgency": urgency,
+        },
+        "output_data": {"classification": classification_data, "scope": scope_data},
         "duration_ms": duration_ms,
         "timestamp": time.time()
     }
-    
+
     existing_logs = state.get("step_logs") or []
     return {
-        "category": category,
-        "estimated_scope": scope_result,
+        "category": classification.category,
+        "classification": classification_data,
+        "category_is_ambiguous": classification.is_ambiguous,
+        "estimated_scope": scope_data,
         "step_logs": existing_logs + [step_log]
     }
 
@@ -96,26 +110,33 @@ async def action_tool_node(state: AgentWorkflowState) -> Dict[str, Any]:
     location = state.get("location") or "Colombo"
     urgency = state.get("urgency") or "normal"
     
-    # 1. Search candidate providers
     candidates = await search_providers(category, location)
-    
-    # 2. Select top candidate provider
     selected_provider = candidates[0] if candidates else None
     selected_provider_id = selected_provider.get("userId") if selected_provider else None
     
-    # 3. Estimate price quote
-    price = estimate_price(category, scope, urgency, budget_min, budget_max)
+    price_input = PriceEstimationInput(
+        category=category,
+        scope=scope,
+        urgency=urgency,
+        budget_min=budget_min,
+        budget_max=budget_max,
+    )
+    detailed_price = estimate_price_detailed(price_input)
+    price = detailed_price.estimated_price
     
     duration_ms = int((time.time() - start_time) * 1000)
     step_log = {
         "step_number": 3,
         "agent_name": "Action / Tool Agent",
         "action": "search_providers_and_estimate_price",
-        "input_data": {"category": category, "location": location, "urgency": urgency},
+        "input_data": price_input.model_dump(),
         "output_data": {
             "candidates_found": len(candidates),
             "selected_provider": selected_provider.get("fullName") if selected_provider else None,
-            "estimated_price": price
+            "estimated_price": price,
+            "price_breakdown": detailed_price.breakdown.model_dump(),
+            "confidence_score": detailed_price.confidence_score,
+            "is_budget_constrained": detailed_price.is_budget_constrained,
         },
         "duration_ms": duration_ms,
         "timestamp": time.time()
@@ -252,9 +273,12 @@ async def run_dispatch_workflow(request: JobDispatchRequest) -> AgentWorkflowSta
         "objective": request.description,
         "category": request.category,
         "location": request.location,
-        "urgency": request.urgency,
+        "urgency": request.urgency.value,
         "budget_min": b_min,
         "budget_max": b_max,
+        "classification": None,
+        "category_is_ambiguous": None,
+        "estimated_scope": None,
         "plan": [],
         "step_logs": [],
         "candidate_providers": [],
