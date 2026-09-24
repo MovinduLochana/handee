@@ -4,8 +4,6 @@ namespace handee.API.DTO.Provider;
 
 // ─── Shared sub-objects ────────────────────────────────────────────────────
 
-public record SkillCategoryDto(Guid Id, string Name, string? IconUrl);
-
 public record CertificationDto(
     Guid Id,
     CertificationType Type,
@@ -39,7 +37,7 @@ public record ProviderProfileProviderDto(
     List<string> ServicesOffered,
     bool IsAvailableForWork,
     string? AvailabilityNote,
-    List<SkillCategoryDto> SkillCategories,
+    List<ServiceCategoryResponseDto> ServiceCategories,
     double? ServiceAreaLatitude,
     double? ServiceAreaLongitude,
     string? ServiceAreaDisplayName,
@@ -72,7 +70,7 @@ public record ProviderProfileAdminDto(
     List<string> ServicesOffered,
     bool IsAvailableForWork,
     string? AvailabilityNote,
-    List<SkillCategoryDto> SkillCategories,
+    List<ServiceCategoryResponseDto> ServiceCategories,
     double? ServiceAreaLatitude,
     double? ServiceAreaLongitude,
     string? ServiceAreaDisplayName,
@@ -106,7 +104,7 @@ public record ProviderProfileCustomerDto(
     List<string> ServicesOffered,
     bool IsAvailableForWork,
     string? AvailabilityNote,
-    List<SkillCategoryDto> SkillCategories,
+    List<ServiceCategoryResponseDto> ServiceCategories,
     string? ServiceAreaDisplayName,
     double ServiceRadiusKm,
     VerificationStatus VerificationStatus,
@@ -126,7 +124,7 @@ public record UpdateProviderProfileDto(
     List<string>? ServicesOffered,
     bool? IsAvailableForWork,
     string? AvailabilityNote,
-    List<Guid>? SkillCategoryIds,
+    List<Guid>? ServiceCategoryIds,
     double? ServiceAreaLatitude,
     double? ServiceAreaLongitude,
     double? ServiceRadiusKm,

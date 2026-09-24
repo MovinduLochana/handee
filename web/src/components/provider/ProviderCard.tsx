@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { CheckCircle, MapPin } from "lucide-react";
 import type { ProviderProfileCustomerDto } from "../../api/types";
 import StarRating from "./StarRating";
-import SkillCategoryTag from "./SkillCategoryTag";
+import ServiceCategoryTag from "./ServiceCategoryTag";
 import "./ProviderCard.css";
 
 interface ProviderCardProps {
@@ -66,18 +66,18 @@ export default function ProviderCard({ provider }: ProviderCardProps) {
 
       <div className="provider-card-bottom">
         <div className="provider-card-tags">
-          {provider.skillCategories.length > 0 ? (
-            provider.skillCategories
+          {provider.serviceCategories.length > 0 ? (
+            provider.serviceCategories
               .slice(0, 3)
-              .map((cat) => <SkillCategoryTag key={cat.id} category={cat} />)
+              .map((cat) => <ServiceCategoryTag key={cat.id} category={cat} />)
           ) : (
             <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>
               No categories listed
             </span>
           )}
-          {provider.skillCategories.length > 3 && (
+          {provider.serviceCategories.length > 3 && (
             <span className="provider-card-tag-overflow">
-              +{provider.skillCategories.length - 3} more
+              +{provider.serviceCategories.length - 3} more
             </span>
           )}
         </div>

@@ -4,7 +4,7 @@ using handee.API.Interfaces;
 namespace handee.API.Controllers;
 
 [ApiController]
-[Route("service-categories")]
+[Route("api/service-categories")]
 public class ServiceCategoryController : ControllerBase
 {
     private readonly IServiceCategoryService _serviceCategoryService;

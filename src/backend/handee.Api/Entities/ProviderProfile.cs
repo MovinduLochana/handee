@@ -26,7 +26,7 @@ public class ProviderProfile
     public string? AvailabilityNote { get; set; }
 
     // ── Skill Categorisation ─────────────────────────────────────────────
-    public ICollection<SkillCategory> SkillCategories { get; set; } = [];
+    public ICollection<ServiceCategory> ServiceCategories { get; set; } = [];
 
     // ── Service Area ─────────────────────────────────────────────────────
     public double? ServiceAreaLatitude { get; set; }

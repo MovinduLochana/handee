@@ -45,6 +45,7 @@ public class Booking
 
     // Navigation properties
     public JobRequest? JobRequest { get; set; }
+    public ServiceListing? ServiceListing { get; set; }
     public ApplicationUser Provider { get; set; } = default!;
     public ApplicationUser Customer { get; set; } = default!;
 }

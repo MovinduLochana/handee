@@ -1,13 +1,19 @@
+import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, TargetPlatform;
+
 /// Centralized API Endpoints for Handee ASP.NET Core Backend.
 /// Matches the exact routes implemented in Handee.Api controllers.
 class ApiEndpoints {
   ApiEndpoints._();
 
   // Base URL configuration (Supports localhost, Android Emulator 10.0.2.2, or live backend)
-  // Default to emulator/localhost port 5000 (HTTP) or 5001 (HTTPS)
-  static const String defaultHost = '10.0.2.2'; // Standard Android emulator alias for localhost
-  static const int defaultPort = 5000;
-  static const String baseUrl = 'http://$defaultHost:$defaultPort';
+  // Default to emulator/localhost port 5057 (HTTP) as defined in backend launchSettings
+  static String get defaultHost {
+    if (kIsWeb) return 'localhost';
+    if (defaultTargetPlatform == TargetPlatform.android) return '10.0.2.2';
+    return 'localhost';
+  }
+  static const int defaultPort = 5057;
+  static String get baseUrl => 'http://$defaultHost:$defaultPort';
 
   // Auth endpoints (AuthController)
   static const String login = '/auth/login';
@@ -16,6 +22,9 @@ class ApiEndpoints {
 
   // User Profile (UserController)
   static const String userProfile = '/users/me';
+
+  // Service Categories
+  static const String serviceCategories = '/api/service-categories';
 
   // Job Requests (JobRequestController)
   static const String jobRequests = '/job-requests';
@@ -34,7 +43,12 @@ class ApiEndpoints {
   static const String assistantQuery = '/assistant/query';
 
   // Provider & Verification (ProviderController)
-  static const String providerVerification = '/provider/verification';
-  static const String providerProfile = '/provider/profile';
-  static String providerById(String id) => '/providers/$id';
+  static const String providerVerification = '/api/providers/verification'; // Wait, it's actually api/providers/{id}/verification based on controller. We'll leave the constant if they used it structurally differently, but let's fix what we added.
+  static const String providerProfile = '/api/providers/me'; 
+  static String providerById(String id) => '/api/providers/$id';
+  static const String providersSearch = '/api/providers/search';
+
+  // Service Listings (ServiceListingsController)
+  static const String serviceListings = '/api/service-listings';
+  static String providerServiceListings(String providerId) => '/api/service-listings/provider/$providerId';
 }

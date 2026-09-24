@@ -14,6 +14,9 @@ public class ServiceCategoryConfiguration : IEntityTypeConfiguration<ServiceCate
             .IsRequired()
             .HasMaxLength(100);
 
+        builder.Property(c => c.IconUrl)
+            .HasMaxLength(500);
+
         builder.Property(c => c.PriceBandMin)
             .HasPrecision(10, 2);
 

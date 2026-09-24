@@ -1,8 +1,18 @@
+import '../../core/constants/api_endpoints.dart';
+
 class ProviderProfileModel {
   final String id;
   final String userId;
   final String fullName;
   final String? profilePhotoUrl;
+
+  String? get fullProfilePhotoUrl {
+    if (profilePhotoUrl == null || profilePhotoUrl!.isEmpty) return null;
+    if (profilePhotoUrl!.startsWith('http')) return profilePhotoUrl;
+    final cleanPath = profilePhotoUrl!.startsWith('/') ? profilePhotoUrl! : '/$profilePhotoUrl';
+    return '${ApiEndpoints.baseUrl}$cleanPath';
+  }
+  
   final List<String> skillCategories;
   final String serviceArea;
   final double rating;
@@ -11,6 +21,10 @@ class ProviderProfileModel {
   final bool isVerified;
   final String verificationStatus; // "not_submitted", "pending", "approved", "rejected"
   final String? bio;
+  final String? headline;
+  final String? description;
+  final int yearsOfExperience;
+  final List<String> languages;
   final double? hourlyRate;
   final bool isOnline;
 
@@ -27,16 +41,23 @@ class ProviderProfileModel {
     this.isVerified = true,
     this.verificationStatus = 'approved',
     this.bio,
+    this.headline,
+    this.description,
+    this.yearsOfExperience = 0,
+    this.languages = const [],
     this.hourlyRate,
     this.isOnline = true,
   });
 
   factory ProviderProfileModel.fromJson(Map<String, dynamic> json) {
-    final rawSkills = json['skillCategories'] as List<dynamic>?;
+    final rawSkills = (json['serviceCategories'] as List<dynamic>?) ?? (json['skillCategories'] as List<dynamic>?);
     final skills = rawSkills?.map((e) {
       if (e is Map) return e['name']?.toString() ?? '';
       return e.toString();
     }).where((s) => s.isNotEmpty).toList() ?? [];
+    
+    final rawLangs = json['languages'] as List<dynamic>?;
+    final langsList = rawLangs?.map((e) => e.toString()).toList() ?? [];
 
     final rawRating = json['rating'] ?? json['ratingAggregate'];
     final rawReviews = json['totalReviews'] ?? json['totalReviewCount'];
@@ -58,6 +79,10 @@ class ProviderProfileModel {
       isVerified: json['isVerified'] as bool? ?? (statusStr.toLowerCase() == 'verified'),
       verificationStatus: statusStr,
       bio: json['bio']?.toString() ?? json['headline']?.toString(),
+      headline: json['headline']?.toString(),
+      description: json['description']?.toString(),
+      yearsOfExperience: (json['yearsOfExperience'] as num?)?.toInt() ?? 0,
+      languages: langsList,
       hourlyRate: (json['hourlyRate'] as num?)?.toDouble(),
       isOnline: rawOnline as bool? ?? true,
     );
@@ -77,6 +102,10 @@ class ProviderProfileModel {
       'isVerified': isVerified,
       'verificationStatus': verificationStatus,
       'bio': bio,
+      'headline': headline,
+      'description': description,
+      'yearsOfExperience': yearsOfExperience,
+      'languages': languages,
       'hourlyRate': hourlyRate,
       'isOnline': isOnline,
     };
@@ -95,6 +124,10 @@ class ProviderProfileModel {
     bool? isVerified,
     String? verificationStatus,
     String? bio,
+    String? headline,
+    String? description,
+    int? yearsOfExperience,
+    List<String>? languages,
     double? hourlyRate,
     bool? isOnline,
   }) {
@@ -111,6 +144,10 @@ class ProviderProfileModel {
       isVerified: isVerified ?? this.isVerified,
       verificationStatus: verificationStatus ?? this.verificationStatus,
       bio: bio ?? this.bio,
+      headline: headline ?? this.headline,
+      description: description ?? this.description,
+      yearsOfExperience: yearsOfExperience ?? this.yearsOfExperience,
+      languages: languages ?? this.languages,
       hourlyRate: hourlyRate ?? this.hourlyRate,
       isOnline: isOnline ?? this.isOnline,
     );

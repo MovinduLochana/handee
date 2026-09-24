@@ -1,17 +1,17 @@
-import type { SkillCategoryDto } from "../../api/types";
-import "./SkillCategoryTag.css";
+import type { ServiceCategoryDto } from "../../api/types";
+import "./ServiceCategoryTag.css";
 
-interface SkillCategoryTagProps {
-  category: SkillCategoryDto;
+interface ServiceCategoryTagProps {
+  category: ServiceCategoryDto;
   selected?: boolean;
   onClick?: () => void;
 }
 
-export default function SkillCategoryTag({
+export default function ServiceCategoryTag({
   category,
   selected = false,
   onClick,
-}: SkillCategoryTagProps) {
+}: ServiceCategoryTagProps) {
   const isClickable = !!onClick;
 
   return (

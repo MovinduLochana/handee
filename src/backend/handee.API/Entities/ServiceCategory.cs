@@ -4,6 +4,7 @@ public class ServiceCategory
 {
     public Guid Id { get; set; } = Guid.NewGuid();
     public string Name { get; set; } = default!;
+    public string? IconUrl { get; set; }
 
     public decimal? PriceBandMin { get; set; }
     public decimal? PriceBandMax { get; set; }

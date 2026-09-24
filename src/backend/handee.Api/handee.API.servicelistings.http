@@ -1,0 +1,44 @@
+@host = http://localhost:5253/api
+@token = YOUR_JWT_TOKEN
+
+### Get Active Service Listings
+GET {{host}}/service-listings?query=plumbing
+Accept: application/json
+
+### Get Provider Listings
+GET {{host}}/service-listings/provider/00000000-0000-0000-0000-000000000000
+Accept: application/json
+
+### Create Service Listing
+POST {{host}}/service-listings
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "serviceCategoryId": "00000000-0000-0000-0000-000000000000",
+    "title": "Professional Plumbing",
+    "description": "I can fix pipes.",
+    "fixedPrice": 12000.0,
+    "estimatedDuration": "02:00:00"
+}
+
+### Get Service Listing by ID
+GET {{host}}/service-listings/00000000-0000-0000-0000-000000000000
+Accept: application/json
+
+### Update Service Listing
+PUT {{host}}/service-listings/00000000-0000-0000-0000-000000000000
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "title": "Professional Plumbing Updated",
+    "description": "I can fix pipes very well.",
+    "fixedPrice": 15000.0,
+    "estimatedDuration": "03:00:00",
+    "isActive": true
+}
+
+### Delete Service Listing
+DELETE {{host}}/service-listings/00000000-0000-0000-0000-000000000000
+Authorization: Bearer {{token}}

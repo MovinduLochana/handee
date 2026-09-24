@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/constants/colors.dart';
 import '../../providers/job_request_provider.dart';
+import '../../providers/service_category_provider.dart';
 import '../../widgets/custom_button.dart';
 import 'booking_tracker_screen.dart';
 
@@ -17,7 +18,7 @@ class CreateJobScreen extends StatefulWidget {
 
 class _CreateJobScreenState extends State<CreateJobScreen> {
   final _formKey = GlobalKey<FormState>();
-  late String _selectedCategory;
+  String? _selectedCategory;
   final _descController = TextEditingController();
   final _minBudgetController = TextEditingController(text: '3000');
   final _maxBudgetController = TextEditingController(text: '8000');
@@ -28,7 +29,15 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
   @override
   void initState() {
     super.initState();
-    _selectedCategory = widget.initialCategory ?? AppConstants.serviceCategories.first['name'] as String;
+    _selectedCategory = widget.initialCategory;
+    
+    // Ensure we fetch categories when this screen is loaded just in case 
+    // it failed previously, this fixes category retrieval issues.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context.read<ServiceCategoryProvider>().fetchCategories();
+      }
+    });
   }
 
   @override
@@ -47,13 +56,21 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
 
   Future<void> _submitJob() async {
     if (!_formKey.currentState!.validate()) return;
+    if (_selectedCategory == null) return; // Add null check for category
 
     final provider = context.read<JobRequestProvider>();
     final minBudget = double.tryParse(_minBudgetController.text.trim());
     final maxBudget = double.tryParse(_maxBudgetController.text.trim());
 
+    final categoryList = context.read<ServiceCategoryProvider>().categories;
+    String categoryId = '';
+    try {
+      categoryId = categoryList.firstWhere((c) => c.name == _selectedCategory).id;
+    } catch (_) {}
+
     final request = await provider.submitInstantMatch(
-      category: _selectedCategory,
+      categoryId: categoryId,
+      category: _selectedCategory!,
       description: _descController.text.trim(),
       location: _selectedLocation,
       urgency: _selectedUrgency,
@@ -116,20 +133,59 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                 style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
               ),
               const SizedBox(height: 8),
-              DropdownButtonFormField<String>(
-                initialValue: _selectedCategory,
-                isExpanded: true,
-                decoration: const InputDecoration(
-                  prefixIcon: Icon(Icons.category_outlined, color: AppColors.textMuted),
-                ),
-                items: AppConstants.serviceCategories.map((c) {
-                  return DropdownMenuItem<String>(
-                    value: c['name'] as String,
-                    child: Text(c['name'] as String),
+              Builder(
+                builder: (context) {
+                  final categoryProvider = context.watch<ServiceCategoryProvider>();
+                  final categories = categoryProvider.categories;
+                  
+                  final List<DropdownMenuItem<String>> items = [];
+                  if (_selectedCategory != null && !categories.any((c) => c.name == _selectedCategory)) {
+                    items.add(
+                      DropdownMenuItem<String>(
+                        value: _selectedCategory,
+                        child: Text(_selectedCategory!),
+                      ),
+                    );
+                  }
+                  
+                  final seenNames = <String>{};
+                  for (final c in categories) {
+                    if (seenNames.add(c.name)) {
+                      items.add(
+                        DropdownMenuItem<String>(
+                          value: c.name,
+                          child: Text(c.name),
+                        ),
+                      );
+                    }
+                  }
+
+                  return DropdownButtonFormField<String>(
+                    value: _selectedCategory,
+                    isExpanded: true,
+                    decoration: const InputDecoration(
+                      prefixIcon: Icon(Icons.category_outlined, color: AppColors.textMuted),
+                    ),
+                    items: items,
+                    onChanged: (val) {
+                      if (val != null) {
+                        setState(() {
+                          _selectedCategory = val;
+                          try {
+                            final category = categories.firstWhere((c) => c.name == val);
+                            if (category.priceBandMin > 0) {
+                              _minBudgetController.text = category.priceBandMin.toStringAsFixed(0);
+                            }
+                            if (category.priceBandMax > 0) {
+                              _maxBudgetController.text = category.priceBandMax.toStringAsFixed(0);
+                            }
+                          } catch (e) {
+                            // Category not found or custom category
+                          }
+                        });
+                      }
+                    },
                   );
-                }).toList(),
-                onChanged: (val) {
-                  if (val != null) setState(() => _selectedCategory = val);
                 },
               ),
 
