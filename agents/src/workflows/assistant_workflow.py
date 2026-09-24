@@ -15,7 +15,7 @@ async def process_assistant_query(request: AssistantQueryRequest) -> AssistantQu
     
     # 1. Classify intent / category
     cat_result = classify_job_category(query)
-    category = cat_result["category"]
+    category = cat_result.category
     
     # 2. Query matching providers & listings
     providers = await search_providers(category, "Colombo")

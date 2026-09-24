@@ -175,7 +175,7 @@ def estimate_price(
     complexity multiplier, urgency, and budget constraints.
     """
     base_benchmark = CATEGORY_BENCHMARKS.get(category, 3500.0)
-    multiplier = scope.get("price_multiplier", 1.0)
+    multiplier = (scope["price_multiplier_min"] + scope["price_multiplier_max"]) / 2
     raw_estimate = base_benchmark * multiplier
 
     # Align with customer budget range if reasonable

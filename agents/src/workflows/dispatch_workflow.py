@@ -48,34 +48,48 @@ async def domain_analysis_node(state: AgentWorkflowState) -> Dict[str, Any]:
     """
     Domain Analysis Agent:
     Analyzes job description to classify category and estimate complexity.
+    An ambiguous classification widens the scope's price multiplier range.
     Allowed Tools: classify_job_category, estimate_scope.
     """
     start_time = time.time()
     description = state.get("objective", "")
     current_category = state.get("category")
-    
+    urgency = state.get("urgency")
+
     # 1. Classify category
-    cat_result = classify_job_category(description, current_category)
-    category = cat_result["category"]
-    
+    classification = classify_job_category(description, current_category)
+
     # 2. Estimate scope
-    scope_result = estimate_scope(category, description)
-    
+    scope = estimate_scope(
+        classification.category,
+        description,
+        urgency=urgency,
+        category_is_ambiguous=classification.is_ambiguous,
+    )
+    classification_data = classification.model_dump()
+    scope_data = scope.model_dump()
+
     duration_ms = int((time.time() - start_time) * 1000)
     step_log = {
         "step_number": 2,
         "agent_name": "Domain Analysis Agent",
         "action": "classify_category_and_estimate_scope",
-        "input_data": {"description": description, "pre_selected": current_category},
-        "output_data": {"classification": cat_result, "scope": scope_result},
+        "input_data": {
+            "description": description,
+            "pre_selected": current_category,
+            "urgency": urgency,
+        },
+        "output_data": {"classification": classification_data, "scope": scope_data},
         "duration_ms": duration_ms,
         "timestamp": time.time()
     }
-    
+
     existing_logs = state.get("step_logs") or []
     return {
-        "category": category,
-        "estimated_scope": scope_result,
+        "category": classification.category,
+        "classification": classification_data,
+        "category_is_ambiguous": classification.is_ambiguous,
+        "estimated_scope": scope_data,
         "step_logs": existing_logs + [step_log]
     }
 
@@ -252,9 +266,12 @@ async def run_dispatch_workflow(request: JobDispatchRequest) -> AgentWorkflowSta
         "objective": request.description,
         "category": request.category,
         "location": request.location,
-        "urgency": request.urgency,
+        "urgency": request.urgency.value,
         "budget_min": b_min,
         "budget_max": b_max,
+        "classification": None,
+        "category_is_ambiguous": None,
+        "estimated_scope": None,
         "plan": [],
         "step_logs": [],
         "candidate_providers": [],
