@@ -12,7 +12,7 @@ export default function Login() {
   const [authError, setAuthError] = useState("");
 
   const loginMutation = useMutation({
-    mutationFn: authApi.login,
+    mutationFn: (credentials: any) => authApi.login(credentials),
     onSuccess: async () => {
       try {
         // Fetch profile to determine role

@@ -4,9 +4,14 @@ import { MemoryRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import Login from "../../../pages/auth/Login";
 import { authApi } from "../../../api/auth";
+import { usersApi } from "../../../api/users";
 
 vi.mock("../../../api/auth", () => ({
   authApi: { login: vi.fn() },
+}));
+
+vi.mock("../../../api/users", () => ({
+  usersApi: { getProfile: vi.fn() },
 }));
 
 const mockNavigate = vi.fn();
@@ -47,6 +52,7 @@ describe("Login Component", () => {
 
   it("calls authApi.login and navigates on successful submit", async () => {
     vi.mocked(authApi.login).mockResolvedValueOnce({ accessToken: "a", refreshToken: "b" });
+    vi.mocked(usersApi.getProfile).mockResolvedValueOnce({ roles: ["Provider"] } as any);
 
     renderLogin();
 
@@ -55,13 +61,15 @@ describe("Login Component", () => {
     fireEvent.click(screen.getByRole("button", { name: /sign in/i }));
 
     await waitFor(() => {
-      expect(authApi.login).toHaveBeenCalledWith(
-        { email: "test@test.com", password: "password123" },
-        expect.anything(),
-      );
+      expect(authApi.login).toHaveBeenCalledWith({
+        email: "test@test.com",
+        password: "password123",
+      });
     });
 
-    expect(mockNavigate).toHaveBeenCalledWith("/dashboard");
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith("/dashboard");
+    });
   });
 
   it("displays error banner on login failure", async () => {
