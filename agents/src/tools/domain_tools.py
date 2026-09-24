@@ -157,8 +157,9 @@ def classify_job_category(
     - Score = distinct keywords matched, plus PRESELECTED_BOOST for the
       customer's pre-selected category (matched case-insensitively; unknown
       names are ignored).
-    - No keyword matched anywhere: FALLBACK_CATEGORY at FALLBACK_CONFIDENCE,
-      ambiguous, whether or not a category was pre-selected.
+    - No keyword matched anywhere: the pre-selected category if it's one of
+      the real six, otherwise FALLBACK_CATEGORY; either way ambiguous, at
+      FALLBACK_CONFIDENCE.
     - Two or more categories sharing the top score is ambiguous. The tie goes
       to the pre-selected category if it's among them, otherwise to the first
       in SERVICE_CATEGORIES (the backend seeder's order).
@@ -171,16 +172,18 @@ def classify_job_category(
     )
     tokens = _tokens(params.description)
     matched = {cat: _matched(tokens, kws) for cat, kws in _CATEGORY_KEYWORDS.items()}
+    preferred = canonical_category(params.pre_selected_category)
 
     if not any(matched.values()):
+        # No text evidence either way: keep the customer's own real category
+        # rather than overriding it with a guess, but flag it.
         return ClassifyJobCategoryOutput(
-            category=FALLBACK_CATEGORY,
+            category=preferred or FALLBACK_CATEGORY,
             confidence=FALLBACK_CONFIDENCE,
             matched_keywords=[],
             is_ambiguous=True,
         )
 
-    preferred = canonical_category(params.pre_selected_category)
     scores = {
         cat: len(found) + (PRESELECTED_BOOST if cat == preferred else 0)
         for cat, found in matched.items()

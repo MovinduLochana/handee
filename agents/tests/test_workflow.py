@@ -5,6 +5,7 @@ import src.workflows.dispatch_workflow as dispatch_workflow
 from src.schemas.contracts import (
     SERVICE_CATEGORIES,
     AssistantQueryRequest,
+    AssistantQueryResponse,
     EstimateScopeOutput,
     JobDispatchRequest,
     JobUrgency,
@@ -89,8 +90,8 @@ def test_preselection_boost_is_case_insensitive(pre_selected):
     assert result == classify_job_category("The light above the sink", "Electrical")
 
 
-@pytest.mark.parametrize("pre_selected", [None, "Plumbing", "plumbing", "Gardening", ""])
-def test_fallback_is_identical_with_or_without_preselection(pre_selected):
+@pytest.mark.parametrize("pre_selected", [None, "", "Gardening", "Carpentry"])
+def test_no_match_without_a_real_preselection_falls_back_to_general_maintenance(pre_selected):
     result = classify_job_category("help needed", pre_selected)
     assert result.model_dump() == {
         "category": "General Maintenance",
@@ -98,6 +99,27 @@ def test_fallback_is_identical_with_or_without_preselection(pre_selected):
         "matched_keywords": [],
         "is_ambiguous": True,
     }
+
+
+@pytest.mark.parametrize(
+    "pre_selected, kept",
+    [("Plumbing", "Plumbing"), ("plumbing", "Plumbing"), ("  ac REPAIR ", "AC Repair")],
+)
+def test_no_match_keeps_a_real_preselection_but_flags_it(pre_selected, kept):
+    result = classify_job_category("help needed", pre_selected)
+    assert result.model_dump() == {
+        "category": kept,
+        "confidence": FALLBACK_CONFIDENCE,
+        "matched_keywords": [],
+        "is_ambiguous": True,
+    }
+
+    # The flag still does its job downstream: the price range widens.
+    scope = estimate_scope(
+        result.category, "help needed", category_is_ambiguous=result.is_ambiguous
+    )
+    assert scope.price_multiplier_max > scope.price_multiplier_min
+    assert "trade category is ambiguous" in scope.ambiguity_reasons
 
 
 def test_fallback_confidence_is_below_any_keyword_backed_result():
@@ -463,6 +485,33 @@ async def test_full_dispatch_workflow():
         "approved_for_auto_dispatch", "approved_with_audit", "requires_human_approval"
     ]
     assert state["selected_provider_id"] is not None
+
+
+@pytest.mark.parametrize("query", ["", "   "])
+def test_assistant_blank_query_is_a_422_not_a_500(client, query):
+    # AssistantQueryRequest accepts a blank string; it's ClassifyJobCategoryInput
+    # that rejects it once the workflow strips it.
+    response = client.post("/api/v1/assistant/query", json={"customer_id": "c1", "query": query})
+    assert response.status_code == 422
+    assert response.json() == {"detail": "Invalid query: String should have at least 1 character"}
+
+
+def test_assistant_request_shape_errors_are_still_fastapis_own_422(client):
+    response = client.post("/api/v1/assistant/query", json={"customer_id": "c1"})
+    assert response.status_code == 422
+    assert response.json()["detail"][0]["loc"] == ["body", "query"]
+
+
+def test_assistant_non_tool_validation_error_stays_a_500(client, monkeypatch):
+    async def broken_workflow(request):
+        # A server-side bug: building the response model from bad data.
+        return AssistantQueryResponse(reply=None)
+
+    monkeypatch.setattr("src.api.routes.process_assistant_query", broken_workflow)
+    response = client.post(
+        "/api/v1/assistant/query", json={"customer_id": "c1", "query": "AC not cooling"}
+    )
+    assert response.status_code == 500
 
 
 @pytest.mark.asyncio
