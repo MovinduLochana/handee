@@ -69,6 +69,7 @@ public class BookingService : IBookingService
             .Include(b => b.Customer)
             .Include(b => b.Provider)
             .Include(b => b.JobRequest)
+                .ThenInclude(j => j!.ServiceCategory)
             .FirstOrDefaultAsync(b => b.Id == id);
 
         if (booking is null)
@@ -87,6 +88,7 @@ public class BookingService : IBookingService
             .Include(b => b.Customer)
             .Include(b => b.Provider)
             .Include(b => b.JobRequest)
+                .ThenInclude(j => j!.ServiceCategory)
             .Where(b => b.CustomerId == customerId)
             .OrderByDescending(b => b.CreatedAt)
             .ToListAsync();
@@ -100,6 +102,7 @@ public class BookingService : IBookingService
             .Include(b => b.Customer)
             .Include(b => b.Provider)
             .Include(b => b.JobRequest)
+                .ThenInclude(j => j!.ServiceCategory)
             .Where(b => b.ProviderId == providerId)
             .OrderByDescending(b => b.CreatedAt)
             .ToListAsync();
@@ -113,6 +116,7 @@ public class BookingService : IBookingService
             .Include(b => b.Customer)
             .Include(b => b.Provider)
             .Include(b => b.JobRequest)
+                .ThenInclude(j => j!.ServiceCategory)
             .Where(b => b.ProviderId == providerId && b.Status == BookingStatus.Requested)
             .OrderByDescending(b => b.CreatedAt)
             .ToListAsync();

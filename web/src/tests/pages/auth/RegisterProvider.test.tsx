@@ -6,7 +6,7 @@ import RegisterProvider from "../../../pages/auth/RegisterProvider";
 import { authApi } from "../../../api/auth";
 
 vi.mock("../../../api/auth", () => ({
-  authApi: { register: vi.fn() },
+  authApi: { register: vi.fn(), login: vi.fn() },
 }));
 
 const mockNavigate = vi.fn();
@@ -51,6 +51,7 @@ describe("RegisterProvider Component", () => {
       fullName: "Corp",
       email: "x",
     });
+    vi.mocked(authApi.login).mockResolvedValueOnce({ accessToken: "token", refreshToken: "ref" } as any);
 
     renderRegister();
 
@@ -60,17 +61,16 @@ describe("RegisterProvider Component", () => {
     fireEvent.click(screen.getByRole("button", { name: /register & verify/i }));
 
     await waitFor(() => {
-      expect(authApi.register).toHaveBeenCalledWith(
-        {
-          fullName: "Acme Corp",
-          email: "a@example.com",
-          password: "password",
-          role: "Provider",
-        },
-        expect.anything(),
-      );
+      expect(authApi.register).toHaveBeenCalledWith({
+        fullName: "Acme Corp",
+        email: "a@example.com",
+        password: "password",
+        role: "Provider",
+      });
     });
 
-    expect(mockNavigate).toHaveBeenCalledWith("/login");
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith("/provider/onboarding");
+    });
   });
 });

@@ -12,17 +12,21 @@ public class AgentWorkflowService : IAgentWorkflowService
 {
     private readonly AppDbContext _db;
     private readonly IHttpClientFactory _httpClientFactory;
+    private readonly IInvoiceService _invoiceService;
     private readonly ILogger<AgentWorkflowService> _logger;
 
     public AgentWorkflowService(
         AppDbContext db,
         IHttpClientFactory httpClientFactory,
+        IInvoiceService invoiceService,
         ILogger<AgentWorkflowService> logger)
     {
         _db = db;
         _httpClientFactory = httpClientFactory;
+        _invoiceService = invoiceService;
         _logger = logger;
     }
+
 
     public async Task<AgentWorkflow> DispatchWorkflowAsync(JobRequest jobRequest, CancellationToken ct = default)
     {
@@ -102,8 +106,34 @@ public class AgentWorkflowService : IAgentWorkflowService
                     ScheduledAt = DateTimeOffset.UtcNow.AddDays(1)
                 };
                 _db.Bookings.Add(booking);
+                await _db.SaveChangesAsync(ct);
+
+                // Approval-to-Payment Handoff: Auto-generate Quote/Invoice from AI estimate
+                var approvalStatus = workflow.ValidationTier == "approved_for_auto_dispatch"
+                    ? QuoteApprovalStatus.AutoApproved
+                    : QuoteApprovalStatus.ApprovedWithAudit;
+                var estimatedPrice = workflow.EstimatedPrice ?? 3500m;
+                var categoryName = jobRequest.ServiceCategory?.Name ?? "General Maintenance";
+
+                try
+                {
+                    await _invoiceService.CreateInvoiceForBookingAsync(
+                        booking.Id,
+                        booking.CustomerId,
+                        booking.ProviderId,
+                        estimatedPrice,
+                        approvalStatus,
+                        categoryName,
+                        ct
+                    );
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to auto-create invoice during approval-to-payment handoff for booking {BookingId}", booking.Id);
+                }
             }
         }
+
         else
         {
             // High risk / requires human approval: leave status as PendingAiReview
@@ -211,10 +241,10 @@ public class AgentWorkflowService : IAgentWorkflowService
             workflow.JobRequest.Status = JobRequestStatus.Open;
 
             // Check if booking already exists for this job request
-            var existingBooking = await _db.Bookings.AnyAsync(b => b.JobRequestId == workflow.JobRequestId, ct);
-            if (!existingBooking && workflow.SelectedProviderId.HasValue)
+            var booking = await _db.Bookings.FirstOrDefaultAsync(b => b.JobRequestId == workflow.JobRequestId, ct);
+            if (booking == null && workflow.SelectedProviderId.HasValue)
             {
-                var booking = new Booking
+                booking = new Booking
                 {
                     JobRequestId = workflow.JobRequestId,
                     CustomerId = workflow.JobRequest.CustomerId,
@@ -223,6 +253,31 @@ public class AgentWorkflowService : IAgentWorkflowService
                     ScheduledAt = DateTimeOffset.UtcNow.AddDays(1)
                 };
                 _db.Bookings.Add(booking);
+                await _db.SaveChangesAsync(ct);
+            }
+
+            // Approval-to-Payment Handoff: Generate or update Quote/Invoice for Admin-approved booking
+            if (booking != null && workflow.SelectedProviderId.HasValue)
+            {
+                var estimatedPrice = workflow.EstimatedPrice ?? 3500m;
+                var categoryName = workflow.JobRequest?.ServiceCategory?.Name ?? "General Maintenance";
+
+                try
+                {
+                    await _invoiceService.CreateInvoiceForBookingAsync(
+                        booking.Id,
+                        booking.CustomerId,
+                        booking.ProviderId,
+                        estimatedPrice,
+                        QuoteApprovalStatus.Approved,
+                        categoryName,
+                        ct
+                    );
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to create invoice during Admin approval-to-payment handoff for booking {BookingId}", booking.Id);
+                }
             }
         }
         else if (decision.Equals("Reject", StringComparison.OrdinalIgnoreCase))

@@ -18,12 +18,14 @@ public class BookingConfiguration : IEntityTypeConfiguration<Booking>
         builder.HasOne(b => b.Provider)
             .WithMany()
             .HasForeignKey(b => b.ProviderId)
-            .OnDelete(DeleteBehavior.Restrict);
+            .OnDelete(DeleteBehavior.Restrict)
+            .IsRequired(false);
 
         builder.HasOne(b => b.Customer)
             .WithMany()
             .HasForeignKey(b => b.CustomerId)
-            .OnDelete(DeleteBehavior.Restrict);
+            .OnDelete(DeleteBehavior.Restrict)
+            .IsRequired(false);
 
         builder.Property(b => b.Status)
             .HasConversion<string>()
