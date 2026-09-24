@@ -152,12 +152,6 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
     final minBudget = double.tryParse(_minBudgetController.text.trim());
     final maxBudget = double.tryParse(_maxBudgetController.text.trim());
 
-    final categoryList = context.read<ServiceCategoryProvider>().categories;
-    String categoryId = '';
-    try {
-      categoryId = categoryList.firstWhere((c) => c.name == _selectedCategory).id;
-    } catch (_) {}
-
     // TODO(backend): photoUrls is intentionally left empty. CreateJobRequestDto
     // expects real, reachable URLs, and no job-request image upload endpoint
     // exists yet (/users/me/photo overwrites the avatar; /reviews/{id}/photos
