@@ -34,6 +34,11 @@ import ProviderSearch from "./pages/public/ProviderSearch";
 import VerificationQueue from "./pages/admin/VerificationQueue";
 import VerificationDetail from "./pages/admin/VerificationDetail";
 import ProviderDirectory from "./pages/admin/ProviderDirectory";
+import BookingOverview from "./pages/admin/BookingOverview";
+import JobRequestsManagement from "./pages/admin/JobRequestsManagement";
+import JobRequestDetail from "./pages/admin/JobRequestDetail";
+import BookingsManagement from "./pages/admin/BookingsManagement";
+import BookingDetail from "./pages/admin/BookingDetail";
 
 // Payments & Invoicing Pages
 import QuoteReview from "./pages/payments/QuoteReview";
@@ -93,6 +98,11 @@ function App() {
             <Route path="/admin/verifications" element={<VerificationQueue />} />
             <Route path="/admin/verifications/:id" element={<VerificationDetail />} />
             <Route path="/admin/providers" element={<ProviderDirectory />} />
+            <Route path="/admin/booking-overview" element={<BookingOverview />} />
+            <Route path="/admin/job-requests" element={<JobRequestsManagement />} />
+            <Route path="/admin/job-requests/:id" element={<JobRequestDetail />} />
+            <Route path="/admin/bookings" element={<BookingsManagement />} />
+            <Route path="/admin/bookings/:id" element={<BookingDetail />} />
             <Route path="/admin/payments" element={<AdminPaymentsOverview />} />
           </Route>
 

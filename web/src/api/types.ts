@@ -155,3 +155,92 @@ export interface ProviderSearchParams {
 export interface ReviewCertificationDto {
   status: DocumentReviewStatus;
 }
+
+// ─── Booking & Scheduling ──────────────────────────────────────────────────
+// Mirrors handee.API DTOs/enums. The API serializes camelCase with
+// JsonStringEnumConverter, and the response DTOs carry enums as
+// `.ToString()` strings, so every enum below is its C# member name.
+// Guid → string, DateTimeOffset → ISO-8601 string, decimal → number.
+
+/** Entities/JobRequest.cs — JobUrgency */
+export type JobUrgency = "Low" | "Medium" | "High" | "Emergency";
+
+/** Entities/JobRequest.cs — JobRequestStatus */
+export type JobRequestStatus = "PendingAiReview" | "Open" | "Cancelled";
+
+/** Entities/Booking.cs — BookingStatus */
+export type BookingStatus = "Requested" | "Accepted" | "InProgress" | "Completed" | "Disputed";
+
+/** DTO/JobRequestResponseDto.cs */
+export interface JobRequestResponseDto {
+  id: string;
+  serviceCategoryId: string;
+  categoryName: string;
+  description: string;
+  photoUrls: string[];
+  location: string;
+  urgency: JobUrgency;
+  budgetMin: number | null;
+  budgetMax: number | null;
+  status: JobRequestStatus;
+  customerId: string;
+  createdAt: string;
+  updatedAt: string | null;
+}
+
+/** DTO/BookingResponseDto.cs — the trailing optional fields are only
+ * populated by the GET-by-id/"mine" queries that include Customer, Provider
+ * and JobRequest; the staff list and the PUT responses leave them null. */
+export interface BookingResponseDto {
+  id: string;
+  jobRequestId: string | null;
+  serviceListingId: string | null;
+  providerId: string;
+  customerId: string;
+  status: BookingStatus;
+  scheduledAt: string | null;
+  createdAt: string;
+  updatedAt: string | null;
+  customerName: string | null;
+  customerPhone: string | null;
+  providerName: string | null;
+  serviceLocation: string | null;
+  price: number | null;
+  category: string | null;
+  description: string | null;
+}
+
+/** DTO/ServiceCategoryResponseDto.cs */
+export interface ServiceCategoryResponseDto {
+  id: string;
+  name: string;
+  priceBandMin: number | null;
+  priceBandMax: number | null;
+}
+
+/** DTO/UpdateBookingStatusDto.cs */
+export interface UpdateBookingStatusDto {
+  status: BookingStatus;
+}
+
+/** DTO/UpdateBookingScheduleDto.cs — null clears the schedule. */
+export interface UpdateBookingScheduleDto {
+  scheduledAt: string | null;
+}
+
+/** Query params of GET /job-requests (JobRequestController.GetForStaff). */
+export interface JobRequestStaffParams {
+  status?: JobRequestStatus;
+  urgency?: JobUrgency;
+  sortDescending?: boolean;
+  page?: number;
+  pageSize?: number;
+}
+
+/** Query params of GET /bookings (BookingController.GetForStaff). */
+export interface BookingStaffParams {
+  status?: BookingStatus;
+  sortDescending?: boolean;
+  page?: number;
+  pageSize?: number;
+}
