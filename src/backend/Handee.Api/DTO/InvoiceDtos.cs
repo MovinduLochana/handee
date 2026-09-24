@@ -20,6 +20,7 @@ public record InvoiceResponseDto(
 )
 {
     public DateTimeOffset IssuedAt => CreatedAt;
+    public string? LineItems => LineItemsJson;
 }
 
 

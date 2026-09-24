@@ -115,4 +115,79 @@ public class InvoiceServiceTests
         Assert.Equal("Paid", updated.Status);
         Assert.NotNull(updated.PaidAt);
     }
+
+    [Fact]
+    public async Task CreateInvoiceForBookingAsync_Creates_Invoice_With_15Percent_PlatformFee()
+    {
+        var test = await SeedBookingAsync();
+        using var db = test.Db;
+        var sut = new InvoiceService(test.Db);
+
+        var result = await sut.CreateInvoiceForBookingAsync(
+            test.Booking.Id,
+            test.CustomerId,
+            test.ProviderId,
+            10000m,
+            QuoteApprovalStatus.AutoApproved,
+            "Electrical Repairs"
+        );
+
+        Assert.NotNull(result);
+        Assert.Equal(8500m, result.BaseAmount);
+        Assert.Equal(1500m, result.PlatformFee);
+        Assert.Equal(10000m, result.TotalAmount);
+        Assert.Equal(InvoiceStatus.Issued.ToString(), result.Status);
+        Assert.Equal("LKR", result.Currency);
+        Assert.NotNull(result.LineItems);
+        Assert.Contains("Electrical Repairs", result.LineItems);
+        Assert.Contains("Platform Trust & Verification Fee (15%)", result.LineItems);
+    }
+
+    [Fact]
+    public async Task CreateInvoiceForBookingAsync_Is_Idempotent()
+    {
+        var test = await SeedBookingAsync();
+        using var db = test.Db;
+        var sut = new InvoiceService(test.Db);
+
+        var first = await sut.CreateInvoiceForBookingAsync(
+            test.Booking.Id,
+            test.CustomerId,
+            test.ProviderId,
+            5000m,
+            QuoteApprovalStatus.ApprovedWithAudit
+        );
+
+        var second = await sut.CreateInvoiceForBookingAsync(
+            test.Booking.Id,
+            test.CustomerId,
+            test.ProviderId,
+            5000m,
+            QuoteApprovalStatus.ApprovedWithAudit
+        );
+
+        Assert.Equal(first.Id, second.Id);
+        Assert.Single(db.Invoices.Where(i => i.BookingId == test.Booking.Id));
+    }
+
+    [Fact]
+    public async Task CreateInvoiceForBookingAsync_FallsBack_To_DefaultPrice_When_Zero()
+    {
+        var test = await SeedBookingAsync();
+        using var db = test.Db;
+        var sut = new InvoiceService(test.Db);
+
+        var result = await sut.CreateInvoiceForBookingAsync(
+            test.Booking.Id,
+            test.CustomerId,
+            test.ProviderId,
+            0m,
+            QuoteApprovalStatus.Approved
+        );
+
+        Assert.NotNull(result);
+        Assert.Equal(3500m, result.TotalAmount);
+        Assert.Equal(2975m, result.BaseAmount); // 85% of 3500
+        Assert.Equal(525m, result.PlatformFee); // 15% of 3500
+    }
 }

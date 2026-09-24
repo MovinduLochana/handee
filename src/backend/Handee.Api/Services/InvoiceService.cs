@@ -58,7 +58,66 @@ public class InvoiceService : IInvoiceService
         return MapToDto(invoice, booking.Customer?.FullName, booking.Provider?.FullName);
     }
 
+    public async Task<InvoiceResponseDto> CreateInvoiceForBookingAsync(
+        Guid bookingId,
+        Guid customerId,
+        Guid providerId,
+        decimal estimatedPrice,
+        QuoteApprovalStatus approvalStatus,
+        string? category = null,
+        CancellationToken ct = default)
+    {
+        var existingInvoice = await _context.Invoices
+            .Include(i => i.Customer)
+            .Include(i => i.Provider)
+            .FirstOrDefaultAsync(i => i.BookingId == bookingId, ct);
+
+        if (existingInvoice != null)
+            return MapToDto(existingInvoice, existingInvoice.Customer?.FullName, existingInvoice.Provider?.FullName);
+
+        var finalPrice = estimatedPrice > 0 ? estimatedPrice : 3500m;
+        var baseAmount = Math.Round(finalPrice * 0.85m, 2);
+        var platformFee = Math.Round(finalPrice - baseAmount, 2);
+        var totalAmount = finalPrice;
+
+        var categoryLabel = string.IsNullOrWhiteSpace(category) ? "Service Work" : category;
+        var lineItems = new[]
+        {
+            new { item = $"{categoryLabel} - Labor and Trade Service", price = baseAmount, type = "Labor" },
+            new { item = "Platform Trust & Verification Fee (15%)", price = platformFee, type = "Fee" }
+        };
+        var lineItemsJson = System.Text.Json.JsonSerializer.Serialize(lineItems, new System.Text.Json.JsonSerializerOptions
+        {
+            Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+        });
+
+        var invoice = new Invoice
+        {
+            BookingId = bookingId,
+            CustomerId = customerId,
+            ProviderId = providerId,
+            BaseAmount = baseAmount,
+            PlatformFee = platformFee,
+            TotalAmount = totalAmount,
+            Currency = "LKR",
+            Status = InvoiceStatus.Issued,
+            AdminApprovalStatus = approvalStatus,
+            LineItemsJson = lineItemsJson,
+            DueAt = DateTimeOffset.UtcNow.AddDays(3),
+            CreatedAt = DateTimeOffset.UtcNow
+        };
+
+        _context.Invoices.Add(invoice);
+        await _context.SaveChangesAsync(ct);
+
+        var customer = await _context.Users.FindAsync([customerId], ct);
+        var provider = await _context.Users.FindAsync([providerId], ct);
+
+        return MapToDto(invoice, customer?.FullName, provider?.FullName);
+    }
+
     public async Task<InvoiceResponseDto?> GetInvoiceByIdAsync(Guid id)
+
     {
         var invoice = await _context.Invoices
             .Include(i => i.Customer)
