@@ -10,6 +10,9 @@ import {
   Star,
   Users,
   UserCircle,
+  Receipt,
+  DollarSign,
+  CreditCard,
 } from "lucide-react";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { authApi } from "../../api/auth";
@@ -52,16 +55,19 @@ export default function AppShell() {
   const navigation = [
     { name: "Dashboard", to: "/dashboard", icon: Home, show: true },
     { name: "Notifications", to: "/notifications", icon: Bell, show: true },
+    { name: "Invoices", to: "/invoices", icon: Receipt, show: !isAdmin },
 
     // Admin
     { name: "Agent Workflow", to: "/admin/agent-workflow", icon: Activity, show: isAdmin },
     { name: "Verifications", to: "/admin/verifications", icon: CheckSquare, show: isAdmin },
     { name: "Provider Directory", to: "/admin/providers", icon: Users, show: isAdmin },
+    { name: "Payments & Payouts", to: "/admin/payments", icon: CreditCard, show: isAdmin },
 
     // Provider
     { name: "Verification Status", to: "/provider/status", icon: CheckSquare, show: isProvider },
     { name: "My Profile", to: "/provider/profile", icon: UserCircle, show: isProvider },
     { name: "My Reviews", to: "/provider/reviews", icon: Star, show: isProvider },
+    { name: "Payouts & Earnings", to: "/provider/payouts", icon: DollarSign, show: isProvider },
 
     { name: "Settings", to: "/account", icon: Settings, show: true },
   ].filter((item) => item.show);
