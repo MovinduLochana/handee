@@ -463,8 +463,10 @@ def test_validation_tiers():
     assert high_risk.risk_tier == "requires_human_approval"
 
 
-@pytest.mark.asyncio
-async def test_full_dispatch_workflow():
+import asyncio
+
+
+def test_full_dispatch_workflow():
     req = JobDispatchRequest(
         job_id="test-job-001",
         category="Plumbing",
@@ -473,8 +475,8 @@ async def test_full_dispatch_workflow():
         urgency="medium",  # was "normal", which isn't a JobUrgency value
         budget_range="3000-5000"
     )
-    state = await run_dispatch_workflow(req)
-
+    state = asyncio.run(run_dispatch_workflow(req))
+    
     assert state["workflow_id"].startswith("wf-")
     assert state["job_id"] == "test-job-001"
     assert len(state["plan"]) == 4
@@ -520,8 +522,9 @@ async def test_assistant_query():
         customer_id="cust-123",
         query="Looking for an AC repair expert to clean my air conditioner"
     )
-    res = await process_assistant_query(req)
+    res = asyncio.run(process_assistant_query(req))
     assert res.category == "AC Repair"
     assert len(res.suggested_providers) > 0
     assert len(res.suggestions) > 0
     assert "AC" in res.reply
+

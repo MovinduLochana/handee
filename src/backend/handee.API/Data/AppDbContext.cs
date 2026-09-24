@@ -21,6 +21,9 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid
     public DbSet<ProviderAvailabilitySlot> ProviderAvailabilitySlots => Set<ProviderAvailabilitySlot>();
     public DbSet<AgentWorkflow> AgentWorkflows => Set<AgentWorkflow>();
     public DbSet<AgentStepLog> AgentStepLogs => Set<AgentStepLog>();
+    public DbSet<Invoice> Invoices => Set<Invoice>();
+    public DbSet<Payment> Payments => Set<Payment>();
+    public DbSet<Payout> Payouts => Set<Payout>();
 
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
     {

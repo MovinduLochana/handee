@@ -4,9 +4,9 @@ from typing import Any, Dict, List, Optional
 from langgraph.graph import StateGraph, END
 
 from src.core.state import AgentWorkflowState
-from src.schemas.contracts import JobDispatchRequest
+from src.schemas.contracts import JobDispatchRequest, PriceEstimationInput
 from src.tools.domain_tools import classify_job_category, estimate_scope
-from src.tools.action_tools import search_providers, estimate_price
+from src.tools.action_tools import search_providers, estimate_price, estimate_price_detailed
 from src.tools.validation_rules import evaluate_validation_tier
 
 
@@ -110,26 +110,33 @@ async def action_tool_node(state: AgentWorkflowState) -> Dict[str, Any]:
     location = state.get("location") or "Colombo"
     urgency = state.get("urgency") or "normal"
     
-    # 1. Search candidate providers
     candidates = await search_providers(category, location)
-    
-    # 2. Select top candidate provider
     selected_provider = candidates[0] if candidates else None
     selected_provider_id = selected_provider.get("userId") if selected_provider else None
     
-    # 3. Estimate price quote
-    price = estimate_price(category, scope, urgency, budget_min, budget_max)
+    price_input = PriceEstimationInput(
+        category=category,
+        scope=scope,
+        urgency=urgency,
+        budget_min=budget_min,
+        budget_max=budget_max,
+    )
+    detailed_price = estimate_price_detailed(price_input)
+    price = detailed_price.estimated_price
     
     duration_ms = int((time.time() - start_time) * 1000)
     step_log = {
         "step_number": 3,
         "agent_name": "Action / Tool Agent",
         "action": "search_providers_and_estimate_price",
-        "input_data": {"category": category, "location": location, "urgency": urgency},
+        "input_data": price_input.model_dump(),
         "output_data": {
             "candidates_found": len(candidates),
             "selected_provider": selected_provider.get("fullName") if selected_provider else None,
-            "estimated_price": price
+            "estimated_price": price,
+            "price_breakdown": detailed_price.breakdown.model_dump(),
+            "confidence_score": detailed_price.confidence_score,
+            "is_budget_constrained": detailed_price.is_budget_constrained,
         },
         "duration_ms": duration_ms,
         "timestamp": time.time()

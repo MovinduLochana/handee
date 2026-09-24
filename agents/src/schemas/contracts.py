@@ -150,3 +150,29 @@ class EstimateScopeOutput(BaseModel):
         if self.ambiguity_flag != bool(self.ambiguity_reasons):
             raise ValueError("ambiguity_flag must be set exactly when there are ambiguity_reasons")
         return self
+class PriceBreakdown(BaseModel):
+    service_labor: float
+    platform_fee: float
+    urgency_surcharge: float = 0.0
+    subtotal: float
+    total_approved_amount: float
+
+
+class PriceEstimationInput(BaseModel):
+    category: str
+    scope: Dict[str, Any] = Field(default_factory=dict)
+    urgency: str = "normal"
+    budget_min: Optional[float] = None
+    budget_max: Optional[float] = None
+
+
+class PriceEstimationOutput(BaseModel):
+    estimated_price: float
+    currency: str = "LKR"
+    base_benchmark: float
+    complexity_multiplier: float = 1.0
+    urgency_multiplier: float = 1.0
+    breakdown: PriceBreakdown
+    is_budget_constrained: bool = False
+    confidence_score: float = 0.95
+
