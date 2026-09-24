@@ -226,6 +226,11 @@ def estimate_price(
     budget_min: Optional[float] = None,
     budget_max: Optional[float] = None,
 ) -> float:
+  
+  
+    if "price_multiplier_min" in scope and "price_multiplier_max" in scope:
+        scope["price_multiplier"] = (float(scope["price_multiplier_min"]) + float(scope["price_multiplier_max"])) / 2.0
+    
     return estimate_price_detailed(
         PriceEstimationInput(
             category=category,

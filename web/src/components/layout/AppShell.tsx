@@ -10,6 +10,9 @@ import {
   Star,
   Users,
   UserCircle,
+  LayoutDashboard,
+  ClipboardList,
+  CalendarCheck,
   Receipt,
   DollarSign,
   CreditCard,
@@ -61,6 +64,14 @@ export default function AppShell() {
     { name: "Agent Workflow", to: "/admin/agent-workflow", icon: Activity, show: isAdmin },
     { name: "Verifications", to: "/admin/verifications", icon: CheckSquare, show: isAdmin },
     { name: "Provider Directory", to: "/admin/providers", icon: Users, show: isAdmin },
+    {
+      name: "Booking Overview",
+      to: "/admin/booking-overview",
+      icon: LayoutDashboard,
+      show: isAdmin,
+    },
+    { name: "Job Requests", to: "/admin/job-requests", icon: ClipboardList, show: isAdmin },
+    { name: "Bookings", to: "/admin/bookings", icon: CalendarCheck, show: isAdmin },
     { name: "Payments & Payouts", to: "/admin/payments", icon: CreditCard, show: isAdmin },
 
     // Provider
