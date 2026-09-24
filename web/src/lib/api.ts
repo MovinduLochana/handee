@@ -2,7 +2,7 @@ import axios from "axios";
 import { getAccessToken, getRefreshToken, setTokens, clearTokens } from "./tokenManager";
 
 // Ideally injected via Vite ENV variables
-export const BASE_URL = "http://localhost:5057";
+export const BASE_URL = "http://localhost:5059";
 
 export const api = axios.create({
   baseURL: BASE_URL,
