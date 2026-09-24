@@ -27,6 +27,8 @@ public class BookingServiceTests
         var db = CreateContext();
         var customerId = Guid.NewGuid();
         var providerId = Guid.NewGuid();
+        db.Users.Add(new ApplicationUser { Id = customerId, FullName = "C" });
+        db.Users.Add(new ApplicationUser { Id = providerId, FullName = "P" });
         var booking = new Booking { ProviderId = providerId, CustomerId = customerId, Status = status };
         db.Bookings.Add(booking);
         await db.SaveChangesAsync();
@@ -96,11 +98,18 @@ public class BookingServiceTests
         using var db = CreateContext();
         var customerA = Guid.NewGuid();
         var customerB = Guid.NewGuid();
+        var p1 = Guid.NewGuid();
+        var p2 = Guid.NewGuid();
+
+        db.Users.Add(new ApplicationUser { Id = customerA, FullName = "Customer A" });
+        db.Users.Add(new ApplicationUser { Id = customerB, FullName = "Customer B" });
+        db.Users.Add(new ApplicationUser { Id = p1, FullName = "Provider 1" });
+        db.Users.Add(new ApplicationUser { Id = p2, FullName = "Provider 2" });
 
         db.Bookings.AddRange(
-            new Booking { ProviderId = Guid.NewGuid(), CustomerId = customerA },
-            new Booking { ProviderId = Guid.NewGuid(), CustomerId = customerA },
-            new Booking { ProviderId = Guid.NewGuid(), CustomerId = customerB });
+            new Booking { ProviderId = p1, CustomerId = customerA },
+            new Booking { ProviderId = p1, CustomerId = customerA },
+            new Booking { ProviderId = p2, CustomerId = customerB });
         await db.SaveChangesAsync();
 
         var sut = new BookingService(db);
@@ -117,11 +126,18 @@ public class BookingServiceTests
         using var db = CreateContext();
         var providerA = Guid.NewGuid();
         var providerB = Guid.NewGuid();
+        var c1 = Guid.NewGuid();
+        var c2 = Guid.NewGuid();
+
+        db.Users.Add(new ApplicationUser { Id = providerA, FullName = "Provider A" });
+        db.Users.Add(new ApplicationUser { Id = providerB, FullName = "Provider B" });
+        db.Users.Add(new ApplicationUser { Id = c1, FullName = "Customer 1" });
+        db.Users.Add(new ApplicationUser { Id = c2, FullName = "Customer 2" });
 
         db.Bookings.AddRange(
-            new Booking { ProviderId = providerA, CustomerId = Guid.NewGuid() },
-            new Booking { ProviderId = providerA, CustomerId = Guid.NewGuid() },
-            new Booking { ProviderId = providerB, CustomerId = Guid.NewGuid() });
+            new Booking { ProviderId = providerA, CustomerId = c1 },
+            new Booking { ProviderId = providerA, CustomerId = c1 },
+            new Booking { ProviderId = providerB, CustomerId = c2 });
         await db.SaveChangesAsync();
 
         var sut = new BookingService(db);

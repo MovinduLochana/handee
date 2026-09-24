@@ -31,7 +31,7 @@ public class AgentWorkflowService : IAgentWorkflowService
         var payload = new
         {
             job_id = jobRequest.Id.ToString(),
-            category = jobRequest.Category,
+            category = jobRequest.ServiceCategory?.Name,
             description = jobRequest.Description,
             location = jobRequest.Location,
             urgency = jobRequest.Urgency.ToString().ToLower(),

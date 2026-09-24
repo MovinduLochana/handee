@@ -26,6 +26,7 @@ import ProviderOnboarding from "./pages/provider/ProviderOnboarding";
 import SubmitVerification from "./pages/provider/SubmitVerification";
 import VerificationStatusTracker from "./pages/provider/VerificationStatus";
 import ProviderProfile from "./pages/provider/ProviderProfile";
+import ProviderServiceListings from "./pages/provider/ProviderServiceListings";
 import ProviderReviews from "./pages/provider/ProviderReviews";
 import PublicProviderProfile from "./pages/public/PublicProviderProfile";
 import ProviderSearch from "./pages/public/ProviderSearch";
@@ -67,6 +68,7 @@ function App() {
             <Route path="/provider/submit-verification" element={<SubmitVerification />} />
             <Route path="/provider/status" element={<VerificationStatusTracker />} />
             <Route path="/provider/profile" element={<ProviderProfile />} />
+            <Route path="/provider/service-listings" element={<ProviderServiceListings />} />
             <Route path="/provider/reviews" element={<ProviderReviews />} />
 
             {/* Admin specific */}

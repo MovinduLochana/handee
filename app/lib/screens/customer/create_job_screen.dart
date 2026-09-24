@@ -8,6 +8,7 @@ import '../../core/constants/colors.dart';
 import '../../data/models/service_category_model.dart';
 import '../../data/repositories/service_category_repository.dart';
 import '../../providers/job_request_provider.dart';
+import '../../providers/service_category_provider.dart';
 import '../../widgets/custom_button.dart';
 import 'booking_tracker_screen.dart';
 
@@ -150,6 +151,12 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
     final provider = context.read<JobRequestProvider>();
     final minBudget = double.tryParse(_minBudgetController.text.trim());
     final maxBudget = double.tryParse(_maxBudgetController.text.trim());
+
+    final categoryList = context.read<ServiceCategoryProvider>().categories;
+    String categoryId = '';
+    try {
+      categoryId = categoryList.firstWhere((c) => c.name == _selectedCategory).id;
+    } catch (_) {}
 
     // TODO(backend): photoUrls is intentionally left empty. CreateJobRequestDto
     // expects real, reachable URLs, and no job-request image upload endpoint
