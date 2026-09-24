@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -76,6 +76,8 @@ namespace Handee.Api.Data.Migrations
                 table: "ServiceCategories",
                 column: "Name",
                 unique: true);
+
+            migrationBuilder.Sql("INSERT INTO \"ServiceCategories\" (\"Id\", \"Name\", \"CreatedAt\") VALUES ('00000000-0000-0000-0000-000000000000', 'General Maintenance', NOW()) ON CONFLICT (\"Id\") DO NOTHING;");
 
             migrationBuilder.AddForeignKey(
                 name: "FK_JobRequests_ServiceCategories_ServiceCategoryId",
