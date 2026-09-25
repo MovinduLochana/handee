@@ -22,6 +22,7 @@ import { authApi } from "../../api/auth";
 import { usersApi } from "../../api/users";
 import { providerApi } from "../../api/providers";
 import { getRefreshToken } from "../../lib/tokenManager";
+import AiAssistantWidget from "../ai/AiAssistantWidget";
 import "./AppShell.css";
 
 export default function AppShell() {
@@ -221,6 +222,7 @@ export default function AppShell() {
           <Outlet />
         </main>
       </div>
+      <AiAssistantWidget />
     </div>
   );
 }
