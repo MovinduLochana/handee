@@ -1,8 +1,13 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/colors.dart';
+import '../../data/models/invoice_model.dart';
 import '../../providers/job_request_provider.dart';
+import '../../providers/payment_provider.dart';
 import '../../widgets/custom_button.dart';
+import '../../widgets/invoice_payment_sheet.dart';
 import '../../widgets/status_badge.dart';
 import '../../widgets/urgency_badge.dart';
 
@@ -181,6 +186,185 @@ class BookingTrackerScreen extends StatelessWidget {
                     ),
                   ],
                 ),
+              ),
+              const SizedBox(height: 24),
+
+              // Itemized Quote & Payment Card (Payments & Invoicing Component)
+              Builder(
+                builder: (context) {
+                  final paymentProvider = context.watch<PaymentProvider>();
+                  final currencyFmt = NumberFormat('#,##0.00', 'en_US');
+
+                  final invoice = paymentProvider.getInvoiceForBooking(request.id) ??
+                      InvoiceModel(
+                        id: 'inv-${request.id.substring(0, min(8, request.id.length))}',
+                        bookingId: request.id,
+                        customerId: request.customerId,
+                        customerName: 'Customer',
+                        providerId: 'prov-001',
+                        providerName: 'Nimal Jayawardena',
+                        baseAmount: 3825.00,
+                        platformFee: 675.00,
+                        totalAmount: 4500.00,
+                        status: 'Issued',
+                        adminApprovalStatus: 'AutoApproved',
+                        createdAt: DateTime.now(),
+                      );
+
+                  final isPaid = invoice.isPaid;
+
+                  return Container(
+                    padding: const EdgeInsets.all(18),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: isPaid ? AppColors.success.withOpacity(0.3) : AppColors.primaryLight,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: isPaid
+                              ? AppColors.success.withOpacity(0.04)
+                              : AppColors.primary.withOpacity(0.04),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Row(
+                              children: [
+                                Icon(Icons.receipt_long, size: 20, color: AppColors.primary),
+                                SizedBox(width: 8),
+                                Text(
+                                  'Itemized Quote & Invoice',
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w800,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            StatusBadge(status: invoice.status),
+                          ],
+                        ),
+                        const SizedBox(height: 14),
+
+                        // 85% / 15% breakdown
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: AppColors.background,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Column(
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const Text(
+                                    'Service Labor (85%)',
+                                    style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                                  ),
+                                  Text(
+                                    'Rs. ${currencyFmt.format(invoice.baseAmount)}',
+                                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 6),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const Text(
+                                    'Platform Fee (15%)',
+                                    style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                                  ),
+                                  Text(
+                                    'Rs. ${currencyFmt.format(invoice.platformFee)}',
+                                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                                  ),
+                                ],
+                              ),
+                              const Divider(color: AppColors.borderLight, height: 16),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const Text(
+                                    'Total Amount',
+                                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800),
+                                  ),
+                                  Text(
+                                    'Rs. ${currencyFmt.format(invoice.totalAmount)}',
+                                    style: const TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w900,
+                                      color: AppColors.primary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        const SizedBox(height: 14),
+
+                        if (isPaid) ...[
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                            decoration: BoxDecoration(
+                              color: AppColors.successLight,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: AppColors.success.withOpacity(0.3)),
+                            ),
+                            child: const Row(
+                              children: [
+                                Icon(Icons.verified, color: AppColors.success, size: 18),
+                                SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    'Invoice Paid in Full • Ledger Credited',
+                                    style: TextStyle(
+                                      color: AppColors.success,
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ] else ...[
+                          CustomButton(
+                            text: 'Review & Pay Invoice (Sandbox)',
+                            icon: Icons.credit_card,
+                            onPressed: () {
+                              InvoicePaymentSheet.show(
+                                context,
+                                invoice: invoice,
+                                onPaymentSuccess: () {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Payment processed successfully via sandbox!'),
+                                      backgroundColor: AppColors.success,
+                                    ),
+                                  );
+                                },
+                              );
+                            },
+                          ),
+                        ],
+                      ],
+                    ),
+                  );
+                },
               ),
               const SizedBox(height: 24),
             ],

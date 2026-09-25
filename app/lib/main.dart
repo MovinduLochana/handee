@@ -9,6 +9,8 @@ import 'data/repositories/auth_repository.dart';
 import 'data/repositories/booking_repository.dart';
 import 'data/repositories/dispatch_repository.dart';
 import 'data/repositories/job_request_repository.dart';
+import 'data/repositories/invoice_repository.dart';
+import 'data/repositories/payment_repository.dart';
 import 'data/repositories/provider_repository.dart';
 import 'data/repositories/service_category_repository.dart';
 import 'data/repositories/service_listing_repository.dart';
@@ -17,6 +19,7 @@ import 'providers/auth_provider.dart';
 import 'providers/booking_provider.dart';
 import 'providers/dispatch_provider.dart';
 import 'providers/job_request_provider.dart';
+import 'providers/payment_provider.dart';
 import 'providers/service_category_provider.dart';
 import 'providers/service_directory_provider.dart';
 import 'screens/auth/splash_screen.dart';
@@ -47,6 +50,14 @@ Widget buildHandeeApp({
   );
 
   final assistantRepository = AssistantRepository(
+    apiClient: client,
+  );
+
+  final invoiceRepository = InvoiceRepository(
+    apiClient: client,
+  );
+
+  final paymentRepository = PaymentRepository(
     apiClient: client,
   );
 
@@ -89,6 +100,12 @@ Widget buildHandeeApp({
       ChangeNotifierProvider<AssistantProvider>(
         create: (_) => AssistantProvider(
           repository: assistantRepository,
+        ),
+      ),
+      ChangeNotifierProvider<PaymentProvider>(
+        create: (_) => PaymentProvider(
+          invoiceRepo: invoiceRepository,
+          paymentRepo: paymentRepository,
         ),
       ),
       ChangeNotifierProvider<ServiceDirectoryProvider>(

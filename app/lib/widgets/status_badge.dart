@@ -38,9 +38,22 @@ class StatusBadge extends StatelessWidget {
         label = 'In Progress';
         break;
       case 'completed':
+      case 'paid':
+      case 'succeeded':
         bg = AppColors.successLight;
         text = AppColors.success;
-        label = 'Completed';
+        label = status.toLowerCase() == 'completed' ? 'Completed' : (status.toLowerCase() == 'paid' ? 'Paid' : 'Payment Succeeded');
+        break;
+      case 'issued':
+        bg = AppColors.primaryUltraLight;
+        text = AppColors.primary;
+        label = 'Invoice Ready';
+        break;
+      case 'overdue':
+      case 'failed':
+        bg = AppColors.errorLight;
+        text = AppColors.error;
+        label = status.toLowerCase() == 'failed' ? 'Payment Failed' : 'Overdue';
         break;
       case 'disputed':
         bg = AppColors.errorLight;

@@ -89,6 +89,19 @@ public class InvoiceController : ControllerBase
         return Ok(invoices);
     }
 
+    [HttpGet("provider/{providerId:guid}")]
+    public async Task<IActionResult> GetByProvider(Guid providerId)
+    {
+        var currentUserId = User.GetUserId();
+        if (currentUserId is null) return Unauthorized();
+
+        if (currentUserId.Value != providerId && !User.IsInRole("Admin"))
+            return Forbid("You can only access your own provider invoices.");
+
+        var invoices = await _invoiceService.GetProviderInvoicesAsync(providerId);
+        return Ok(invoices);
+    }
+
     [HttpGet]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> GetAll()

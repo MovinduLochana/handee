@@ -85,6 +85,9 @@ export interface PaymentMethodItem {
   expiryMonth: number;
   expiryYear: number;
   isDefault: boolean;
+  name?: string;
+  holderName?: string;
+  token?: string;
 }
 
 export const paymentsApi = {
@@ -100,6 +103,11 @@ export const paymentsApi = {
 
   getCustomerInvoices: async (customerId: string): Promise<InvoiceDto[]> => {
     const res = await api.get<InvoiceDto[]>(`/api/invoices/customer/${customerId}`);
+    return res.data;
+  },
+
+  getProviderInvoices: async (providerId: string): Promise<InvoiceDto[]> => {
+    const res = await api.get<InvoiceDto[]>(`/api/invoices/provider/${providerId}`);
     return res.data;
   },
 

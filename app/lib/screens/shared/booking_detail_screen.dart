@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/colors.dart';
+import '../../data/models/invoice_model.dart';
 import '../../providers/booking_provider.dart';
+import '../../providers/payment_provider.dart';
 import '../../widgets/custom_button.dart';
+import '../../widgets/invoice_payment_sheet.dart';
 import '../../widgets/status_badge.dart';
 
 class BookingDetailScreen extends StatelessWidget {
@@ -203,32 +206,109 @@ class BookingDetailScreen extends StatelessWidget {
             const SizedBox(height: 20),
 
             // Pricing & Invoice Breakdown
-            const Text(
-              'Pricing & Quote Breakdown',
-              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
-            ),
-            const SizedBox(height: 10),
+            Builder(
+              builder: (context) {
+                final paymentProvider = context.watch<PaymentProvider>();
+                final invoice = paymentProvider.getInvoiceForBooking(booking.id) ??
+                    InvoiceModel(
+                      id: 'inv-${booking.id.substring(0, booking.id.length > 8 ? 8 : booking.id.length)}',
+                      bookingId: booking.id,
+                      customerId: booking.customerId,
+                      providerId: booking.providerId,
+                      providerName: booking.provider?.fullName,
+                      baseAmount: ((booking.price ?? 4500) * 0.85).roundToDouble(),
+                      platformFee: ((booking.price ?? 4500) * 0.15).roundToDouble(),
+                      totalAmount: (booking.price ?? 4500).toDouble(),
+                      status: booking.isCompleted ? 'Paid' : 'Issued',
+                      createdAt: booking.createdAt,
+                    );
 
-            Container(
-              padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.borderLight),
-              ),
-              child: Column(
-                children: [
-                  _buildPriceRow('Service Labor', 'Rs. ${currencyFormat.format((booking.price ?? 4500) * 0.85)}'),
-                  const SizedBox(height: 10),
-                  _buildPriceRow('Platform Trust & Safety Fee', 'Rs. ${currencyFormat.format((booking.price ?? 4500) * 0.15)}'),
-                  const Divider(color: AppColors.borderLight, height: 24),
-                  _buildPriceRow(
-                    'Total Approved Amount',
-                    'Rs. ${currencyFormat.format(booking.price ?? 4500)}',
-                    isTotal: true,
-                  ),
-                ],
-              ),
+                final isPaid = invoice.isPaid;
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Pricing & Quote Breakdown',
+                          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                        ),
+                        StatusBadge(status: invoice.status),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Container(
+                      padding: const EdgeInsets.all(18),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: AppColors.borderLight),
+                      ),
+                      child: Column(
+                        children: [
+                          _buildPriceRow('Service Labor (85%)', 'Rs. ${currencyFormat.format(invoice.baseAmount)}'),
+                          const SizedBox(height: 10),
+                          _buildPriceRow('Platform Trust & Safety Fee (15%)', 'Rs. ${currencyFormat.format(invoice.platformFee)}'),
+                          const Divider(color: AppColors.borderLight, height: 24),
+                          _buildPriceRow(
+                            'Total Approved Amount',
+                            'Rs. ${currencyFormat.format(invoice.totalAmount)}',
+                            isTotal: true,
+                          ),
+                          const SizedBox(height: 16),
+                          if (isPaid) ...[
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                              decoration: BoxDecoration(
+                                color: AppColors.successLight,
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: AppColors.success.withOpacity(0.3)),
+                              ),
+                              child: const Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.check_circle, color: AppColors.success, size: 16),
+                                  SizedBox(width: 8),
+                                  Text(
+                                    'Paid in Full • Payout Ledger Credited',
+                                    style: TextStyle(
+                                      color: AppColors.success,
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ] else ...[
+                            CustomButton(
+                              text: 'Pay Invoice (Sandbox Card)',
+                              icon: Icons.credit_card,
+                              onPressed: () {
+                                InvoicePaymentSheet.show(
+                                  context,
+                                  invoice: invoice,
+                                  onPaymentSuccess: () {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('Payment processed successfully!'),
+                                        backgroundColor: AppColors.success,
+                                      ),
+                                    );
+                                  },
+                                );
+                              },
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
+                );
+              },
             ),
 
             const SizedBox(height: 24),

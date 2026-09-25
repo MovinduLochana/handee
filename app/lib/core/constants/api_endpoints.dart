@@ -49,7 +49,7 @@ class ApiEndpoints {
   static const String assistantQuery = '/assistant/query';
 
   // Provider & Verification (ProviderController)
-  static const String providerVerification = '/api/providers/verification'; // Wait, it's actually api/providers/{id}/verification based on controller. We'll leave the constant if they used it structurally differently, but let's fix what we added.
+  static const String providerVerification = '/api/providers/verification';
   static const String providerProfile = '/api/providers/me'; 
   static String providerById(String id) => '/api/providers/$id';
   static const String providersSearch = '/api/providers/search';
@@ -57,4 +57,18 @@ class ApiEndpoints {
   // Service Listings (ServiceListingsController)
   static const String serviceListings = '/api/service-listings';
   static String providerServiceListings(String providerId) => '/api/service-listings/provider/$providerId';
+
+  // Invoices & Payments (InvoiceController, PaymentController, PayoutController)
+  static const String invoices = '/invoices';
+  static const String myInvoices = '/invoices/mine';
+  static String invoiceById(String id) => '/invoices/$id';
+  static String invoiceByBookingId(String bookingId) => '/invoices/booking/$bookingId';
+
+  static const String payments = '/payments';
+  static const String myPayments = '/payments/mine';
+  static String paymentById(String id) => '/payments/$id';
+  static String paymentByInvoiceId(String invoiceId) => '/payments/invoice/$invoiceId';
+
+  static const String providerPayouts = '/payouts/provider';
+  static const String providerPayoutSummary = '/payouts/provider/summary';
 }

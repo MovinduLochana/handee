@@ -85,6 +85,7 @@ function App() {
             <Route path="/invoices/:id" element={<InvoiceDetail />} />
             <Route path="/invoices/:id/pay" element={<CheckoutPayment />} />
             <Route path="/account/payment-methods" element={<PaymentMethods />} />
+            <Route path="/payment-methods" element={<PaymentMethods />} />
 
             {/* Provider specific dashboard routes */}
             <Route path="/provider/submit-verification" element={<SubmitVerification />} />

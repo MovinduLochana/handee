@@ -214,6 +214,7 @@ if (app.Environment.IsDevelopment())
         var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
         await MockDataSeeder.SeedAsync(dbContext, userManager);
+        await InvoiceSeeder.SeedAsync(dbContext, userManager);
     }
 }
 
