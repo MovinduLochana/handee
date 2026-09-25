@@ -8,17 +8,10 @@ class ServiceCategoryModel {
   ServiceCategoryModel({
     required this.id,
     required this.name,
-  ServiceCategoryModel({
-    required this.id,
-    required this.name,
     this.priceBandMin,
     this.priceBandMax,
   });
-  });
 
-  factory ServiceCategoryModel.fromJson(Map<String, dynamic> json) {
-    return ServiceCategoryModel(
-      id: json['id']?.toString() ?? '',
   factory ServiceCategoryModel.fromJson(Map<String, dynamic> json) {
     return ServiceCategoryModel(
       id: json['id']?.toString() ?? '',

@@ -35,11 +35,7 @@ class JobRequestProvider extends ChangeNotifier {
   }
 
   Future<JobRequestModel?> submitInstantMatch({
-  Future<JobRequestModel?> submitInstantMatch({
     required String serviceCategoryId,
-    required String description,
-    required String location,
-    required String urgency,
     required String description,
     required String location,
     required String urgency,
@@ -53,11 +49,7 @@ class JobRequestProvider extends ChangeNotifier {
 
     try {
       final created = await repository.createJobRequest(
-      final created = await repository.createJobRequest(
         serviceCategoryId: serviceCategoryId,
-        description: description,
-        location: location,
-        urgency: urgency,
         description: description,
         location: location,
         urgency: urgency,

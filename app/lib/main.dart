@@ -61,9 +61,6 @@ Widget buildHandeeApp({
   final serviceCategoryRepository = ServiceCategoryRepository(
     apiClient: client,
   );
-  final serviceCategoryRepository = ServiceCategoryRepository(
-    apiClient: client,
-  );
 
   return MultiProvider(
     providers: [

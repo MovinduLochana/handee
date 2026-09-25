@@ -35,7 +35,6 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
   final ImagePicker _imagePicker = ImagePicker();
 
   List<ServiceCategoryModel> _categories = [];
-  String? _selectedCategoryId;
   bool _categoriesLoading = true;
   String? _categoriesError;
 
@@ -93,7 +92,6 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
     }
     return categories.first.id;
   }
-  }
 
   @override
   void dispose() {
@@ -141,7 +139,7 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
 
   Future<void> _submitJob() async {
     if (!_formKey.currentState!.validate()) return;
-    if (_selectedCategory == null) return; // Add null check for category
+    if (_selectedCategoryId == null) return; // Add null check for category
 
     final categoryId = _selectedCategoryId;
     if (categoryId == null || categoryId.isEmpty) {
@@ -163,9 +161,6 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
     // files here and send the returned URLs.
     final request = await provider.submitInstantMatch(
       serviceCategoryId: categoryId,
-      description: _descController.text.trim(),
-      location: _selectedLocation,
-      urgency: _selectedUrgency,
       description: _descController.text.trim(),
       location: _selectedLocation,
       urgency: _selectedUrgency,

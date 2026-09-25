@@ -25,5 +25,4 @@ class ServiceCategoryRepository {
         .map((json) => ServiceCategoryModel.fromJson(json as Map<String, dynamic>))
         .toList();
   }
-  }
 }

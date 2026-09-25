@@ -30,7 +30,7 @@ class ApiEndpoints {
   static const String userProfile = '/users/me';
 
   // Service Categories (ServiceCategoryController) — public reference data
-  static const String serviceCategories = '/service-categories';
+  static const String serviceCategories = '/api/service-categories';
 
   // Job Requests (JobRequestController)
   static const String jobRequests = '/job-requests';
