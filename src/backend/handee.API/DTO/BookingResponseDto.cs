@@ -16,5 +16,6 @@ public record BookingResponseDto(
     string? ServiceLocation = null,
     decimal? Price = null,
     string? Category = null,
-    string? Description = null
+    string? Description = null,
+    string? Notes = null
 );

@@ -22,7 +22,7 @@ export default function Login() {
         } else {
           navigate("/dashboard");
         }
-      } catch (err) {
+      } catch {
         // Fallback if profile fetch fails
         navigate("/dashboard");
       }

@@ -32,10 +32,10 @@ public class BookingConfiguration : IEntityTypeConfiguration<Booking>
             .HasMaxLength(20)
             .IsRequired();
 
-        // ServiceListingId has no navigation/FK relationship yet (the entity
-        // doesn't exist), so it needs an explicit index — EF only auto-indexes
-        // configured foreign keys.
-        builder.HasIndex(b => b.ServiceListingId);
+        builder.HasOne(b => b.ServiceListing)
+            .WithMany()
+            .HasForeignKey(b => b.ServiceListingId)
+            .OnDelete(DeleteBehavior.SetNull);
 
         builder.HasIndex(b => b.Status);
     }

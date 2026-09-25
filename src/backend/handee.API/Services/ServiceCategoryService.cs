@@ -18,7 +18,7 @@ public class ServiceCategoryService : IServiceCategoryService
     {
         return await _db.ServiceCategories
             .OrderBy(c => c.Name)
-            .Select(c => new ServiceCategoryResponseDto(c.Id, c.Name, c.PriceBandMin, c.PriceBandMax))
+            .Select(c => new ServiceCategoryResponseDto(c.Id, c.Name, c.IconUrl, c.PriceBandMin, c.PriceBandMax))
             .ToListAsync();
     }
 }

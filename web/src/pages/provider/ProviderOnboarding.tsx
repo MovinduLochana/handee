@@ -3,9 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, ArrowRight, ShieldCheck, CheckCircle2 } from "lucide-react";
 import { providerApi } from "../../api/providers";
-import { skillCategoryApi } from "../../api/skillCategories";
+import { serviceCategoryApi } from "../../api/serviceCategories";
 import StepIndicator from "../../components/provider/StepIndicator";
-import SkillCategoryTag from "../../components/provider/SkillCategoryTag";
+import ServiceCategoryTag from "../../components/provider/ServiceCategoryTag";
 import { extractApiError } from "../../lib/api";
 import LocationPicker from "../../components/provider/LocationPicker";
 import "./ProviderOnboarding.css";
@@ -21,8 +21,6 @@ export default function ProviderOnboarding() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-
-
   const { data: profile, isLoading: isProfileLoading } = useQuery({
     queryKey: ["myProfile"],
     queryFn: providerApi.getMyProfile,
@@ -30,8 +28,8 @@ export default function ProviderOnboarding() {
   });
 
   const { data: categories = [] } = useQuery({
-    queryKey: ["skillCategories"],
-    queryFn: skillCategoryApi.getSkillCategories,
+    queryKey: ["serviceCategories"],
+    queryFn: serviceCategoryApi.getServiceCategories,
   });
 
   // ── Wizard State ────────────────────────────────────────────────────────
@@ -73,8 +71,8 @@ export default function ProviderOnboarding() {
       if (profile.yearsOfExperience) setYearsOfExperience(profile.yearsOfExperience);
       if (profile.languages?.length > 0) setLanguages(profile.languages);
       if (profile.servicesOffered?.length > 0) setServicesOffered(profile.servicesOffered);
-      if (profile.skillCategories?.length > 0) {
-        setSelectedSkillIds(new Set(profile.skillCategories.map((s) => s.id)));
+      if (profile.serviceCategories?.length > 0) {
+        setSelectedSkillIds(new Set(profile.serviceCategories.map((s) => s.id)));
       }
       if (profile.serviceAreaDisplayName) setServiceAreaAddress(profile.serviceAreaDisplayName);
       if (profile.serviceRadiusKm) setServiceRadiusKm(profile.serviceRadiusKm);
@@ -100,7 +98,7 @@ export default function ProviderOnboarding() {
         yearsOfExperience: typeof yearsOfExperience === "number" ? yearsOfExperience : undefined,
         languages,
         servicesOffered,
-        skillCategoryIds: Array.from(selectedSkillIds),
+        serviceCategoryIds: Array.from(selectedSkillIds),
         serviceAreaLatitude: serviceAreaLatitude !== null ? serviceAreaLatitude : undefined,
         serviceAreaLongitude: serviceAreaLongitude !== null ? serviceAreaLongitude : undefined,
         serviceRadiusKm,
@@ -136,7 +134,9 @@ export default function ProviderOnboarding() {
       }
     } else if (currentStep === 2) {
       if (!serviceAreaAddress) {
-        setError("Please define your service area by selecting an address from the drop-down, or by clicking on the map.");
+        setError(
+          "Please define your service area by selecting an address from the drop-down, or by clicking on the map.",
+        );
         return;
       }
 
@@ -184,8 +184,6 @@ export default function ProviderOnboarding() {
       return next;
     });
   };
-
-
 
   if (isProfileLoading)
     return <div style={{ padding: "2rem", textAlign: "center" }}>Loading onboarding...</div>;
@@ -360,10 +358,10 @@ export default function ProviderOnboarding() {
             </p>
 
             <div className="wizard-field">
-              <label>Skill Categories (required, select at least one)</label>
+              <label>Service Categories (required, select at least one)</label>
               <div className="skill-grid">
                 {categories.map((cat) => (
-                  <SkillCategoryTag
+                  <ServiceCategoryTag
                     key={cat.id}
                     category={cat}
                     selected={selectedSkillIds.has(cat.id)}

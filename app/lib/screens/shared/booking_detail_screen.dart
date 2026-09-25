@@ -14,6 +14,42 @@ class BookingDetailScreen extends StatelessWidget {
 
   const BookingDetailScreen({super.key, required this.bookingId});
 
+  /// PUT /bookings/{id}/schedule. The backend restricts rescheduling to
+  /// Requested/Accepted bookings, so the entry point is hidden otherwise and
+  /// any backend rejection is surfaced verbatim.
+  Future<void> _pickAndReschedule(BuildContext context, BookingProvider provider, String id,
+      DateTime? current) async {
+    final now = DateTime.now();
+    final base = (current != null && current.isAfter(now)) ? current : now;
+
+    final date = await showDatePicker(
+      context: context,
+      initialDate: base,
+      firstDate: now,
+      lastDate: now.add(const Duration(days: 365)),
+    );
+    if (date == null || !context.mounted) return;
+
+    final time = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(base),
+    );
+    if (time == null || !context.mounted) return;
+
+    final scheduledAt = DateTime(date.year, date.month, date.day, time.hour, time.minute);
+    final ok = await provider.updateSchedule(id, scheduledAt);
+    if (!context.mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(ok
+            ? 'Booking rescheduled to ${DateFormat('EEE, dd MMM yyyy, hh:mm a').format(scheduledAt)}'
+            : (provider.errorMessage ?? 'Could not reschedule this booking')),
+        backgroundColor: ok ? AppColors.success : AppColors.error,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<BookingProvider>();
@@ -22,6 +58,8 @@ class BookingDetailScreen extends StatelessWidget {
 
     final currencyFormat = NumberFormat('#,##0', 'en_US');
     final formattedDate = DateFormat('EEE, dd MMM yyyy, hh:mm a').format(booking.createdAt);
+    final scheduleFormat = DateFormat('EEE, dd MMM yyyy, hh:mm a');
+    final canReschedule = booking.isRequested || booking.isAccepted;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -48,7 +86,7 @@ class BookingDetailScreen extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        booking.jobRequest?.category ?? 'Service Booking',
+                        booking.category ?? 'Service Booking',
                         style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
                       ),
                       StatusBadge(status: booking.status),
@@ -56,7 +94,7 @@ class BookingDetailScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    booking.jobRequest?.description ?? 'Standard maintenance and repair service',
+                    booking.description ?? 'Standard maintenance and repair service',
                     style: const TextStyle(fontSize: 13, color: AppColors.textSecondary, height: 1.4),
                   ),
                   const SizedBox(height: 14),
@@ -67,6 +105,53 @@ class BookingDetailScreen extends StatelessWidget {
                       Text(formattedDate, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
                     ],
                   ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
+            // Scheduled time + reschedule entry point
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppColors.borderLight),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.schedule, size: 20, color: AppColors.primary),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Scheduled For',
+                          style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          booking.scheduledAt != null
+                              ? scheduleFormat.format(booking.scheduledAt!)
+                              : 'Not scheduled yet',
+                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (canReschedule)
+                    TextButton.icon(
+                      onPressed: () => _pickAndReschedule(
+                        context,
+                        provider,
+                        booking.id,
+                        booking.scheduledAt,
+                      ),
+                      icon: const Icon(Icons.edit_calendar_outlined, size: 16),
+                      label: const Text('Reschedule', style: TextStyle(fontSize: 12)),
+                    ),
                 ],
               ),
             ),

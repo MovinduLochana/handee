@@ -18,7 +18,11 @@ export default function QuoteReview() {
   const navigate = useNavigate();
   const [isAccepted, setIsAccepted] = useState(false);
 
-  const { data: invoice, isLoading, error } = useQuery({
+  const {
+    data: invoice,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ["bookingInvoice", bookingId],
     queryFn: () => paymentsApi.getInvoiceByBookingId(bookingId || ""),
     enabled: !!bookingId,
@@ -28,7 +32,7 @@ export default function QuoteReview() {
   // Fallback quote values if invoice is still in estimation or draft
   const baseAmount = invoice?.baseAmount ?? 4500;
   const platformFee = invoice?.platformFee ?? Math.round(baseAmount * 0.15);
-  const totalAmount = invoice?.totalAmount ?? (baseAmount + platformFee);
+  const totalAmount = invoice?.totalAmount ?? baseAmount + platformFee;
 
   const parsedItems: Array<{ item: string; price: number; type?: string }> = invoice?.lineItemsJson
     ? (() => {
@@ -41,7 +45,11 @@ export default function QuoteReview() {
       })()
     : [
         { item: "Standard Labor & Service", price: Math.round(baseAmount * 0.7), type: "Labor" },
-        { item: "Consumables & Parts Allowance", price: Math.round(baseAmount * 0.3), type: "Materials" },
+        {
+          item: "Consumables & Parts Allowance",
+          price: Math.round(baseAmount * 0.3),
+          type: "Materials",
+        },
       ];
 
   const handleAcceptQuote = () => {
@@ -57,14 +65,23 @@ export default function QuoteReview() {
     <div className="payments-page">
       <div className="payments-header">
         <div>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.25rem" }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.5rem",
+              marginBottom: "0.25rem",
+            }}
+          >
             <span className="sandbox-badge">
               <Zap size={14} /> AI Estimate & Verified Quote
             </span>
           </div>
           <h1 className="payments-title">Quote Review</h1>
           <p className="payments-subtitle">
-            Booking Ref: <strong style={{ color: "var(--text-h)" }}>{bookingId?.slice(0, 8)}...</strong> • Transparent breakdown with zero hidden fees
+            Booking Ref:{" "}
+            <strong style={{ color: "var(--text-h)" }}>{bookingId?.slice(0, 8)}...</strong> •
+            Transparent breakdown with zero hidden fees
           </p>
         </div>
         <Link to="/bookings" className="btn-secondary">
@@ -91,7 +108,8 @@ export default function QuoteReview() {
           <div style={{ display: "flex", gap: "0.75rem", alignItems: "flex-start" }}>
             <AlertCircle size={20} style={{ flexShrink: 0, marginTop: "2px" }} />
             <div>
-              <strong>Using Estimated Baseline:</strong> Detailed invoice is pending provider dispatch. Below is the automated AI baseline quote for this category.
+              <strong>Using Estimated Baseline:</strong> Detailed invoice is pending provider
+              dispatch. Below is the automated AI baseline quote for this category.
             </div>
           </div>
         </div>
@@ -122,7 +140,14 @@ export default function QuoteReview() {
                     <tr key={idx}>
                       <td style={{ fontWeight: 600 }}>{line.item}</td>
                       <td>
-                        <span style={{ fontSize: "0.75rem", padding: "0.2rem 0.5rem", background: "var(--bg-surface-elevated)", borderRadius: "4px" }}>
+                        <span
+                          style={{
+                            fontSize: "0.75rem",
+                            padding: "0.2rem 0.5rem",
+                            background: "var(--bg-surface-elevated)",
+                            borderRadius: "4px",
+                          }}
+                        >
                           {line.type || "Service"}
                         </span>
                       </td>
@@ -134,7 +159,15 @@ export default function QuoteReview() {
                   <tr>
                     <td style={{ color: "var(--text-muted)" }}>Platform Trust & Safety Fee</td>
                     <td>
-                      <span style={{ fontSize: "0.75rem", padding: "0.2rem 0.5rem", background: "oklch(45% 0.2 260 / 0.1)", color: "var(--accent)", borderRadius: "4px" }}>
+                      <span
+                        style={{
+                          fontSize: "0.75rem",
+                          padding: "0.2rem 0.5rem",
+                          background: "oklch(45% 0.2 260 / 0.1)",
+                          color: "var(--accent)",
+                          borderRadius: "4px",
+                        }}
+                      >
                         15% Included
                       </span>
                     </td>
@@ -173,7 +206,9 @@ export default function QuoteReview() {
             }}
           >
             <div>
-              <h3 style={{ margin: 0, fontSize: "1.05rem", fontWeight: 700, color: "var(--text-h)" }}>
+              <h3
+                style={{ margin: 0, fontSize: "1.05rem", fontWeight: 700, color: "var(--text-h)" }}
+              >
                 Ready to confirm this quote?
               </h3>
               <p style={{ margin: "0.25rem 0 0", fontSize: "0.85rem", color: "var(--text-muted)" }}>
@@ -181,11 +216,7 @@ export default function QuoteReview() {
               </p>
             </div>
             <div style={{ display: "flex", gap: "0.75rem" }}>
-              <button
-                className="btn-primary"
-                onClick={handleAcceptQuote}
-                disabled={isAccepted}
-              >
+              <button className="btn-primary" onClick={handleAcceptQuote} disabled={isAccepted}>
                 <CheckCircle2 size={16} />
                 Accept Quote & Pay
                 <ArrowRight size={16} />
@@ -196,19 +227,33 @@ export default function QuoteReview() {
 
         <div>
           <div className="payments-card">
-            <h3 className="payments-card-title" style={{ fontSize: "1.1rem", marginBottom: "1rem" }}>
+            <h3
+              className="payments-card-title"
+              style={{ fontSize: "1.1rem", marginBottom: "1rem" }}
+            >
               <ShieldCheck size={22} color="var(--success)" />
               Handee Guarantee
             </h3>
-            <ul style={{ paddingLeft: "1.2rem", margin: "0 0 1.5rem", fontSize: "0.88rem", color: "var(--text)", lineHeight: "1.7" }}>
+            <ul
+              style={{
+                paddingLeft: "1.2rem",
+                margin: "0 0 1.5rem",
+                fontSize: "0.88rem",
+                color: "var(--text)",
+                lineHeight: "1.7",
+              }}
+            >
               <li>
-                <strong>Escrow Protection:</strong> Funds remain securely held in sandbox escrow until you approve job completion.
+                <strong>Escrow Protection:</strong> Funds remain securely held in sandbox escrow
+                until you approve job completion.
               </li>
               <li>
-                <strong>No Surprise Surges:</strong> Quote is binding for the initial agreed scope of work.
+                <strong>No Surprise Surges:</strong> Quote is binding for the initial agreed scope
+                of work.
               </li>
               <li>
-                <strong>Dispute Resolution:</strong> 24/7 dedicated mediation if work does not match criteria.
+                <strong>Dispute Resolution:</strong> 24/7 dedicated mediation if work does not match
+                criteria.
               </li>
             </ul>
 
@@ -224,7 +269,8 @@ export default function QuoteReview() {
             >
               <HelpCircle size={20} color="var(--text-muted)" />
               <div style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>
-                Need adjustments or extra parts added? Contact your assigned provider through the booking chat.
+                Need adjustments or extra parts added? Contact your assigned provider through the
+                booking chat.
               </div>
             </div>
           </div>

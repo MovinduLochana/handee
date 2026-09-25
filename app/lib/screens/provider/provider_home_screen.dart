@@ -320,7 +320,7 @@ class _ProviderDashboardTab extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            activeBooking.jobRequest?.category ?? 'Plumbing Repair',
+                            activeBooking.jobRequest?.categoryName ?? 'Plumbing Repair',
                             style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
                           ),
                           StatusBadge(status: activeBooking.status),

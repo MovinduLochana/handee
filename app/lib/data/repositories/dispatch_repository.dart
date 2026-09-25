@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 import '../../core/constants/api_endpoints.dart';
 import '../../core/network/api_client.dart';
 import '../../core/services/storage_service.dart';
-import '../models/job_request_model.dart';
+import '../models/booking_model.dart';
 import '../models/provider_profile_model.dart';
 
 class DispatchRepository {
@@ -14,27 +14,18 @@ class DispatchRepository {
     required this.storage,
   });
 
-  Future<List<JobRequestModel>> getIncomingOffers() async {
+  /// GET /bookings/provider-offers returns BookingResponseDto (bookings in
+  /// Requested status for this provider), so it deserializes to BookingModel.
+  /// It previously mapped into JobRequestModel, which meant reading
+  /// booking-only fields (customerName, price, serviceLocation) off the wrong
+  /// model.
+  Future<List<BookingModel>> getIncomingOffers() async {
     try {
       final response = await apiClient.get('/bookings/provider-offers');
       if (response is List) {
-        return response.map((b) {
-          final map = b as Map<String, dynamic>;
-          return JobRequestModel(
-            id: map['id']?.toString() ?? '',
-            category: map['category']?.toString() ?? 'General',
-            description: map['description']?.toString() ?? 'Service request awaiting confirmation',
-            location: map['serviceLocation']?.toString() ?? 'Colombo, Western Province',
-            urgency: 'Medium',
-            status: map['status']?.toString() ?? 'Requested',
-            customerId: map['customerId']?.toString() ?? '',
-            customerName: map['customerName']?.toString() ?? 'Handee Customer',
-            createdAt: map['createdAt'] != null
-                ? DateTime.tryParse(map['createdAt'].toString()) ?? DateTime.now()
-                : DateTime.now(),
-            estimatedPrice: (map['price'] as num?)?.toDouble() ?? 3500.0,
-          );
-        }).toList();
+        return response
+            .map((b) => BookingModel.fromJson(b as Map<String, dynamic>))
+            .toList();
       }
     } catch (e) {
       debugPrint('Error fetching incoming provider offers: $e');

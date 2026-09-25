@@ -11,12 +11,17 @@ import 'data/repositories/dispatch_repository.dart';
 import 'data/repositories/job_request_repository.dart';
 import 'data/repositories/invoice_repository.dart';
 import 'data/repositories/payment_repository.dart';
+import 'data/repositories/provider_repository.dart';
+import 'data/repositories/service_category_repository.dart';
+import 'data/repositories/service_listing_repository.dart';
 import 'providers/assistant_provider.dart';
 import 'providers/auth_provider.dart';
 import 'providers/booking_provider.dart';
 import 'providers/dispatch_provider.dart';
 import 'providers/job_request_provider.dart';
 import 'providers/payment_provider.dart';
+import 'providers/service_category_provider.dart';
+import 'providers/service_directory_provider.dart';
 import 'screens/auth/splash_screen.dart';
 
 Widget buildHandeeApp({
@@ -56,8 +61,21 @@ Widget buildHandeeApp({
     apiClient: client,
   );
 
+  final providerRepository = ProviderRepository(
+    apiClient: client,
+  );
+
+  final serviceListingRepository = ServiceListingRepository(
+    apiClient: client,
+  );
+
+  final serviceCategoryRepository = ServiceCategoryRepository(
+    apiClient: client,
+  );
+
   return MultiProvider(
     providers: [
+      Provider<ServiceCategoryRepository>.value(value: serviceCategoryRepository),
       ChangeNotifierProvider<AuthProvider>(
         create: (_) => AuthProvider(
           authRepo: authRepository,
@@ -88,6 +106,17 @@ Widget buildHandeeApp({
         create: (_) => PaymentProvider(
           invoiceRepo: invoiceRepository,
           paymentRepo: paymentRepository,
+        ),
+      ),
+      ChangeNotifierProvider<ServiceDirectoryProvider>(
+        create: (_) => ServiceDirectoryProvider(
+          providerRepo: providerRepository,
+          serviceListingRepo: serviceListingRepository,
+        ),
+      ),
+      ChangeNotifierProvider<ServiceCategoryProvider>(
+        create: (_) => ServiceCategoryProvider(
+          repository: serviceCategoryRepository,
         ),
       ),
     ],

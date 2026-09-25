@@ -20,7 +20,7 @@ public class AuthService : IAuthService
     private readonly IRefreshTokenGenerator _refreshTokenGenerator;
     private readonly AppDbContext _db;
     private readonly IHttpContextAccessor _httpContextAccessor;
-    private readonly ProviderProfileService _providerProfileService;
+    private readonly IProviderProfileService _providerProfileService;
     private readonly IEmailService _emailService;
 
     private static readonly HashSet<string> AllowedRoles =
@@ -33,7 +33,7 @@ public class AuthService : IAuthService
         IRefreshTokenGenerator refreshTokenGenerator,
         AppDbContext db,
         IHttpContextAccessor httpContextAccessor,
-        ProviderProfileService providerProfileService,
+        IProviderProfileService providerProfileService,
         IEmailService emailService)
     {
         _userManager = userManager;

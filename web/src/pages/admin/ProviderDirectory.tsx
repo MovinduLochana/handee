@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Search, MapPin, Star, Eye } from "lucide-react";
 import { providerApi } from "../../api/providers";
-import { skillCategoryApi } from "../../api/skillCategories";
+import { serviceCategoryApi } from "../../api/serviceCategories";
 import StatusBadge from "../../components/provider/StatusBadge";
 import "./ProviderDirectory.css";
 
@@ -22,8 +22,8 @@ export default function ProviderDirectory() {
   const pageSize = 15;
 
   const { data: categories = [] } = useQuery({
-    queryKey: ["skillCategories"],
-    queryFn: skillCategoryApi.getSkillCategories,
+    queryKey: ["serviceCategories"],
+    queryFn: serviceCategoryApi.getServiceCategories,
   });
 
   const { data, isLoading } = useQuery({
@@ -33,7 +33,7 @@ export default function ProviderDirectory() {
         page,
         pageSize,
         searchTerm: appliedFilters.searchTerm || undefined,
-        skillCategoryId: appliedFilters.skill || undefined,
+        serviceCategoryId: appliedFilters.skill || undefined,
       }),
   });
 
@@ -75,10 +75,8 @@ export default function ProviderDirectory() {
           </div>
         </div>
 
-
-
         <div className="filter-group">
-          <label>Skill Category</label>
+          <label>Service Category</label>
           <select
             className="filter-input"
             value={skillFilter}
@@ -179,8 +177,8 @@ export default function ProviderDirectory() {
                   </td>
                   <td>
                     <div style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>
-                      {provider.skillCategories.length > 0
-                        ? provider.skillCategories.map((s) => s.name).join(", ")
+                      {provider.serviceCategories.length > 0
+                        ? provider.serviceCategories.map((s) => s.name).join(", ")
                         : "None"}
                     </div>
                   </td>

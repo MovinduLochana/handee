@@ -27,14 +27,26 @@ class BookingTrackerScreen extends StatelessWidget {
       );
     }
 
-    final isDispatched = request.status == 'dispatched' || request.status == 'approved_for_auto_dispatch';
-    final isPendingReview = request.status == 'pending_ai_review' || request.status == 'pending_approval';
+    // JobRequestStatus has exactly three values: PendingAiReview, Open,
+    // Cancelled. There is no "dispatched" state on a JobRequest — once the
+    // agent workflow approves it, the request becomes Open and a separate
+    // Booking is created, which is tracked on the Bookings screen.
+    final isPendingReview = request.isPendingAiReview;
+    final isOpen = request.isOpen;
+    final isCancelled = request.isCancelled;
 
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text('Live Status Tracker'),
         elevation: 0,
+        actions: [
+          IconButton(
+            tooltip: 'Refresh status',
+            icon: const Icon(Icons.refresh),
+            onPressed: () => provider.refreshTrackedRequest(),
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -63,7 +75,7 @@ class BookingTrackerScreen extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        request.category,
+                        request.categoryName,
                         style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
                       ),
                       StatusBadge(status: request.status),
@@ -130,25 +142,19 @@ class BookingTrackerScreen extends StatelessWidget {
                     isDone: !isPendingReview,
                     isActive: isPendingReview,
                   ),
-                  _buildTimelineLine(isDone: isDispatched),
+                  _buildTimelineLine(isDone: isOpen),
                   _buildTimelineStep(
-                    icon: isDispatched ? Icons.check_circle : Icons.radio_button_unchecked,
-                    title: '3. Risk Tier & HITL Validation',
-                    subtitle: request.status == 'approved_for_auto_dispatch' || isDispatched
-                        ? 'Low risk: Auto-dispatched directly to verified provider'
-                        : 'Checking deterministic rules & price bounds...',
-                    isDone: isDispatched,
-                    isActive: false,
-                  ),
-                  _buildTimelineLine(isDone: isDispatched),
-                  _buildTimelineStep(
-                    icon: isDispatched ? Icons.navigation_outlined : Icons.radio_button_unchecked,
-                    title: '4. Provider En Route',
-                    subtitle: isDispatched
-                        ? 'Nimal Jayawardena accepted and dispatched'
-                        : 'Awaiting provider response',
-                    isDone: false,
-                    isActive: isDispatched,
+                    icon: isCancelled
+                        ? Icons.cancel_outlined
+                        : (isOpen ? Icons.check_circle : Icons.radio_button_unchecked),
+                    title: isCancelled ? '3. Request Cancelled' : '3. Open for Matching',
+                    subtitle: isCancelled
+                        ? 'This request was cancelled and will not be matched'
+                        : (isOpen
+                            ? 'Approved and open — a booking is created once a provider is assigned'
+                            : 'Awaiting the outcome of AI review'),
+                    isDone: isOpen,
+                    isActive: isCancelled,
                   ),
                 ],
               ),
@@ -156,105 +162,27 @@ class BookingTrackerScreen extends StatelessWidget {
 
             const SizedBox(height: 24),
 
-            // Assigned Provider Card (if dispatched)
-            if (isDispatched) ...[
-              const Text(
-                'Assigned Tradesperson',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
-              ),
-              const SizedBox(height: 12),
+            // A JobRequest carries no provider/ETA/contact data — that lives on
+            // the Booking created once a provider is assigned. Point the user
+            // there instead of inventing details here.
+            if (isOpen) ...[
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(color: AppColors.primaryLight.withOpacity(0.4)),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.primary.withOpacity(0.04),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
                 ),
-                child: Column(
+                child: Row(
                   children: [
-                    Row(
-                      children: [
-                        Container(
-                          width: 48,
-                          height: 48,
-                          decoration: const BoxDecoration(
-                            color: AppColors.primaryUltraLight,
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(Icons.person, color: AppColors.primary, size: 28),
-                        ),
-                        const SizedBox(width: 14),
-                        const Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Text(
-                                    'Nimal Jayawardena',
-                                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
-                                  ),
-                                  SizedBox(width: 6),
-                                  Icon(Icons.verified, size: 16, color: AppColors.primary),
-                                ],
-                              ),
-                              SizedBox(height: 3),
-                              Text(
-                                'Master Plumber · ★ 4.9 (48 reviews)',
-                                style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: AppColors.successLight,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: const Text(
-                            'ETA ~20m',
-                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.success),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 14),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Calling +94 71 987 6543...')),
-                              );
-                            },
-                            icon: const Icon(Icons.phone, size: 16),
-                            label: const Text('Call'),
-                            style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(40)),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: ElevatedButton.icon(
-                            onPressed: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Connecting to in-app messaging...')),
-                              );
-                            },
-                            icon: const Icon(Icons.chat_outlined, size: 16),
-                            label: const Text('Message'),
-                            style: ElevatedButton.styleFrom(minimumSize: const Size.fromHeight(40)),
-                          ),
-                        ),
-                      ],
+                    const Icon(Icons.event_available_outlined, color: AppColors.primary, size: 22),
+                    const SizedBox(width: 12),
+                    const Expanded(
+                      child: Text(
+                        'Your request is open. Once a provider is assigned, it appears '
+                        'under your Bookings with their details and schedule.',
+                        style: TextStyle(fontSize: 12, color: AppColors.textSecondary, height: 1.4),
+                      ),
                     ),
                   ],
                 ),

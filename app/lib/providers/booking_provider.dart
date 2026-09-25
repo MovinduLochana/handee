@@ -72,6 +72,25 @@ class BookingProvider extends ChangeNotifier {
     } catch (_) {}
   }
 
+  Future<bool> updateSchedule(String bookingId, DateTime scheduledAt) async {
+    try {
+      final updated = await repository.updateBookingSchedule(bookingId, scheduledAt);
+      final idx = _bookings.indexWhere((b) => b.id == bookingId);
+      if (idx != -1) {
+        _bookings[idx] = updated;
+      }
+      if (_selectedBooking?.id == bookingId) {
+        _selectedBooking = updated;
+      }
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
   Future<bool> updateStatus(String bookingId, String newStatus) async {
     try {
       final updated = await repository.updateBookingStatus(bookingId, newStatus);

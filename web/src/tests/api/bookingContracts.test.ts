@@ -54,6 +54,7 @@ const BOOKING_KEYS = exactKeys<BookingResponseDto>()([
   "price",
   "category",
   "description",
+  "notes",
 ]);
 
 const JOB_REQUEST_KEYS = exactKeys<JobRequestResponseDto>()([
@@ -75,6 +76,7 @@ const JOB_REQUEST_KEYS = exactKeys<JobRequestResponseDto>()([
 const SERVICE_CATEGORY_KEYS = exactKeys<ServiceCategoryResponseDto>()([
   "id",
   "name",
+  "iconUrl",
   "priceBandMin",
   "priceBandMax",
 ]);

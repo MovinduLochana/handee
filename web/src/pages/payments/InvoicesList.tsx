@@ -148,7 +148,13 @@ export default function InvoicesList() {
                     <td>
                       <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
                         <FileText size={16} color="var(--accent)" />
-                        <span style={{ fontWeight: 700, fontFamily: "monospace", color: "var(--text-h)" }}>
+                        <span
+                          style={{
+                            fontWeight: 700,
+                            fontFamily: "monospace",
+                            color: "var(--text-h)",
+                          }}
+                        >
                           INV-{inv.id.slice(0, 8).toUpperCase()}
                         </span>
                       </div>

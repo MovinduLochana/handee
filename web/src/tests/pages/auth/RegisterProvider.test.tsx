@@ -51,7 +51,10 @@ describe("RegisterProvider Component", () => {
       fullName: "Corp",
       email: "x",
     });
-    vi.mocked(authApi.login).mockResolvedValueOnce({ accessToken: "token", refreshToken: "ref" } as any);
+    vi.mocked(authApi.login).mockResolvedValueOnce({
+      accessToken: "token",
+      refreshToken: "ref",
+    } as any);
 
     renderRegister();
 

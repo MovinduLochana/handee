@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Users, Clock, AlertOctagon, CheckCircle, Eye, Search } from "lucide-react";
 import { adminApi } from "../../api/admin";
-import { skillCategoryApi } from "../../api/skillCategories";
+import { serviceCategoryApi } from "../../api/serviceCategories";
 import StatusBadge from "../../components/provider/StatusBadge";
 import type { VerificationStatus } from "../../api/types";
 import "./VerificationQueue.css";
@@ -20,8 +20,8 @@ export default function VerificationQueue() {
   });
 
   const { data: categories = [] } = useQuery({
-    queryKey: ["skillCategories"],
-    queryFn: skillCategoryApi.getSkillCategories,
+    queryKey: ["serviceCategories"],
+    queryFn: serviceCategoryApi.getServiceCategories,
   });
 
   const { data: queueData, isLoading: isLoadingQueue } = useQuery({
@@ -30,7 +30,7 @@ export default function VerificationQueue() {
       adminApi.getVerificationQueue({
         status: appliedFilters.status === "All" ? undefined : appliedFilters.status,
         searchTerm: appliedFilters.searchTerm || undefined,
-        skillCategoryId: appliedFilters.skill || undefined,
+        serviceCategoryId: appliedFilters.skill || undefined,
         page: 1,
         pageSize: 50,
       }),
@@ -163,7 +163,10 @@ export default function VerificationQueue() {
         <div className="filter-group">
           <label>Search Provider</label>
           <div style={{ position: "relative" }}>
-            <Search size={16} style={{ position: "absolute", left: 12, top: 13, color: "var(--text-muted)" }} />
+            <Search
+              size={16}
+              style={{ position: "absolute", left: 12, top: 13, color: "var(--text-muted)" }}
+            />
             <input
               type="text"
               className="filter-input"
@@ -192,11 +195,17 @@ export default function VerificationQueue() {
         </div>
 
         <div className="filter-group">
-          <label>Skill Category</label>
-          <select className="filter-input" value={skillFilter} onChange={(e) => setSkillFilter(e.target.value)}>
+          <label>Service Category</label>
+          <select
+            className="filter-input"
+            value={skillFilter}
+            onChange={(e) => setSkillFilter(e.target.value)}
+          >
             <option value="">All Categories</option>
             {categories.map((c) => (
-              <option key={c.id} value={c.id}>{c.name}</option>
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
             ))}
           </select>
         </div>
@@ -264,7 +273,7 @@ export default function VerificationQueue() {
                   </td>
                   <td>
                     <div style={{ display: "flex", gap: "4px", flexWrap: "wrap" }}>
-                      {provider.skillCategories.slice(0, 2).map((s) => (
+                      {provider.serviceCategories.slice(0, 2).map((s) => (
                         <span
                           key={s.id}
                           style={{
@@ -278,7 +287,7 @@ export default function VerificationQueue() {
                           {s.name}
                         </span>
                       ))}
-                      {provider.skillCategories.length > 2 && (
+                      {provider.serviceCategories.length > 2 && (
                         <span
                           style={{
                             fontSize: "0.75rem",
@@ -286,7 +295,7 @@ export default function VerificationQueue() {
                             color: "var(--text-muted)",
                           }}
                         >
-                          +{provider.skillCategories.length - 2} more
+                          +{provider.serviceCategories.length - 2} more
                         </span>
                       )}
                     </div>

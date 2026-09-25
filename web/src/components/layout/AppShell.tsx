@@ -10,6 +10,7 @@ import {
   Star,
   Users,
   UserCircle,
+  Package,
   LayoutDashboard,
   ClipboardList,
   CalendarCheck,
@@ -78,6 +79,7 @@ export default function AppShell() {
     // Provider
     { name: "Verification Status", to: "/provider/status", icon: CheckSquare, show: isProvider },
     { name: "My Profile", to: "/provider/profile", icon: UserCircle, show: isProvider },
+    { name: "Service Listings", to: "/provider/service-listings", icon: Package, show: isProvider },
     { name: "My Reviews", to: "/provider/reviews", icon: Star, show: isProvider },
     { name: "Payouts & Earnings", to: "/provider/payouts", icon: DollarSign, show: isProvider },
 

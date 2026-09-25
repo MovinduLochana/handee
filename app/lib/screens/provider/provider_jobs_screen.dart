@@ -120,7 +120,7 @@ class _ProviderJobsScreenState extends State<ProviderJobsScreen> with SingleTick
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      booking.jobRequest?.category ?? 'Plumbing Service',
+                      booking.jobRequest?.categoryName ?? 'Plumbing Service',
                       style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
                     ),
                     StatusBadge(status: booking.status),

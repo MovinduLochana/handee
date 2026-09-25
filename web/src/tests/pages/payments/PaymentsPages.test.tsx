@@ -49,15 +49,18 @@ describe("Payments & Invoicing Pages", () => {
   const renderWithProviders = (ui: React.ReactElement, initialRoute: string = "/") => {
     return render(
       <QueryClientProvider client={queryClient}>
-        <MemoryRouter initialEntries={[initialRoute]}>
-          {ui}
-        </MemoryRouter>
-      </QueryClientProvider>
+        <MemoryRouter initialEntries={[initialRoute]}>{ui}</MemoryRouter>
+      </QueryClientProvider>,
     );
   };
 
   it("renders InvoicesList and displays customer invoices with status badge", async () => {
-    const mockUser = { id: "cust-123", fullName: "Jane Doe", email: "jane@test.com", roles: ["Customer"] };
+    const mockUser = {
+      id: "cust-123",
+      fullName: "Jane Doe",
+      email: "jane@test.com",
+      roles: ["Customer"],
+    };
     const mockInvoices: InvoiceDto[] = [
       {
         id: "inv-001",
@@ -112,7 +115,7 @@ describe("Payments & Invoicing Pages", () => {
             <Route path="/invoices/:id" element={<InvoiceDetail />} />
           </Routes>
         </MemoryRouter>
-      </QueryClientProvider>
+      </QueryClientProvider>,
     );
 
     await waitFor(() => {
@@ -157,7 +160,7 @@ describe("Payments & Invoicing Pages", () => {
             <Route path="/invoices/:id/pay" element={<CheckoutPayment />} />
           </Routes>
         </MemoryRouter>
-      </QueryClientProvider>
+      </QueryClientProvider>,
     );
 
     await waitFor(() => {
@@ -173,7 +176,7 @@ describe("Payments & Invoicing Pages", () => {
           invoiceId: "inv-checkout-1",
           paymentMethod: "card",
           last4: "4242",
-        })
+        }),
       );
       expect(screen.getByText("Payment Successful!")).toBeInTheDocument();
       expect(screen.getByText("ch_sbx_test123")).toBeInTheDocument();
@@ -203,7 +206,7 @@ describe("Payments & Invoicing Pages", () => {
             <Route path="/bookings/:id/quote" element={<QuoteReview />} />
           </Routes>
         </MemoryRouter>
-      </QueryClientProvider>
+      </QueryClientProvider>,
     );
 
     await waitFor(() => {
@@ -215,7 +218,12 @@ describe("Payments & Invoicing Pages", () => {
   });
 
   it("renders ProviderPayoutDashboard with 85% net earnings and metrics", async () => {
-    const mockUser = { id: "prov-1", fullName: "Sam Provider", email: "sam@pro.com", roles: ["Provider"] };
+    const mockUser = {
+      id: "prov-1",
+      fullName: "Sam Provider",
+      email: "sam@pro.com",
+      roles: ["Provider"],
+    };
     const mockSummary = {
       totalEarnings: 85000,
       availableBalance: 25000,

@@ -32,7 +32,7 @@ public class ProviderSearchServiceTests
         UserId = Guid.NewGuid(),
         VerificationStatus = VerificationStatus.Verified,
         IsAvailableForWork = true,
-        SkillCategories = [],
+        ServiceCategories = [],
         Certifications = [],
         AuditLogs = [],
         User = new ApplicationUser { FullName = "Test User" },

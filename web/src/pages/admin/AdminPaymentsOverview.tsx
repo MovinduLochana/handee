@@ -1,21 +1,18 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { paymentsApi } from "../../api/payments";
-import {
-  DollarSign,
-  TrendingUp,
-  CreditCard,
-  Clock,
-  RefreshCw,
-  ShieldCheck,
-} from "lucide-react";
+import { DollarSign, TrendingUp, CreditCard, Clock, RefreshCw, ShieldCheck } from "lucide-react";
 import "../payments/Payments.css";
 
 export default function AdminPaymentsOverview() {
   const queryClient = useQueryClient();
   const [filter, setFilter] = useState<string>("ALL");
 
-  const { data: overview, isLoading, refetch } = useQuery({
+  const {
+    data: overview,
+    isLoading,
+    refetch,
+  } = useQuery({
     queryKey: ["adminPaymentsOverview"],
     queryFn: paymentsApi.getAdminPayoutsOverview,
   });
@@ -37,7 +34,14 @@ export default function AdminPaymentsOverview() {
     <div className="payments-page">
       <div className="payments-header">
         <div>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.25rem" }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.5rem",
+              marginBottom: "0.25rem",
+            }}
+          >
             <span className="sandbox-badge">
               <ShieldCheck size={14} /> Financial Audit & Reconciliation
             </span>
@@ -84,9 +88,7 @@ export default function AdminPaymentsOverview() {
           </div>
           <div className="stat-content">
             <span className="stat-label">Disbursed to Providers (85%)</span>
-            <span className="stat-value">
-              LKR {(overview?.totalPaidOut ?? 0).toLocaleString()}
-            </span>
+            <span className="stat-value">LKR {(overview?.totalPaidOut ?? 0).toLocaleString()}</span>
           </div>
         </div>
 
@@ -96,9 +98,7 @@ export default function AdminPaymentsOverview() {
           </div>
           <div className="stat-content">
             <span className="stat-label">Pending Payout Queue</span>
-            <span className="stat-value">
-              {overview?.pendingPayoutCount ?? 0}
-            </span>
+            <span className="stat-value">{overview?.pendingPayoutCount ?? 0}</span>
           </div>
         </div>
       </div>
@@ -172,9 +172,7 @@ export default function AdminPaymentsOverview() {
                       LKR {payout.netAmount.toLocaleString()}
                     </td>
                     <td>
-                      <span className={`badge-status ${payout.status}`}>
-                        {payout.status}
-                      </span>
+                      <span className={`badge-status ${payout.status}`}>{payout.status}</span>
                     </td>
                     <td style={{ textAlign: "right" }}>
                       {payout.status === "Pending" ? (
