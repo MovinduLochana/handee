@@ -263,6 +263,7 @@ public class ListingBookingServiceTests
                 listing.FixedPrice,
                 It.IsAny<CancellationToken>()),
             Times.Once);
+    }
       
     [Fact]  
     public async Task CreateFromListingAsync_ConvertsScheduledAtToUtc_NormalizesTime()

@@ -310,6 +310,7 @@ public class BookingService : IBookingService
             tx = await _db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, ct);
         }
 
+        Booking booking;
         try
         {
             // Check provider availability slots if any configured
@@ -359,7 +360,7 @@ public class BookingService : IBookingService
 
             var customer = await _db.Users.FindAsync([customerId], ct);
 
-            var booking = new Booking
+            booking = new Booking
             {
                 Id = Guid.NewGuid(),
                 ServiceListingId = listing.Id,
@@ -391,8 +392,6 @@ public class BookingService : IBookingService
             {
                 await tx.CommitAsync(ct);
             }
-
-            return ToDto(booking);
         }
         catch (OperationCanceledException)
         {
