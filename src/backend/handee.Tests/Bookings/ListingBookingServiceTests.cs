@@ -2,8 +2,10 @@ using handee.API.Data;
 using handee.API.DTO;
 using handee.API.Entities;
 using handee.API.Exceptions;
+using handee.API.Interfaces;
 using handee.API.Services;
 using Microsoft.EntityFrameworkCore;
+using Moq;
 using Xunit;
 
 namespace handee.Tests.Bookings;
@@ -238,5 +240,28 @@ public class ListingBookingServiceTests
         // Appears in provider's all bookings
         var providerBookings = await sut.GetForProviderAsync(providerId);
         Assert.Contains(providerBookings, b => b.Id == created.Id);
+    }
+
+    [Fact]
+    public async Task CreateFromListingAsync_Emits_RealTime_Notification_To_Provider()
+    {
+        var (db, listing, customerId, providerId) = await SeedListingAsync(isActive: true);
+        var mockNotificationService = new Mock<IBookingNotificationService>();
+        var sut = new BookingService(db, new InvoiceService(db), mockNotificationService.Object);
+
+        var bookingTime = DateTimeOffset.UtcNow.AddDays(3);
+        var dto = new CreateListingBookingDto(listing.Id, bookingTime);
+
+        var created = await sut.CreateFromListingAsync(dto, customerId);
+
+        mockNotificationService.Verify(
+            n => n.NotifyJobDispatchedAsync(
+                providerId,
+                created.Id,
+                null,
+                listing.Category.Name,
+                listing.FixedPrice,
+                It.IsAny<CancellationToken>()),
+            Times.Once);
     }
 }

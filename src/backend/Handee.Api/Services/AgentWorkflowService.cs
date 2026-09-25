@@ -14,17 +14,29 @@ public class AgentWorkflowService : IAgentWorkflowService
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly IInvoiceService _invoiceService;
     private readonly ILogger<AgentWorkflowService> _logger;
+    private readonly IBookingNotificationService? _notificationService;
 
     public AgentWorkflowService(
         AppDbContext db,
         IHttpClientFactory httpClientFactory,
         IInvoiceService invoiceService,
         ILogger<AgentWorkflowService> logger)
+        : this(db, httpClientFactory, invoiceService, logger, null)
+    {
+    }
+
+    public AgentWorkflowService(
+        AppDbContext db,
+        IHttpClientFactory httpClientFactory,
+        IInvoiceService invoiceService,
+        ILogger<AgentWorkflowService> logger,
+        IBookingNotificationService? notificationService)
     {
         _db = db;
         _httpClientFactory = httpClientFactory;
         _invoiceService = invoiceService;
         _logger = logger;
+        _notificationService = notificationService;
     }
 
 
@@ -130,6 +142,24 @@ public class AgentWorkflowService : IAgentWorkflowService
                 catch (Exception ex)
                 {
                     _logger.LogWarning(ex, "Failed to auto-create invoice during approval-to-payment handoff for booking {BookingId}", booking.Id);
+                }
+
+                if (_notificationService != null)
+                {
+                    try
+                    {
+                        await _notificationService.NotifyJobDispatchedAsync(
+                            workflow.SelectedProviderId.Value,
+                            booking.Id,
+                            jobRequest.Id,
+                            categoryName,
+                            estimatedPrice,
+                            ct);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Failed to send dispatch notification for booking {BookingId}", booking.Id);
+                    }
                 }
             }
         }
@@ -276,6 +306,24 @@ public class AgentWorkflowService : IAgentWorkflowService
                 catch (Exception ex)
                 {
                     _logger.LogWarning(ex, "Failed to create invoice during Admin approval-to-payment handoff for booking {BookingId}", booking.Id);
+                }
+
+                if (_notificationService != null)
+                {
+                    try
+                    {
+                        await _notificationService.NotifyJobDispatchedAsync(
+                            workflow.SelectedProviderId.Value,
+                            booking.Id,
+                            workflow.JobRequestId,
+                            categoryName,
+                            estimatedPrice,
+                            ct);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Failed to send dispatch notification for booking {BookingId}", booking.Id);
+                    }
                 }
             }
         }

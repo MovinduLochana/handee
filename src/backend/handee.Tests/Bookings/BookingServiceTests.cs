@@ -6,6 +6,7 @@ using handee.API.Exceptions;
 using handee.API.Interfaces;
 using handee.API.Services;
 using Microsoft.EntityFrameworkCore;
+using Moq;
 using Xunit;
 
 namespace handee.Tests.Bookings;
@@ -239,6 +240,22 @@ public class BookingServiceTests
             booking.Id, new UpdateBookingStatusDto(BookingStatus.InProgress), Guid.NewGuid(), isRequesterAdmin: true);
 
         Assert.Equal("InProgress", result.Status);
+    }
+
+    [Fact]
+    public async Task UpdateStatusAsync_Emits_RealTime_Notification_On_Successful_Transition()
+    {
+        var (db, booking, customerId, providerId) = await SeedBookingAsync(BookingStatus.Requested);
+        var mockNotificationService = new Mock<IBookingNotificationService>();
+        var sut = new BookingService(db, new Mock<IInvoiceService>().Object, mockNotificationService.Object);
+
+        await sut.UpdateStatusAsync(
+            booking.Id, new UpdateBookingStatusDto(BookingStatus.Accepted), providerId, isRequesterAdmin: false);
+
+        mockNotificationService.Verify(
+            n => n.NotifyBookingStatusChangedAsync(
+                booking.Id, customerId, providerId, BookingStatus.Accepted, It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>()),
+            Times.Once);
     }
 
     // ── UpdateStatusAsync: wrong party for an otherwise-legal transition ───
