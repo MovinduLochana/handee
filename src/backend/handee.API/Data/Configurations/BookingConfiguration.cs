@@ -18,22 +18,24 @@ public class BookingConfiguration : IEntityTypeConfiguration<Booking>
         builder.HasOne(b => b.Provider)
             .WithMany()
             .HasForeignKey(b => b.ProviderId)
-            .OnDelete(DeleteBehavior.Restrict);
+            .OnDelete(DeleteBehavior.Restrict)
+            .IsRequired(false);
 
         builder.HasOne(b => b.Customer)
             .WithMany()
             .HasForeignKey(b => b.CustomerId)
-            .OnDelete(DeleteBehavior.Restrict);
+            .OnDelete(DeleteBehavior.Restrict)
+            .IsRequired(false);
 
         builder.Property(b => b.Status)
             .HasConversion<string>()
             .HasMaxLength(20)
             .IsRequired();
 
-        // ServiceListingId has no navigation/FK relationship yet (the entity
-        // doesn't exist), so it needs an explicit index — EF only auto-indexes
-        // configured foreign keys.
-        builder.HasIndex(b => b.ServiceListingId);
+        builder.HasOne(b => b.ServiceListing)
+            .WithMany()
+            .HasForeignKey(b => b.ServiceListingId)
+            .OnDelete(DeleteBehavior.SetNull);
 
         builder.HasIndex(b => b.Status);
     }

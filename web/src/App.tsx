@@ -26,6 +26,7 @@ import ProviderOnboarding from "./pages/provider/ProviderOnboarding";
 import SubmitVerification from "./pages/provider/SubmitVerification";
 import VerificationStatusTracker from "./pages/provider/VerificationStatus";
 import ProviderProfile from "./pages/provider/ProviderProfile";
+import ProviderServiceListings from "./pages/provider/ProviderServiceListings";
 import ProviderReviews from "./pages/provider/ProviderReviews";
 import PublicProviderProfile from "./pages/public/PublicProviderProfile";
 import ProviderSearch from "./pages/public/ProviderSearch";
@@ -34,6 +35,21 @@ import ProviderSearch from "./pages/public/ProviderSearch";
 import VerificationQueue from "./pages/admin/VerificationQueue";
 import VerificationDetail from "./pages/admin/VerificationDetail";
 import ProviderDirectory from "./pages/admin/ProviderDirectory";
+import BookingOverview from "./pages/admin/BookingOverview";
+import JobRequestsManagement from "./pages/admin/JobRequestsManagement";
+import JobRequestDetail from "./pages/admin/JobRequestDetail";
+import BookingsManagement from "./pages/admin/BookingsManagement";
+import BookingDetail from "./pages/admin/BookingDetail";
+
+// Payments & Invoicing Pages
+import QuoteReview from "./pages/payments/QuoteReview";
+import InvoicesList from "./pages/payments/InvoicesList";
+import InvoiceDetail from "./pages/payments/InvoiceDetail";
+import CheckoutPayment from "./pages/payments/CheckoutPayment";
+import PaymentMethods from "./pages/payments/PaymentMethods";
+import ProviderPayoutDashboard from "./pages/provider/ProviderPayoutDashboard";
+import ProviderPayoutHistory from "./pages/provider/ProviderPayoutHistory";
+import AdminPaymentsOverview from "./pages/admin/AdminPaymentsOverview";
 
 function App() {
   return (
@@ -63,17 +79,33 @@ function App() {
             <Route path="/account" element={<AccountSettings />} />
             <Route path="/notifications" element={<Notifications />} />
 
+            {/* Payments & Invoicing */}
+            <Route path="/bookings/:id/quote" element={<QuoteReview />} />
+            <Route path="/invoices" element={<InvoicesList />} />
+            <Route path="/invoices/:id" element={<InvoiceDetail />} />
+            <Route path="/invoices/:id/pay" element={<CheckoutPayment />} />
+            <Route path="/account/payment-methods" element={<PaymentMethods />} />
+
             {/* Provider specific dashboard routes */}
             <Route path="/provider/submit-verification" element={<SubmitVerification />} />
             <Route path="/provider/status" element={<VerificationStatusTracker />} />
             <Route path="/provider/profile" element={<ProviderProfile />} />
+            <Route path="/provider/service-listings" element={<ProviderServiceListings />} />
             <Route path="/provider/reviews" element={<ProviderReviews />} />
+            <Route path="/provider/payouts" element={<ProviderPayoutDashboard />} />
+            <Route path="/provider/payouts/history" element={<ProviderPayoutHistory />} />
 
             {/* Admin specific */}
             <Route path="/admin/agent-workflow" element={<AgentWorkflow />} />
             <Route path="/admin/verifications" element={<VerificationQueue />} />
             <Route path="/admin/verifications/:id" element={<VerificationDetail />} />
             <Route path="/admin/providers" element={<ProviderDirectory />} />
+            <Route path="/admin/booking-overview" element={<BookingOverview />} />
+            <Route path="/admin/job-requests" element={<JobRequestsManagement />} />
+            <Route path="/admin/job-requests/:id" element={<JobRequestDetail />} />
+            <Route path="/admin/bookings" element={<BookingsManagement />} />
+            <Route path="/admin/bookings/:id" element={<BookingDetail />} />
+            <Route path="/admin/payments" element={<AdminPaymentsOverview />} />
           </Route>
 
           {/* CATCH ALL (404) */}

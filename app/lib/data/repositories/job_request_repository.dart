@@ -16,7 +16,11 @@ class JobRequestRepository {
   /// ServiceCategory row (see ServiceCategoryRepository) — the backend rejects
   /// an empty/absent Guid via [Required].
   Future<JobRequestModel> createJobRequest({
+  Future<JobRequestModel> createJobRequest({
     required String serviceCategoryId,
+    required String description,
+    required String location,
+    required String urgency,
     required String description,
     required String location,
     required String urgency,
@@ -25,7 +29,11 @@ class JobRequestRepository {
     List<String> photoUrls = const [],
   }) async {
     final payload = {
+    final payload = {
       'serviceCategoryId': serviceCategoryId,
+      'description': description,
+      'location': location,
+      'urgency': urgency,
       'description': description,
       'location': location,
       'urgency': urgency,

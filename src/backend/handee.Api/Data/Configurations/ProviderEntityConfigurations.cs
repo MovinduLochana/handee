@@ -48,10 +48,10 @@ public class ProviderProfileConfiguration : IEntityTypeConfiguration<ProviderPro
         builder.Property(p => p.ServicesOffered)
             .HasColumnType("text[]");
 
-        // Many-to-many: ProviderProfile ↔ SkillCategory
-        builder.HasMany(p => p.SkillCategories)
-            .WithMany(s => s.Providers)
-            .UsingEntity(j => j.ToTable("ProviderSkillCategories"));
+        // Many-to-many: ProviderProfile ↔ ServiceCategory
+        builder.HasMany(p => p.ServiceCategories)
+            .WithMany()
+            .UsingEntity(j => j.ToTable("ProviderServiceCategories"));
 
         // One-to-many: ProviderProfile → Certification
         builder.HasMany(p => p.Certifications)
@@ -98,17 +98,6 @@ public class CertificationConfiguration : IEntityTypeConfiguration<Certification
     }
 }
 
-public class SkillCategoryConfiguration : IEntityTypeConfiguration<SkillCategory>
-{
-    public void Configure(EntityTypeBuilder<SkillCategory> builder)
-    {
-        builder.HasKey(s => s.Id);
-        builder.Property(s => s.Name).HasMaxLength(100).IsRequired();
-        builder.HasIndex(s => s.Name).IsUnique();
-        builder.Property(s => s.IconUrl).HasMaxLength(500);
-        builder.ToTable("SkillCategories");
-    }
-}
 
 public class VerificationAuditLogConfiguration : IEntityTypeConfiguration<VerificationAuditLog>
 {

@@ -122,6 +122,7 @@ builder.Services.AddScoped<IAgentWorkflowService, AgentWorkflowService>();
 builder.Services.AddScoped<IJobRequestService, JobRequestService>();
 builder.Services.AddScoped<IBookingService, BookingService>();
 builder.Services.AddScoped<IServiceCategoryService, ServiceCategoryService>();
+builder.Services.AddScoped<IServiceListingService, ServiceListingService>();
 builder.Services.AddScoped<IProviderAvailabilityService, ProviderAvailabilityService>();
 
 // Provider Verification & Profiles
@@ -132,11 +133,14 @@ builder.Services.AddScoped<IGoogleMapsService, GoogleMapsService>();
 builder.Services.AddScoped<VerificationService>();
 builder.Services.AddScoped<ProviderProfileService>();
 builder.Services.AddScoped<ProviderTrustService>();
-builder.Services.AddScoped<SkillCategoryService>();
 
 // Reviews
 builder.Services.AddScoped<IReviewRepository, ReviewRepository>();
 builder.Services.AddScoped<ReviewService>();
+
+// Payments & Invoicing
+builder.Services.AddScoped<IInvoiceService, InvoiceService>();
+builder.Services.AddScoped<IPaymentService, PaymentService>();
 
 builder.Services.AddControllers()
     .AddJsonOptions(opts =>
@@ -167,9 +171,6 @@ using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     await dbContext.Database.MigrateAsync();
-    
-    // Seed skill categories
-    await SkillCategorySeeder.SeedAsync(dbContext);
 }
 
 // Seed roles
@@ -198,6 +199,17 @@ using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     await ServiceCategorySeeder.SeedAsync(dbContext);
+}
+
+if (app.Environment.IsDevelopment())
+{
+    // Seed mock data for development
+    using (var scope = app.Services.CreateScope())
+    {
+        var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+        await MockDataSeeder.SeedAsync(dbContext, userManager);
+    }
 }
 
 app.UseAuthentication();

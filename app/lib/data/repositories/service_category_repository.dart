@@ -7,14 +7,23 @@ class ServiceCategoryRepository {
 
   ServiceCategoryRepository({required this.apiClient});
 
-  /// GET /service-categories — public reference data, no auth required.
   Future<List<ServiceCategoryModel>> getCategories() async {
     final response = await apiClient.get(ApiEndpoints.serviceCategories);
+
+    List<dynamic> jsonList = [];
     if (response is List) {
-      return response
-          .map((e) => ServiceCategoryModel.fromJson(e as Map<String, dynamic>))
-          .toList();
+      jsonList = response;
+    } else if (response is Map<String, dynamic>) {
+      if (response.containsKey('data')) {
+        jsonList = response['data'] as List<dynamic>;
+      } else if (response.containsKey('items')) {
+        jsonList = response['items'] as List<dynamic>;
+      }
     }
-    return [];
+
+    return jsonList
+        .map((json) => ServiceCategoryModel.fromJson(json as Map<String, dynamic>))
+        .toList();
+  }
   }
 }

@@ -4,7 +4,7 @@ export type CertificationType = "NIC" | "TradeCertification" | "BusinessRegistra
 export type DocumentReviewStatus = "Pending" | "Approved" | "Rejected";
 
 // ─── Shared Sub-Objects ────────────────────────────────────────────────────
-export interface SkillCategoryDto {
+export interface ServiceCategoryDto {
   id: string;
   name: string;
   iconUrl: string | null;
@@ -43,7 +43,7 @@ export interface ProviderProfileProviderDto {
   servicesOffered: string[];
   isAvailableForWork: boolean;
   availabilityNote: string | null;
-  skillCategories: SkillCategoryDto[];
+  serviceCategories: ServiceCategoryDto[];
   serviceAreaLatitude: number | null;
   serviceAreaLongitude: number | null;
   serviceAreaDisplayName: string | null;
@@ -62,7 +62,7 @@ export interface ProviderProfileProviderDto {
   auditLogs: AuditLogDto[];
 }
 
-export interface ProviderProfileAdminDto extends ProviderProfileProviderDto {}
+export interface ProviderProfileAdminDto extends ProviderProfileProviderDto { }
 
 export interface ProviderProfileCustomerDto {
   id: string;
@@ -76,7 +76,7 @@ export interface ProviderProfileCustomerDto {
   servicesOffered: string[];
   isAvailableForWork: boolean;
   availabilityNote: string | null;
-  skillCategories: SkillCategoryDto[];
+  serviceCategories: ServiceCategoryDto[];
   serviceAreaDisplayName: string | null;
   serviceRadiusKm: number;
   verificationStatus: VerificationStatus;
@@ -95,7 +95,7 @@ export interface UpdateProviderProfileDto {
   servicesOffered?: string[];
   isAvailableForWork?: boolean;
   availabilityNote?: string;
-  skillCategoryIds?: string[];
+  serviceCategoryIds?: string[];
   serviceAreaLatitude?: number;
   serviceAreaLongitude?: number;
   serviceRadiusKm?: number;
@@ -143,7 +143,7 @@ export interface PagedResult<T> {
 export interface ProviderSearchParams {
   searchTerm?: string;
   status?: VerificationStatus;
-  skillCategoryId?: string;
+  serviceCategoryId?: string;
   lat?: number;
   lng?: number;
   radiusKm?: number;
@@ -154,4 +154,131 @@ export interface ProviderSearchParams {
 // ─── Certification Review ──────────────────────────────────────────────────
 export interface ReviewCertificationDto {
   status: DocumentReviewStatus;
+}
+
+// ─── Service Listings ───────────────────────────────────────────────────────
+export interface ServiceListingDto {
+  id: string;
+  providerId: string;
+  serviceCategoryId: string;
+  title: string;
+  description: string;
+  scope: string;
+  availability: string;
+  fixedPrice: number;
+  estimatedDuration: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string | null;
+  serviceCategoryName: string | null;
+  providerFullName: string | null;
+}
+
+export interface CreateServiceListingDto {
+  serviceCategoryId: string;
+  title: string;
+  description: string;
+  scope: string;
+  availability: string;
+  fixedPrice: number;
+  estimatedDuration: string;
+  isActive: boolean;
+}
+
+export interface UpdateServiceListingDto {
+  serviceCategoryId: string;
+  title: string;
+  description: string;
+  scope: string;
+  availability: string;
+  fixedPrice: number;
+  estimatedDuration: string;
+  isActive: boolean;
+// ─── Booking & Scheduling ──────────────────────────────────────────────────
+// Mirrors handee.API DTOs/enums. The API serializes camelCase with
+// JsonStringEnumConverter, and the response DTOs carry enums as
+// `.ToString()` strings, so every enum below is its C# member name.
+// Guid → string, DateTimeOffset → ISO-8601 string, decimal → number.
+
+/** Entities/JobRequest.cs — JobUrgency */
+export type JobUrgency = "Low" | "Medium" | "High" | "Emergency";
+
+/** Entities/JobRequest.cs — JobRequestStatus */
+export type JobRequestStatus = "PendingAiReview" | "Open" | "Cancelled";
+
+/** Entities/Booking.cs — BookingStatus */
+export type BookingStatus = "Requested" | "Accepted" | "InProgress" | "Completed" | "Disputed";
+
+/** DTO/JobRequestResponseDto.cs */
+export interface JobRequestResponseDto {
+  id: string;
+  serviceCategoryId: string;
+  categoryName: string;
+  description: string;
+  photoUrls: string[];
+  location: string;
+  urgency: JobUrgency;
+  budgetMin: number | null;
+  budgetMax: number | null;
+  status: JobRequestStatus;
+  customerId: string;
+  createdAt: string;
+  updatedAt: string | null;
+}
+
+/** DTO/BookingResponseDto.cs — the trailing optional fields are only
+ * populated by the GET-by-id/"mine" queries that include Customer, Provider
+ * and JobRequest; the staff list and the PUT responses leave them null. */
+export interface BookingResponseDto {
+  id: string;
+  jobRequestId: string | null;
+  serviceListingId: string | null;
+  providerId: string;
+  customerId: string;
+  status: BookingStatus;
+  scheduledAt: string | null;
+  createdAt: string;
+  updatedAt: string | null;
+  customerName: string | null;
+  customerPhone: string | null;
+  providerName: string | null;
+  serviceLocation: string | null;
+  price: number | null;
+  category: string | null;
+  description: string | null;
+}
+
+/** DTO/ServiceCategoryResponseDto.cs */
+export interface ServiceCategoryResponseDto {
+  id: string;
+  name: string;
+  priceBandMin: number | null;
+  priceBandMax: number | null;
+}
+
+/** DTO/UpdateBookingStatusDto.cs */
+export interface UpdateBookingStatusDto {
+  status: BookingStatus;
+}
+
+/** DTO/UpdateBookingScheduleDto.cs — null clears the schedule. */
+export interface UpdateBookingScheduleDto {
+  scheduledAt: string | null;
+}
+
+/** Query params of GET /job-requests (JobRequestController.GetForStaff). */
+export interface JobRequestStaffParams {
+  status?: JobRequestStatus;
+  urgency?: JobUrgency;
+  sortDescending?: boolean;
+  page?: number;
+  pageSize?: number;
+}
+
+/** Query params of GET /bookings (BookingController.GetForStaff). */
+export interface BookingStaffParams {
+  status?: BookingStatus;
+  sortDescending?: boolean;
+  page?: number;
+  pageSize?: number;
 }

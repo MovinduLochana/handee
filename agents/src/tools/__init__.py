@@ -2,6 +2,7 @@ from src.tools.domain_tools import classify_job_category, estimate_scope
 from src.tools.action_tools import (
     search_providers,
     estimate_price,
+    estimate_price_detailed,
     check_provider_rating,
     search_service_listings,
     CATEGORY_BENCHMARKS,
@@ -13,6 +14,7 @@ __all__ = [
     "estimate_scope",
     "search_providers",
     "estimate_price",
+    "estimate_price_detailed",
     "check_provider_rating",
     "search_service_listings",
     "CATEGORY_BENCHMARKS",

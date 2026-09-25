@@ -2,14 +2,20 @@ using handee.API.Data;
 using handee.API.DTO;
 using handee.API.Entities;
 using handee.API.Exceptions;
+using handee.API.Interfaces;
 using handee.API.Services;
 using Microsoft.EntityFrameworkCore;
+using Moq;
 using Xunit;
+using handee.API.Interfaces;
+using Moq;
 
 namespace handee.Tests.Bookings;
 
 public class JobRequestServiceTests
 {
+    private static JobRequestService CreateSut(AppDbContext db) => new(db, new Mock<IAgentWorkflowService>().Object);
+
     private static AppDbContext CreateContext()
     {
         var options = new DbContextOptionsBuilder<AppDbContext>()
@@ -43,7 +49,7 @@ public class JobRequestServiceTests
     {
         using var db = CreateContext();
         var category = await SeedCategoryAsync(db);
-        var sut = new JobRequestService(db);
+        var sut = CreateSut(db);
         var customerId = Guid.NewGuid();
 
         var result = await sut.CreateAsync(customerId, SampleCreateDto(category.Id));
@@ -60,7 +66,7 @@ public class JobRequestServiceTests
     public async Task CreateAsync_Throws_NotFound_When_ServiceCategoryId_Invalid()
     {
         using var db = CreateContext();
-        var sut = new JobRequestService(db);
+        var sut = CreateSut(db);
 
         await Assert.ThrowsAsync<NotFoundException>(() =>
             sut.CreateAsync(Guid.NewGuid(), SampleCreateDto(Guid.NewGuid())));
@@ -82,7 +88,7 @@ public class JobRequestServiceTests
         db.JobRequests.Add(jobRequest);
         await db.SaveChangesAsync();
 
-        var sut = new JobRequestService(db);
+        var sut = CreateSut(db);
         var result = await sut.GetByIdAsync(jobRequest.Id, customerId, isRequesterAdmin: false);
 
         Assert.NotNull(result);
@@ -102,7 +108,7 @@ public class JobRequestServiceTests
         db.JobRequests.Add(jobRequest);
         await db.SaveChangesAsync();
 
-        var sut = new JobRequestService(db);
+        var sut = CreateSut(db);
         var result = await sut.GetByIdAsync(jobRequest.Id, Guid.NewGuid(), isRequesterAdmin: true);
 
         Assert.NotNull(result);
@@ -120,7 +126,7 @@ public class JobRequestServiceTests
         db.JobRequests.Add(jobRequest);
         await db.SaveChangesAsync();
 
-        var sut = new JobRequestService(db);
+        var sut = CreateSut(db);
         var result = await sut.GetByIdAsync(jobRequest.Id, Guid.NewGuid(), isRequesterAdmin: false);
 
         Assert.Null(result);
@@ -130,7 +136,7 @@ public class JobRequestServiceTests
     public async Task GetByIdAsync_Returns_Null_When_Not_Found()
     {
         using var db = CreateContext();
-        var sut = new JobRequestService(db);
+        var sut = CreateSut(db);
 
         var result = await sut.GetByIdAsync(Guid.NewGuid(), Guid.NewGuid(), isRequesterAdmin: false);
 
@@ -151,7 +157,7 @@ public class JobRequestServiceTests
             new JobRequest { ServiceCategoryId = category.Id, Description = "d", Location = "l", CustomerId = customerB });
         await db.SaveChangesAsync();
 
-        var sut = new JobRequestService(db);
+        var sut = CreateSut(db);
         var result = await sut.GetForCustomerAsync(customerA);
 
         Assert.Equal(2, result.Count);
@@ -176,7 +182,7 @@ public class JobRequestServiceTests
         }
         await db.SaveChangesAsync();
 
-        var sut = new JobRequestService(db);
+        var sut = CreateSut(db);
         var result = await sut.GetForStaffAsync(
             status: null, urgency: null, sortDescending: true, page: 1, pageSize: 2);
 
@@ -209,7 +215,7 @@ public class JobRequestServiceTests
             });
         await db.SaveChangesAsync();
 
-        var sut = new JobRequestService(db);
+        var sut = CreateSut(db);
         var result = await sut.GetForStaffAsync(
             status: JobRequestStatus.Open, urgency: JobUrgency.High,
             sortDescending: true, page: 1, pageSize: 20);

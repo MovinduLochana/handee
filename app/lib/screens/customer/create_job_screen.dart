@@ -8,6 +8,7 @@ import '../../core/constants/colors.dart';
 import '../../data/models/service_category_model.dart';
 import '../../data/repositories/service_category_repository.dart';
 import '../../providers/job_request_provider.dart';
+import '../../providers/service_category_provider.dart';
 import '../../widgets/custom_button.dart';
 import 'booking_tracker_screen.dart';
 
@@ -22,6 +23,7 @@ class CreateJobScreen extends StatefulWidget {
 
 class _CreateJobScreenState extends State<CreateJobScreen> {
   final _formKey = GlobalKey<FormState>();
+  String? _selectedCategoryId;
   final _descController = TextEditingController();
   final _minBudgetController = TextEditingController(text: '3000');
   final _maxBudgetController = TextEditingController(text: '8000');
@@ -91,6 +93,7 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
     }
     return categories.first.id;
   }
+  }
 
   @override
   void dispose() {
@@ -138,6 +141,7 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
 
   Future<void> _submitJob() async {
     if (!_formKey.currentState!.validate()) return;
+    if (_selectedCategory == null) return; // Add null check for category
 
     final categoryId = _selectedCategoryId;
     if (categoryId == null || categoryId.isEmpty) {
@@ -159,6 +163,9 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
     // files here and send the returned URLs.
     final request = await provider.submitInstantMatch(
       serviceCategoryId: categoryId,
+      description: _descController.text.trim(),
+      location: _selectedLocation,
+      urgency: _selectedUrgency,
       description: _descController.text.trim(),
       location: _selectedLocation,
       urgency: _selectedUrgency,
@@ -264,7 +271,7 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                 )
               else
                 DropdownButtonFormField<String>(
-                  initialValue: _selectedCategoryId,
+                  value: _selectedCategoryId,
                   isExpanded: true,
                   decoration: const InputDecoration(
                     prefixIcon: Icon(Icons.category_outlined, color: AppColors.textMuted),
@@ -276,7 +283,28 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                     );
                   }).toList(),
                   onChanged: (val) {
-                    if (val != null) setState(() => _selectedCategoryId = val);
+                    if (val != null) {
+                      setState(() => _selectedCategoryId = val);
+
+                      final category = _categories.firstWhere(
+                        (c) => c.id == val,
+                        orElse: () => ServiceCategoryModel(
+                          id: '',
+                          name: '',
+                        ),
+                      );
+
+                      if (category.id.isNotEmpty) {
+                        final minBand = category.priceBandMin ?? 0;
+                        final maxBand = category.priceBandMax ?? 0;
+                        if (minBand > 0) {
+                          _minBudgetController.text = minBand.toStringAsFixed(0);
+                        }
+                        if (maxBand > 0) {
+                          _maxBudgetController.text = maxBand.toStringAsFixed(0);
+                        }
+                      }
+                    }
                   },
                   validator: (val) =>
                       (val == null || val.isEmpty) ? 'Please select a service category' : null,
