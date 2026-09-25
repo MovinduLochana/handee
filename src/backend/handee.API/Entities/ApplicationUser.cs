@@ -6,6 +6,7 @@ public enum ProviderVerificationStatus
 {
     Unverified,
     Pending,
+    InReview,
     Verified,
     Rejected
 }

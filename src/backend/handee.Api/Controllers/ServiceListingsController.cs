@@ -1,5 +1,8 @@
 using System.Security.Claims;
+using handee.API.Common.Extensions;
+using handee.API.DTO;
 using handee.API.DTO.ServiceListing;
+using handee.API.Exceptions;
 using handee.API.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -42,7 +45,7 @@ public class ServiceListingsController : ControllerBase
     [Authorize(Roles = "Provider,Admin")]
     public async Task<IActionResult> GetMyListings()
     {
-        var providerId = GetUserId();
+        var providerId = User.GetUserId();
         if (providerId is null) return Unauthorized();
 
         var result = await _service.GetProviderListingsAsync(providerId.Value);
@@ -53,7 +56,7 @@ public class ServiceListingsController : ControllerBase
     [Authorize(Roles = "Provider,Admin")]
     public async Task<IActionResult> CreateListing([FromBody] CreateServiceListingDto dto)
     {
-        var providerId = GetUserId();
+        var providerId = User.GetUserId();
         if (providerId is null) return Unauthorized();
 
         var result = await _service.CreateListingAsync(providerId.Value, dto);
@@ -64,7 +67,7 @@ public class ServiceListingsController : ControllerBase
     [Authorize(Roles = "Provider,Admin")]
     public async Task<IActionResult> UpdateListing(Guid id, [FromBody] UpdateServiceListingDto dto)
     {
-        var providerId = GetUserId();
+        var providerId = User.GetUserId();
         if (providerId is null) return Unauthorized();
 
         var result = await _service.UpdateListingAsync(id, providerId.Value, dto);
@@ -75,7 +78,7 @@ public class ServiceListingsController : ControllerBase
     [Authorize(Roles = "Provider,Admin")]
     public async Task<IActionResult> ToggleStatus(Guid id, [FromBody] handee.API.DTO.ServiceListing.ActiveStatusDto dto)
     {
-        var providerId = GetUserId();
+        var providerId = User.GetUserId();
         if (providerId is null) return Unauthorized();
 
         await _service.ToggleActiveStatusAsync(providerId.Value, id, dto.IsActive);
@@ -86,16 +89,39 @@ public class ServiceListingsController : ControllerBase
     [Authorize(Roles = "Provider,Admin")]
     public async Task<IActionResult> DeleteListing(Guid id)
     {
-        var providerId = GetUserId();
+        var providerId = User.GetUserId();
         if (providerId is null) return Unauthorized();
 
         await _service.DeleteListingAsync(id, providerId.Value);
         return NoContent();
     }
 
-    private Guid? GetUserId()
+    [HttpPost("{id:guid}/book")]
+    [Authorize(Roles = "Customer")]
+    public async Task<IActionResult> BookListing(
+        Guid id,
+        [FromBody] BookListingRequestDto dto,
+        [FromServices] IBookingService bookingService,
+        CancellationToken ct = default)
     {
-        var claim = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub");
-        return Guid.TryParse(claim, out var id) ? id : null;
+        var customerId = User.GetUserId();
+        if (customerId is null) return Unauthorized();
+
+        try
+        {
+            var result = await bookingService.CreateFromListingAsync(
+                new CreateListingBookingDto(id, dto.ScheduledAt, dto.Notes),
+                customerId.Value,
+                ct);
+            return StatusCode(StatusCodes.Status201Created, result);
+        }
+        catch (NotFoundException ex)
+        {
+            return NotFound(new { error = ex.Message });
+        }
+        catch (ValidationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
     }
 }

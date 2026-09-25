@@ -1,5 +1,6 @@
+using handee.API.Common.Extensions;
 using handee.API.DTO.Review;
-using handee.API.Services;
+using handee.API.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
@@ -10,9 +11,9 @@ namespace handee.API.Controllers;
 [Route("api/reviews")]
 public class ReviewActionController : ControllerBase
 {
-    private readonly ReviewService _reviewService;
+    private readonly IReviewService _reviewService;
 
-    public ReviewActionController(ReviewService reviewService)
+    public ReviewActionController(IReviewService reviewService)
     {
         _reviewService = reviewService;
     }
@@ -24,13 +25,13 @@ public class ReviewActionController : ControllerBase
         [FromBody] UpdateReviewDto dto,
         CancellationToken ct = default)
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (!Guid.TryParse(userId, out var customerId))
+        var customerId = User.GetUserId();
+        if (customerId is null)
         {
             return Unauthorized();
         }
 
-        var review = await _reviewService.UpdateReviewAsync(id, customerId, dto, ct);
+        var review = await _reviewService.UpdateReviewAsync(id, customerId.Value, dto, ct);
         return Ok(review);
     }
 
@@ -41,13 +42,13 @@ public class ReviewActionController : ControllerBase
         IFormFile file,
         CancellationToken ct = default)
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (!Guid.TryParse(userId, out var customerId))
+        var customerId = User.GetUserId();
+        if (customerId is null)
         {
             return Unauthorized();
         }
 
-        var review = await _reviewService.AddPhotoToReviewAsync(id, customerId, file, ct);
+        var review = await _reviewService.AddPhotoToReviewAsync(id, customerId.Value, file, ct);
         return Ok(review);
     }
 
@@ -55,15 +56,15 @@ public class ReviewActionController : ControllerBase
     [Authorize]
     public async Task<IActionResult> DeleteReview(Guid id, CancellationToken ct = default)
     {
-        var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (!Guid.TryParse(userIdString, out var requesterId))
+        var requesterId = User.GetUserId();
+        if (requesterId is null)
         {
             return Unauthorized();
         }
 
         var isAdmin = User.IsInRole("Admin");
 
-        await _reviewService.DeleteReviewAsync(id, requesterId, isAdmin, ct);
+        await _reviewService.DeleteReviewAsync(id, requesterId.Value, isAdmin, ct);
         return NoContent();
     }
 }

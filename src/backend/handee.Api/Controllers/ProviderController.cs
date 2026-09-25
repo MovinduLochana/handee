@@ -1,5 +1,6 @@
+using handee.API.Common.Extensions;
 using handee.API.DTO.Provider;
-using handee.API.Services;
+using handee.API.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
@@ -10,9 +11,9 @@ namespace handee.API.Controllers;
 [Route("api/providers")]
 [Authorize]
 public class ProviderController(
-    ProviderProfileService profileService,
-    VerificationService verificationService,
-    ProviderTrustService trustService,
+    IProviderProfileService profileService,
+    IVerificationService verificationService,
+    IProviderTrustService trustService,
     IConfiguration config,
     ILogger<ProviderController> logger) : ControllerBase
 {
@@ -22,11 +23,12 @@ public class ProviderController(
     [Authorize(Roles = "Provider")]
     public async Task<IActionResult> GetMyProfile(CancellationToken ct)
     {
-        var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        var userId = User.GetUserId();
+        if (userId is null) return Unauthorized();
 
         try
         {
-            var profile = await profileService.GetProfileByUserIdAsync(userId, ct);
+            var profile = await profileService.GetProfileByUserIdAsync(userId.Value, ct);
             return Ok(profile);
         }
         catch (KeyNotFoundException ex)
@@ -46,7 +48,8 @@ public class ProviderController(
         // Providers can only see their own profile (unless Admin)
         if (role == "Provider")
         {
-            var callerId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var callerId = User.GetUserId();
+            if (callerId is null) return Unauthorized();
             var ownerId = await profileService.GetOwnerUserIdAsync(id, ct);
             if (ownerId != callerId)
                 return Forbid();
@@ -112,7 +115,7 @@ public class ProviderController(
     public async Task<IActionResult> UpdateVerification(
         Guid id, [FromBody] VerificationActionDto dto, CancellationToken ct)
     {
-        var adminId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        var adminId = User.GetUserId() ?? Guid.Empty;
 
         try
         {
@@ -187,8 +190,9 @@ public class ProviderController(
 
     private async Task<bool> IsOwnProfile(Guid profileId, CancellationToken ct)
     {
-        var callerId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        var callerId = User.GetUserId();
+        if (callerId is null) return false;
         var ownerId = await profileService.GetOwnerUserIdAsync(profileId, ct);
-        return ownerId == callerId;
+        return ownerId == callerId.Value;
     }
 }

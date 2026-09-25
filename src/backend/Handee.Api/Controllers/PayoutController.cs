@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using handee.API.Common.Extensions;
 using handee.API.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -21,7 +22,7 @@ public class PayoutController : ControllerBase
     [HttpGet("summary")]
     public async Task<IActionResult> GetSummary()
     {
-        var providerId = GetUserId();
+        var providerId = User.GetUserId();
         if (providerId is null) return Unauthorized();
 
         var summary = await _paymentService.GetProviderEarningsSummaryAsync(providerId.Value);
@@ -31,7 +32,7 @@ public class PayoutController : ControllerBase
     [HttpGet("provider/{providerId:guid}/summary")]
     public async Task<IActionResult> GetProviderSummary(Guid providerId)
     {
-        var currentUserId = GetUserId();
+        var currentUserId = User.GetUserId();
         if (currentUserId is null) return Unauthorized();
 
         if (currentUserId.Value != providerId && !User.IsInRole("Admin"))
@@ -44,7 +45,7 @@ public class PayoutController : ControllerBase
     [HttpGet("history")]
     public async Task<IActionResult> GetHistory()
     {
-        var providerId = GetUserId();
+        var providerId = User.GetUserId();
         if (providerId is null) return Unauthorized();
 
         var payouts = await _paymentService.GetProviderPayoutsAsync(providerId.Value);
@@ -54,7 +55,7 @@ public class PayoutController : ControllerBase
     [HttpGet("provider/{providerId:guid}")]
     public async Task<IActionResult> GetByProvider(Guid providerId)
     {
-        var currentUserId = GetUserId();
+        var currentUserId = User.GetUserId();
         if (currentUserId is null) return Unauthorized();
 
         if (currentUserId.Value != providerId && !User.IsInRole("Admin"))
@@ -81,9 +82,4 @@ public class PayoutController : ControllerBase
     }
 
 
-    private Guid? GetUserId()
-    {
-        var claim = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub");
-        return Guid.TryParse(claim, out var id) ? id : null;
-    }
 }

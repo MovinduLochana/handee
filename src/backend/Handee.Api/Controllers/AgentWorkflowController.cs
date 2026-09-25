@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using handee.API.Common.Extensions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using handee.API.DTO;
@@ -9,6 +10,7 @@ namespace handee.API.Controllers;
 
 [ApiController]
 [Route("admin/agent-workflows")]
+[Route("api/admin/agent-workflows")]
 [Authorize(Roles = "Admin")]
 public class AgentWorkflowController : ControllerBase
 {
@@ -49,12 +51,12 @@ public class AgentWorkflowController : ControllerBase
         [FromBody] AdminWorkflowDecisionDto dto,
         CancellationToken ct)
     {
-        var claim = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub");
-        if (!Guid.TryParse(claim, out var adminId)) return Unauthorized();
+        var adminId = User.GetUserId();
+        if (adminId is null) return Unauthorized();
 
         try
         {
-            var result = await _agentWorkflowService.MakeDecisionAsync(id, adminId, dto, ct);
+            var result = await _agentWorkflowService.MakeDecisionAsync(id, adminId.Value, dto, ct);
             return Ok(result);
         }
         catch (NotFoundException ex)

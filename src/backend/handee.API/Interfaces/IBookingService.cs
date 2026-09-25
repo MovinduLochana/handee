@@ -25,4 +25,7 @@ public interface IBookingService
 
     Task<BookingResponseDto> UpdateScheduleAsync(
         Guid bookingId, UpdateBookingScheduleDto dto, Guid requestingUserId, bool isRequesterAdmin);
+
+    Task<BookingResponseDto> CreateFromListingAsync(
+        CreateListingBookingDto dto, Guid customerId, CancellationToken ct = default);
 }

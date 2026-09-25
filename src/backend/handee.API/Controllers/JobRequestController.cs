@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using handee.API.Common.Extensions;
 using handee.API.DTO;
 using handee.API.Entities;
 using handee.API.Interfaces;
@@ -9,6 +10,7 @@ namespace handee.API.Controllers;
 
 [ApiController]
 [Route("job-requests")]
+[Route("api/job-requests")]
 [Authorize]
 public class JobRequestController : ControllerBase
 {
@@ -23,7 +25,7 @@ public class JobRequestController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateJobRequestDto dto)
     {
-        var customerId = GetUserId();
+        var customerId = User.GetUserId();
         if (customerId is null) return Unauthorized();
 
         var result = await _jobRequestService.CreateAsync(customerId.Value, dto);
@@ -34,7 +36,7 @@ public class JobRequestController : ControllerBase
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetById(Guid id)
     {
-        var userId = GetUserId();
+        var userId = User.GetUserId();
         if (userId is null) return Unauthorized();
 
         var result = await _jobRequestService.GetByIdAsync(id, userId.Value, User.IsInRole("Admin"));
@@ -45,7 +47,7 @@ public class JobRequestController : ControllerBase
     [HttpGet("mine")]
     public async Task<IActionResult> GetMine()
     {
-        var customerId = GetUserId();
+        var customerId = User.GetUserId();
         if (customerId is null) return Unauthorized();
 
         var result = await _jobRequestService.GetForCustomerAsync(customerId.Value);
@@ -66,9 +68,4 @@ public class JobRequestController : ControllerBase
         return Ok(result);
     }
 
-    private Guid? GetUserId()
-    {
-        var claim = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub");
-        return Guid.TryParse(claim, out var id) ? id : null;
-    }
 }
