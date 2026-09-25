@@ -14,7 +14,7 @@ public class VerificationService(
     IProviderProfileRepository profileRepo,
     AppDbContext db,
     UserManager<ApplicationUser> userManager,
-    ILogger<VerificationService> logger)
+    ILogger<VerificationService> logger) : IVerificationService
 {
     private static readonly ActivitySource Activity = new("handee.ProviderVerification");
 
@@ -75,7 +75,7 @@ public class VerificationService(
             {
                 VerificationStatus.Verified => ProviderVerificationStatus.Verified,
                 VerificationStatus.Rejected => ProviderVerificationStatus.Rejected,
-                VerificationStatus.InReview => ProviderVerificationStatus.Pending,  // closest match
+                VerificationStatus.InReview => ProviderVerificationStatus.InReview,
                 _ => ProviderVerificationStatus.Pending
             };
             await userManager.UpdateAsync(user);

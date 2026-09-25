@@ -220,6 +220,9 @@ namespace Handee.Api.Data.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
 
+                    b.Property<int>("ApprovalStatusEnum")
+                        .HasColumnType("integer");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -257,6 +260,9 @@ namespace Handee.Api.Data.Migrations
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
+
+                    b.Property<int>("ValidationTierEnum")
+                        .HasColumnType("integer");
 
                     b.Property<string>("WorkflowId")
                         .IsRequired()
@@ -367,6 +373,9 @@ namespace Handee.Api.Data.Migrations
 
                     b.Property<Guid?>("JobRequestId")
                         .HasColumnType("uuid");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("text");
 
                     b.Property<Guid>("ProviderId")
                         .HasColumnType("uuid");
@@ -1134,8 +1143,7 @@ namespace Handee.Api.Data.Migrations
                     b.HasOne("handee.API.Entities.ApplicationUser", "Customer")
                         .WithMany()
                         .HasForeignKey("CustomerId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("handee.API.Entities.JobRequest", "JobRequest")
                         .WithMany()
@@ -1145,8 +1153,7 @@ namespace Handee.Api.Data.Migrations
                     b.HasOne("handee.API.Entities.ApplicationUser", "Provider")
                         .WithMany()
                         .HasForeignKey("ProviderId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("handee.API.Entities.ServiceListing", "ServiceListing")
                         .WithMany()

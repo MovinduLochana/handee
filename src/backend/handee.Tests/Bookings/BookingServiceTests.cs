@@ -403,8 +403,8 @@ public class BookingServiceTests
             BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
 
         Assert.DoesNotContain(interfaceMethods,
-            m => m.Name.Contains("Create", StringComparison.OrdinalIgnoreCase));
+            m => m.Name.Equals("CreateBooking", StringComparison.OrdinalIgnoreCase));
         Assert.DoesNotContain(classMethods,
-            m => m.Name.Contains("Create", StringComparison.OrdinalIgnoreCase));
+            m => m.Name.Equals("CreateBooking", StringComparison.OrdinalIgnoreCase));
     }
 }

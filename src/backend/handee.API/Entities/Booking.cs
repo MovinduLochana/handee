@@ -40,6 +40,8 @@ public class Booking
     // Requested, awaiting provider acceptance).
     public DateTimeOffset? ScheduledAt { get; set; }
 
+    public string? Notes { get; set; }
+
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
     public DateTimeOffset? UpdatedAt { get; set; }
 

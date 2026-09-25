@@ -1,5 +1,20 @@
 namespace handee.API.Entities;
 
+public enum WorkflowValidationTier
+{
+    RequiresHumanApproval,
+    ApprovedForAutoDispatch,
+    ApprovedWithAudit
+}
+
+public enum WorkflowApprovalStatus
+{
+    Pending,
+    Approved,
+    Rejected,
+    Revised
+}
+
 public class AgentWorkflow
 {
     public Guid Id { get; set; } = Guid.NewGuid();
@@ -16,10 +31,52 @@ public class AgentWorkflow
     /// </summary>
     public string ValidationTier { get; set; } = "requires_human_approval";
 
+    public WorkflowValidationTier ValidationTierEnum
+    {
+        get => ParseValidationTier(ValidationTier);
+        set => ValidationTier = FormatValidationTier(value);
+    }
+
     /// <summary>
     /// HITL approval status: pending | approved | rejected | revised
     /// </summary>
     public string ApprovalStatus { get; set; } = "pending";
+
+    public WorkflowApprovalStatus ApprovalStatusEnum
+    {
+        get => ParseApprovalStatus(ApprovalStatus);
+        set => ApprovalStatus = FormatApprovalStatus(value);
+    }
+
+    public static WorkflowValidationTier ParseValidationTier(string? value) => value?.Trim().ToLowerInvariant() switch
+    {
+        "approved_for_auto_dispatch" or "approvedforautodispatch" => WorkflowValidationTier.ApprovedForAutoDispatch,
+        "approved_with_audit" or "approvedwithaudit" => WorkflowValidationTier.ApprovedWithAudit,
+        _ => WorkflowValidationTier.RequiresHumanApproval
+    };
+
+    public static string FormatValidationTier(WorkflowValidationTier tier) => tier switch
+    {
+        WorkflowValidationTier.ApprovedForAutoDispatch => "approved_for_auto_dispatch",
+        WorkflowValidationTier.ApprovedWithAudit => "approved_with_audit",
+        _ => "requires_human_approval"
+    };
+
+    public static WorkflowApprovalStatus ParseApprovalStatus(string? value) => value?.Trim().ToLowerInvariant() switch
+    {
+        "approved" or "approve" => WorkflowApprovalStatus.Approved,
+        "rejected" or "reject" => WorkflowApprovalStatus.Rejected,
+        "revised" or "revise" => WorkflowApprovalStatus.Revised,
+        _ => WorkflowApprovalStatus.Pending
+    };
+
+    public static string FormatApprovalStatus(WorkflowApprovalStatus status) => status switch
+    {
+        WorkflowApprovalStatus.Approved => "approved",
+        WorkflowApprovalStatus.Rejected => "rejected",
+        WorkflowApprovalStatus.Revised => "revised",
+        _ => "pending"
+    };
 
     public decimal? EstimatedPrice { get; set; }
     public Guid? SelectedProviderId { get; set; }
