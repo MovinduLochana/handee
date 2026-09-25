@@ -84,7 +84,9 @@ export const agentsApi = {
     const params: Record<string, string> = {};
     if (tier) params.tier = tier;
     if (status) params.status = status;
-    const response = await api.get<AgentWorkflowResponseDto[]>("/admin/agent-workflows", { params });
+    const response = await api.get<AgentWorkflowResponseDto[]>("/admin/agent-workflows", {
+      params,
+    });
     return response.data;
   },
 
@@ -99,11 +101,18 @@ export const agentsApi = {
   /**
    * Admin: Make decision on high-risk workflow (Approve / Reject).
    */
-  async makeDecision(id: string, decision: "Approve" | "Reject", note?: string): Promise<AgentWorkflowResponseDto> {
-    const response = await api.post<AgentWorkflowResponseDto>(`/admin/agent-workflows/${id}/decision`, {
-      decision,
-      note: note || `Admin decision: ${decision} via Web Portal`,
-    });
+  async makeDecision(
+    id: string,
+    decision: "Approve" | "Reject",
+    note?: string,
+  ): Promise<AgentWorkflowResponseDto> {
+    const response = await api.post<AgentWorkflowResponseDto>(
+      `/admin/agent-workflows/${id}/decision`,
+      {
+        decision,
+        note: note || `Admin decision: ${decision} via Web Portal`,
+      },
+    );
     return response.data;
   },
 
@@ -121,13 +130,16 @@ export const agentsApi = {
   /**
    * Query the conversational AI Assistant.
    */
-  async queryAssistant(query: string, customerId: string = "guest-customer"): Promise<AssistantQueryResponse> {
+  async queryAssistant(
+    query: string,
+    customerId: string = "guest-customer",
+  ): Promise<AssistantQueryResponse> {
     try {
       // Primary: Call Python Agent Service directly
       const response = await axios.post<AssistantQueryResponse>(
         `${AGENT_SERVICE_URL}/api/v1/assistant/query`,
         { customer_id: customerId, query },
-        { headers: { "Content-Type": "application/json" }, timeout: 25000 }
+        { headers: { "Content-Type": "application/json" }, timeout: 25000 },
       );
       return response.data;
     } catch {

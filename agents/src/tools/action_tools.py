@@ -175,8 +175,16 @@ URGENCY_MULTIPLIERS: Dict[str, float] = {
 
 def estimate_price_detailed(input_data: PriceEstimationInput) -> PriceEstimationOutput:
     base_benchmark = CATEGORY_BENCHMARKS.get(input_data.category, 3500.0)
-    complexity_mult = float(input_data.scope.get("price_multiplier", 1.0))
-    urgency_mult = URGENCY_MULTIPLIERS.get(input_data.urgency.lower(), 1.0)
+    if "price_multiplier" in input_data.scope:
+        complexity_mult = float(input_data.scope["price_multiplier"])
+        urgency_mult = URGENCY_MULTIPLIERS.get(input_data.urgency.lower(), 1.0)
+    elif "price_multiplier_min" in input_data.scope and "price_multiplier_max" in input_data.scope:
+        complexity_mult = (float(input_data.scope["price_multiplier_min"]) + float(input_data.scope["price_multiplier_max"])) / 2.0
+        # Urgency factor is already included in scope multipliers by estimate_scope
+        urgency_mult = 1.0
+    else:
+        complexity_mult = 1.0
+        urgency_mult = URGENCY_MULTIPLIERS.get(input_data.urgency.lower(), 1.0)
 
     subtotal = base_benchmark * complexity_mult * urgency_mult
     raw_estimate = subtotal

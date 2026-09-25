@@ -6,7 +6,9 @@ export const PAYMENT_METHODS_EVENT = "handee_payment_methods_updated";
 /**
  * Returns consistent sandbox default cards used across checkout and saved cards.
  */
-export function getDefaultPaymentMethods(holderName: string = "TEST CUSTOMER"): PaymentMethodItem[] {
+export function getDefaultPaymentMethods(
+  holderName: string = "TEST CUSTOMER",
+): PaymentMethodItem[] {
   return [
     {
       id: "pm_stripe_visa",
@@ -55,7 +57,10 @@ function getStorageKey(userId?: string): string {
  * Loads saved cards for the given user from localStorage.
  * Seeds initial sandbox cards if the user doesn't have any yet.
  */
-export function getSavedPaymentMethods(userId?: string, defaultHolderName?: string): PaymentMethodItem[] {
+export function getSavedPaymentMethods(
+  userId?: string,
+  defaultHolderName?: string,
+): PaymentMethodItem[] {
   const key = getStorageKey(userId);
   try {
     const raw = typeof window !== "undefined" ? localStorage.getItem(key) : null;
@@ -87,14 +92,13 @@ export function getSavedPaymentMethods(userId?: string, defaultHolderName?: stri
 export function savePaymentMethod(
   method: Omit<PaymentMethodItem, "id"> & { id?: string },
   userId?: string,
-  defaultHolderName?: string
+  defaultHolderName?: string,
 ): PaymentMethodItem[] {
   const current = getSavedPaymentMethods(userId, defaultHolderName);
   const brand = method.brand || "Visa";
   const id = method.id || `pm_${Date.now()}`;
   const token =
-    method.token ||
-    `tok_${brand.toLowerCase().replace(/[^a-z0-9]/g, "")}_sandbox_${method.last4}`;
+    method.token || `tok_${brand.toLowerCase().replace(/[^a-z0-9]/g, "")}_sandbox_${method.last4}`;
 
   const isFirst = current.length === 0;
   const isDefault = method.isDefault ?? isFirst;
@@ -134,7 +138,11 @@ export function savePaymentMethod(
 /**
  * Sets a specific card as the default across both saved cards and checkout.
  */
-export function setDefaultPaymentMethod(id: string, userId?: string, defaultHolderName?: string): PaymentMethodItem[] {
+export function setDefaultPaymentMethod(
+  id: string,
+  userId?: string,
+  defaultHolderName?: string,
+): PaymentMethodItem[] {
   const current = getSavedPaymentMethods(userId, defaultHolderName);
   const updated = current.map((m) => ({
     ...m,
@@ -156,7 +164,11 @@ export function setDefaultPaymentMethod(id: string, userId?: string, defaultHold
 /**
  * Deletes a card from the vault and updates default selection if needed.
  */
-export function deletePaymentMethod(id: string, userId?: string, defaultHolderName?: string): PaymentMethodItem[] {
+export function deletePaymentMethod(
+  id: string,
+  userId?: string,
+  defaultHolderName?: string,
+): PaymentMethodItem[] {
   const current = getSavedPaymentMethods(userId, defaultHolderName);
   let updated = current.filter((m) => m.id !== id);
 
@@ -182,7 +194,7 @@ export function deletePaymentMethod(id: string, userId?: string, defaultHolderNa
  */
 export function usePaymentMethods(userId?: string, defaultHolderName?: string) {
   const [methods, setMethods] = useState<PaymentMethodItem[]>(() =>
-    getSavedPaymentMethods(userId, defaultHolderName)
+    getSavedPaymentMethods(userId, defaultHolderName),
   );
 
   useEffect(() => {
