@@ -239,4 +239,21 @@ public class ListingBookingServiceTests
         var providerBookings = await sut.GetForProviderAsync(providerId);
         Assert.Contains(providerBookings, b => b.Id == created.Id);
     }
+
+    [Fact]
+    public async Task CreateFromListingAsync_ConvertsScheduledAtToUtc_NormalizesTime()
+    {
+        var (db, listing, customerId, _) = await SeedListingAsync(isActive: true);
+        var sut = new BookingService(db);
+
+        // Schedule at 2:30 PM with UTC+05:30 offset (which is 9:00 AM UTC)
+        var offsetTime = new DateTimeOffset(2027, 6, 1, 14, 30, 0, TimeSpan.FromHours(5.5));
+        var dto = new CreateListingBookingDto(listing.Id, offsetTime);
+
+        var created = await sut.CreateFromListingAsync(dto, customerId);
+
+        Assert.Equal(TimeSpan.Zero, created.ScheduledAt!.Value.Offset);
+        Assert.Equal(9, created.ScheduledAt!.Value.Hour);
+        Assert.Equal(0, created.ScheduledAt!.Value.Minute);
+    }
 }

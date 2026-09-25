@@ -272,80 +272,86 @@ public class BookingService : IBookingService
         if (dto.ScheduledAt < DateTimeOffset.UtcNow)
             throw new ValidationException("Booking scheduled time must be in the future.");
 
-        var startTime = dto.ScheduledAt;
+        var startTime = dto.ScheduledAt.ToUniversalTime();
         var duration = listing.EstimatedDuration > TimeSpan.Zero
             ? listing.EstimatedDuration
             : TimeSpan.FromHours(1);
         var endTime = startTime.Add(duration);
 
-        // Check provider availability slots if any configured
-        var hasSlots = await _db.ProviderAvailabilitySlots
-            .AnyAsync(s => s.ProviderId == listing.ProviderId, ct);
-
-        ProviderAvailabilitySlot? matchingSlot = null;
-        if (hasSlots)
+        Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction? tx = null;
+        if (_db.Database.IsRelational())
         {
-            matchingSlot = await _db.ProviderAvailabilitySlots
-                .FirstOrDefaultAsync(s => s.ProviderId == listing.ProviderId
-                                          && !s.IsBooked
-                                          && s.StartTime <= startTime
-                                          && s.EndTime >= endTime, ct);
-
-            if (matchingSlot == null)
-            {
-                throw new ValidationException("Provider is not available at the requested time slot.");
-            }
+            tx = await _db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, ct);
         }
 
-        // Check for conflicting active bookings
-        var hasConflict = await _db.Bookings
-            .Include(b => b.ServiceListing)
-            .Where(b => b.ProviderId == listing.ProviderId
-                        && b.ScheduledAt != null
-                        && (b.Status == BookingStatus.Requested
-                            || b.Status == BookingStatus.Accepted
-                            || b.Status == BookingStatus.InProgress))
-            .AnyAsync(b => b.ScheduledAt < endTime &&
-                           startTime < b.ScheduledAt.Value.Add(
-                               b.ServiceListing != null && b.ServiceListing.EstimatedDuration > TimeSpan.Zero
-                                   ? b.ServiceListing.EstimatedDuration
-                                   : TimeSpan.FromHours(1)), ct);
-
-        if (hasConflict)
-        {
-            throw new ValidationException("Provider already has an active booking during the requested time slot.");
-        }
-
-        // If slot matched, mark it as booked
-        if (matchingSlot != null)
-        {
-            matchingSlot.IsBooked = true;
-            matchingSlot.UpdatedAt = DateTimeOffset.UtcNow;
-        }
-
-        var customer = await _db.Users.FindAsync([customerId], ct);
-
-        var booking = new Booking
-        {
-            Id = Guid.NewGuid(),
-            ServiceListingId = listing.Id,
-            ProviderId = listing.ProviderId,
-            CustomerId = customerId,
-            Status = BookingStatus.Requested,
-            ScheduledAt = startTime,
-            Notes = dto.Notes,
-            CreatedAt = DateTimeOffset.UtcNow,
-            ServiceListing = listing,
-            Provider = listing.Provider,
-            Customer = customer!
-        };
-
-        _db.Bookings.Add(booking);
-        await _db.SaveChangesAsync(ct);
-
-        // Auto-generate invoice reflecting listing's fixed price and fee breakdown
         try
         {
+            // Check provider availability slots if any configured
+            var hasSlots = await _db.ProviderAvailabilitySlots
+                .AnyAsync(s => s.ProviderId == listing.ProviderId, ct);
+
+            ProviderAvailabilitySlot? matchingSlot = null;
+            if (hasSlots)
+            {
+                matchingSlot = await _db.ProviderAvailabilitySlots
+                    .FirstOrDefaultAsync(s => s.ProviderId == listing.ProviderId
+                                              && !s.IsBooked
+                                              && s.StartTime <= startTime
+                                              && s.EndTime >= endTime, ct);
+
+                if (matchingSlot == null)
+                {
+                    throw new ValidationException("Provider is not available at the requested time slot.");
+                }
+            }
+
+            // Check for conflicting active bookings
+            var hasConflict = await _db.Bookings
+                .Include(b => b.ServiceListing)
+                .Where(b => b.ProviderId == listing.ProviderId
+                            && b.ScheduledAt != null
+                            && (b.Status == BookingStatus.Requested
+                                || b.Status == BookingStatus.Accepted
+                                || b.Status == BookingStatus.InProgress))
+                .AnyAsync(b => b.ScheduledAt < endTime &&
+                               startTime < b.ScheduledAt.Value.AddMinutes(
+                                   b.ServiceListing != null && b.ServiceListing.EstimatedDuration > TimeSpan.Zero
+                                       ? b.ServiceListing.EstimatedDuration.TotalMinutes
+                                       : 60), ct);
+
+            if (hasConflict)
+            {
+                throw new ValidationException("Provider already has an active booking during the requested time slot.");
+            }
+
+            // If slot matched, mark it as booked
+            if (matchingSlot != null)
+            {
+                matchingSlot.IsBooked = true;
+                matchingSlot.UpdatedAt = DateTimeOffset.UtcNow;
+            }
+
+            var customer = await _db.Users.FindAsync([customerId], ct);
+
+            var booking = new Booking
+            {
+                Id = Guid.NewGuid(),
+                ServiceListingId = listing.Id,
+                ProviderId = listing.ProviderId,
+                CustomerId = customerId,
+                Status = BookingStatus.Requested,
+                ScheduledAt = startTime,
+                Notes = dto.Notes,
+                CreatedAt = DateTimeOffset.UtcNow,
+                ServiceListing = listing,
+                Provider = listing.Provider,
+                Customer = customer!
+            };
+
+            _db.Bookings.Add(booking);
+            await _db.SaveChangesAsync(ct);
+
+            // Auto-generate invoice reflecting listing's fixed price and fee breakdown atomically
             await _invoiceService.CreateInvoiceForBookingAsync(
                 booking.Id,
                 customerId,
@@ -354,13 +360,33 @@ public class BookingService : IBookingService
                 QuoteApprovalStatus.AutoApproved,
                 listing.Category?.Name ?? listing.Title,
                 ct);
-        }
-        catch
-        {
-            // Invoice generation caught to ensure booking persistence resilience
-        }
 
-        return ToDto(booking);
+            if (tx != null)
+            {
+                await tx.CommitAsync(ct);
+            }
+
+            return ToDto(booking);
+        }
+        catch (OperationCanceledException)
+        {
+            if (tx != null) await tx.RollbackAsync(CancellationToken.None);
+            throw;
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            if (tx != null) await tx.RollbackAsync(CancellationToken.None);
+            throw new ValidationException("Provider already has an active booking during the requested time slot.");
+        }
+        catch (Exception)
+        {
+            if (tx != null) await tx.RollbackAsync(CancellationToken.None);
+            throw;
+        }
+        finally
+        {
+            if (tx != null) await tx.DisposeAsync();
+        }
     }
 
     private static BookingResponseDto ToDto(Booking b) => new(
