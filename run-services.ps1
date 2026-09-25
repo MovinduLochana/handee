@@ -166,10 +166,10 @@ if ($RunAi) {
 # 2. Start ASP.NET Core Web API Backend
 # -----------------------------------------------------------------------------
 if ($RunBackend) {
-    Write-Host "[2/4] Launching ASP.NET Core Backend (Ports 5059 & 5009)..." -ForegroundColor Green
+    Write-Host "[2/4] Launching ASP.NET Core Backend (Ports 5057, 5059 & 5009)..." -ForegroundColor Green
     $BackendDir = Join-Path $RootDir "src\backend\Handee.Api"
-    $BackendCmd = "dotnet run --urls `"http://0.0.0.0:5059;http://0.0.0.0:5009`""
-    Start-ServiceWindow -Title "Handee - Backend API (Ports 5059 & 5009)" -WorkingDirectory $BackendDir -CommandText $BackendCmd -Color "Cyan"
+    $BackendCmd = "dotnet run --urls `"http://0.0.0.0:5057;http://0.0.0.0:5059;http://0.0.0.0:5009`""
+    Start-ServiceWindow -Title "Handee - Backend API (Ports 5057 & 5059)" -WorkingDirectory $BackendDir -CommandText $BackendCmd -Color "Cyan"
 }
 
 # -----------------------------------------------------------------------------
@@ -201,9 +201,10 @@ Write-Host "               ACTIVE SERVICES DASHBOARD                         " -
 Write-Host "-----------------------------------------------------------------" -ForegroundColor Cyan
 
 if ($RunBackend) {
-    Write-Host "  [ASP.NET Core Backend]   http://localhost:5059  (Web endpoint)" -ForegroundColor Green
+    Write-Host "  [ASP.NET Core Backend]   http://localhost:5057  (Web & API endpoint)" -ForegroundColor Green
+    Write-Host "                           http://localhost:5059  (Alternate endpoint)" -ForegroundColor DarkGreen
     Write-Host "                           http://localhost:5009  (Mobile emulator alias 10.0.2.2)" -ForegroundColor DarkGreen
-    Write-Host "                           OpenAPI: http://localhost:5059/openapi/v1.json" -ForegroundColor DarkGray
+    Write-Host "                           OpenAPI: http://localhost:5057/openapi/v1.json" -ForegroundColor DarkGray
 }
 
 if ($RunAi) {
