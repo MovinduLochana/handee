@@ -1,5 +1,7 @@
+using handee.API.Common.Extensions;
+using handee.API.DTO;
 using handee.API.DTO.Review;
-using handee.API.Services;
+using handee.API.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
@@ -10,9 +12,9 @@ namespace handee.API.Controllers;
 [Route("api/providers/{providerId:guid}/reviews")]
 public class ReviewController : ControllerBase
 {
-    private readonly ReviewService _reviewService;
+    private readonly IReviewService _reviewService;
 
-    public ReviewController(ReviewService reviewService)
+    public ReviewController(IReviewService reviewService)
     {
         _reviewService = reviewService;
     }
@@ -35,15 +37,15 @@ public class ReviewController : ControllerBase
         [FromBody] CreateReviewDto dto,
         CancellationToken ct = default)
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (!Guid.TryParse(userId, out var customerId))
+        var customerId = User.GetUserId();
+        if (customerId is null)
         {
             return Unauthorized();
         }
 
         try
         {
-            var review = await _reviewService.AddReviewAsync(providerId, customerId, dto, ct);
+            var review = await _reviewService.AddReviewAsync(providerId, customerId.Value, dto, ct);
             return CreatedAtAction(nameof(GetReviews), new { providerId }, review);
         }
         catch (InvalidOperationException ex)

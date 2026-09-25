@@ -130,13 +130,13 @@ builder.Services.AddScoped<IProviderProfileRepository, ProviderProfileRepository
 builder.Services.AddScoped<ICertificationRepository, CertificationRepository>();
 builder.Services.AddScoped<IStorageService, LocalStorageService>();
 builder.Services.AddScoped<IGoogleMapsService, GoogleMapsService>();
-builder.Services.AddScoped<VerificationService>();
-builder.Services.AddScoped<ProviderProfileService>();
-builder.Services.AddScoped<ProviderTrustService>();
+builder.Services.AddScoped<IVerificationService, VerificationService>();
+builder.Services.AddScoped<IProviderProfileService, ProviderProfileService>();
+builder.Services.AddScoped<IProviderTrustService, ProviderTrustService>();
 
 // Reviews
 builder.Services.AddScoped<IReviewRepository, ReviewRepository>();
-builder.Services.AddScoped<ReviewService>();
+builder.Services.AddScoped<IReviewService, ReviewService>();
 
 // Payments & Invoicing
 builder.Services.AddScoped<IInvoiceService, InvoiceService>();

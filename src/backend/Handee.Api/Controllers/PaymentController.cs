@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using handee.API.Common.Extensions;
 using handee.API.DTO;
 using handee.API.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -23,7 +24,7 @@ public class PaymentController : ControllerBase
     [HttpPost("process")]
     public async Task<IActionResult> Process([FromBody] ProcessPaymentRequestDto dto)
     {
-        var customerId = GetUserId();
+        var customerId = User.GetUserId();
         if (customerId is null) return Unauthorized();
 
         try
@@ -62,7 +63,7 @@ public class PaymentController : ControllerBase
     [HttpGet("mine")]
     public async Task<IActionResult> GetMine()
     {
-        var customerId = GetUserId();
+        var customerId = User.GetUserId();
         if (customerId is null) return Unauthorized();
 
         var payments = await _paymentService.GetCustomerPaymentsAsync(customerId.Value);
@@ -77,9 +78,4 @@ public class PaymentController : ControllerBase
         return Ok(payments);
     }
 
-    private Guid? GetUserId()
-    {
-        var claim = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub");
-        return Guid.TryParse(claim, out var id) ? id : null;
-    }
 }

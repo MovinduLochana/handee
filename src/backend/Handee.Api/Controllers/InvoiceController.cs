@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using handee.API.Common.Extensions;
 using handee.API.DTO;
 using handee.API.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -22,7 +23,7 @@ public class InvoiceController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateInvoiceDto dto)
     {
-        var userId = GetUserId();
+        var userId = User.GetUserId();
         if (userId is null) return Unauthorized();
 
         try
@@ -57,7 +58,7 @@ public class InvoiceController : ControllerBase
     [HttpGet("mine")]
     public async Task<IActionResult> GetMine()
     {
-        var customerId = GetUserId();
+        var customerId = User.GetUserId();
         if (customerId is null) return Unauthorized();
 
         var invoices = await _invoiceService.GetCustomerInvoicesAsync(customerId.Value);
@@ -67,7 +68,7 @@ public class InvoiceController : ControllerBase
     [HttpGet("customer/{customerId:guid}")]
     public async Task<IActionResult> GetByCustomer(Guid customerId)
     {
-        var currentUserId = GetUserId();
+        var currentUserId = User.GetUserId();
         if (currentUserId is null) return Unauthorized();
 
         if (currentUserId.Value != customerId && !User.IsInRole("Admin"))
@@ -81,7 +82,7 @@ public class InvoiceController : ControllerBase
     [HttpGet("provider-mine")]
     public async Task<IActionResult> GetProviderMine()
     {
-        var providerId = GetUserId();
+        var providerId = User.GetUserId();
         if (providerId is null) return Unauthorized();
 
         var invoices = await _invoiceService.GetProviderInvoicesAsync(providerId.Value);
@@ -103,9 +104,4 @@ public class InvoiceController : ControllerBase
         return updated == null ? NotFound() : Ok(updated);
     }
 
-    private Guid? GetUserId()
-    {
-        var claim = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub");
-        return Guid.TryParse(claim, out var id) ? id : null;
-    }
 }

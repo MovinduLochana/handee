@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using handee.API.Common.Extensions;
 using handee.API.DTO;
 using handee.API.Exceptions;
 using handee.API.Interfaces;
@@ -9,6 +10,7 @@ namespace handee.API.Controllers;
 
 [ApiController]
 [Route("provider-availability")]
+[Route("api/provider-availability")]
 [Authorize]
 public class ProviderAvailabilityController : ControllerBase
 {
@@ -24,7 +26,7 @@ public class ProviderAvailabilityController : ControllerBase
     [Authorize(Roles = "Provider")]
     public async Task<IActionResult> Create([FromBody] CreateSlotDto dto)
     {
-        var providerId = GetUserId();
+        var providerId = User.GetUserId();
         if (providerId is null) return Unauthorized();
 
         try
@@ -51,7 +53,7 @@ public class ProviderAvailabilityController : ControllerBase
     [Authorize(Roles = "Provider")]
     public async Task<IActionResult> GetMine()
     {
-        var providerId = GetUserId();
+        var providerId = User.GetUserId();
         if (providerId is null) return Unauthorized();
 
         var result = await _availabilityService.GetOwnAsync(providerId.Value);
@@ -63,7 +65,7 @@ public class ProviderAvailabilityController : ControllerBase
     [Authorize(Roles = "Provider")]
     public async Task<IActionResult> Delete(Guid id)
     {
-        var providerId = GetUserId();
+        var providerId = User.GetUserId();
         if (providerId is null) return Unauthorized();
 
         try
@@ -81,9 +83,4 @@ public class ProviderAvailabilityController : ControllerBase
         }
     }
 
-    private Guid? GetUserId()
-    {
-        var claim = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub");
-        return Guid.TryParse(claim, out var id) ? id : null;
-    }
 }

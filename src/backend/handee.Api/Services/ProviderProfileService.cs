@@ -12,9 +12,9 @@ public class ProviderProfileService(
     ICertificationRepository certRepo,
     IStorageService storage,
     IGoogleMapsService maps,
-    VerificationService verificationService,
+    IVerificationService verificationService,
     AppDbContext db,
-    ILogger<ProviderProfileService> logger)
+    ILogger<ProviderProfileService> logger) : IProviderProfileService
 {
     // ─── Reads ────────────────────────────────────────────────────────────
 

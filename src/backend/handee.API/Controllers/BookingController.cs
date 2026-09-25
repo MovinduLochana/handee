@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using handee.API.Common.Extensions;
 using handee.API.DTO;
 using handee.API.Entities;
 using handee.API.Exceptions;
@@ -10,6 +11,7 @@ namespace handee.API.Controllers;
 
 [ApiController]
 [Route("bookings")]
+[Route("api/bookings")]
 [Authorize]
 public class BookingController : ControllerBase
 {
@@ -20,11 +22,36 @@ public class BookingController : ControllerBase
         _bookingService = bookingService;
     }
 
+    // POST /bookings
+    [HttpPost]
+    [Authorize(Roles = "Customer")]
+    public async Task<IActionResult> CreateBookingFromListing(
+        [FromBody] CreateListingBookingDto dto,
+        CancellationToken ct = default)
+    {
+        var customerId = User.GetUserId();
+        if (customerId is null) return Unauthorized();
+
+        try
+        {
+            var result = await _bookingService.CreateFromListingAsync(dto, customerId.Value, ct);
+            return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
+        }
+        catch (NotFoundException ex)
+        {
+            return NotFound(new { error = ex.Message });
+        }
+        catch (ValidationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
     // GET /bookings/{id}
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetById(Guid id)
     {
-        var userId = GetUserId();
+        var userId = User.GetUserId();
         if (userId is null) return Unauthorized();
 
         var result = await _bookingService.GetByIdAsync(id, userId.Value, User.IsInRole("Admin"));
@@ -35,7 +62,7 @@ public class BookingController : ControllerBase
     [HttpGet("mine")]
     public async Task<IActionResult> GetMine()
     {
-        var customerId = GetUserId();
+        var customerId = User.GetUserId();
         if (customerId is null) return Unauthorized();
 
         var result = await _bookingService.GetForCustomerAsync(customerId.Value);
@@ -46,7 +73,7 @@ public class BookingController : ControllerBase
     [HttpGet("provider-mine")]
     public async Task<IActionResult> GetProviderMine()
     {
-        var providerId = GetUserId();
+        var providerId = User.GetUserId();
         if (providerId is null) return Unauthorized();
 
         var result = await _bookingService.GetForProviderAsync(providerId.Value);
@@ -57,7 +84,7 @@ public class BookingController : ControllerBase
     [HttpGet("provider-offers")]
     public async Task<IActionResult> GetProviderOffers()
     {
-        var providerId = GetUserId();
+        var providerId = User.GetUserId();
         if (providerId is null) return Unauthorized();
 
         var result = await _bookingService.GetProviderOffersAsync(providerId.Value);
@@ -81,7 +108,7 @@ public class BookingController : ControllerBase
     [HttpPut("{id:guid}/status")]
     public async Task<IActionResult> UpdateStatus(Guid id, [FromBody] UpdateBookingStatusDto dto)
     {
-        var userId = GetUserId();
+        var userId = User.GetUserId();
         if (userId is null) return Unauthorized();
 
         try
@@ -107,7 +134,7 @@ public class BookingController : ControllerBase
     [HttpPut("{id:guid}/schedule")]
     public async Task<IActionResult> UpdateSchedule(Guid id, [FromBody] UpdateBookingScheduleDto dto)
     {
-        var userId = GetUserId();
+        var userId = User.GetUserId();
         if (userId is null) return Unauthorized();
 
         try
@@ -125,9 +152,4 @@ public class BookingController : ControllerBase
         }
     }
 
-    private Guid? GetUserId()
-    {
-        var claim = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub");
-        return Guid.TryParse(claim, out var id) ? id : null;
-    }
 }

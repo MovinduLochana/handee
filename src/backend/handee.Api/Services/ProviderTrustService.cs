@@ -14,7 +14,7 @@ namespace handee.API.Services;
 public class ProviderTrustService(
     IProviderProfileRepository profileRepo,
     IDistributedCache cache,
-    ILogger<ProviderTrustService> logger)
+    ILogger<ProviderTrustService> logger) : IProviderTrustService
 {
     private static readonly ActivitySource Activity = new("handee.ProviderTrust");
     private static readonly TimeSpan CacheTtl = TimeSpan.FromSeconds(60);

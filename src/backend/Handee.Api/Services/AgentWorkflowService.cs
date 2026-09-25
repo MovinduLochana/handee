@@ -90,7 +90,7 @@ public class AgentWorkflowService : IAgentWorkflowService
         _db.AgentWorkflows.Add(workflow);
 
         // Tier evaluation handling
-        if (workflow.ValidationTier == "approved_for_auto_dispatch" || workflow.ValidationTier == "approved_with_audit")
+        if (workflow.ValidationTierEnum is WorkflowValidationTier.ApprovedForAutoDispatch or WorkflowValidationTier.ApprovedWithAudit)
         {
             jobRequest.Status = JobRequestStatus.Open;
 
@@ -109,7 +109,7 @@ public class AgentWorkflowService : IAgentWorkflowService
                 await _db.SaveChangesAsync(ct);
 
                 // Approval-to-Payment Handoff: Auto-generate Quote/Invoice from AI estimate
-                var approvalStatus = workflow.ValidationTier == "approved_for_auto_dispatch"
+                var approvalStatus = workflow.ValidationTierEnum == WorkflowValidationTier.ApprovedForAutoDispatch
                     ? QuoteApprovalStatus.AutoApproved
                     : QuoteApprovalStatus.ApprovedWithAudit;
                 var estimatedPrice = workflow.EstimatedPrice ?? 3500m;
@@ -133,11 +133,10 @@ public class AgentWorkflowService : IAgentWorkflowService
                 }
             }
         }
-
         else
         {
             // High risk / requires human approval: leave status as PendingAiReview
-            workflow.ApprovalStatus = "pending";
+            workflow.ApprovalStatusEnum = WorkflowApprovalStatus.Pending;
             jobRequest.Status = JobRequestStatus.PendingAiReview;
         }
 
@@ -360,8 +359,8 @@ public class AgentWorkflowService : IAgentWorkflowService
                 "3. Validation / Safety: Evaluate platform risk policies and category price variance.",
                 "4. Workflow Finalization: Output tiered risk classification."
             },
-            ValidationTier = "approved_with_audit",
-            ApprovalStatus = "approved",
+            ValidationTierEnum = WorkflowValidationTier.ApprovedWithAudit,
+            ApprovalStatusEnum = WorkflowApprovalStatus.Approved,
             EstimatedPrice = price,
             FinalResultJson = JsonSerializer.Serialize(new { status = "approved_with_audit", estimatedPrice = price })
         };

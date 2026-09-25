@@ -33,10 +33,3 @@ public record UpdateReviewDto(
     string? Comment
 );
 
-// We should also have a generic PagedResult for returns, though SearchAsync might use it
-public record PagedResult<T>(
-    List<T> Items,
-    int TotalCount,
-    int Page,
-    int PageSize
-);

@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using handee.API.Common.Extensions;
 using handee.API.Entities;
 using handee.API.Exceptions;
 using handee.API.Interfaces;
@@ -9,6 +10,7 @@ namespace handee.API.Controllers;
 
 [ApiController]
 [Route("admin")]
+[Route("api/admin")]
 [Authorize(Roles = "Admin")]
 public class AdminController : ControllerBase
 {

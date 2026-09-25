@@ -1,3 +1,4 @@
+using handee.API.DTO;
 using handee.API.DTO.Review;
 using handee.API.Entities;
 using handee.API.Interfaces;
@@ -5,17 +6,17 @@ using Microsoft.EntityFrameworkCore;
 
 namespace handee.API.Services;
 
-public class ReviewService
+public class ReviewService : IReviewService
 {
     private readonly IReviewRepository _reviewRepository;
     private readonly IProviderProfileRepository _providerProfileRepository;
-    private readonly ProviderTrustService _trustService;
+    private readonly IProviderTrustService _trustService;
     private readonly IStorageService _storageService;
 
     public ReviewService(
         IReviewRepository reviewRepository,
         IProviderProfileRepository providerProfileRepository,
-        ProviderTrustService trustService,
+        IProviderTrustService trustService,
         IStorageService storageService)
     {
         _reviewRepository = reviewRepository;

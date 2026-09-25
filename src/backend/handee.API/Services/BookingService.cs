@@ -10,10 +10,16 @@ namespace handee.API.Services;
 public class BookingService : IBookingService
 {
     private readonly AppDbContext _db;
+    private readonly IInvoiceService _invoiceService;
 
-    public BookingService(AppDbContext db)
+    public BookingService(AppDbContext db) : this(db, new InvoiceService(db))
+    {
+    }
+
+    public BookingService(AppDbContext db, IInvoiceService invoiceService)
     {
         _db = db;
+        _invoiceService = invoiceService;
     }
 
     /// <summary>
@@ -70,6 +76,8 @@ public class BookingService : IBookingService
             .Include(b => b.Provider)
             .Include(b => b.JobRequest)
                 .ThenInclude(j => j!.ServiceCategory)
+            .Include(b => b.ServiceListing)
+                .ThenInclude(l => l!.Category)
             .FirstOrDefaultAsync(b => b.Id == id);
 
         if (booking is null)
@@ -89,6 +97,8 @@ public class BookingService : IBookingService
             .Include(b => b.Provider)
             .Include(b => b.JobRequest)
                 .ThenInclude(j => j!.ServiceCategory)
+            .Include(b => b.ServiceListing)
+                .ThenInclude(l => l!.Category)
             .Where(b => b.CustomerId == customerId)
             .OrderByDescending(b => b.CreatedAt)
             .ToListAsync();
@@ -103,6 +113,8 @@ public class BookingService : IBookingService
             .Include(b => b.Provider)
             .Include(b => b.JobRequest)
                 .ThenInclude(j => j!.ServiceCategory)
+            .Include(b => b.ServiceListing)
+                .ThenInclude(l => l!.Category)
             .Where(b => b.ProviderId == providerId)
             .OrderByDescending(b => b.CreatedAt)
             .ToListAsync();
@@ -117,6 +129,8 @@ public class BookingService : IBookingService
             .Include(b => b.Provider)
             .Include(b => b.JobRequest)
                 .ThenInclude(j => j!.ServiceCategory)
+            .Include(b => b.ServiceListing)
+                .ThenInclude(l => l!.Category)
             .Where(b => b.ProviderId == providerId && b.Status == BookingStatus.Requested)
             .OrderByDescending(b => b.CreatedAt)
             .ToListAsync();
@@ -133,7 +147,14 @@ public class BookingService : IBookingService
         page = Math.Max(1, page);
         pageSize = Math.Clamp(pageSize, 1, 100);
 
-        var query = _db.Bookings.AsQueryable();
+        var query = _db.Bookings
+            .Include(b => b.Customer)
+            .Include(b => b.Provider)
+            .Include(b => b.JobRequest)
+                .ThenInclude(j => j!.ServiceCategory)
+            .Include(b => b.ServiceListing)
+                .ThenInclude(l => l!.Category)
+            .AsQueryable();
 
         if (status is not null)
             query = query.Where(b => b.Status == status);
@@ -231,6 +252,143 @@ public class BookingService : IBookingService
         return ToDto(booking);
     }
 
+    public async Task<BookingResponseDto> CreateFromListingAsync(
+        CreateListingBookingDto dto,
+        Guid customerId,
+        CancellationToken ct = default)
+    {
+        var listing = await _db.ServiceListings
+            .Include(l => l.Category)
+            .Include(l => l.Provider)
+            .FirstOrDefaultAsync(l => l.Id == dto.ServiceListingId, ct)
+            ?? throw new NotFoundException($"ServiceListing with ID {dto.ServiceListingId} not found.");
+
+        if (!listing.IsActive)
+            throw new ValidationException("Cannot book a service listing that is not active.");
+
+        if (listing.ProviderId == customerId)
+            throw new ValidationException("Providers cannot book their own service listings.");
+
+        if (dto.ScheduledAt < DateTimeOffset.UtcNow)
+            throw new ValidationException("Booking scheduled time must be in the future.");
+
+        var startTime = dto.ScheduledAt.ToUniversalTime();
+        var duration = listing.EstimatedDuration > TimeSpan.Zero
+            ? listing.EstimatedDuration
+            : TimeSpan.FromHours(1);
+        var endTime = startTime.Add(duration);
+
+        Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction? tx = null;
+        if (_db.Database.IsRelational())
+        {
+            tx = await _db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, ct);
+        }
+
+        try
+        {
+            // Check provider availability slots if any configured
+            var hasSlots = await _db.ProviderAvailabilitySlots
+                .AnyAsync(s => s.ProviderId == listing.ProviderId, ct);
+
+            ProviderAvailabilitySlot? matchingSlot = null;
+            if (hasSlots)
+            {
+                matchingSlot = await _db.ProviderAvailabilitySlots
+                    .FirstOrDefaultAsync(s => s.ProviderId == listing.ProviderId
+                                              && !s.IsBooked
+                                              && s.StartTime <= startTime
+                                              && s.EndTime >= endTime, ct);
+
+                if (matchingSlot == null)
+                {
+                    throw new ValidationException("Provider is not available at the requested time slot.");
+                }
+            }
+
+            // Check for conflicting active bookings
+            var hasConflict = await _db.Bookings
+                .Include(b => b.ServiceListing)
+                .Where(b => b.ProviderId == listing.ProviderId
+                            && b.ScheduledAt != null
+                            && (b.Status == BookingStatus.Requested
+                                || b.Status == BookingStatus.Accepted
+                                || b.Status == BookingStatus.InProgress))
+                .AnyAsync(b => b.ScheduledAt < endTime &&
+                               startTime < b.ScheduledAt.Value.AddMinutes(
+                                   b.ServiceListing != null && b.ServiceListing.EstimatedDuration > TimeSpan.Zero
+                                       ? b.ServiceListing.EstimatedDuration.TotalMinutes
+                                       : 60), ct);
+
+            if (hasConflict)
+            {
+                throw new ValidationException("Provider already has an active booking during the requested time slot.");
+            }
+
+            // If slot matched, mark it as booked
+            if (matchingSlot != null)
+            {
+                matchingSlot.IsBooked = true;
+                matchingSlot.UpdatedAt = DateTimeOffset.UtcNow;
+            }
+
+            var customer = await _db.Users.FindAsync([customerId], ct);
+
+            var booking = new Booking
+            {
+                Id = Guid.NewGuid(),
+                ServiceListingId = listing.Id,
+                ProviderId = listing.ProviderId,
+                CustomerId = customerId,
+                Status = BookingStatus.Requested,
+                ScheduledAt = startTime,
+                Notes = dto.Notes,
+                CreatedAt = DateTimeOffset.UtcNow,
+                ServiceListing = listing,
+                Provider = listing.Provider,
+                Customer = customer!
+            };
+
+            _db.Bookings.Add(booking);
+            await _db.SaveChangesAsync(ct);
+
+            // Auto-generate invoice reflecting listing's fixed price and fee breakdown atomically
+            await _invoiceService.CreateInvoiceForBookingAsync(
+                booking.Id,
+                customerId,
+                listing.ProviderId,
+                listing.FixedPrice,
+                QuoteApprovalStatus.AutoApproved,
+                listing.Category?.Name ?? listing.Title,
+                ct);
+
+            if (tx != null)
+            {
+                await tx.CommitAsync(ct);
+            }
+
+            return ToDto(booking);
+        }
+        catch (OperationCanceledException)
+        {
+            if (tx != null) await tx.RollbackAsync(CancellationToken.None);
+            throw;
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            if (tx != null) await tx.RollbackAsync(CancellationToken.None);
+            throw new ValidationException("Provider already has an active booking during the requested time slot.");
+        }
+        catch (Exception)
+        {
+            if (tx != null) await tx.RollbackAsync(CancellationToken.None);
+            throw;
+        }
+        finally
+        {
+            if (tx != null) await tx.DisposeAsync();
+        }
+    }
+
     private static BookingResponseDto ToDto(Booking b) => new(
         b.Id,
         b.JobRequestId,
@@ -245,7 +403,8 @@ public class BookingService : IBookingService
         CustomerPhone: b.Customer?.PhoneNumber,
         ProviderName: b.Provider?.FullName,
         ServiceLocation: b.JobRequest?.Location,
-        Price: b.JobRequest?.BudgetMax ?? b.JobRequest?.BudgetMin ?? 3500m,
-        Category: b.JobRequest?.ServiceCategory?.Name,
-        Description: b.JobRequest?.Description);
+        Price: b.ServiceListing?.FixedPrice ?? b.JobRequest?.BudgetMax ?? b.JobRequest?.BudgetMin ?? 3500m,
+        Category: b.JobRequest?.ServiceCategory?.Name ?? b.ServiceListing?.Category?.Name,
+        Description: b.JobRequest?.Description ?? b.ServiceListing?.Title ?? b.ServiceListing?.Description,
+        Notes: b.Notes);
 }

@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using handee.API.Common.Extensions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using handee.API.DTO;
@@ -9,6 +10,7 @@ namespace handee.API.Controllers;
 
 [ApiController]
 [Route("users")]
+[Route("api/users")]
 [Authorize]
 public class UserController : ControllerBase
 {
@@ -25,12 +27,12 @@ public class UserController : ControllerBase
     [HttpGet("me")]
     public async Task<IActionResult> GetProfile()
     {
-        var userId = GetUserId();
+        var userId = User.GetUserId();
         if (userId is null) return Unauthorized();
 
         try
         {
-            var profile = await _userService.GetProfileAsync(userId);
+            var profile = await _userService.GetProfileAsync(userId.Value.ToString());
             return Ok(profile);
         }
         catch (NotFoundException ex)
@@ -43,12 +45,12 @@ public class UserController : ControllerBase
     [HttpPut("me")]
     public async Task<IActionResult> UpdateProfile([FromBody] UpdateProfileDto dto)
     {
-        var userId = GetUserId();
+        var userId = User.GetUserId();
         if (userId is null) return Unauthorized();
 
         try
         {
-            await _userService.UpdateProfileAsync(userId, dto);
+            await _userService.UpdateProfileAsync(userId.Value.ToString(), dto);
             return NoContent();
         }
         catch (NotFoundException ex)
@@ -68,12 +70,12 @@ public class UserController : ControllerBase
     public async Task<IActionResult> UploadPhoto(
         [FromForm] IFormFile photo, CancellationToken ct)
     {
-        var userId = GetUserId();
+        var userId = User.GetUserId();
         if (userId is null) return Unauthorized();
 
         try
         {
-            var photoUrl = await _userService.UploadPhotoAsync(userId, photo, ct);
+            var photoUrl = await _userService.UploadPhotoAsync(userId.Value.ToString(), photo, ct);
             return Ok(new { profilePictureUrl = photoUrl });
         }
         catch (NotFoundException ex)
@@ -81,7 +83,4 @@ public class UserController : ControllerBase
             return NotFound(ex.Message);
         }
     }
-
-    private string? GetUserId() =>
-        User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub");
 }
