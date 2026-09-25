@@ -204,6 +204,14 @@ using (var scope = app.Services.CreateScope())
     await ServiceCategorySeeder.SeedAsync(dbContext);
 }
 
+// Seed invoices, payments, and payouts demo data
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+    await InvoiceSeeder.SeedAsync(dbContext, userManager);
+}
+
 app.UseAuthentication();
 app.UseAuthorization();
 
