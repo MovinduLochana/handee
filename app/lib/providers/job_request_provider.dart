@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import '../data/models/job_request_model.dart';
 import '../data/repositories/job_request_repository.dart';
@@ -36,8 +35,7 @@ class JobRequestProvider extends ChangeNotifier {
   }
 
   Future<JobRequestModel?> submitInstantMatch({
-    required String categoryId,
-    required String category,
+    required String serviceCategoryId,
     required String description,
     required String location,
     required String urgency,
@@ -51,8 +49,7 @@ class JobRequestProvider extends ChangeNotifier {
 
     try {
       final created = await repository.createJobRequest(
-        categoryId: categoryId,
-        category: category,
+        serviceCategoryId: serviceCategoryId,
         description: description,
         location: location,
         urgency: urgency,
@@ -65,9 +62,6 @@ class JobRequestProvider extends ChangeNotifier {
       _currentTrackedRequest = created;
       _isSubmitting = false;
       notifyListeners();
-
-      // Trigger automatic simulation of AI Agent workflow progression
-      _simulateAiAgentProgression(created.id);
 
       return created;
     } catch (e) {
@@ -83,36 +77,29 @@ class JobRequestProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Simulates the 4-agent workflow progression in the background:
-  /// pending_ai_review -> approved_for_auto_dispatch -> provider assigned
-  void _simulateAiAgentProgression(String requestId) {
-    Timer(const Duration(seconds: 4), () {
-      if (_currentTrackedRequest != null && _currentTrackedRequest!.id == requestId) {
-        _currentTrackedRequest = _currentTrackedRequest!.copyWith(
-          status: 'approved_for_auto_dispatch',
-          estimatedPrice: _currentTrackedRequest!.estimatedPrice ?? 4800,
-        );
+  /// Re-fetches the tracked request from the server.
+  ///
+  /// Replaces a previous client-side `Timer` simulation that fabricated
+  /// status progression locally. Status is owned by the backend (the agent
+  /// workflow moves PendingAiReview -> Open), so the only honest way to
+  /// observe progress is to ask the server.
+  Future<void> refreshTrackedRequest() async {
+    final tracked = _currentTrackedRequest;
+    if (tracked == null) return;
 
-        final idx = _requests.indexWhere((r) => r.id == requestId);
-        if (idx != -1) {
-          _requests[idx] = _currentTrackedRequest!;
-        }
-        notifyListeners();
+    try {
+      final fresh = await repository.getJobRequestById(tracked.id);
+      if (fresh == null) return;
+
+      _currentTrackedRequest = fresh;
+      final idx = _requests.indexWhere((r) => r.id == fresh.id);
+      if (idx != -1) {
+        _requests[idx] = fresh;
       }
-    });
-
-    Timer(const Duration(seconds: 9), () {
-      if (_currentTrackedRequest != null && _currentTrackedRequest!.id == requestId) {
-        _currentTrackedRequest = _currentTrackedRequest!.copyWith(
-          status: 'dispatched',
-        );
-
-        final idx = _requests.indexWhere((r) => r.id == requestId);
-        if (idx != -1) {
-          _requests[idx] = _currentTrackedRequest!;
-        }
-        notifyListeners();
-      }
-    });
+      notifyListeners();
+    } catch (e) {
+      _errorMessage = e.toString();
+      notifyListeners();
+    }
   }
 }

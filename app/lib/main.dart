@@ -64,6 +64,7 @@ Widget buildHandeeApp({
 
   return MultiProvider(
     providers: [
+      Provider<ServiceCategoryRepository>.value(value: serviceCategoryRepository),
       ChangeNotifierProvider<AuthProvider>(
         create: (_) => AuthProvider(
           authRepo: authRepository,

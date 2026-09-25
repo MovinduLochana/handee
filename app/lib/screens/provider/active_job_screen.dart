@@ -83,7 +83,7 @@ class _ActiveJobScreenState extends State<ActiveJobScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        _booking.jobRequest?.category ?? 'Plumbing Repair',
+                        _booking.jobRequest?.categoryName ?? 'Plumbing Repair',
                         style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
                       ),
                       StatusBadge(status: _booking.status),

@@ -12,9 +12,11 @@ class JobRequestRepository {
     required this.storage,
   });
 
+  /// Maps to `CreateJobRequestDto`. [serviceCategoryId] is the Guid of a real
+  /// ServiceCategory row (see ServiceCategoryRepository) — the backend rejects
+  /// an empty/absent Guid via [Required].
   Future<JobRequestModel> createJobRequest({
-    required String categoryId,
-    required String category,
+    required String serviceCategoryId,
     required String description,
     required String location,
     required String urgency,
@@ -23,8 +25,7 @@ class JobRequestRepository {
     List<String> photoUrls = const [],
   }) async {
     final payload = {
-      'serviceCategoryId': categoryId,
-      'category': category,
+      'serviceCategoryId': serviceCategoryId,
       'description': description,
       'location': location,
       'urgency': urgency,

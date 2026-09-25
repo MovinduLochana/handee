@@ -123,7 +123,7 @@ class _CustomerBookingsScreenState extends State<CustomerBookingsScreen> with Si
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      booking.jobRequest?.category ?? 'General Service',
+                      booking.jobRequest?.categoryName ?? 'General Service',
                       style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
                     ),
                     StatusBadge(status: booking.status),

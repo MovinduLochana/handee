@@ -21,6 +21,8 @@ class ServiceCategoryRepository {
       }
     }
 
-    return jsonList.map((json) => ServiceCategoryModel.fromJson(json as Map<String, dynamic>)).toList();
+    return jsonList
+        .map((json) => ServiceCategoryModel.fromJson(json as Map<String, dynamic>))
+        .toList();
   }
 }

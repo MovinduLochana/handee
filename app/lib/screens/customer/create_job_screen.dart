@@ -1,7 +1,12 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/constants/colors.dart';
+import '../../data/models/service_category_model.dart';
+import '../../data/repositories/service_category_repository.dart';
 import '../../providers/job_request_provider.dart';
 import '../../providers/service_category_provider.dart';
 import '../../widgets/custom_button.dart';
@@ -18,26 +23,74 @@ class CreateJobScreen extends StatefulWidget {
 
 class _CreateJobScreenState extends State<CreateJobScreen> {
   final _formKey = GlobalKey<FormState>();
-  String? _selectedCategory;
+  String? _selectedCategoryId;
   final _descController = TextEditingController();
   final _minBudgetController = TextEditingController(text: '3000');
   final _maxBudgetController = TextEditingController(text: '8000');
   String _selectedUrgency = 'Medium';
   String _selectedLocation = AppConstants.serviceLocations[0];
-  final List<String> _photos = [];
+
+  /// Locally picked images. NOT sent to the backend — see _pickPhoto.
+  final List<XFile> _photos = [];
+  final ImagePicker _imagePicker = ImagePicker();
+
+  List<ServiceCategoryModel> _categories = [];
+  bool _categoriesLoading = true;
+  String? _categoriesError;
+
+  bool _initialLoadStarted = false;
 
   @override
-  void initState() {
-    super.initState();
-    _selectedCategory = widget.initialCategory;
-    
-    // Ensure we fetch categories when this screen is loaded just in case 
-    // it failed previously, this fixes category retrieval issues.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        context.read<ServiceCategoryProvider>().fetchCategories();
-      }
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Deferred to didChangeDependencies so the ServiceCategoryRepository is
+    // resolvable from the widget tree; guarded so it runs only once.
+    if (!_initialLoadStarted) {
+      _initialLoadStarted = true;
+      _loadCategories();
+    }
+  }
+
+  /// Categories come from GET /service-categories. The backend requires a real
+  /// ServiceCategory Guid, so there is no offline/hardcoded fallback here —
+  /// without the real list we cannot build a valid submission at all.
+  Future<void> _loadCategories() async {
+    final repo = context.read<ServiceCategoryRepository>();
+
+    setState(() {
+      _categoriesLoading = true;
+      _categoriesError = null;
     });
+
+    try {
+      final categories = await repo.getCategories();
+
+      if (!mounted) return;
+      setState(() {
+        _categories = categories;
+        _categoriesLoading = false;
+        _selectedCategoryId = _matchInitialCategory(categories);
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _categoriesLoading = false;
+        _categoriesError = 'Could not load service categories. $e';
+      });
+    }
+  }
+
+  /// Callers still pass a category *name* (e.g. from a home-screen tile), so
+  /// match it against the real list to preselect the corresponding Guid.
+  String? _matchInitialCategory(List<ServiceCategoryModel> categories) {
+    if (categories.isEmpty) return null;
+    final initial = widget.initialCategory;
+    if (initial == null) return categories.first.id;
+
+    for (final c in categories) {
+      if (c.name.toLowerCase() == initial.toLowerCase()) return c.id;
+    }
+    return categories.first.id;
   }
 
   @override
@@ -48,35 +101,71 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
     super.dispose();
   }
 
-  void _addMockPhoto() {
-    setState(() {
-      _photos.add('photo_${_photos.length + 1}.jpg');
-    });
+  Future<void> _pickPhoto() async {
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.camera_alt_outlined),
+              title: const Text('Take a photo'),
+              onTap: () => Navigator.pop(ctx, ImageSource.camera),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined),
+              title: const Text('Choose from gallery'),
+              onTap: () => Navigator.pop(ctx, ImageSource.gallery),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (source == null) return;
+
+    try {
+      final picked = await _imagePicker.pickImage(source: source, imageQuality: 80);
+      if (picked == null || !mounted) return;
+      setState(() => _photos.add(picked));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not pick image: $e')),
+      );
+    }
   }
 
   Future<void> _submitJob() async {
     if (!_formKey.currentState!.validate()) return;
-    if (_selectedCategory == null) return; // Add null check for category
+    if (_selectedCategoryId == null) return; // Add null check for category
+
+    final categoryId = _selectedCategoryId;
+    if (categoryId == null || categoryId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select a service category')),
+      );
+      return;
+    }
 
     final provider = context.read<JobRequestProvider>();
     final minBudget = double.tryParse(_minBudgetController.text.trim());
     final maxBudget = double.tryParse(_maxBudgetController.text.trim());
 
-    final categoryList = context.read<ServiceCategoryProvider>().categories;
-    String categoryId = '';
-    try {
-      categoryId = categoryList.firstWhere((c) => c.name == _selectedCategory).id;
-    } catch (_) {}
-
+    // TODO(backend): photoUrls is intentionally left empty. CreateJobRequestDto
+    // expects real, reachable URLs, and no job-request image upload endpoint
+    // exists yet (/users/me/photo overwrites the avatar; /reviews/{id}/photos
+    // needs an existing review). IStorageService.UploadAsync already exists
+    // server-side, so this needs a controller endpoint, then wire the picked
+    // files here and send the returned URLs.
     final request = await provider.submitInstantMatch(
-      categoryId: categoryId,
-      category: _selectedCategory!,
+      serviceCategoryId: categoryId,
       description: _descController.text.trim(),
       location: _selectedLocation,
       urgency: _selectedUrgency,
       budgetMin: minBudget,
       budgetMax: maxBudget,
-      photoUrls: _photos,
     );
 
     if (request != null && mounted) {
@@ -133,61 +222,88 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                 style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
               ),
               const SizedBox(height: 8),
-              Builder(
-                builder: (context) {
-                  final categoryProvider = context.watch<ServiceCategoryProvider>();
-                  final categories = categoryProvider.categories;
-                  
-                  final List<DropdownMenuItem<String>> items = [];
-                  if (_selectedCategory != null && !categories.any((c) => c.name == _selectedCategory)) {
-                    items.add(
-                      DropdownMenuItem<String>(
-                        value: _selectedCategory,
-                        child: Text(_selectedCategory!),
+              if (_categoriesLoading)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 12),
+                  child: Row(
+                    children: [
+                      SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
                       ),
+                      SizedBox(width: 12),
+                      Text(
+                        'Loading service categories...',
+                        style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+                      ),
+                    ],
+                  ),
+                )
+              else if (_categoriesError != null)
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: AppColors.errorLight,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.error_outline, size: 18, color: AppColors.error),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          _categoriesError!,
+                          style: const TextStyle(fontSize: 12, color: AppColors.error),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: _loadCategories,
+                        child: const Text('Retry', style: TextStyle(fontSize: 12)),
+                      ),
+                    ],
+                  ),
+                )
+              else
+                DropdownButtonFormField<String>(
+                  value: _selectedCategoryId,
+                  isExpanded: true,
+                  decoration: const InputDecoration(
+                    prefixIcon: Icon(Icons.category_outlined, color: AppColors.textMuted),
+                  ),
+                  items: _categories.map((c) {
+                    return DropdownMenuItem<String>(
+                      value: c.id,
+                      child: Text(c.name),
                     );
-                  }
-                  
-                  final seenNames = <String>{};
-                  for (final c in categories) {
-                    if (seenNames.add(c.name)) {
-                      items.add(
-                        DropdownMenuItem<String>(
-                          value: c.name,
-                          child: Text(c.name),
+                  }).toList(),
+                  onChanged: (val) {
+                    if (val != null) {
+                      setState(() => _selectedCategoryId = val);
+
+                      final category = _categories.firstWhere(
+                        (c) => c.id == val,
+                        orElse: () => ServiceCategoryModel(
+                          id: '',
+                          name: '',
                         ),
                       );
-                    }
-                  }
 
-                  return DropdownButtonFormField<String>(
-                    value: _selectedCategory,
-                    isExpanded: true,
-                    decoration: const InputDecoration(
-                      prefixIcon: Icon(Icons.category_outlined, color: AppColors.textMuted),
-                    ),
-                    items: items,
-                    onChanged: (val) {
-                      if (val != null) {
-                        setState(() {
-                          _selectedCategory = val;
-                          try {
-                            final category = categories.firstWhere((c) => c.name == val);
-                            if (category.priceBandMin > 0) {
-                              _minBudgetController.text = category.priceBandMin.toStringAsFixed(0);
-                            }
-                            if (category.priceBandMax > 0) {
-                              _maxBudgetController.text = category.priceBandMax.toStringAsFixed(0);
-                            }
-                          } catch (e) {
-                            // Category not found or custom category
-                          }
-                        });
+                      if (category.id.isNotEmpty) {
+                        final minBand = category.priceBandMin ?? 0;
+                        final maxBand = category.priceBandMax ?? 0;
+                        if (minBand > 0) {
+                          _minBudgetController.text = minBand.toStringAsFixed(0);
+                        }
+                        if (maxBand > 0) {
+                          _maxBudgetController.text = maxBand.toStringAsFixed(0);
+                        }
                       }
-                    },
-                  );
-                },
-              ),
+                    }
+                  },
+                  validator: (val) =>
+                      (val == null || val.isEmpty) ? 'Please select a service category' : null,
+                ),
 
               const SizedBox(height: 18),
 
@@ -344,25 +460,59 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                     style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
                   ),
                   TextButton.icon(
-                    onPressed: _addMockPhoto,
+                    onPressed: _pickPhoto,
                     icon: const Icon(Icons.add_a_photo_outlined, size: 16),
                     label: const Text('Add Photo', style: TextStyle(fontSize: 12)),
                   ),
                 ],
               ),
-              if (_photos.isNotEmpty)
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: _photos.map((p) {
-                    return Chip(
-                      avatar: const Icon(Icons.image, size: 16),
-                      label: Text(p, style: const TextStyle(fontSize: 12)),
-                      onDeleted: () => setState(() => _photos.remove(p)),
-                    );
-                  }).toList(),
-                )
-              else
+              if (_photos.isNotEmpty) ...[
+                SizedBox(
+                  height: 88,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: _photos.length,
+                    separatorBuilder: (context, index) => const SizedBox(width: 8),
+                    itemBuilder: (context, i) {
+                      final photo = _photos[i];
+                      return Stack(
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(10),
+                            child: Image.file(
+                              File(photo.path),
+                              width: 88,
+                              height: 88,
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                          Positioned(
+                            top: 2,
+                            right: 2,
+                            child: GestureDetector(
+                              onTap: () => setState(() => _photos.removeAt(i)),
+                              child: Container(
+                                padding: const EdgeInsets.all(2),
+                                decoration: const BoxDecoration(
+                                  color: Colors.black54,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(Icons.close, size: 14, color: Colors.white),
+                              ),
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Photos are previewed locally only — uploading them is not yet '
+                  'supported by the backend, so they are not sent with this request.',
+                  style: TextStyle(fontSize: 11, color: AppColors.textMuted),
+                ),
+              ] else
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
@@ -372,7 +522,7 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                   ),
                   child: const Center(
                     child: Text(
-                      'No photos attached yet. Photos help AI estimate scope accurately.',
+                      'No photos attached yet.',
                       style: TextStyle(fontSize: 12, color: AppColors.textMuted),
                     ),
                   ),

@@ -33,6 +33,24 @@ class BookingRepository {
     return null;
   }
 
+  /// PUT /bookings/{id}/schedule — maps to UpdateBookingScheduleDto.
+  /// The backend allows rescheduling only while the booking is Requested or
+  /// Accepted (admins excepted); outside that window it returns 400.
+  Future<BookingModel> updateBookingSchedule(String bookingId, DateTime scheduledAt) async {
+    final response = await apiClient.put(
+      ApiEndpoints.updateBookingSchedule(bookingId),
+      body: {'scheduledAt': scheduledAt.toUtc().toIso8601String()},
+    );
+    if (response is Map<String, dynamic>) {
+      return BookingModel.fromJson(response);
+    }
+
+    final updated = await getBookingById(bookingId);
+    if (updated != null) return updated;
+
+    throw ApiException(statusCode: 500, message: 'Failed to update booking schedule');
+  }
+
   Future<BookingModel> updateBookingStatus(String bookingId, String newStatus) async {
     final response = await apiClient.put(
       ApiEndpoints.updateBookingStatus(bookingId),
