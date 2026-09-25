@@ -31,6 +31,7 @@ public class AgentWorkflow
     /// </summary>
     public string ValidationTier { get; set; } = "requires_human_approval";
 
+    [System.ComponentModel.DataAnnotations.Schema.NotMapped]
     public WorkflowValidationTier ValidationTierEnum
     {
         get => ParseValidationTier(ValidationTier);
@@ -42,6 +43,7 @@ public class AgentWorkflow
     /// </summary>
     public string ApprovalStatus { get; set; } = "pending";
 
+    [System.ComponentModel.DataAnnotations.Schema.NotMapped]
     public WorkflowApprovalStatus ApprovalStatusEnum
     {
         get => ParseApprovalStatus(ApprovalStatus);

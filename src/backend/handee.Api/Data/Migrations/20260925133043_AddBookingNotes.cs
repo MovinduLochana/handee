@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
@@ -15,20 +15,6 @@ namespace Handee.Api.Data.Migrations
                 table: "Bookings",
                 type: "text",
                 nullable: true);
-
-            migrationBuilder.AddColumn<int>(
-                name: "ApprovalStatusEnum",
-                table: "AgentWorkflows",
-                type: "integer",
-                nullable: false,
-                defaultValue: 0);
-
-            migrationBuilder.AddColumn<int>(
-                name: "ValidationTierEnum",
-                table: "AgentWorkflows",
-                type: "integer",
-                nullable: false,
-                defaultValue: 0);
         }
 
         /// <inheritdoc />
@@ -37,14 +23,6 @@ namespace Handee.Api.Data.Migrations
             migrationBuilder.DropColumn(
                 name: "Notes",
                 table: "Bookings");
-
-            migrationBuilder.DropColumn(
-                name: "ApprovalStatusEnum",
-                table: "AgentWorkflows");
-
-            migrationBuilder.DropColumn(
-                name: "ValidationTierEnum",
-                table: "AgentWorkflows");
         }
     }
 }

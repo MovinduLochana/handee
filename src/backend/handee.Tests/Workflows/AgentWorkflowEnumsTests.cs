@@ -75,4 +75,14 @@ public class AgentWorkflowEnumsTests
         Assert.Equal("approved", workflow.ApprovalStatus);
         Assert.Equal(WorkflowApprovalStatus.Approved, workflow.ApprovalStatusEnum);
     }
+
+    [Fact]
+    public void ProviderVerificationStatus_RetainsStableIntegerValues()
+    {
+        Assert.Equal(0, (int)ProviderVerificationStatus.Unverified);
+        Assert.Equal(1, (int)ProviderVerificationStatus.Pending);
+        Assert.Equal(2, (int)ProviderVerificationStatus.Verified);
+        Assert.Equal(3, (int)ProviderVerificationStatus.Rejected);
+        Assert.Equal(4, (int)ProviderVerificationStatus.InReview);
+    }
 }
