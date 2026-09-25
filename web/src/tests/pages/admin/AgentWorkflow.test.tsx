@@ -97,7 +97,7 @@ describe("AgentWorkflow Page", () => {
     render(
       <MemoryRouter>
         <AgentWorkflow />
-      </MemoryRouter>
+      </MemoryRouter>,
     );
 
   it("renders workflow list and summary metrics from API", async () => {

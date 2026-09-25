@@ -25,10 +25,10 @@ export default function CheckoutPayment() {
     queryFn: usersApi.getProfile,
   });
 
-  const {
-    methods,
-    addCard,
-  } = usePaymentMethods(userProfile?.id, userProfile?.fullName || "TEST CUSTOMER");
+  const { methods, addCard } = usePaymentMethods(
+    userProfile?.id,
+    userProfile?.fullName || "TEST CUSTOMER",
+  );
 
   const [selectedId, setSelectedId] = useState<string>("");
   const [showQuickAdd, setShowQuickAdd] = useState(false);
@@ -70,11 +70,13 @@ export default function CheckoutPayment() {
   }, [userProfile?.id, methods, selectedId, prevUserId]);
 
   const activeCard =
-    methods.find((m) => m.id === selectedId) ||
-    methods.find((m) => m.isDefault) ||
-    methods[0];
+    methods.find((m) => m.id === selectedId) || methods.find((m) => m.isDefault) || methods[0];
 
-  const { data: invoice, isLoading, error } = useQuery({
+  const {
+    data: invoice,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ["invoice", id],
     queryFn: () => paymentsApi.getInvoiceById(id || ""),
     enabled: !!id,
@@ -190,11 +192,10 @@ export default function CheckoutPayment() {
             <CheckCircle2 size={40} color="var(--success)" />
           </div>
 
-          <h2 style={{ fontSize: "1.8rem", marginBottom: "0.5rem" }}>
-            Payment Successful!
-          </h2>
+          <h2 style={{ fontSize: "1.8rem", marginBottom: "0.5rem" }}>Payment Successful!</h2>
           <p style={{ color: "var(--text-muted)", marginBottom: "2rem" }}>
-            Settlement authorized via {activeCard?.brand || "Sandbox Card"} ({activeCard?.last4 || "4242"})
+            Settlement authorized via {activeCard?.brand || "Sandbox Card"} (
+            {activeCard?.last4 || "4242"})
           </p>
 
           <div
@@ -206,17 +207,39 @@ export default function CheckoutPayment() {
               marginBottom: "2rem",
             }}
           >
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.5rem", fontSize: "0.9rem" }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                marginBottom: "0.5rem",
+                fontSize: "0.9rem",
+              }}
+            >
               <span style={{ color: "var(--text-muted)" }}>Amount Paid:</span>
-              <strong style={{ color: "var(--text-h)" }}>{paymentSuccess.currency} {paymentSuccess.amount.toLocaleString()}</strong>
+              <strong style={{ color: "var(--text-h)" }}>
+                {paymentSuccess.currency} {paymentSuccess.amount.toLocaleString()}
+              </strong>
             </div>
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.5rem", fontSize: "0.9rem" }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                marginBottom: "0.5rem",
+                fontSize: "0.9rem",
+              }}
+            >
               <span style={{ color: "var(--text-muted)" }}>Transaction Ref:</span>
-              <span style={{ fontFamily: "monospace", fontWeight: 600, color: "var(--accent)" }}>{paymentSuccess.reference}</span>
+              <span style={{ fontFamily: "monospace", fontWeight: 600, color: "var(--accent)" }}>
+                {paymentSuccess.reference}
+              </span>
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.9rem" }}>
               <span style={{ color: "var(--text-muted)" }}>Gateway:</span>
-              <span>{activeCard?.brand === "PayHere" ? "PayHere Sandbox" : "Stripe Sandbox (Polly Resilient)"}</span>
+              <span>
+                {activeCard?.brand === "PayHere"
+                  ? "PayHere Sandbox"
+                  : "Stripe Sandbox (Polly Resilient)"}
+              </span>
             </div>
           </div>
 
@@ -237,14 +260,22 @@ export default function CheckoutPayment() {
     <div className="payments-page">
       <div className="payments-header">
         <div>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.25rem" }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.5rem",
+              marginBottom: "0.25rem",
+            }}
+          >
             <span className="sandbox-badge">
               <Lock size={12} /> Sandbox Payment Gateway
             </span>
           </div>
           <h1 className="payments-title">Secure Checkout</h1>
           <p className="payments-subtitle">
-            Complete settlement for Invoice <strong>INV-{invoice.id.slice(0, 8).toUpperCase()}</strong>
+            Complete settlement for Invoice{" "}
+            <strong>INV-{invoice.id.slice(0, 8).toUpperCase()}</strong>
           </p>
         </div>
         <Link to={`/invoices/${invoice.id}`} className="btn-secondary">
@@ -265,7 +296,10 @@ export default function CheckoutPayment() {
           <div style={{ display: "flex", gap: "0.75rem", alignItems: "center" }}>
             <AlertTriangle size={20} />
             <div>
-              <strong>Payment Failed:</strong> {(payMutation.error as any)?.response?.data?.message || (payMutation.error as Error)?.message || "Sandbox card declined. Please try again."}
+              <strong>Payment Failed:</strong>{" "}
+              {(payMutation.error as any)?.response?.data?.message ||
+                (payMutation.error as Error)?.message ||
+                "Sandbox card declined. Please try again."}
             </div>
           </div>
         </div>
@@ -275,7 +309,14 @@ export default function CheckoutPayment() {
         {/* Payment Form & Card Selector */}
         <div>
           <div className="payments-card">
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: "0.5rem",
+              }}
+            >
               <h2 className="payments-card-title" style={{ margin: 0 }}>
                 <CreditCard size={20} color="var(--accent)" />
                 Choose Sandbox Payment Card
@@ -293,7 +334,14 @@ export default function CheckoutPayment() {
             </p>
 
             {/* List of Synchronized Saved Cards */}
-            <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", marginBottom: "1.5rem" }}>
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "0.75rem",
+                marginBottom: "1.5rem",
+              }}
+            >
               {methods.map((card) => {
                 const isSelected = activeCard?.id === card.id;
                 return (
@@ -307,7 +355,9 @@ export default function CheckoutPayment() {
                       padding: "1rem 1.25rem",
                       borderRadius: "10px",
                       border: isSelected ? "2px solid var(--accent)" : "1px solid var(--border)",
-                      backgroundColor: isSelected ? "oklch(45% 0.2 260 / 0.05)" : "var(--bg-surface)",
+                      backgroundColor: isSelected
+                        ? "oklch(45% 0.2 260 / 0.05)"
+                        : "var(--bg-surface)",
                       cursor: "pointer",
                       transition: "all 0.15s",
                     }}
@@ -318,15 +368,28 @@ export default function CheckoutPayment() {
                           width: 18,
                           height: 18,
                           borderRadius: "50%",
-                          border: isSelected ? "5px solid var(--accent)" : "2px solid var(--border)",
+                          border: isSelected
+                            ? "5px solid var(--accent)"
+                            : "2px solid var(--border)",
                           background: "#fff",
                         }}
                       />
                       <div>
-                        <div style={{ fontWeight: 600, color: "var(--text-h)", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                        <div
+                          style={{
+                            fontWeight: 600,
+                            color: "var(--text-h)",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "0.5rem",
+                          }}
+                        >
                           {card.name || `${card.brand} •••• ${card.last4}`}
                           {card.isDefault && (
-                            <span className="badge-status Succeeded" style={{ fontSize: "0.7rem", padding: "0.15rem 0.4rem" }}>
+                            <span
+                              className="badge-status Succeeded"
+                              style={{ fontSize: "0.7rem", padding: "0.15rem 0.4rem" }}
+                            >
                               Default
                             </span>
                           )}
@@ -337,8 +400,16 @@ export default function CheckoutPayment() {
                       </div>
                     </div>
                     <div style={{ textAlign: "right" }}>
-                      <span style={{ fontSize: "0.8rem", fontWeight: 600, color: "var(--text-muted)", display: "block" }}>
-                        Exp {String(card.expiryMonth).padStart(2, "0")}/{String(card.expiryYear).slice(-2)}
+                      <span
+                        style={{
+                          fontSize: "0.8rem",
+                          fontWeight: 600,
+                          color: "var(--text-muted)",
+                          display: "block",
+                        }}
+                      >
+                        Exp {String(card.expiryMonth).padStart(2, "0")}/
+                        {String(card.expiryYear).slice(-2)}
                       </span>
                       <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
                         {card.brand}
@@ -373,23 +444,44 @@ export default function CheckoutPayment() {
                     gap: "0.75rem",
                   }}
                 >
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                    }}
+                  >
                     <strong style={{ fontSize: "0.85rem" }}>Add Card Directly to Vault</strong>
                     <button
                       type="button"
                       onClick={() => setShowQuickAdd(false)}
-                      style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", fontSize: "0.8rem" }}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        color: "var(--text-muted)",
+                        cursor: "pointer",
+                        fontSize: "0.8rem",
+                      }}
                     >
                       Cancel
                     </button>
                   </div>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
                     <div>
-                      <label style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>Brand</label>
+                      <label style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
+                        Brand
+                      </label>
                       <select
                         value={quickCard.brand}
                         onChange={(e) => setQuickCard({ ...quickCard, brand: e.target.value })}
-                        style={{ width: "100%", padding: "0.5rem", borderRadius: "6px", border: "1px solid var(--border)", background: "var(--bg-surface)", color: "var(--text-h)" }}
+                        style={{
+                          width: "100%",
+                          padding: "0.5rem",
+                          borderRadius: "6px",
+                          border: "1px solid var(--border)",
+                          background: "var(--bg-surface)",
+                          color: "var(--text-h)",
+                        }}
                       >
                         <option value="Visa">Visa</option>
                         <option value="Mastercard">Mastercard</option>
@@ -398,14 +490,23 @@ export default function CheckoutPayment() {
                       </select>
                     </div>
                     <div>
-                      <label style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>Last 4</label>
+                      <label style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
+                        Last 4
+                      </label>
                       <input
                         type="text"
                         maxLength={4}
                         value={quickCard.last4}
                         onChange={(e) => setQuickCard({ ...quickCard, last4: e.target.value })}
                         required
-                        style={{ width: "100%", padding: "0.5rem", borderRadius: "6px", border: "1px solid var(--border)", background: "var(--bg-surface)", color: "var(--text-h)" }}
+                        style={{
+                          width: "100%",
+                          padding: "0.5rem",
+                          borderRadius: "6px",
+                          border: "1px solid var(--border)",
+                          background: "var(--bg-surface)",
+                          color: "var(--text-h)",
+                        }}
                       />
                     </div>
                   </div>
@@ -418,7 +519,9 @@ export default function CheckoutPayment() {
 
             {/* Interactive Card Simulator Display */}
             <div className="card-simulator">
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div
+                style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}
+              >
                 <div className="card-simulator-chip" />
                 <span style={{ fontWeight: 700, letterSpacing: "0.05em" }}>
                   {activeCard?.brand || "Visa"}
@@ -465,13 +568,29 @@ export default function CheckoutPayment() {
             </h3>
 
             <div style={{ margin: "1rem 0 1.5rem" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.75rem", fontSize: "0.9rem" }}>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  marginBottom: "0.75rem",
+                  fontSize: "0.9rem",
+                }}
+              >
                 <span style={{ color: "var(--text)" }}>Service Base Charge:</span>
                 <span style={{ fontWeight: 600 }}>LKR {invoice.baseAmount.toLocaleString()}</span>
               </div>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.75rem", fontSize: "0.9rem" }}>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  marginBottom: "0.75rem",
+                  fontSize: "0.9rem",
+                }}
+              >
                 <span style={{ color: "var(--text-muted)" }}>Platform Trust Fee (15%):</span>
-                <span style={{ color: "var(--text-muted)" }}>LKR {invoice.platformFee.toLocaleString()}</span>
+                <span style={{ color: "var(--text-muted)" }}>
+                  LKR {invoice.platformFee.toLocaleString()}
+                </span>
               </div>
               <div
                 style={{
@@ -485,7 +604,9 @@ export default function CheckoutPayment() {
                 }}
               >
                 <span>Total Due:</span>
-                <span style={{ color: "var(--accent)" }}>LKR {invoice.totalAmount.toLocaleString()}</span>
+                <span style={{ color: "var(--accent)" }}>
+                  LKR {invoice.totalAmount.toLocaleString()}
+                </span>
               </div>
             </div>
 
@@ -501,12 +622,21 @@ export default function CheckoutPayment() {
                 color: "var(--text-muted)",
               }}
             >
-              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "var(--text-h)", fontWeight: 600 }}>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                  color: "var(--text-h)",
+                  fontWeight: 600,
+                }}
+              >
                 <ShieldCheck size={16} color="var(--success)" />
                 Escrow Protected Payment
               </div>
               <div>
-                Platform retains funds until service completion is confirmed. The provider is directly credited upon your payment.
+                Platform retains funds until service completion is confirmed. The provider is
+                directly credited upon your payment.
               </div>
             </div>
           </div>

@@ -58,7 +58,9 @@ export const agentWorkflowApi = {
    * Admin: Retrieve workflow execution state by associated JobRequest ID.
    */
   getByJobId: async (jobRequestId: string): Promise<AgentWorkflowDto> => {
-    const response = await api.get<AgentWorkflowDto>(`/api/admin/agent-workflows/by-job/${jobRequestId}`);
+    const response = await api.get<AgentWorkflowDto>(
+      `/api/admin/agent-workflows/by-job/${jobRequestId}`,
+    );
     return response.data;
   },
 
@@ -68,7 +70,7 @@ export const agentWorkflowApi = {
   makeDecision: async (
     id: string,
     decision: "Approve" | "Reject" | "Revise",
-    note?: string
+    note?: string,
   ): Promise<AgentWorkflowDto> => {
     const response = await api.post<AgentWorkflowDto>(`/api/admin/agent-workflows/${id}/decision`, {
       decision,

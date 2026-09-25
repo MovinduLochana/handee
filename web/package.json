@@ -12,7 +12,9 @@
     "lint:fix": "oxlint --fix",
     "fmt": "oxfmt",
     "fmt:check": "oxfmt --check",
-    "check": "oxlint && oxfmt --check"
+    "check": "oxlint && oxfmt --check",
+    "fix": "oxlint --fix && oxfmt",
+    "check:fix": "npm run check || npm run fmt"
   },
   "dependencies": {
     "@react-google-maps/api": "^2.20.8",

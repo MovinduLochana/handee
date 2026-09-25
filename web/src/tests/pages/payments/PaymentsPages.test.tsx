@@ -293,7 +293,12 @@ describe("Payments & Invoicing Pages", () => {
   });
 
   it("renders PaymentMethods and synchronizes with checkout card vault", async () => {
-    const mockUser = { id: "cust-sync-test", fullName: "Sync Test User", email: "sync@test.com", roles: ["Customer"] };
+    const mockUser = {
+      id: "cust-sync-test",
+      fullName: "Sync Test User",
+      email: "sync@test.com",
+      roles: ["Customer"],
+    };
     vi.mocked(usersApi.getProfile).mockResolvedValue(mockUser as any);
 
     const { unmount } = render(
@@ -303,7 +308,7 @@ describe("Payments & Invoicing Pages", () => {
             <Route path="/account/payment-methods" element={<PaymentMethods />} />
           </Routes>
         </MemoryRouter>
-      </QueryClientProvider>
+      </QueryClientProvider>,
     );
 
     expect(screen.getByText("Saved Payment Methods")).toBeInTheDocument();
@@ -343,10 +348,15 @@ describe("Payments & Invoicing Pages", () => {
         isDefault: true,
         holderName: "Saviru Atapattu",
       },
-      "cust-sync-2"
+      "cust-sync-2",
     );
 
-    const mockUser = { id: "cust-sync-2", fullName: "Saviru Atapattu", email: "saviru@test.com", roles: ["Customer"] };
+    const mockUser = {
+      id: "cust-sync-2",
+      fullName: "Saviru Atapattu",
+      email: "saviru@test.com",
+      roles: ["Customer"],
+    };
     vi.mocked(usersApi.getProfile).mockResolvedValue(mockUser as any);
     vi.mocked(paymentsApi.getInvoiceById).mockResolvedValue(mockInvoice);
     vi.mocked(paymentsApi.processPayment).mockResolvedValueOnce({
@@ -368,7 +378,7 @@ describe("Payments & Invoicing Pages", () => {
             <Route path="/invoices/:id/pay" element={<CheckoutPayment />} />
           </Routes>
         </MemoryRouter>
-      </QueryClientProvider>
+      </QueryClientProvider>,
     );
 
     await waitFor(() => {
@@ -385,7 +395,7 @@ describe("Payments & Invoicing Pages", () => {
           invoiceId: "inv-sync-1",
           paymentMethod: "card",
           last4: "1001",
-        })
+        }),
       );
     });
   });

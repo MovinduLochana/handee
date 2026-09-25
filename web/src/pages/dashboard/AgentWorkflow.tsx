@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import {
   Activity,
   CheckCircle,
@@ -11,7 +11,6 @@ import {
   ChevronRight,
   ChevronDown,
   X,
-  Send,
   SlidersHorizontal,
 } from "lucide-react";
 import { agentWorkflowApi, type AgentWorkflowDto } from "../../api/agentWorkflow";
@@ -53,7 +52,7 @@ export default function AgentWorkflow() {
     }
   }, [selectedWorkflow]);
 
-  const fetchWorkflows = async () => {
+  const fetchWorkflows = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -64,11 +63,11 @@ export default function AgentWorkflow() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedTier, selectedStatus]);
 
   useEffect(() => {
     fetchWorkflows();
-  }, [selectedTier, selectedStatus]);
+  }, [fetchWorkflows]);
 
   const handleDecision = async (decision: "Approve" | "Reject" | "Revise") => {
     if (!selectedWorkflow) return;
@@ -78,7 +77,7 @@ export default function AgentWorkflow() {
       const updated = await agentWorkflowApi.makeDecision(
         selectedWorkflow.id,
         decision,
-        decisionNote || undefined
+        decisionNote || undefined,
       );
       setActionSuccess(`Workflow successfully marked as ${decision}.`);
       setSelectedWorkflow(updated);
@@ -95,8 +94,12 @@ export default function AgentWorkflow() {
   // Metric counts
   const totalCount = workflows.length;
   const pendingCount = workflows.filter((w) => w.approvalStatus.toLowerCase() === "pending").length;
-  const auditCount = workflows.filter((w) => w.validationTier.toLowerCase() === "approved_with_audit").length;
-  const autoDispatchCount = workflows.filter((w) => w.validationTier.toLowerCase() === "approved_for_auto_dispatch").length;
+  const auditCount = workflows.filter(
+    (w) => w.validationTier.toLowerCase() === "approved_with_audit",
+  ).length;
+  const autoDispatchCount = workflows.filter(
+    (w) => w.validationTier.toLowerCase() === "approved_for_auto_dispatch",
+  ).length;
 
   const getStatusIcon = (status: string) => {
     const s = status.toLowerCase();
@@ -186,14 +189,23 @@ export default function AgentWorkflow() {
   return (
     <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "1.5rem" }}>
       {/* Header */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "2rem" }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "flex-start",
+          marginBottom: "2rem",
+        }}
+      >
         <div>
-          <h1 style={{ fontFamily: "var(--heading)", fontSize: "1.875rem", marginBottom: "0.5rem" }}>
+          <h1
+            style={{ fontFamily: "var(--heading)", fontSize: "1.875rem", marginBottom: "0.5rem" }}
+          >
             Agent Monitoring & HITL Governance
           </h1>
           <p style={{ color: "var(--text)", maxWidth: "800px", lineHeight: 1.6 }}>
-            Supervise the four-agent dispatch pipeline. Matches flagged as high risk require manual administrator review
-            before job dispatch under the Human-in-the-Loop policy.
+            Supervise the four-agent dispatch pipeline. Matches flagged as high risk require manual
+            administrator review before job dispatch under the Human-in-the-Loop policy.
           </p>
         </div>
         <button
@@ -217,28 +229,99 @@ export default function AgentWorkflow() {
       </div>
 
       {/* KPI Cards */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "1rem", marginBottom: "2rem" }}>
-        <div style={{ backgroundColor: "var(--bg)", padding: "1.25rem", borderRadius: "10px", border: "1px solid var(--border)" }}>
-          <div style={{ fontSize: "0.85rem", color: "var(--text)", marginBottom: "0.25rem" }}>Total Runs</div>
-          <div style={{ fontSize: "1.75rem", fontWeight: 700, color: "var(--text-h)" }}>{totalCount}</div>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+          gap: "1rem",
+          marginBottom: "2rem",
+        }}
+      >
+        <div
+          style={{
+            backgroundColor: "var(--bg)",
+            padding: "1.25rem",
+            borderRadius: "10px",
+            border: "1px solid var(--border)",
+          }}
+        >
+          <div style={{ fontSize: "0.85rem", color: "var(--text)", marginBottom: "0.25rem" }}>
+            Total Runs
+          </div>
+          <div style={{ fontSize: "1.75rem", fontWeight: 700, color: "var(--text-h)" }}>
+            {totalCount}
+          </div>
         </div>
-        <div style={{ backgroundColor: "var(--bg)", padding: "1.25rem", borderRadius: "10px", border: "1px solid var(--border)" }}>
-          <div style={{ fontSize: "0.85rem", color: "var(--text)", marginBottom: "0.25rem" }}>Requires Human Approval</div>
-          <div style={{ fontSize: "1.75rem", fontWeight: 700, color: pendingCount > 0 ? "#ef4444" : "var(--text-h)" }}>{pendingCount}</div>
+        <div
+          style={{
+            backgroundColor: "var(--bg)",
+            padding: "1.25rem",
+            borderRadius: "10px",
+            border: "1px solid var(--border)",
+          }}
+        >
+          <div style={{ fontSize: "0.85rem", color: "var(--text)", marginBottom: "0.25rem" }}>
+            Requires Human Approval
+          </div>
+          <div
+            style={{
+              fontSize: "1.75rem",
+              fontWeight: 700,
+              color: pendingCount > 0 ? "#ef4444" : "var(--text-h)",
+            }}
+          >
+            {pendingCount}
+          </div>
         </div>
-        <div style={{ backgroundColor: "var(--bg)", padding: "1.25rem", borderRadius: "10px", border: "1px solid var(--border)" }}>
-          <div style={{ fontSize: "0.85rem", color: "var(--text)", marginBottom: "0.25rem" }}>Approved With Audit</div>
+        <div
+          style={{
+            backgroundColor: "var(--bg)",
+            padding: "1.25rem",
+            borderRadius: "10px",
+            border: "1px solid var(--border)",
+          }}
+        >
+          <div style={{ fontSize: "0.85rem", color: "var(--text)", marginBottom: "0.25rem" }}>
+            Approved With Audit
+          </div>
           <div style={{ fontSize: "1.75rem", fontWeight: 700, color: "#3b82f6" }}>{auditCount}</div>
         </div>
-        <div style={{ backgroundColor: "var(--bg)", padding: "1.25rem", borderRadius: "10px", border: "1px solid var(--border)" }}>
-          <div style={{ fontSize: "0.85rem", color: "var(--text)", marginBottom: "0.25rem" }}>Auto-Dispatched</div>
-          <div style={{ fontSize: "1.75rem", fontWeight: 700, color: "#22c55e" }}>{autoDispatchCount}</div>
+        <div
+          style={{
+            backgroundColor: "var(--bg)",
+            padding: "1.25rem",
+            borderRadius: "10px",
+            border: "1px solid var(--border)",
+          }}
+        >
+          <div style={{ fontSize: "0.85rem", color: "var(--text)", marginBottom: "0.25rem" }}>
+            Auto-Dispatched
+          </div>
+          <div style={{ fontSize: "1.75rem", fontWeight: 700, color: "#22c55e" }}>
+            {autoDispatchCount}
+          </div>
         </div>
       </div>
 
       {/* Filter Tabs */}
-      <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1.5rem", flexWrap: "wrap", alignItems: "center" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginRight: "1rem", color: "var(--text)" }}>
+      <div
+        style={{
+          display: "flex",
+          gap: "0.5rem",
+          marginBottom: "1.5rem",
+          flexWrap: "wrap",
+          alignItems: "center",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "0.5rem",
+            marginRight: "1rem",
+            color: "var(--text)",
+          }}
+        >
           <SlidersHorizontal size={16} /> Filter Tier:
         </div>
         {[
@@ -292,7 +375,14 @@ export default function AgentWorkflow() {
       </div>
 
       {/* Workflows Table */}
-      <div style={{ backgroundColor: "var(--bg)", borderRadius: "12px", border: "1px solid var(--border)", overflow: "hidden" }}>
+      <div
+        style={{
+          backgroundColor: "var(--bg)",
+          borderRadius: "12px",
+          border: "1px solid var(--border)",
+          overflow: "hidden",
+        }}
+      >
         {loading ? (
           <div style={{ padding: "3rem", textAlign: "center", color: "var(--text)" }}>
             <RefreshCw size={24} className="animate-spin" style={{ margin: "0 auto 1rem" }} />
@@ -310,14 +400,33 @@ export default function AgentWorkflow() {
         ) : (
           <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
             <thead>
-              <tr style={{ borderBottom: "1px solid var(--border)", backgroundColor: "var(--social-bg)" }}>
-                <th style={{ padding: "1rem 1.25rem", fontWeight: 600, color: "var(--text-h)" }}>Job / Workflow</th>
-                <th style={{ padding: "1rem 1.25rem", fontWeight: 600, color: "var(--text-h)" }}>Objective</th>
-                <th style={{ padding: "1rem 1.25rem", fontWeight: 600, color: "var(--text-h)" }}>Candidate Provider</th>
-                <th style={{ padding: "1rem 1.25rem", fontWeight: 600, color: "var(--text-h)" }}>Quote</th>
-                <th style={{ padding: "1rem 1.25rem", fontWeight: 600, color: "var(--text-h)" }}>Risk Tier</th>
-                <th style={{ padding: "1rem 1.25rem", fontWeight: 600, color: "var(--text-h)" }}>Approval</th>
-                <th style={{ padding: "1rem 1.25rem", fontWeight: 600, color: "var(--text-h)" }}>Action</th>
+              <tr
+                style={{
+                  borderBottom: "1px solid var(--border)",
+                  backgroundColor: "var(--social-bg)",
+                }}
+              >
+                <th style={{ padding: "1rem 1.25rem", fontWeight: 600, color: "var(--text-h)" }}>
+                  Job / Workflow
+                </th>
+                <th style={{ padding: "1rem 1.25rem", fontWeight: 600, color: "var(--text-h)" }}>
+                  Objective
+                </th>
+                <th style={{ padding: "1rem 1.25rem", fontWeight: 600, color: "var(--text-h)" }}>
+                  Candidate Provider
+                </th>
+                <th style={{ padding: "1rem 1.25rem", fontWeight: 600, color: "var(--text-h)" }}>
+                  Quote
+                </th>
+                <th style={{ padding: "1rem 1.25rem", fontWeight: 600, color: "var(--text-h)" }}>
+                  Risk Tier
+                </th>
+                <th style={{ padding: "1rem 1.25rem", fontWeight: 600, color: "var(--text-h)" }}>
+                  Approval
+                </th>
+                <th style={{ padding: "1rem 1.25rem", fontWeight: 600, color: "var(--text-h)" }}>
+                  Action
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -332,18 +441,34 @@ export default function AgentWorkflow() {
                     </div>
                   </td>
                   <td style={{ padding: "1.25rem", maxWidth: "260px" }}>
-                    <div style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", fontSize: "0.9rem" }}>
+                    <div
+                      style={{
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        fontSize: "0.9rem",
+                      }}
+                    >
                       {wf.objective}
                     </div>
                   </td>
                   <td style={{ padding: "1.25rem" }}>
                     {wf.selectedProviderName ? (
-                      <span style={{ display: "inline-flex", alignItems: "center", gap: "0.35rem", fontSize: "0.9rem" }}>
+                      <span
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "0.35rem",
+                          fontSize: "0.9rem",
+                        }}
+                      >
                         <UserCheck size={15} style={{ color: "#22c55e" }} />
                         {wf.selectedProviderName}
                       </span>
                     ) : (
-                      <span style={{ color: "var(--text)", fontSize: "0.85rem" }}>None Assigned</span>
+                      <span style={{ color: "var(--text)", fontSize: "0.85rem" }}>
+                        None Assigned
+                      </span>
                     )}
                   </td>
                   <td style={{ padding: "1.25rem", fontFamily: "var(--mono)", fontWeight: 600 }}>
@@ -353,7 +478,9 @@ export default function AgentWorkflow() {
                   <td style={{ padding: "1.25rem" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
                       {getStatusIcon(wf.approvalStatus)}
-                      <span style={{ fontSize: "0.85rem", textTransform: "capitalize" }}>{wf.approvalStatus}</span>
+                      <span style={{ fontSize: "0.85rem", textTransform: "capitalize" }}>
+                        {wf.approvalStatus}
+                      </span>
                     </div>
                   </td>
                   <td style={{ padding: "1.25rem" }}>
@@ -365,8 +492,14 @@ export default function AgentWorkflow() {
                       }}
                       style={{
                         padding: "0.45rem 0.9rem",
-                        backgroundColor: wf.approvalStatus.toLowerCase() === "pending" ? "var(--text-h)" : "transparent",
-                        color: wf.approvalStatus.toLowerCase() === "pending" ? "var(--bg)" : "var(--text)",
+                        backgroundColor:
+                          wf.approvalStatus.toLowerCase() === "pending"
+                            ? "var(--text-h)"
+                            : "transparent",
+                        color:
+                          wf.approvalStatus.toLowerCase() === "pending"
+                            ? "var(--bg)"
+                            : "var(--text)",
                         border: "1px solid var(--border)",
                         borderRadius: "6px",
                         cursor: "pointer",
@@ -431,7 +564,14 @@ export default function AgentWorkflow() {
               }}
             >
               <div>
-                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.35rem" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.5rem",
+                    marginBottom: "0.35rem",
+                  }}
+                >
                   <span
                     style={{
                       fontSize: "0.75rem",
@@ -459,7 +599,9 @@ export default function AgentWorkflow() {
                 >
                   Workflow Audit & Governance
                 </h2>
-                <div style={{ fontSize: "0.78rem", color: "var(--text-muted)", marginTop: "0.25rem" }}>
+                <div
+                  style={{ fontSize: "0.78rem", color: "var(--text-muted)", marginTop: "0.25rem" }}
+                >
                   Initiated: {new Date(selectedWorkflow.createdAt).toLocaleString()}
                 </div>
               </div>
@@ -525,10 +667,25 @@ export default function AgentWorkflow() {
                   padding: "1.25rem",
                 }}
               >
-                <div style={{ fontSize: "0.78rem", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "0.4rem" }}>
+                <div
+                  style={{
+                    fontSize: "0.78rem",
+                    color: "var(--text-muted)",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.05em",
+                    marginBottom: "0.4rem",
+                  }}
+                >
                   Customer Job Request
                 </div>
-                <div style={{ fontWeight: 600, color: "var(--text-h)", fontSize: "1rem", marginBottom: "1rem" }}>
+                <div
+                  style={{
+                    fontWeight: 600,
+                    color: "var(--text-h)",
+                    fontSize: "1rem",
+                    marginBottom: "1rem",
+                  }}
+                >
                   {selectedWorkflow.objective}
                 </div>
 
@@ -543,8 +700,19 @@ export default function AgentWorkflow() {
                   }}
                 >
                   <div>
-                    <span style={{ color: "var(--text-muted)", fontSize: "0.78rem" }}>Candidate Provider:</span>
-                    <div style={{ fontWeight: 600, color: "var(--text-h)", marginTop: "0.2rem", display: "flex", alignItems: "center", gap: "0.35rem" }}>
+                    <span style={{ color: "var(--text-muted)", fontSize: "0.78rem" }}>
+                      Candidate Provider:
+                    </span>
+                    <div
+                      style={{
+                        fontWeight: 600,
+                        color: "var(--text-h)",
+                        marginTop: "0.2rem",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "0.35rem",
+                      }}
+                    >
                       {selectedWorkflow.selectedProviderName ? (
                         <>
                           <UserCheck size={15} style={{ color: "#22c55e" }} />
@@ -556,21 +724,54 @@ export default function AgentWorkflow() {
                     </div>
                   </div>
                   <div>
-                    <span style={{ color: "var(--text-muted)", fontSize: "0.78rem" }}>Estimated Quote:</span>
-                    <div style={{ fontWeight: 700, color: "var(--text-h)", marginTop: "0.2rem", fontFamily: "var(--mono)", fontSize: "1rem" }}>
-                      {selectedWorkflow.estimatedPrice ? `Rs. ${selectedWorkflow.estimatedPrice.toLocaleString()}` : "—"}
+                    <span style={{ color: "var(--text-muted)", fontSize: "0.78rem" }}>
+                      Estimated Quote:
+                    </span>
+                    <div
+                      style={{
+                        fontWeight: 700,
+                        color: "var(--text-h)",
+                        marginTop: "0.2rem",
+                        fontFamily: "var(--mono)",
+                        fontSize: "1rem",
+                      }}
+                    >
+                      {selectedWorkflow.estimatedPrice
+                        ? `Rs. ${selectedWorkflow.estimatedPrice.toLocaleString()}`
+                        : "—"}
                     </div>
                   </div>
                   <div>
-                    <span style={{ color: "var(--text-muted)", fontSize: "0.78rem" }}>Approval Status:</span>
-                    <div style={{ fontWeight: 600, color: "var(--text-h)", marginTop: "0.2rem", display: "flex", alignItems: "center", gap: "0.35rem", textTransform: "capitalize" }}>
+                    <span style={{ color: "var(--text-muted)", fontSize: "0.78rem" }}>
+                      Approval Status:
+                    </span>
+                    <div
+                      style={{
+                        fontWeight: 600,
+                        color: "var(--text-h)",
+                        marginTop: "0.2rem",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "0.35rem",
+                        textTransform: "capitalize",
+                      }}
+                    >
                       {getStatusIcon(selectedWorkflow.approvalStatus)}
                       {selectedWorkflow.approvalStatus}
                     </div>
                   </div>
                   <div>
-                    <span style={{ color: "var(--text-muted)", fontSize: "0.78rem" }}>Job Request ID:</span>
-                    <div style={{ fontFamily: "var(--mono)", color: "var(--text-h)", marginTop: "0.2rem", fontSize: "0.82rem" }}>
+                    <span style={{ color: "var(--text-muted)", fontSize: "0.78rem" }}>
+                      Job Request ID:
+                    </span>
+                    <div
+                      style={{
+                        fontFamily: "var(--mono)",
+                        color: "var(--text-h)",
+                        marginTop: "0.2rem",
+                        fontSize: "0.82rem",
+                      }}
+                    >
                       {selectedWorkflow.jobRequestId || "N/A"}
                     </div>
                   </div>
@@ -584,12 +785,32 @@ export default function AgentWorkflow() {
                 const reasons = res?.reasons || [];
                 return (
                   <div>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.6rem" }}>
-                      <h3 style={{ fontSize: "0.95rem", fontWeight: 700, margin: 0, color: "var(--text-h)" }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        marginBottom: "0.6rem",
+                      }}
+                    >
+                      <h3
+                        style={{
+                          fontSize: "0.95rem",
+                          fontWeight: 700,
+                          margin: 0,
+                          color: "var(--text-h)",
+                        }}
+                      >
                         Validation Rules & Audit Checklist
                       </h3>
                       {rules.length > 0 && (
-                        <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", fontFamily: "var(--mono)" }}>
+                        <span
+                          style={{
+                            fontSize: "0.75rem",
+                            color: "var(--text-muted)",
+                            fontFamily: "var(--mono)",
+                          }}
+                        >
                           {rules.filter((r: any) => r.passed).length}/{rules.length} Passed
                         </span>
                       )}
@@ -605,12 +826,28 @@ export default function AgentWorkflow() {
                           marginBottom: "0.75rem",
                         }}
                       >
-                        <div style={{ fontSize: "0.8rem", fontWeight: 600, color: "#dc2626", marginBottom: "0.3rem" }}>
+                        <div
+                          style={{
+                            fontSize: "0.8rem",
+                            fontWeight: 600,
+                            color: "#dc2626",
+                            marginBottom: "0.3rem",
+                          }}
+                        >
                           Flagged Safety Concerns:
                         </div>
-                        <ul style={{ margin: 0, paddingLeft: "1.2rem", fontSize: "0.82rem", color: "var(--text-h)" }}>
+                        <ul
+                          style={{
+                            margin: 0,
+                            paddingLeft: "1.2rem",
+                            fontSize: "0.82rem",
+                            color: "var(--text-h)",
+                          }}
+                        >
                           {reasons.map((r: string, i: number) => (
-                            <li key={i} style={{ marginBottom: "0.2rem" }}>{r}</li>
+                            <li key={i} style={{ marginBottom: "0.2rem" }}>
+                              {r}
+                            </li>
                           ))}
                         </ul>
                       </div>
@@ -629,13 +866,24 @@ export default function AgentWorkflow() {
                               padding: "0.75rem 0.9rem",
                               borderRadius: "8px",
                               border: `1px solid ${rule.passed ? "rgba(34, 197, 94, 0.25)" : "rgba(239, 68, 68, 0.25)"}`,
-                              backgroundColor: rule.passed ? "rgba(34, 197, 94, 0.05)" : "rgba(239, 68, 68, 0.05)",
+                              backgroundColor: rule.passed
+                                ? "rgba(34, 197, 94, 0.05)"
+                                : "rgba(239, 68, 68, 0.05)",
                               fontSize: "0.85rem",
                             }}
                           >
                             <div style={{ flex: 1 }}>
-                              <div style={{ display: "flex", alignItems: "center", gap: "0.45rem", marginBottom: "0.2rem" }}>
-                                <span style={{ fontWeight: 600, color: "var(--text-h)" }}>{rule.rule_name}</span>
+                              <div
+                                style={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: "0.45rem",
+                                  marginBottom: "0.2rem",
+                                }}
+                              >
+                                <span style={{ fontWeight: 600, color: "var(--text-h)" }}>
+                                  {rule.rule_name}
+                                </span>
                                 {rule.rule_id && (
                                   <span
                                     style={{
@@ -652,7 +900,13 @@ export default function AgentWorkflow() {
                                   </span>
                                 )}
                               </div>
-                              <div style={{ fontSize: "0.8rem", color: "var(--text)", lineHeight: 1.4 }}>
+                              <div
+                                style={{
+                                  fontSize: "0.8rem",
+                                  color: "var(--text)",
+                                  lineHeight: 1.4,
+                                }}
+                              >
                                 {rule.message}
                               </div>
                             </div>
@@ -667,7 +921,13 @@ export default function AgentWorkflow() {
                         ))}
                       </div>
                     ) : (
-                      <div style={{ fontSize: "0.82rem", color: "var(--text-muted)", padding: "0.5rem 0" }}>
+                      <div
+                        style={{
+                          fontSize: "0.82rem",
+                          color: "var(--text-muted)",
+                          padding: "0.5rem 0",
+                        }}
+                      >
                         No granular rule checks recorded in workflow payload.
                       </div>
                     )}
@@ -677,7 +937,14 @@ export default function AgentWorkflow() {
 
               {/* Agent Execution Steps */}
               <div>
-                <h3 style={{ fontSize: "0.95rem", fontWeight: 700, marginBottom: "0.6rem", color: "var(--text-h)" }}>
+                <h3
+                  style={{
+                    fontSize: "0.95rem",
+                    fontWeight: 700,
+                    marginBottom: "0.6rem",
+                    color: "var(--text-h)",
+                  }}
+                >
                   Agent Execution Steps
                 </h3>
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}>
@@ -696,7 +963,14 @@ export default function AgentWorkflow() {
                             fontSize: "0.85rem",
                           }}
                         >
-                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.3rem" }}>
+                          <div
+                            style={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                              alignItems: "center",
+                              marginBottom: "0.3rem",
+                            }}
+                          >
                             <span style={{ fontWeight: 600, color: "var(--text-h)" }}>
                               Step {step.stepNumber}: {step.agentName}
                             </span>
@@ -713,8 +987,17 @@ export default function AgentWorkflow() {
                               {step.durationMs}ms
                             </span>
                           </div>
-                          <div style={{ color: "var(--text)", fontSize: "0.8rem", marginBottom: step.outputData ? "0.4rem" : 0 }}>
-                            Action: <code style={{ fontFamily: "var(--mono)", color: "var(--accent)" }}>{step.action}</code>
+                          <div
+                            style={{
+                              color: "var(--text)",
+                              fontSize: "0.8rem",
+                              marginBottom: step.outputData ? "0.4rem" : 0,
+                            }}
+                          >
+                            Action:{" "}
+                            <code style={{ fontFamily: "var(--mono)", color: "var(--accent)" }}>
+                              {step.action}
+                            </code>
                           </div>
                           {step.outputData && (
                             <div>
@@ -791,11 +1074,27 @@ export default function AgentWorkflow() {
             >
               {selectedWorkflow.approvalStatus.toLowerCase() === "pending" ? (
                 <div>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.45rem" }}>
-                    <h4 style={{ fontSize: "0.88rem", fontWeight: 700, margin: 0, color: "var(--text-h)" }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      marginBottom: "0.45rem",
+                    }}
+                  >
+                    <h4
+                      style={{
+                        fontSize: "0.88rem",
+                        fontWeight: 700,
+                        margin: 0,
+                        color: "var(--text-h)",
+                      }}
+                    >
                       Record HITL Decision
                     </h4>
-                    <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>Action required</span>
+                    <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
+                      Action required
+                    </span>
                   </div>
                   <textarea
                     value={decisionNote}
@@ -816,7 +1115,9 @@ export default function AgentWorkflow() {
                       fontFamily: "inherit",
                     }}
                   />
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.6rem" }}>
+                  <div
+                    style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.6rem" }}
+                  >
                     <button
                       type="button"
                       disabled={submittingDecision}
@@ -892,14 +1193,25 @@ export default function AgentWorkflow() {
                   </div>
                 </div>
               ) : (
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div
+                  style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}
+                >
                   <div>
                     <div style={{ fontSize: "0.78rem", color: "var(--text-muted)" }}>
                       Decision recorded on:{" "}
-                      {selectedWorkflow.decidedAt ? new Date(selectedWorkflow.decidedAt).toLocaleString() : "System Auto-Dispatch"}
+                      {selectedWorkflow.decidedAt
+                        ? new Date(selectedWorkflow.decidedAt).toLocaleString()
+                        : "System Auto-Dispatch"}
                     </div>
                     {selectedWorkflow.decisionNote && (
-                      <div style={{ fontSize: "0.82rem", color: "var(--text-h)", marginTop: "0.2rem", fontStyle: "italic" }}>
+                      <div
+                        style={{
+                          fontSize: "0.82rem",
+                          color: "var(--text-h)",
+                          marginTop: "0.2rem",
+                          fontStyle: "italic",
+                        }}
+                      >
                         "{selectedWorkflow.decisionNote}"
                       </div>
                     )}

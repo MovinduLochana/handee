@@ -1,16 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import {
-  MessageSquare,
-  X,
-  Send,
-  Sparkles,
-  Bot,
-  User,
-  Star,
-  CheckCircle,
-  ExternalLink,
-  ChevronRight,
-} from "lucide-react";
+import { X, Send, Sparkles, Bot, User, Star, CheckCircle, ChevronRight } from "lucide-react";
 import { agentsApi, type AssistantQueryResponse } from "../../api/agents";
 
 interface ChatMessage {
@@ -167,8 +156,18 @@ export default function AiAssistantWidget() {
               </div>
               <div>
                 <div style={{ fontWeight: 700, fontSize: "0.95rem" }}>Handee AI Assistant</div>
-                <div style={{ fontSize: "0.75rem", opacity: 0.85, display: "flex", alignItems: "center", gap: "0.3rem" }}>
-                  <span style={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: "#22c55e" }} />
+                <div
+                  style={{
+                    fontSize: "0.75rem",
+                    opacity: 0.85,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.3rem",
+                  }}
+                >
+                  <span
+                    style={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: "#22c55e" }}
+                  />
                   FastAPI Agent &middot; Active
                 </div>
               </div>
@@ -264,7 +263,9 @@ export default function AiAssistantWidget() {
                   {/* Suggested Providers Cards */}
                   {m.data?.suggested_providers && m.data.suggested_providers.length > 0 && (
                     <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
-                      <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--text-muted)" }}>
+                      <span
+                        style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--text-muted)" }}
+                      >
                         Recommended Verified Specialists:
                       </span>
                       {m.data.suggested_providers.map((p) => (
@@ -278,17 +279,38 @@ export default function AiAssistantWidget() {
                             fontSize: "0.82rem",
                           }}
                         >
-                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                          <div
+                            style={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                              alignItems: "center",
+                            }}
+                          >
                             <div style={{ display: "flex", alignItems: "center", gap: "0.35rem" }}>
                               <strong style={{ color: "var(--text-h)" }}>{p.fullName}</strong>
                               {p.isVerified && <CheckCircle size={13} color="#22c55e" />}
                             </div>
-                            <span style={{ color: "#eab308", display: "flex", alignItems: "center", gap: "0.15rem", fontWeight: 600 }}>
+                            <span
+                              style={{
+                                color: "#eab308",
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "0.15rem",
+                                fontWeight: 600,
+                              }}
+                            >
                               <Star size={12} fill="#eab308" /> {p.rating || 4.9}
                             </span>
                           </div>
-                          <div style={{ color: "var(--text-muted)", fontSize: "0.78rem", marginTop: "0.2rem" }}>
-                            Area: {p.serviceArea || "Colombo"} &middot; Rate: Rs. {p.hourlyRate?.toLocaleString() || "3,500"}/hr
+                          <div
+                            style={{
+                              color: "var(--text-muted)",
+                              fontSize: "0.78rem",
+                              marginTop: "0.2rem",
+                            }}
+                          >
+                            Area: {p.serviceArea || "Colombo"} &middot; Rate: Rs.{" "}
+                            {p.hourlyRate?.toLocaleString() || "3,500"}/hr
                           </div>
                         </div>
                       ))}
@@ -297,7 +319,14 @@ export default function AiAssistantWidget() {
 
                   {/* Suggestion Quick Chips */}
                   {m.data?.suggestions && m.data.suggestions.length > 0 && (
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: "0.35rem", marginTop: "0.25rem" }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        flexWrap: "wrap",
+                        gap: "0.35rem",
+                        marginTop: "0.25rem",
+                      }}
+                    >
                       {m.data.suggestions.map((sugg, idx) => (
                         <button
                           key={idx}
@@ -341,7 +370,15 @@ export default function AiAssistantWidget() {
             ))}
 
             {isLoading && (
-              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "var(--text-muted)", fontSize: "0.85rem" }}>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                  color: "var(--text-muted)",
+                  fontSize: "0.85rem",
+                }}
+              >
                 <Bot size={16} />
                 <span>AI agents analyzing query...</span>
               </div>
@@ -351,8 +388,17 @@ export default function AiAssistantWidget() {
 
           {/* Quick Prompts (if chat is fresh) */}
           {messages.length === 1 && (
-            <div style={{ padding: "0 1rem 0.5rem", display: "flex", flexDirection: "column", gap: "0.35rem" }}>
-              <span style={{ fontSize: "0.72rem", color: "var(--text-muted)", fontWeight: 600 }}>Try asking:</span>
+            <div
+              style={{
+                padding: "0 1rem 0.5rem",
+                display: "flex",
+                flexDirection: "column",
+                gap: "0.35rem",
+              }}
+            >
+              <span style={{ fontSize: "0.72rem", color: "var(--text-muted)", fontWeight: 600 }}>
+                Try asking:
+              </span>
               {starterPrompts.map((p, i) => (
                 <button
                   key={i}
