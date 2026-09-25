@@ -9,7 +9,6 @@ using handee.API.Interfaces;
 namespace handee.API.Controllers;
 
 [ApiController]
-[Route("admin/agent-workflows")]
 [Route("api/admin/agent-workflows")]
 [Authorize(Roles = "Admin")]
 public class AgentWorkflowController : ControllerBase

@@ -58,9 +58,9 @@ public class AgentWorkflowDispatchNotificationTests
             JobRequestId = jobRequest.Id,
             JobRequest = jobRequest,
             SelectedProviderId = providerId,
-            ApprovalStatus = "pending",
+            ApprovalStatus = WorkflowApprovalStatus.Pending,
             EstimatedPrice = 7500m,
-            ValidationTier = "human_approval_required"
+            ValidationTier = WorkflowValidationTier.RequiresHumanApproval
         };
         db.AgentWorkflows.Add(workflow);
         await db.SaveChangesAsync();
@@ -88,6 +88,84 @@ public class AgentWorkflowDispatchNotificationTests
                 7500m,
                 It.IsAny<CancellationToken>()),
             Times.Once);
+    }
+
+    [Fact]
+    public async Task MakeDecisionAsync_WhenBookingAlreadyExists_DoesNotEmit_DuplicateNotification()
+    {
+        // Arrange
+        using var db = CreateContext();
+        var mockHttpClientFactory = new Mock<IHttpClientFactory>();
+        var mockInvoiceService = new Mock<IInvoiceService>();
+        var mockLogger = new Mock<ILogger<AgentWorkflowService>>();
+        var mockNotificationService = new Mock<IBookingNotificationService>();
+
+        var customerId = Guid.NewGuid();
+        var providerId = Guid.NewGuid();
+        var adminId = Guid.NewGuid();
+
+        var category = new ServiceCategory { Name = "Carpentry" };
+        db.ServiceCategories.Add(category);
+
+        var jobRequest = new JobRequest
+        {
+            CustomerId = customerId,
+            ServiceCategoryId = category.Id,
+            ServiceCategory = category,
+            Description = "Repair wooden desk",
+            Status = JobRequestStatus.PendingAiReview,
+            Location = "Colombo"
+        };
+        db.JobRequests.Add(jobRequest);
+
+        // Pre-existing booking for this job request
+        var existingBooking = new Booking
+        {
+            JobRequestId = jobRequest.Id,
+            CustomerId = customerId,
+            ProviderId = providerId,
+            Status = BookingStatus.Requested,
+            ScheduledAt = DateTimeOffset.UtcNow.AddDays(1)
+        };
+        db.Bookings.Add(existingBooking);
+
+        var workflow = new AgentWorkflow
+        {
+            WorkflowId = "wf-test-reuse",
+            Objective = "Repair desk",
+            JobRequestId = jobRequest.Id,
+            JobRequest = jobRequest,
+            SelectedProviderId = providerId,
+            ApprovalStatus = WorkflowApprovalStatus.Pending,
+            EstimatedPrice = 7500m,
+            ValidationTier = WorkflowValidationTier.RequiresHumanApproval
+        };
+        db.AgentWorkflows.Add(workflow);
+        await db.SaveChangesAsync();
+
+        var sut = new AgentWorkflowService(
+            db,
+            mockHttpClientFactory.Object,
+            mockInvoiceService.Object,
+            mockLogger.Object,
+            mockNotificationService.Object);
+
+        // Act
+        await sut.MakeDecisionAsync(
+            workflow.Id,
+            adminId,
+            new AdminWorkflowDecisionDto("Approve", "Looks good"));
+
+        // Assert - booking was reused, so dispatch notification must NOT be emitted
+        mockNotificationService.Verify(
+            n => n.NotifyJobDispatchedAsync(
+                It.IsAny<Guid>(),
+                It.IsAny<Guid>(),
+                It.IsAny<Guid>(),
+                It.IsAny<string>(),
+                It.IsAny<decimal>(),
+                It.IsAny<CancellationToken>()),
+            Times.Never);
     }
 
     [Fact]

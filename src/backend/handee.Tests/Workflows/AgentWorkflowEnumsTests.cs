@@ -1,4 +1,5 @@
 using handee.API.Entities;
+using Microsoft.EntityFrameworkCore;
 using Xunit;
 
 namespace handee.Tests.Workflows;
@@ -53,26 +54,36 @@ public class AgentWorkflowEnumsTests
     }
 
     [Fact]
-    public void AgentWorkflow_ValidationTierEnum_UpdatesUnderlyingString()
+    public void AgentWorkflow_DefaultEnums_AreCorrectlyInitialized()
     {
-        var workflow = new AgentWorkflow
-        {
-            ValidationTierEnum = WorkflowValidationTier.ApprovedForAutoDispatch
-        };
-
-        Assert.Equal("approved_for_auto_dispatch", workflow.ValidationTier);
-        Assert.Equal(WorkflowValidationTier.ApprovedForAutoDispatch, workflow.ValidationTierEnum);
+        var workflow = new AgentWorkflow();
+        Assert.Equal(WorkflowValidationTier.RequiresHumanApproval, workflow.ValidationTier);
+        Assert.Equal(WorkflowApprovalStatus.Pending, workflow.ApprovalStatus);
     }
 
     [Fact]
-    public void AgentWorkflow_ApprovalStatusEnum_UpdatesUnderlyingString()
+    public async Task AgentWorkflow_Enums_PersistAndRetrieveViaEFCore()
     {
+        var options = new Microsoft.EntityFrameworkCore.DbContextOptionsBuilder<handee.API.Data.AppDbContext>()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
+            .Options;
+
+        using var db = new handee.API.Data.AppDbContext(options);
+
         var workflow = new AgentWorkflow
         {
-            ApprovalStatusEnum = WorkflowApprovalStatus.Approved
+            WorkflowId = "wf-ef-enum-test",
+            Objective = "Test EF Core Enum mapping",
+            ValidationTier = WorkflowValidationTier.ApprovedForAutoDispatch,
+            ApprovalStatus = WorkflowApprovalStatus.Approved
         };
 
-        Assert.Equal("approved", workflow.ApprovalStatus);
-        Assert.Equal(WorkflowApprovalStatus.Approved, workflow.ApprovalStatusEnum);
+        db.AgentWorkflows.Add(workflow);
+        await db.SaveChangesAsync();
+
+        var retrieved = await db.AgentWorkflows.FindAsync(workflow.Id);
+        Assert.NotNull(retrieved);
+        Assert.Equal(WorkflowValidationTier.ApprovedForAutoDispatch, retrieved.ValidationTier);
+        Assert.Equal(WorkflowApprovalStatus.Approved, retrieved.ApprovalStatus);
     }
 }

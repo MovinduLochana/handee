@@ -15,10 +15,16 @@ public class AgentWorkflowConfiguration : IEntityTypeConfiguration<AgentWorkflow
             .HasMaxLength(100);
 
         builder.Property(w => w.ValidationTier)
+            .HasConversion(
+                v => AgentWorkflow.FormatValidationTier(v),
+                v => AgentWorkflow.ParseValidationTier(v))
             .IsRequired()
             .HasMaxLength(50);
 
         builder.Property(w => w.ApprovalStatus)
+            .HasConversion(
+                v => AgentWorkflow.FormatApprovalStatus(v),
+                v => AgentWorkflow.ParseApprovalStatus(v))
             .IsRequired()
             .HasMaxLength(50);
 
