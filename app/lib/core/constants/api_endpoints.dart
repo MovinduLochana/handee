@@ -37,4 +37,18 @@ class ApiEndpoints {
   static const String providerVerification = '/provider/verification';
   static const String providerProfile = '/provider/profile';
   static String providerById(String id) => '/providers/$id';
+
+  // Invoices & Payments (InvoiceController, PaymentController, PayoutController)
+  static const String invoices = '/invoices';
+  static const String myInvoices = '/invoices/mine';
+  static String invoiceById(String id) => '/invoices/$id';
+  static String invoiceByBookingId(String bookingId) => '/invoices/booking/$bookingId';
+
+  static const String payments = '/payments';
+  static const String myPayments = '/payments/mine';
+  static String paymentById(String id) => '/payments/$id';
+  static String paymentByInvoiceId(String invoiceId) => '/payments/invoice/$invoiceId';
+
+  static const String providerPayouts = '/payouts/provider';
+  static const String providerPayoutSummary = '/payouts/provider/summary';
 }

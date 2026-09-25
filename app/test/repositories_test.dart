@@ -9,6 +9,8 @@ import 'package:app/data/repositories/auth_repository.dart';
 import 'package:app/data/repositories/job_request_repository.dart';
 import 'package:app/data/repositories/booking_repository.dart';
 import 'package:app/data/repositories/assistant_repository.dart';
+import 'package:app/data/repositories/invoice_repository.dart';
+import 'package:app/data/repositories/payment_repository.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -163,4 +165,86 @@ void main() {
     expect(reply.text, contains('verified AC specialists'));
     expect(reply.suggestions.length, 2);
   });
+
+  test('InvoiceRepository fetches and deserializes invoice with 85/15 split', () async {
+    final mockClient = MockClient((request) async {
+      if (request.url.path == '/invoices/booking/book-101') {
+        return http.Response(
+          jsonEncode({
+            'id': 'inv-001',
+            'bookingId': 'book-101',
+            'customerId': 'cust-001',
+            'customerName': 'Kasun Perera',
+            'providerId': 'prov-001',
+            'providerName': 'Nimal Jayawardena',
+            'baseAmount': 2975.0,
+            'platformFee': 525.0,
+            'totalAmount': 3500.0,
+            'currency': 'LKR',
+            'status': 'Issued',
+            'adminApprovalStatus': 'AutoApproved',
+            'createdAt': DateTime.now().toIso8601String(),
+          }),
+          200,
+        );
+      }
+      return http.Response('Not Found', 404);
+    });
+
+    final apiClient = ApiClient(storage: storage, httpClient: mockClient, baseUrl: 'http://test');
+    final repo = InvoiceRepository(apiClient: apiClient);
+
+    final invoice = await repo.getInvoiceByBookingId('book-101');
+    expect(invoice, isNotNull);
+    expect(invoice!.id, 'inv-001');
+    expect(invoice.baseAmount, 2975.0);
+    expect(invoice.platformFee, 525.0);
+    expect(invoice.totalAmount, 3500.0);
+    expect(invoice.isIssued, isTrue);
+    expect(invoice.isPaid, isFalse);
+    expect(invoice.laborPercentage, closeTo(85.0, 0.1));
+    expect(invoice.feePercentage, closeTo(15.0, 0.1));
+  });
+
+  test('PaymentRepository processes sandbox payment and verifies transaction reference', () async {
+    final mockClient = MockClient((request) async {
+      if (request.url.path == '/payments') {
+        final body = jsonDecode(request.body);
+        return http.Response(
+          jsonEncode({
+            'id': 'pay-999',
+            'invoiceId': body['invoiceId'],
+            'bookingId': 'book-101',
+            'amount': 3500.0,
+            'currency': 'LKR',
+            'gatewayProvider': body['gatewayProvider'] ?? 'Stripe',
+            'transactionReference': 'ch_sbx_mock_abc123',
+            'status': 'Succeeded',
+            'cardLast4': body['cardLast4'] ?? '4242',
+            'createdAt': DateTime.now().toIso8601String(),
+            'settledAt': DateTime.now().toIso8601String(),
+          }),
+          201,
+        );
+      }
+      return http.Response('Not Found', 404);
+    });
+
+    final apiClient = ApiClient(storage: storage, httpClient: mockClient, baseUrl: 'http://test');
+    final repo = PaymentRepository(apiClient: apiClient);
+
+    final payment = await repo.processPayment(
+      invoiceId: 'inv-001',
+      paymentMethod: 'card',
+      cardLast4: '4242',
+      gatewayProvider: 'Stripe Sandbox',
+    );
+
+    expect(payment.id, 'pay-999');
+    expect(payment.invoiceId, 'inv-001');
+    expect(payment.isSucceeded, isTrue);
+    expect(payment.transactionReference, 'ch_sbx_mock_abc123');
+    expect(payment.cardLast4, '4242');
+  });
 }
+
