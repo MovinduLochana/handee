@@ -8,8 +8,10 @@ import CheckoutPayment from "../../../pages/payments/CheckoutPayment";
 import QuoteReview from "../../../pages/payments/QuoteReview";
 import ProviderPayoutDashboard from "../../../pages/provider/ProviderPayoutDashboard";
 import AdminPaymentsOverview from "../../../pages/admin/AdminPaymentsOverview";
+import PaymentMethods from "../../../pages/payments/PaymentMethods";
 import { paymentsApi, type InvoiceDto } from "../../../api/payments";
 import { usersApi } from "../../../api/users";
+import { savePaymentMethod } from "../../../lib/paymentMethodsStore";
 
 vi.mock("../../../api/payments", () => ({
   paymentsApi: {
@@ -279,6 +281,104 @@ describe("Payments & Invoicing Pages", () => {
 
     await waitFor(() => {
       expect(paymentsApi.processPayout).toHaveBeenCalledWith("payout-999");
+    });
+  });
+
+  it("renders PaymentMethods and synchronizes with checkout card vault", async () => {
+    const mockUser = { id: "cust-sync-test", fullName: "Sync Test User", email: "sync@test.com", roles: ["Customer"] };
+    vi.mocked(usersApi.getProfile).mockResolvedValue(mockUser as any);
+
+    const { unmount } = render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={["/account/payment-methods"]}>
+          <Routes>
+            <Route path="/account/payment-methods" element={<PaymentMethods />} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>
+    );
+
+    expect(screen.getByText("Saved Payment Methods")).toBeInTheDocument();
+    expect(screen.getByText("Live Checkout Sync:")).toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(screen.getByText(/4242/)).toBeInTheDocument();
+      expect(screen.getByText(/5555/)).toBeInTheDocument();
+      expect(screen.getByText(/7777/)).toBeInTheDocument();
+    });
+
+    unmount();
+  });
+
+  it("updates checkout when a new card is added to the vault and selected", async () => {
+    const mockInvoice: InvoiceDto = {
+      id: "inv-sync-1",
+      bookingId: "book-sync-1",
+      customerId: "cust-sync-2",
+      providerId: "prov-1",
+      baseAmount: 5000,
+      platformFee: 750,
+      totalAmount: 5750,
+      currency: "LKR",
+      status: "Issued",
+      issuedAt: new Date().toISOString(),
+    };
+
+    savePaymentMethod(
+      {
+        type: "card",
+        brand: "Amex",
+        name: "Saviru Corporate Amex",
+        last4: "1001",
+        expiryMonth: 5,
+        expiryYear: 2030,
+        isDefault: true,
+        holderName: "Saviru Atapattu",
+      },
+      "cust-sync-2"
+    );
+
+    const mockUser = { id: "cust-sync-2", fullName: "Saviru Atapattu", email: "saviru@test.com", roles: ["Customer"] };
+    vi.mocked(usersApi.getProfile).mockResolvedValue(mockUser as any);
+    vi.mocked(paymentsApi.getInvoiceById).mockResolvedValue(mockInvoice);
+    vi.mocked(paymentsApi.processPayment).mockResolvedValueOnce({
+      id: "pay-sync",
+      invoiceId: "inv-sync-1",
+      amount: 5750,
+      currency: "LKR",
+      status: "Succeeded",
+      paymentMethod: "card",
+      transactionReference: "ch_amex_test1001",
+      gatewayProvider: "Stripe-Sandbox",
+      paidAt: new Date().toISOString(),
+    });
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={["/invoices/inv-sync-1/pay"]}>
+          <Routes>
+            <Route path="/invoices/:id/pay" element={<CheckoutPayment />} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText("Saviru Corporate Amex")).toBeInTheDocument();
+      expect(screen.getByText(/1001/)).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText("Saviru Corporate Amex"));
+    fireEvent.click(screen.getByText("Authorize & Pay LKR 5,750"));
+
+    await waitFor(() => {
+      expect(paymentsApi.processPayment).toHaveBeenCalledWith(
+        expect.objectContaining({
+          invoiceId: "inv-sync-1",
+          paymentMethod: "card",
+          last4: "1001",
+        })
+      );
     });
   });
 });

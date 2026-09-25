@@ -46,7 +46,10 @@ export default function ProviderPayoutDashboard() {
             Track your net earnings, escrow clearances, and automated bank deposits
           </p>
         </div>
-        <div style={{ display: "flex", gap: "0.75rem" }}>
+        <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
+          <Link to="/invoices" className="btn-secondary">
+            <Receipt size={16} /> Job Invoices & Receipts
+          </Link>
           <Link to="/provider/payouts/history" className="btn-secondary">
             <FileSpreadsheet size={16} /> Full Payout History
           </Link>
@@ -154,6 +157,7 @@ export default function ProviderPayoutDashboard() {
                   <th>15% Platform Fee</th>
                   <th>Net Earnings</th>
                   <th>Status</th>
+                  <th style={{ textAlign: "right" }}>Invoice</th>
                 </tr>
               </thead>
               <tbody>
@@ -173,6 +177,15 @@ export default function ProviderPayoutDashboard() {
                       <span className={`badge-status ${payout.status}`}>
                         {payout.status}
                       </span>
+                    </td>
+                    <td style={{ textAlign: "right" }}>
+                      <Link
+                        to="/invoices"
+                        className="btn-secondary btn-sm"
+                        style={{ display: "inline-flex", alignItems: "center", gap: "0.25rem", padding: "0.3rem 0.6rem" }}
+                      >
+                        <Receipt size={13} /> View Invoice
+                      </Link>
                     </td>
                   </tr>
                 ))}
