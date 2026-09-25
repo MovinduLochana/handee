@@ -1,18 +1,28 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import {
-  CreditCard,
-  Plus,
-  Trash2,
-  ShieldCheck,
-  ArrowLeft,
-} from "lucide-react";
+import { CreditCard, Plus, Trash2, ShieldCheck, ArrowLeft } from "lucide-react";
 import type { PaymentMethodItem } from "../../api/payments";
 import "./Payments.css";
 
 const INITIAL_METHODS: PaymentMethodItem[] = [
-  { id: "pm_1", type: "card", brand: "Visa", last4: "4242", expiryMonth: 12, expiryYear: 2028, isDefault: true },
-  { id: "pm_2", type: "card", brand: "Mastercard", last4: "5555", expiryMonth: 8, expiryYear: 2029, isDefault: false },
+  {
+    id: "pm_1",
+    type: "card",
+    brand: "Visa",
+    last4: "4242",
+    expiryMonth: 12,
+    expiryYear: 2028,
+    isDefault: true,
+  },
+  {
+    id: "pm_2",
+    type: "card",
+    brand: "Mastercard",
+    last4: "5555",
+    expiryMonth: 8,
+    expiryYear: 2029,
+    isDefault: false,
+  },
 ];
 
 export default function PaymentMethods() {
@@ -30,7 +40,7 @@ export default function PaymentMethods() {
       prev.map((m) => ({
         ...m,
         isDefault: m.id === id,
-      }))
+      })),
     );
   };
 
@@ -67,10 +77,7 @@ export default function PaymentMethods() {
             </p>
           </div>
         </div>
-        <button
-          className="btn-primary"
-          onClick={() => setShowAddForm(true)}
-        >
+        <button className="btn-primary" onClick={() => setShowAddForm(true)}>
           <Plus size={16} /> Add Payment Method
         </button>
       </div>
@@ -81,18 +88,26 @@ export default function PaymentMethods() {
             <h3 className="payments-card-title">
               <CreditCard size={18} /> Add Sandbox Card
             </h3>
-            <button
-              onClick={() => setShowAddForm(false)}
-              className="btn-secondary btn-sm"
-            >
+            <button onClick={() => setShowAddForm(false)} className="btn-secondary btn-sm">
               Cancel
             </button>
           </div>
 
-          <form onSubmit={handleAddCard} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+          <form
+            onSubmit={handleAddCard}
+            style={{ display: "flex", flexDirection: "column", gap: "1rem" }}
+          >
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
               <div>
-                <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 600, marginBottom: "0.3rem", color: "var(--text-muted)" }}>
+                <label
+                  style={{
+                    display: "block",
+                    fontSize: "0.8rem",
+                    fontWeight: 600,
+                    marginBottom: "0.3rem",
+                    color: "var(--text-muted)",
+                  }}
+                >
                   Card Brand
                 </label>
                 <select
@@ -114,7 +129,15 @@ export default function PaymentMethods() {
                 </select>
               </div>
               <div>
-                <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 600, marginBottom: "0.3rem", color: "var(--text-muted)" }}>
+                <label
+                  style={{
+                    display: "block",
+                    fontSize: "0.8rem",
+                    fontWeight: 600,
+                    marginBottom: "0.3rem",
+                    color: "var(--text-muted)",
+                  }}
+                >
                   Last 4 Digits
                 </label>
                 <input
@@ -138,7 +161,15 @@ export default function PaymentMethods() {
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
               <div>
-                <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 600, marginBottom: "0.3rem", color: "var(--text-muted)" }}>
+                <label
+                  style={{
+                    display: "block",
+                    fontSize: "0.8rem",
+                    fontWeight: 600,
+                    marginBottom: "0.3rem",
+                    color: "var(--text-muted)",
+                  }}
+                >
                   Expiry Month
                 </label>
                 <input
@@ -158,7 +189,15 @@ export default function PaymentMethods() {
                 />
               </div>
               <div>
-                <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 600, marginBottom: "0.3rem", color: "var(--text-muted)" }}>
+                <label
+                  style={{
+                    display: "block",
+                    fontSize: "0.8rem",
+                    fontWeight: 600,
+                    marginBottom: "0.3rem",
+                    color: "var(--text-muted)",
+                  }}
+                >
                   Expiry Year
                 </label>
                 <input
@@ -186,7 +225,14 @@ export default function PaymentMethods() {
         </div>
       )}
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "1.25rem", marginBottom: "2rem" }}>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+          gap: "1.25rem",
+          marginBottom: "2rem",
+        }}
+      >
         {methods.map((method) => (
           <div
             key={method.id}
@@ -197,7 +243,14 @@ export default function PaymentMethods() {
               marginBottom: 0,
             }}
           >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1rem" }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "flex-start",
+                marginBottom: "1rem",
+              }}
+            >
               <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
                 <div className="stat-icon-wrapper blue" style={{ width: 44, height: 44 }}>
                   <CreditCard size={22} />
@@ -221,8 +274,20 @@ export default function PaymentMethods() {
               )}
             </div>
 
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.85rem", color: "var(--text-muted)", paddingTop: "0.75rem", borderTop: "1px solid var(--border)" }}>
-              <span>Expires {method.expiryMonth}/{method.expiryYear}</span>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                fontSize: "0.85rem",
+                color: "var(--text-muted)",
+                paddingTop: "0.75rem",
+                borderTop: "1px solid var(--border)",
+              }}
+            >
+              <span>
+                Expires {method.expiryMonth}/{method.expiryYear}
+              </span>
               <button
                 onClick={() => handleDelete(method.id)}
                 style={{
@@ -254,7 +319,9 @@ export default function PaymentMethods() {
       >
         <ShieldCheck size={28} color="var(--accent)" />
         <div style={{ fontSize: "0.88rem", color: "var(--text-muted)" }}>
-          <strong style={{ color: "var(--text-h)" }}>Sandbox Security:</strong> All card details are stored in simulated vault storage for grading and testing. No actual financial charges are incurred.
+          <strong style={{ color: "var(--text-h)" }}>Sandbox Security:</strong> All card details are
+          stored in simulated vault storage for grading and testing. No actual financial charges are
+          incurred.
         </div>
       </div>
     </div>

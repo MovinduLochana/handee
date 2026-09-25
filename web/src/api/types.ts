@@ -62,7 +62,7 @@ export interface ProviderProfileProviderDto {
   auditLogs: AuditLogDto[];
 }
 
-export interface ProviderProfileAdminDto extends ProviderProfileProviderDto { }
+export interface ProviderProfileAdminDto extends ProviderProfileProviderDto {}
 
 export interface ProviderProfileCustomerDto {
   id: string;
@@ -194,6 +194,8 @@ export interface UpdateServiceListingDto {
   fixedPrice: number;
   estimatedDuration: string;
   isActive: boolean;
+}
+
 // ─── Booking & Scheduling ──────────────────────────────────────────────────
 // Mirrors handee.API DTOs/enums. The API serializes camelCase with
 // JsonStringEnumConverter, and the response DTOs carry enums as
@@ -246,12 +248,14 @@ export interface BookingResponseDto {
   price: number | null;
   category: string | null;
   description: string | null;
+  notes: string | null;
 }
 
 /** DTO/ServiceCategoryResponseDto.cs */
 export interface ServiceCategoryResponseDto {
   id: string;
   name: string;
+  iconUrl: string | null;
   priceBandMin: number | null;
   priceBandMax: number | null;
 }

@@ -134,7 +134,9 @@ export const paymentsApi = {
   },
 
   getProviderEarningsSummary: async (providerId: string): Promise<ProviderEarningsSummaryDto> => {
-    const res = await api.get<ProviderEarningsSummaryDto>(`/api/payouts/provider/${providerId}/summary`);
+    const res = await api.get<ProviderEarningsSummaryDto>(
+      `/api/payouts/provider/${providerId}/summary`,
+    );
     return res.data;
   },
 

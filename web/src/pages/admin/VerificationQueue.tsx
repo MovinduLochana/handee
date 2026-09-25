@@ -163,7 +163,10 @@ export default function VerificationQueue() {
         <div className="filter-group">
           <label>Search Provider</label>
           <div style={{ position: "relative" }}>
-            <Search size={16} style={{ position: "absolute", left: 12, top: 13, color: "var(--text-muted)" }} />
+            <Search
+              size={16}
+              style={{ position: "absolute", left: 12, top: 13, color: "var(--text-muted)" }}
+            />
             <input
               type="text"
               className="filter-input"
@@ -193,10 +196,16 @@ export default function VerificationQueue() {
 
         <div className="filter-group">
           <label>Service Category</label>
-          <select className="filter-input" value={skillFilter} onChange={(e) => setSkillFilter(e.target.value)}>
+          <select
+            className="filter-input"
+            value={skillFilter}
+            onChange={(e) => setSkillFilter(e.target.value)}
+          >
             <option value="">All Categories</option>
             {categories.map((c) => (
-              <option key={c.id} value={c.id}>{c.name}</option>
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
             ))}
           </select>
         </div>

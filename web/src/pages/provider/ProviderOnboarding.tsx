@@ -21,8 +21,6 @@ export default function ProviderOnboarding() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-
-
   const { data: profile, isLoading: isProfileLoading } = useQuery({
     queryKey: ["myProfile"],
     queryFn: providerApi.getMyProfile,
@@ -136,7 +134,9 @@ export default function ProviderOnboarding() {
       }
     } else if (currentStep === 2) {
       if (!serviceAreaAddress) {
-        setError("Please define your service area by selecting an address from the drop-down, or by clicking on the map.");
+        setError(
+          "Please define your service area by selecting an address from the drop-down, or by clicking on the map.",
+        );
         return;
       }
 
@@ -184,8 +184,6 @@ export default function ProviderOnboarding() {
       return next;
     });
   };
-
-
 
   if (isProfileLoading)
     return <div style={{ padding: "2rem", textAlign: "center" }}>Loading onboarding...</div>;

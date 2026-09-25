@@ -22,13 +22,17 @@ export default function ProviderPayoutDashboard() {
 
   const { data: summary, isLoading: _isSummaryLoading } = useQuery({
     queryKey: ["providerSummary", userProfile?.id],
-    queryFn: () => (userProfile?.id ? paymentsApi.getProviderEarningsSummary(userProfile.id) : Promise.resolve(null)),
+    queryFn: () =>
+      userProfile?.id
+        ? paymentsApi.getProviderEarningsSummary(userProfile.id)
+        : Promise.resolve(null),
     enabled: !!userProfile?.id,
   });
 
   const { data: payouts = [], isLoading: isPayoutsLoading } = useQuery({
     queryKey: ["providerPayouts", userProfile?.id],
-    queryFn: () => (userProfile?.id ? paymentsApi.getProviderPayouts(userProfile.id) : Promise.resolve([])),
+    queryFn: () =>
+      userProfile?.id ? paymentsApi.getProviderPayouts(userProfile.id) : Promise.resolve([]),
     enabled: !!userProfile?.id,
   });
 
@@ -115,7 +119,8 @@ export default function ProviderPayoutDashboard() {
               85% Net Provider Revenue Share
             </h3>
             <p style={{ margin: 0, fontSize: "0.88rem", color: "var(--text-muted)" }}>
-              Handee charges a transparent 15% platform commission on customer totals. Every verified booking automatically deposits 85% directly to your payout ledger.
+              Handee charges a transparent 15% platform commission on customer totals. Every
+              verified booking automatically deposits 85% directly to your payout ledger.
             </p>
           </div>
         </div>
@@ -131,7 +136,15 @@ export default function ProviderPayoutDashboard() {
             <Receipt size={20} color="var(--accent)" />
             Recent Payout Activity
           </h2>
-          <Link to="/provider/payouts/history" style={{ fontSize: "0.85rem", color: "var(--accent)", textDecoration: "none", fontWeight: 600 }}>
+          <Link
+            to="/provider/payouts/history"
+            style={{
+              fontSize: "0.85rem",
+              color: "var(--accent)",
+              textDecoration: "none",
+              fontWeight: 600,
+            }}
+          >
             View All ({payouts.length})
           </Link>
         </div>
@@ -165,14 +178,14 @@ export default function ProviderPayoutDashboard() {
                     <td>#{payout.bookingId.slice(0, 8)}</td>
                     <td>{new Date(payout.createdAt).toLocaleDateString()}</td>
                     <td>LKR {payout.grossAmount.toLocaleString()}</td>
-                    <td style={{ color: "var(--text-muted)" }}>-LKR {payout.platformFeeDeducted.toLocaleString()}</td>
+                    <td style={{ color: "var(--text-muted)" }}>
+                      -LKR {payout.platformFeeDeducted.toLocaleString()}
+                    </td>
                     <td style={{ fontWeight: 700, color: "var(--success)" }}>
                       LKR {payout.netAmount.toLocaleString()}
                     </td>
                     <td>
-                      <span className={`badge-status ${payout.status}`}>
-                        {payout.status}
-                      </span>
+                      <span className={`badge-status ${payout.status}`}>{payout.status}</span>
                     </td>
                   </tr>
                 ))}

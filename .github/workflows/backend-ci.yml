@@ -20,9 +20,7 @@ concurrency:
 jobs:
   backend-test-and-validate:
     name: Backend (.NET 10)
-    # Using windows-latest natively handles the case-insensitive directory names
-    # (Handee.Api / handee.API / handee.Api) currently tracked in git on Windows.
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository

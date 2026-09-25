@@ -157,8 +157,6 @@ export default function ProviderProfile() {
     });
   };
 
-
-
   if (isLoading)
     return <div style={{ padding: "2rem", textAlign: "center" }}>Loading profile...</div>;
 
@@ -494,28 +492,66 @@ export default function ProviderProfile() {
 
           {/* ── Fixed-Price Services Section (Inline) ── */}
           <div className="wizard-field" style={{ marginTop: "var(--space-10)" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "var(--space-4)" }}>
-              <label style={{ margin: 0, fontWeight: 700, fontSize: "1.125rem", color: "var(--text-h)" }}>Fixed-Price Services</label>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: "var(--space-4)",
+              }}
+            >
+              <label
+                style={{ margin: 0, fontWeight: 700, fontSize: "1.125rem", color: "var(--text-h)" }}
+              >
+                Fixed-Price Services
+              </label>
               <button
                 className="wizard-btn wizard-btn-secondary"
-                style={{ padding: "0.4rem 0.75rem", fontSize: "0.85rem", transition: "background 0.2s" }}
+                style={{
+                  padding: "0.4rem 0.75rem",
+                  fontSize: "0.85rem",
+                  transition: "background 0.2s",
+                }}
                 onClick={() => navigate("/provider/service-listings")}
               >
                 Manage Services
               </button>
             </div>
 
-            {myServiceListings && myServiceListings.filter(l => l.isActive).length > 0 ? (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 'var(--space-6)' }}>
-                {myServiceListings.filter(l => l.isActive).map((listing, idx) => (
-                  <div key={listing.id} className="animate-fade-up" style={{ animationDelay: `${(idx % 10) * 50}ms` }}>
-                    <ServiceListingCard listing={listing} />
-                  </div>
-                ))}
+            {myServiceListings && myServiceListings.filter((l) => l.isActive).length > 0 ? (
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
+                  gap: "var(--space-6)",
+                }}
+              >
+                {myServiceListings
+                  .filter((l) => l.isActive)
+                  .map((listing, idx) => (
+                    <div
+                      key={listing.id}
+                      className="animate-fade-up"
+                      style={{ animationDelay: `${(idx % 10) * 50}ms` }}
+                    >
+                      <ServiceListingCard listing={listing} />
+                    </div>
+                  ))}
               </div>
             ) : (
-              <div className="empty-state" style={{ padding: "var(--space-8)", background: "var(--bg-surface)", border: "1px dashed var(--border-strong)", borderRadius: "12px" }}>
-                <p style={{ color: "var(--text-muted)", fontSize: "0.95rem", margin: 0 }}>You haven't listed any fixed-price services yet. Click 'Manage Services' to create one.</p>
+              <div
+                className="empty-state"
+                style={{
+                  padding: "var(--space-8)",
+                  background: "var(--bg-surface)",
+                  border: "1px dashed var(--border-strong)",
+                  borderRadius: "12px",
+                }}
+              >
+                <p style={{ color: "var(--text-muted)", fontSize: "0.95rem", margin: 0 }}>
+                  You haven't listed any fixed-price services yet. Click 'Manage Services' to create
+                  one.
+                </p>
               </div>
             )}
           </div>
@@ -589,8 +625,7 @@ export default function ProviderProfile() {
             </button>
           </div>
         </div>
-      )
-      }
-    </div >
+      )}
+    </div>
   );
 }

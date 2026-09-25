@@ -13,9 +13,30 @@ import {
 import "./Payments.css";
 
 const PRESET_SANDBOX_CARDS = [
-  { name: "Stripe Demo Card", number: "4242 •••• •••• 4242", last4: "4242", brand: "Visa", exp: "12/28", token: "tok_visa_sandbox" },
-  { name: "Mastercard Test", number: "5555 •••• •••• 5555", last4: "5555", brand: "Mastercard", exp: "08/29", token: "tok_mc_sandbox" },
-  { name: "PayHere Demo Wallet", number: "7777 •••• •••• 7777", last4: "7777", brand: "PayHere", exp: "11/30", token: "tok_payhere_sandbox" },
+  {
+    name: "Stripe Demo Card",
+    number: "4242 •••• •••• 4242",
+    last4: "4242",
+    brand: "Visa",
+    exp: "12/28",
+    token: "tok_visa_sandbox",
+  },
+  {
+    name: "Mastercard Test",
+    number: "5555 •••• •••• 5555",
+    last4: "5555",
+    brand: "Mastercard",
+    exp: "08/29",
+    token: "tok_mc_sandbox",
+  },
+  {
+    name: "PayHere Demo Wallet",
+    number: "7777 •••• •••• 7777",
+    last4: "7777",
+    brand: "PayHere",
+    exp: "11/30",
+    token: "tok_payhere_sandbox",
+  },
 ];
 
 export default function CheckoutPayment() {
@@ -35,7 +56,11 @@ export default function CheckoutPayment() {
     currency: string;
   } | null>(null);
 
-  const { data: invoice, isLoading, error } = useQuery({
+  const {
+    data: invoice,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ["invoice", id],
     queryFn: () => paymentsApi.getInvoiceById(id || ""),
     enabled: !!id,
@@ -133,11 +158,14 @@ export default function CheckoutPayment() {
           >
             <CheckCircle2 size={40} />
           </div>
-          <h1 style={{ fontSize: "var(--text-2xl)", color: "var(--text-h)", marginBottom: "0.5rem" }}>
+          <h1
+            style={{ fontSize: "var(--text-2xl)", color: "var(--text-h)", marginBottom: "0.5rem" }}
+          >
             Payment Successful!
           </h1>
           <p style={{ color: "var(--text-muted)", marginBottom: "1.5rem" }}>
-            Your transaction has been confirmed by the sandbox gateway and the service provider payout ledger has been credited.
+            Your transaction has been confirmed by the sandbox gateway and the service provider
+            payout ledger has been credited.
           </p>
 
           <div
@@ -149,13 +177,31 @@ export default function CheckoutPayment() {
               marginBottom: "2rem",
             }}
           >
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.5rem", fontSize: "0.9rem" }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                marginBottom: "0.5rem",
+                fontSize: "0.9rem",
+              }}
+            >
               <span style={{ color: "var(--text-muted)" }}>Amount Paid:</span>
-              <strong style={{ color: "var(--text-h)" }}>{paymentSuccess.currency} {paymentSuccess.amount.toLocaleString()}</strong>
+              <strong style={{ color: "var(--text-h)" }}>
+                {paymentSuccess.currency} {paymentSuccess.amount.toLocaleString()}
+              </strong>
             </div>
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.5rem", fontSize: "0.9rem" }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                marginBottom: "0.5rem",
+                fontSize: "0.9rem",
+              }}
+            >
               <span style={{ color: "var(--text-muted)" }}>Transaction Ref:</span>
-              <span style={{ fontFamily: "monospace", fontWeight: 600, color: "var(--accent)" }}>{paymentSuccess.reference}</span>
+              <span style={{ fontFamily: "monospace", fontWeight: 600, color: "var(--accent)" }}>
+                {paymentSuccess.reference}
+              </span>
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.9rem" }}>
               <span style={{ color: "var(--text-muted)" }}>Gateway:</span>
@@ -180,14 +226,22 @@ export default function CheckoutPayment() {
     <div className="payments-page">
       <div className="payments-header">
         <div>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.25rem" }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.5rem",
+              marginBottom: "0.25rem",
+            }}
+          >
             <span className="sandbox-badge">
               <Lock size={12} /> Sandbox Payment Gateway
             </span>
           </div>
           <h1 className="payments-title">Secure Checkout</h1>
           <p className="payments-subtitle">
-            Complete settlement for Invoice <strong>INV-{invoice.id.slice(0, 8).toUpperCase()}</strong>
+            Complete settlement for Invoice{" "}
+            <strong>INV-{invoice.id.slice(0, 8).toUpperCase()}</strong>
           </p>
         </div>
         <Link to={`/invoices/${invoice.id}`} className="btn-secondary">
@@ -208,7 +262,10 @@ export default function CheckoutPayment() {
           <div style={{ display: "flex", gap: "0.75rem", alignItems: "center" }}>
             <AlertTriangle size={20} />
             <div>
-              <strong>Payment Failed:</strong> {(payMutation.error as any)?.response?.data?.message || (payMutation.error as Error)?.message || "Sandbox card declined. Please try again."}
+              <strong>Payment Failed:</strong>{" "}
+              {(payMutation.error as any)?.response?.data?.message ||
+                (payMutation.error as Error)?.message ||
+                "Sandbox card declined. Please try again."}
             </div>
           </div>
         </div>
@@ -226,7 +283,14 @@ export default function CheckoutPayment() {
               Select a pre-configured testing card or inspect simulated card parameters below.
             </p>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", marginBottom: "2rem" }}>
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "0.75rem",
+                marginBottom: "2rem",
+              }}
+            >
               {PRESET_SANDBOX_CARDS.map((card, idx) => (
                 <div
                   key={idx}
@@ -244,8 +308,12 @@ export default function CheckoutPayment() {
                     justifyContent: "space-between",
                     padding: "1rem 1.25rem",
                     borderRadius: "10px",
-                    border: selectedCardIdx === idx ? "2px solid var(--accent)" : "1px solid var(--border)",
-                    backgroundColor: selectedCardIdx === idx ? "oklch(45% 0.2 260 / 0.05)" : "var(--bg-surface)",
+                    border:
+                      selectedCardIdx === idx
+                        ? "2px solid var(--accent)"
+                        : "1px solid var(--border)",
+                    backgroundColor:
+                      selectedCardIdx === idx ? "oklch(45% 0.2 260 / 0.05)" : "var(--bg-surface)",
                     cursor: "pointer",
                     transition: "all 0.15s",
                   }}
@@ -256,13 +324,18 @@ export default function CheckoutPayment() {
                         width: 18,
                         height: 18,
                         borderRadius: "50%",
-                        border: selectedCardIdx === idx ? "5px solid var(--accent)" : "2px solid var(--border)",
+                        border:
+                          selectedCardIdx === idx
+                            ? "5px solid var(--accent)"
+                            : "2px solid var(--border)",
                         background: "#fff",
                       }}
                     />
                     <div>
                       <div style={{ fontWeight: 600, color: "var(--text-h)" }}>{card.name}</div>
-                      <div style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>{card.number}</div>
+                      <div style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>
+                        {card.number}
+                      </div>
                     </div>
                   </div>
                   <span style={{ fontSize: "0.8rem", fontWeight: 600, color: "var(--text-muted)" }}>
@@ -274,7 +347,9 @@ export default function CheckoutPayment() {
 
             {/* Interactive Card Simulator Display */}
             <div className="card-simulator">
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div
+                style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}
+              >
                 <div className="card-simulator-chip" />
                 <span style={{ fontWeight: 700, letterSpacing: "0.05em" }}>
                   {PRESET_SANDBOX_CARDS[selectedCardIdx].brand}
@@ -315,13 +390,29 @@ export default function CheckoutPayment() {
             </h3>
 
             <div style={{ margin: "1rem 0 1.5rem" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.75rem", fontSize: "0.9rem" }}>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  marginBottom: "0.75rem",
+                  fontSize: "0.9rem",
+                }}
+              >
                 <span style={{ color: "var(--text)" }}>Service Base Charge:</span>
                 <span style={{ fontWeight: 600 }}>LKR {invoice.baseAmount.toLocaleString()}</span>
               </div>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.75rem", fontSize: "0.9rem" }}>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  marginBottom: "0.75rem",
+                  fontSize: "0.9rem",
+                }}
+              >
                 <span style={{ color: "var(--text-muted)" }}>Platform Trust Fee (15%):</span>
-                <span style={{ color: "var(--text-muted)" }}>LKR {invoice.platformFee.toLocaleString()}</span>
+                <span style={{ color: "var(--text-muted)" }}>
+                  LKR {invoice.platformFee.toLocaleString()}
+                </span>
               </div>
               <div
                 style={{
@@ -335,7 +426,9 @@ export default function CheckoutPayment() {
                 }}
               >
                 <span>Total Due:</span>
-                <span style={{ color: "var(--accent)" }}>LKR {invoice.totalAmount.toLocaleString()}</span>
+                <span style={{ color: "var(--accent)" }}>
+                  LKR {invoice.totalAmount.toLocaleString()}
+                </span>
               </div>
             </div>
 
@@ -351,12 +444,21 @@ export default function CheckoutPayment() {
                 color: "var(--text-muted)",
               }}
             >
-              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "var(--text-h)", fontWeight: 600 }}>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                  color: "var(--text-h)",
+                  fontWeight: 600,
+                }}
+              >
                 <ShieldCheck size={16} color="var(--success)" />
                 Escrow Protected Payment
               </div>
               <div>
-                Platform retains funds until service completion is confirmed. The provider is directly credited upon your payment.
+                Platform retains funds until service completion is confirmed. The provider is
+                directly credited upon your payment.
               </div>
             </div>
           </div>

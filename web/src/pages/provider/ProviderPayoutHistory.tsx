@@ -3,10 +3,7 @@ import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { paymentsApi } from "../../api/payments";
 import { usersApi } from "../../api/users";
-import {
-  Download,
-  ArrowLeft,
-} from "lucide-react";
+import { Download, ArrowLeft } from "lucide-react";
 import "../payments/Payments.css";
 
 export default function ProviderPayoutHistory() {
@@ -19,7 +16,8 @@ export default function ProviderPayoutHistory() {
 
   const { data: payouts = [], isLoading } = useQuery({
     queryKey: ["providerPayouts", userProfile?.id],
-    queryFn: () => (userProfile?.id ? paymentsApi.getProviderPayouts(userProfile.id) : Promise.resolve([])),
+    queryFn: () =>
+      userProfile?.id ? paymentsApi.getProviderPayouts(userProfile.id) : Promise.resolve([]),
     enabled: !!userProfile?.id,
   });
 
@@ -29,11 +27,12 @@ export default function ProviderPayoutHistory() {
   });
 
   const handleExportCsv = () => {
-    const headers = "Payout Ref,Booking ID,Created Date,Gross (LKR),Platform Fee (LKR),Net Amount (LKR),Status\n";
+    const headers =
+      "Payout Ref,Booking ID,Created Date,Gross (LKR),Platform Fee (LKR),Net Amount (LKR),Status\n";
     const rows = filteredPayouts
       .map(
         (p) =>
-          `"${p.payoutReference || p.id}","${p.bookingId}","${new Date(p.createdAt).toISOString()}",${p.grossAmount},${p.platformFeeDeducted},${p.netAmount},"${p.status}"`
+          `"${p.payoutReference || p.id}","${p.bookingId}","${new Date(p.createdAt).toISOString()}",${p.grossAmount},${p.platformFeeDeducted},${p.netAmount},"${p.status}"`,
       )
       .join("\n");
 
@@ -60,7 +59,11 @@ export default function ProviderPayoutHistory() {
             </p>
           </div>
         </div>
-        <button onClick={handleExportCsv} className="btn-secondary" disabled={filteredPayouts.length === 0}>
+        <button
+          onClick={handleExportCsv}
+          className="btn-secondary"
+          disabled={filteredPayouts.length === 0}
+        >
           <Download size={16} /> Export CSV
         </button>
       </div>
@@ -116,7 +119,9 @@ export default function ProviderPayoutHistory() {
               <tbody>
                 {filteredPayouts.map((p) => (
                   <tr key={p.id}>
-                    <td style={{ fontFamily: "monospace", fontWeight: 700, color: "var(--text-h)" }}>
+                    <td
+                      style={{ fontFamily: "monospace", fontWeight: 700, color: "var(--text-h)" }}
+                    >
                       {p.payoutReference || `PAY-${p.id.slice(0, 8).toUpperCase()}`}
                     </td>
                     <td>
@@ -126,14 +131,14 @@ export default function ProviderPayoutHistory() {
                     </td>
                     <td>{new Date(p.createdAt).toLocaleDateString()}</td>
                     <td>LKR {p.grossAmount.toLocaleString()}</td>
-                    <td style={{ color: "var(--text-muted)" }}>-LKR {p.platformFeeDeducted.toLocaleString()}</td>
+                    <td style={{ color: "var(--text-muted)" }}>
+                      -LKR {p.platformFeeDeducted.toLocaleString()}
+                    </td>
                     <td style={{ fontWeight: 800, color: "var(--success)" }}>
                       LKR {p.netAmount.toLocaleString()}
                     </td>
                     <td>
-                      <span className={`badge-status ${p.status}`}>
-                        {p.status}
-                      </span>
+                      <span className={`badge-status ${p.status}`}>{p.status}</span>
                     </td>
                   </tr>
                 ))}

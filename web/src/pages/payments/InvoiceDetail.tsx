@@ -1,19 +1,17 @@
 import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { paymentsApi } from "../../api/payments";
-import {
-  Printer,
-  CreditCard,
-  ArrowLeft,
-  ShieldCheck,
-  CheckCircle,
-} from "lucide-react";
+import { Printer, CreditCard, ArrowLeft, ShieldCheck, CheckCircle } from "lucide-react";
 import "./Payments.css";
 
 export default function InvoiceDetail() {
   const { id } = useParams<{ id: string }>();
 
-  const { data: invoice, isLoading, error } = useQuery({
+  const {
+    data: invoice,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ["invoice", id],
     queryFn: () => paymentsApi.getInvoiceById(id || ""),
     enabled: !!id,
@@ -65,8 +63,16 @@ export default function InvoiceDetail() {
         }
       })()
     : [
-        { item: "On-site Service Labor", price: Math.round(invoice.baseAmount * 0.7), type: "Labor" },
-        { item: "Standard Consumables / Parts", price: Math.round(invoice.baseAmount * 0.3), type: "Materials" },
+        {
+          item: "On-site Service Labor",
+          price: Math.round(invoice.baseAmount * 0.7),
+          type: "Labor",
+        },
+        {
+          item: "Standard Consumables / Parts",
+          price: Math.round(invoice.baseAmount * 0.3),
+          type: "Materials",
+        },
       ];
 
   return (
@@ -81,7 +87,8 @@ export default function InvoiceDetail() {
               Invoice INV-{invoice.id.slice(0, 8).toUpperCase()}
             </h1>
             <p className="payments-subtitle">
-              Issued on {new Date(invoice.issuedAt).toLocaleDateString()} • Booking #{invoice.bookingId.slice(0, 8)}
+              Issued on {new Date(invoice.issuedAt).toLocaleDateString()} • Booking #
+              {invoice.bookingId.slice(0, 8)}
             </p>
           </div>
         </div>
@@ -109,7 +116,10 @@ export default function InvoiceDetail() {
             </div>
           </div>
           <div style={{ textAlign: "right" }}>
-            <span className={`badge-status ${invoice.status}`} style={{ fontSize: "0.9rem", padding: "0.4rem 0.9rem" }}>
+            <span
+              className={`badge-status ${invoice.status}`}
+              style={{ fontSize: "0.9rem", padding: "0.4rem 0.9rem" }}
+            >
               {invoice.status === "Paid" && <CheckCircle size={14} />}
               {invoice.status.toUpperCase()}
             </span>
@@ -121,10 +131,24 @@ export default function InvoiceDetail() {
 
         <div className="invoice-meta-grid">
           <div>
-            <div style={{ fontSize: "0.75rem", textTransform: "uppercase", fontWeight: 700, color: "var(--text-muted)" }}>
+            <div
+              style={{
+                fontSize: "0.75rem",
+                textTransform: "uppercase",
+                fontWeight: 700,
+                color: "var(--text-muted)",
+              }}
+            >
               Bill To Customer
             </div>
-            <div style={{ fontWeight: 700, color: "var(--text-h)", fontSize: "1rem", marginTop: "0.25rem" }}>
+            <div
+              style={{
+                fontWeight: 700,
+                color: "var(--text-h)",
+                fontSize: "1rem",
+                marginTop: "0.25rem",
+              }}
+            >
               {invoice.customerName || "Valued Customer"}
             </div>
             <div style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>
@@ -133,10 +157,24 @@ export default function InvoiceDetail() {
           </div>
 
           <div>
-            <div style={{ fontSize: "0.75rem", textTransform: "uppercase", fontWeight: 700, color: "var(--text-muted)" }}>
+            <div
+              style={{
+                fontSize: "0.75rem",
+                textTransform: "uppercase",
+                fontWeight: 700,
+                color: "var(--text-muted)",
+              }}
+            >
               Service Provider
             </div>
-            <div style={{ fontWeight: 700, color: "var(--text-h)", fontSize: "1rem", marginTop: "0.25rem" }}>
+            <div
+              style={{
+                fontWeight: 700,
+                color: "var(--text-h)",
+                fontSize: "1rem",
+                marginTop: "0.25rem",
+              }}
+            >
               {invoice.providerName || "Verified Service Professional"}
             </div>
             <div style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>
@@ -145,7 +183,14 @@ export default function InvoiceDetail() {
           </div>
 
           <div>
-            <div style={{ fontSize: "0.75rem", textTransform: "uppercase", fontWeight: 700, color: "var(--text-muted)" }}>
+            <div
+              style={{
+                fontSize: "0.75rem",
+                textTransform: "uppercase",
+                fontWeight: 700,
+                color: "var(--text-muted)",
+              }}
+            >
               Payment Date
             </div>
             <div style={{ fontWeight: 600, color: "var(--text-h)", marginTop: "0.25rem" }}>
@@ -173,7 +218,14 @@ export default function InvoiceDetail() {
                 <tr key={idx}>
                   <td style={{ fontWeight: 600 }}>{item.item}</td>
                   <td>
-                    <span style={{ fontSize: "0.75rem", padding: "0.2rem 0.5rem", background: "var(--bg-surface-elevated)", borderRadius: "4px" }}>
+                    <span
+                      style={{
+                        fontSize: "0.75rem",
+                        padding: "0.2rem 0.5rem",
+                        background: "var(--bg-surface-elevated)",
+                        borderRadius: "4px",
+                      }}
+                    >
                       {item.type || "Service Work"}
                     </span>
                   </td>
@@ -198,11 +250,15 @@ export default function InvoiceDetail() {
         <div className="invoice-summary-box">
           <div className="summary-row">
             <span>Subtotal:</span>
-            <span>{invoice.currency} {invoice.baseAmount.toLocaleString()}</span>
+            <span>
+              {invoice.currency} {invoice.baseAmount.toLocaleString()}
+            </span>
           </div>
           <div className="summary-row">
             <span>Platform Trust Fee (15%):</span>
-            <span>{invoice.currency} {invoice.platformFee.toLocaleString()}</span>
+            <span>
+              {invoice.currency} {invoice.platformFee.toLocaleString()}
+            </span>
           </div>
           <div className="summary-row total">
             <span>Total:</span>

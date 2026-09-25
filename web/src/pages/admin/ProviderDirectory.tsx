@@ -75,8 +75,6 @@ export default function ProviderDirectory() {
           </div>
         </div>
 
-
-
         <div className="filter-group">
           <label>Service Category</label>
           <select

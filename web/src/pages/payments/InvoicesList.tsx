@@ -3,13 +3,7 @@ import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { paymentsApi } from "../../api/payments";
 import { usersApi } from "../../api/users";
-import {
-  FileText,
-  CreditCard,
-  Eye,
-  Receipt,
-  CheckCircle2,
-} from "lucide-react";
+import { FileText, CreditCard, Eye, Receipt, CheckCircle2 } from "lucide-react";
 import "./Payments.css";
 
 export default function InvoicesList() {
@@ -22,7 +16,8 @@ export default function InvoicesList() {
 
   const { data: invoices = [], isLoading } = useQuery({
     queryKey: ["customerInvoices", userProfile?.id],
-    queryFn: () => (userProfile?.id ? paymentsApi.getCustomerInvoices(userProfile.id) : Promise.resolve([])),
+    queryFn: () =>
+      userProfile?.id ? paymentsApi.getCustomerInvoices(userProfile.id) : Promise.resolve([]),
     enabled: !!userProfile?.id,
   });
 
@@ -126,7 +121,13 @@ export default function InvoicesList() {
                     <td>
                       <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
                         <FileText size={16} color="var(--accent)" />
-                        <span style={{ fontWeight: 700, fontFamily: "monospace", color: "var(--text-h)" }}>
+                        <span
+                          style={{
+                            fontWeight: 700,
+                            fontFamily: "monospace",
+                            color: "var(--text-h)",
+                          }}
+                        >
                           INV-{inv.id.slice(0, 8).toUpperCase()}
                         </span>
                       </div>

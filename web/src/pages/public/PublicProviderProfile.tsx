@@ -23,7 +23,9 @@ import "./PublicProviderProfile.css";
 
 export default function PublicProviderProfile() {
   const { providerId } = useParams<{ providerId: string }>();
-  const [selectedBookingListing, setSelectedBookingListing] = useState<ServiceListingDto | null>(null);
+  const [selectedBookingListing, setSelectedBookingListing] = useState<ServiceListingDto | null>(
+    null,
+  );
 
   // Fetch the Customer projection
   const {
@@ -93,7 +95,9 @@ export default function PublicProviderProfile() {
                 className="public-avatar"
               />
             ) : (
-              <div className="public-avatar-fallback">{profile.fullName.charAt(0).toUpperCase()}</div>
+              <div className="public-avatar-fallback">
+                {profile.fullName.charAt(0).toUpperCase()}
+              </div>
             )}
 
             {profile.verificationStatus === "Verified" && (
@@ -166,7 +170,12 @@ export default function PublicProviderProfile() {
 
               {profile.servicesOffered.length > 0 && (
                 <div style={{ marginTop: "1.5rem" }}>
-                  <h4 className="services-heading" style={{ fontSize: "1rem", marginBottom: "0.5rem" }}>Specific Services Offered</h4>
+                  <h4
+                    className="services-heading"
+                    style={{ fontSize: "1rem", marginBottom: "0.5rem" }}
+                  >
+                    Specific Services Offered
+                  </h4>
                   <ul className="services-list">
                     {profile.servicesOffered.map((srv, i) => (
                       <li key={i}>{srv}</li>
@@ -176,28 +185,71 @@ export default function PublicProviderProfile() {
               )}
 
               {listingsLoading ? (
-                <div style={{ marginTop: "var(--space-10)", display: "flex", justifyContent: "center" }}>
-                  <div className="flex-center" style={{ padding: "var(--space-8)", gap: "var(--space-3)" }}>
-                    <p style={{ color: "var(--text-muted)", margin: 0 }}>Loading service catalogue...</p>
+                <div
+                  style={{
+                    marginTop: "var(--space-10)",
+                    display: "flex",
+                    justifyContent: "center",
+                  }}
+                >
+                  <div
+                    className="flex-center"
+                    style={{ padding: "var(--space-8)", gap: "var(--space-3)" }}
+                  >
+                    <p style={{ color: "var(--text-muted)", margin: 0 }}>
+                      Loading service catalogue...
+                    </p>
                   </div>
                 </div>
               ) : (
                 <div style={{ marginTop: "var(--space-10)" }}>
-                  <h4 className="services-heading" style={{ fontSize: "1.125rem", fontWeight: 700, marginBottom: "var(--space-4)", color: "var(--text-h)" }}>Fixed-Price Services</h4>
-                  {listingsData && listingsData.filter(l => l.isActive).length > 0 ? (
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 'var(--space-6)' }}>
-                      {listingsData.filter(l => l.isActive).map((listing, idx) => (
-                        <div key={listing.id} className="animate-fade-up" style={{ animationDelay: `${(idx % 10) * 50}ms` }}>
-                          <ServiceListingCard
-                            listing={listing}
-                            onBookClick={(lst) => setSelectedBookingListing(lst)}
-                          />
-                        </div>
-                      ))}
+                  <h4
+                    className="services-heading"
+                    style={{
+                      fontSize: "1.125rem",
+                      fontWeight: 700,
+                      marginBottom: "var(--space-4)",
+                      color: "var(--text-h)",
+                    }}
+                  >
+                    Fixed-Price Services
+                  </h4>
+                  {listingsData && listingsData.filter((l) => l.isActive).length > 0 ? (
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
+                        gap: "var(--space-6)",
+                      }}
+                    >
+                      {listingsData
+                        .filter((l) => l.isActive)
+                        .map((listing, idx) => (
+                          <div
+                            key={listing.id}
+                            className="animate-fade-up"
+                            style={{ animationDelay: `${(idx % 10) * 50}ms` }}
+                          >
+                            <ServiceListingCard
+                              listing={listing}
+                              onBookClick={(lst) => setSelectedBookingListing(lst)}
+                            />
+                          </div>
+                        ))}
                     </div>
                   ) : (
-                    <div className="empty-state" style={{ padding: "var(--space-8)", background: "var(--bg-surface)", border: "1px dashed var(--border-strong)", borderRadius: "12px" }}>
-                      <p style={{ color: "var(--text-muted)", fontSize: "0.95rem", margin: 0 }}>This provider hasn't listed any fixed-price services yet.</p>
+                    <div
+                      className="empty-state"
+                      style={{
+                        padding: "var(--space-8)",
+                        background: "var(--bg-surface)",
+                        border: "1px dashed var(--border-strong)",
+                        borderRadius: "12px",
+                      }}
+                    >
+                      <p style={{ color: "var(--text-muted)", fontSize: "0.95rem", margin: 0 }}>
+                        This provider hasn't listed any fixed-price services yet.
+                      </p>
                     </div>
                   )}
                 </div>
