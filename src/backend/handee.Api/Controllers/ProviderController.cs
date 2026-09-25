@@ -115,11 +115,13 @@ public class ProviderController(
     public async Task<IActionResult> UpdateVerification(
         Guid id, [FromBody] VerificationActionDto dto, CancellationToken ct)
     {
-        var adminId = User.GetUserId() ?? Guid.Empty;
+        var adminId = User.GetUserId();
+        if (adminId == null || adminId == Guid.Empty)
+            return Unauthorized();
 
         try
         {
-            await verificationService.TransitionAsync(id, adminId, dto.NewStatus, dto.Note, ct);
+            await verificationService.TransitionAsync(id, adminId.Value, dto.NewStatus, dto.Note, ct);
             await trustService.InvalidateCacheAsync(id, ct);
             return NoContent();
         }

@@ -29,12 +29,26 @@ public class AgentWorkflow
     /// Risk tier evaluated by Validation/Safety Agent:
     /// approved_for_auto_dispatch | approved_with_audit | requires_human_approval
     /// </summary>
-    public WorkflowValidationTier ValidationTier { get; set; } = WorkflowValidationTier.RequiresHumanApproval;
+    public string ValidationTier { get; set; } = "requires_human_approval";
+
+    [System.ComponentModel.DataAnnotations.Schema.NotMapped]
+    public WorkflowValidationTier ValidationTierEnum
+    {
+        get => ParseValidationTier(ValidationTier);
+        set => ValidationTier = FormatValidationTier(value);
+    }
 
     /// <summary>
     /// HITL approval status: pending | approved | rejected | revised
     /// </summary>
-    public WorkflowApprovalStatus ApprovalStatus { get; set; } = WorkflowApprovalStatus.Pending;
+    public string ApprovalStatus { get; set; } = "pending";
+
+    [System.ComponentModel.DataAnnotations.Schema.NotMapped]
+    public WorkflowApprovalStatus ApprovalStatusEnum
+    {
+        get => ParseApprovalStatus(ApprovalStatus);
+        set => ApprovalStatus = FormatApprovalStatus(value);
+    }
 
     public static WorkflowValidationTier ParseValidationTier(string? value) => value?.Trim().ToLowerInvariant() switch
     {

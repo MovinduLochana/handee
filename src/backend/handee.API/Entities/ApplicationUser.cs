@@ -4,11 +4,11 @@ namespace handee.API.Entities;
 
 public enum ProviderVerificationStatus
 {
-    Unverified,
-    Pending,
-    InReview,
-    Verified,
-    Rejected
+    Unverified = 0,
+    Pending = 1,
+    Verified = 2,
+    Rejected = 3,
+    InReview = 4
 }
 
 public class ApplicationUser : IdentityUser<Guid>
