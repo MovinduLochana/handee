@@ -10,18 +10,21 @@ public class AgentWorkflowConfiguration : IEntityTypeConfiguration<AgentWorkflow
     {
         builder.HasKey(w => w.Id);
 
-        builder.Ignore(w => w.ValidationTierEnum);
-        builder.Ignore(w => w.ApprovalStatusEnum);
-
         builder.Property(w => w.WorkflowId)
             .IsRequired()
             .HasMaxLength(100);
 
         builder.Property(w => w.ValidationTier)
+            .HasConversion(
+                v => AgentWorkflow.FormatValidationTier(v),
+                v => AgentWorkflow.ParseValidationTier(v))
             .IsRequired()
             .HasMaxLength(50);
 
         builder.Property(w => w.ApprovalStatus)
+            .HasConversion(
+                v => AgentWorkflow.FormatApprovalStatus(v),
+                v => AgentWorkflow.ParseApprovalStatus(v))
             .IsRequired()
             .HasMaxLength(50);
 

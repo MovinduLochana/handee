@@ -14,17 +14,29 @@ public class AgentWorkflowService : IAgentWorkflowService
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly IInvoiceService _invoiceService;
     private readonly ILogger<AgentWorkflowService> _logger;
+    private readonly IBookingNotificationService? _notificationService;
 
     public AgentWorkflowService(
         AppDbContext db,
         IHttpClientFactory httpClientFactory,
         IInvoiceService invoiceService,
         ILogger<AgentWorkflowService> logger)
+        : this(db, httpClientFactory, invoiceService, logger, null)
+    {
+    }
+
+    public AgentWorkflowService(
+        AppDbContext db,
+        IHttpClientFactory httpClientFactory,
+        IInvoiceService invoiceService,
+        ILogger<AgentWorkflowService> logger,
+        IBookingNotificationService? notificationService)
     {
         _db = db;
         _httpClientFactory = httpClientFactory;
         _invoiceService = invoiceService;
         _logger = logger;
+        _notificationService = notificationService;
     }
 
 
@@ -90,7 +102,7 @@ public class AgentWorkflowService : IAgentWorkflowService
         _db.AgentWorkflows.Add(workflow);
 
         // Tier evaluation handling
-        if (workflow.ValidationTierEnum is WorkflowValidationTier.ApprovedForAutoDispatch or WorkflowValidationTier.ApprovedWithAudit)
+        if (workflow.ValidationTier is WorkflowValidationTier.ApprovedForAutoDispatch or WorkflowValidationTier.ApprovedWithAudit)
         {
             jobRequest.Status = JobRequestStatus.Open;
 
@@ -109,7 +121,7 @@ public class AgentWorkflowService : IAgentWorkflowService
                 await _db.SaveChangesAsync(ct);
 
                 // Approval-to-Payment Handoff: Auto-generate Quote/Invoice from AI estimate
-                var approvalStatus = workflow.ValidationTierEnum == WorkflowValidationTier.ApprovedForAutoDispatch
+                var approvalStatus = workflow.ValidationTier == WorkflowValidationTier.ApprovedForAutoDispatch
                     ? QuoteApprovalStatus.AutoApproved
                     : QuoteApprovalStatus.ApprovedWithAudit;
                 var estimatedPrice = workflow.EstimatedPrice ?? 3500m;
@@ -131,12 +143,30 @@ public class AgentWorkflowService : IAgentWorkflowService
                 {
                     _logger.LogWarning(ex, "Failed to auto-create invoice during approval-to-payment handoff for booking {BookingId}", booking.Id);
                 }
+
+                if (_notificationService != null)
+                {
+                    try
+                    {
+                        await _notificationService.NotifyJobDispatchedAsync(
+                            workflow.SelectedProviderId.Value,
+                            booking.Id,
+                            jobRequest.Id,
+                            categoryName,
+                            estimatedPrice,
+                            ct);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Failed to send dispatch notification for booking {BookingId}", booking.Id);
+                    }
+                }
             }
         }
         else
         {
             // High risk / requires human approval: leave status as PendingAiReview
-            workflow.ApprovalStatusEnum = WorkflowApprovalStatus.Pending;
+            workflow.ApprovalStatus = WorkflowApprovalStatus.Pending;
             jobRequest.Status = JobRequestStatus.PendingAiReview;
         }
 
@@ -205,10 +235,16 @@ public class AgentWorkflowService : IAgentWorkflowService
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(tier))
-            query = query.Where(w => w.ValidationTier.ToLower() == tier.ToLower());
+        {
+            var parsedTier = AgentWorkflow.ParseValidationTier(tier);
+            query = query.Where(w => w.ValidationTier == parsedTier);
+        }
 
         if (!string.IsNullOrEmpty(status))
-            query = query.Where(w => w.ApprovalStatus.ToLower() == status.ToLower());
+        {
+            var parsedStatus = AgentWorkflow.ParseApprovalStatus(status);
+            query = query.Where(w => w.ApprovalStatus == parsedStatus);
+        }
 
         var list = await query.OrderByDescending(w => w.CreatedAt).ToListAsync(ct);
         return list.Select(ToDto).ToList();
@@ -229,18 +265,20 @@ public class AgentWorkflowService : IAgentWorkflowService
         if (workflow == null)
             throw new NotFoundException($"AgentWorkflow with ID {workflowId} not found.");
 
+        var wasAlreadyApproved = workflow.ApprovalStatus == WorkflowApprovalStatus.Approved;
         var decision = dto.Decision.Trim();
-        workflow.ApprovalStatus = decision.ToLower();
+        workflow.ApprovalStatus = AgentWorkflow.ParseApprovalStatus(decision);
         workflow.DecisionNote = dto.Note;
         workflow.DecidedAt = DateTimeOffset.UtcNow;
         workflow.DecidedByAdminId = adminId;
 
-        if (decision.Equals("Approve", StringComparison.OrdinalIgnoreCase))
+        if (workflow.ApprovalStatus == WorkflowApprovalStatus.Approved)
         {
             workflow.JobRequest.Status = JobRequestStatus.Open;
 
             // Check if booking already exists for this job request
             var booking = await _db.Bookings.FirstOrDefaultAsync(b => b.JobRequestId == workflow.JobRequestId, ct);
+            var isNewDispatch = !wasAlreadyApproved && booking == null;
             if (booking == null && workflow.SelectedProviderId.HasValue)
             {
                 booking = new Booking
@@ -276,6 +314,24 @@ public class AgentWorkflowService : IAgentWorkflowService
                 catch (Exception ex)
                 {
                     _logger.LogWarning(ex, "Failed to create invoice during Admin approval-to-payment handoff for booking {BookingId}", booking.Id);
+                }
+
+                if (isNewDispatch && _notificationService != null)
+                {
+                    try
+                    {
+                        await _notificationService.NotifyJobDispatchedAsync(
+                            workflow.SelectedProviderId.Value,
+                            booking.Id,
+                            workflow.JobRequestId,
+                            categoryName,
+                            estimatedPrice,
+                            ct);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Failed to send dispatch notification for booking {BookingId}", booking.Id);
+                    }
                 }
             }
         }
@@ -316,8 +372,8 @@ public class AgentWorkflowService : IAgentWorkflowService
             WorkflowId = workflowId,
             Objective = objective,
             Plan = planList,
-            ValidationTier = validationTier,
-            ApprovalStatus = approvalStatus,
+            ValidationTier = AgentWorkflow.ParseValidationTier(validationTier),
+            ApprovalStatus = AgentWorkflow.ParseApprovalStatus(approvalStatus),
             EstimatedPrice = price,
             SelectedProviderId = selectedProviderId,
             FinalResultJson = json.ToString()
@@ -359,8 +415,8 @@ public class AgentWorkflowService : IAgentWorkflowService
                 "3. Validation / Safety: Evaluate platform risk policies and category price variance.",
                 "4. Workflow Finalization: Output tiered risk classification."
             },
-            ValidationTierEnum = WorkflowValidationTier.ApprovedWithAudit,
-            ApprovalStatusEnum = WorkflowApprovalStatus.Approved,
+            ValidationTier = WorkflowValidationTier.ApprovedWithAudit,
+            ApprovalStatus = WorkflowApprovalStatus.Approved,
             EstimatedPrice = price,
             FinalResultJson = JsonSerializer.Serialize(new { status = "approved_with_audit", estimatedPrice = price })
         };
@@ -407,8 +463,8 @@ public class AgentWorkflowService : IAgentWorkflowService
         w.WorkflowId,
         w.Objective,
         w.Plan,
-        w.ValidationTier,
-        w.ApprovalStatus,
+        AgentWorkflow.FormatValidationTier(w.ValidationTier),
+        AgentWorkflow.FormatApprovalStatus(w.ApprovalStatus),
         w.EstimatedPrice,
         w.SelectedProviderId,
         w.SelectedProvider?.FullName,

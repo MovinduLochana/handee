@@ -79,6 +79,7 @@ builder.Services.AddAuthentication(options =>
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtConfig.SecretKey)),
             ClockSkew = TimeSpan.Zero
         };
+        HubAuthExtensions.ConfigureHubJwtBearer(options);
     });
 
 builder.Services.Configure<AuthOptions>(builder.Configuration.GetSection(AuthOptions.SectionName));
@@ -141,6 +142,10 @@ builder.Services.AddScoped<IReviewService, ReviewService>();
 // Payments & Invoicing
 builder.Services.AddScoped<IInvoiceService, InvoiceService>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
+
+// Real-Time Notifications & SignalR
+builder.Services.AddSignalR();
+builder.Services.AddScoped<IBookingNotificationService, BookingNotificationService>();
 
 builder.Services.AddControllers()
     .AddJsonOptions(opts =>
@@ -216,5 +221,6 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapHub<handee.API.Hubs.BookingHub>("/hubs/booking");
 
 app.Run();

@@ -95,33 +95,4 @@ public class ServiceListingsController : ControllerBase
         await _service.DeleteListingAsync(id, providerId.Value);
         return NoContent();
     }
-
-    [HttpPost("{id:guid}/book")]
-    [Authorize(Roles = "Customer")]
-    public async Task<IActionResult> BookListing(
-        Guid id,
-        [FromBody] BookListingRequestDto dto,
-        [FromServices] IBookingService bookingService,
-        CancellationToken ct = default)
-    {
-        var customerId = User.GetUserId();
-        if (customerId is null) return Unauthorized();
-
-        try
-        {
-            var result = await bookingService.CreateFromListingAsync(
-                new CreateListingBookingDto(id, dto.ScheduledAt, dto.Notes),
-                customerId.Value,
-                ct);
-            return StatusCode(StatusCodes.Status201Created, result);
-        }
-        catch (NotFoundException ex)
-        {
-            return NotFound(new { error = ex.Message });
-        }
-        catch (ValidationException ex)
-        {
-            return BadRequest(new { error = ex.Message });
-        }
-    }
 }

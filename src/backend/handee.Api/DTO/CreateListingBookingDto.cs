@@ -7,8 +7,3 @@ public record CreateListingBookingDto(
     [Required] DateTimeOffset ScheduledAt,
     string? Notes = null
 );
-
-public record BookListingRequestDto(
-    [Required] DateTimeOffset ScheduledAt,
-    string? Notes = null
-);

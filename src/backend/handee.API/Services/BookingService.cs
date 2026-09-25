@@ -11,15 +11,24 @@ public class BookingService : IBookingService
 {
     private readonly AppDbContext _db;
     private readonly IInvoiceService _invoiceService;
+    private readonly IBookingNotificationService? _notificationService;
 
-    public BookingService(AppDbContext db) : this(db, new InvoiceService(db))
+    public BookingService(AppDbContext db) : this(db, new InvoiceService(db), null)
     {
     }
 
-    public BookingService(AppDbContext db, IInvoiceService invoiceService)
+    public BookingService(AppDbContext db, IInvoiceService invoiceService) : this(db, invoiceService, null)
+    {
+    }
+
+    public BookingService(
+        AppDbContext db,
+        IInvoiceService invoiceService,
+        IBookingNotificationService? notificationService)
     {
         _db = db;
         _invoiceService = invoiceService;
+        _notificationService = notificationService;
     }
 
     /// <summary>
@@ -222,6 +231,23 @@ public class BookingService : IBookingService
 
         await _db.SaveChangesAsync();
 
+        if (_notificationService != null)
+        {
+            try
+            {
+                await _notificationService.NotifyBookingStatusChangedAsync(
+                    booking.Id,
+                    booking.CustomerId,
+                    booking.ProviderId,
+                    booking.Status,
+                    booking.UpdatedAt.Value);
+            }
+            catch
+            {
+                // Resilient against notification delivery failures
+            }
+        }
+
         return ToDto(booking);
     }
 
@@ -284,6 +310,7 @@ public class BookingService : IBookingService
             tx = await _db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, ct);
         }
 
+        Booking booking;
         try
         {
             // Check provider availability slots if any configured
@@ -333,7 +360,7 @@ public class BookingService : IBookingService
 
             var customer = await _db.Users.FindAsync([customerId], ct);
 
-            var booking = new Booking
+            booking = new Booking
             {
                 Id = Guid.NewGuid(),
                 ServiceListingId = listing.Id,
@@ -365,8 +392,6 @@ public class BookingService : IBookingService
             {
                 await tx.CommitAsync(ct);
             }
-
-            return ToDto(booking);
         }
         catch (OperationCanceledException)
         {
@@ -387,6 +412,26 @@ public class BookingService : IBookingService
         {
             if (tx != null) await tx.DisposeAsync();
         }
+
+        if (_notificationService != null)
+        {
+            try
+            {
+                await _notificationService.NotifyJobDispatchedAsync(
+                    listing.ProviderId,
+                    booking.Id,
+                    null,
+                    listing.Category?.Name ?? listing.Title,
+                    listing.FixedPrice,
+                    ct);
+            }
+            catch
+            {
+                // Notification caught to ensure booking persistence resilience
+            }
+        }
+
+        return ToDto(booking);
     }
 
     private static BookingResponseDto ToDto(Booking b) => new(

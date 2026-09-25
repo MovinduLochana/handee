@@ -53,9 +53,9 @@ public class ApprovalPaymentHandoffTests
             JobRequestId = jobRequest.Id,
             JobRequest = jobRequest,
             SelectedProviderId = providerId,
-            ApprovalStatus = "pending",
+            ApprovalStatus = WorkflowApprovalStatus.Pending,
             EstimatedPrice = 7500m,
-            ValidationTier = "human_approval_required"
+            ValidationTier = WorkflowValidationTier.RequiresHumanApproval
         };
         db.AgentWorkflows.Add(workflow);
         await db.SaveChangesAsync();
@@ -66,7 +66,7 @@ public class ApprovalPaymentHandoffTests
         var response = await sut.MakeDecisionAsync(workflow.Id, adminId, decisionDto);
 
         Assert.NotNull(response);
-        Assert.Equal("approve", response.ApprovalStatus);
+        Assert.Equal("approved", response.ApprovalStatus);
 
         // Verify that CreateInvoiceForBookingAsync was called with expected arguments
         mockInvoiceService.Verify(
@@ -116,7 +116,7 @@ public class ApprovalPaymentHandoffTests
             JobRequestId = jobRequest.Id,
             JobRequest = jobRequest,
             SelectedProviderId = providerId,
-            ApprovalStatus = "pending",
+            ApprovalStatus = WorkflowApprovalStatus.Pending,
             EstimatedPrice = 4000m
         };
         db.AgentWorkflows.Add(workflow);
@@ -128,7 +128,7 @@ public class ApprovalPaymentHandoffTests
         var response = await sut.MakeDecisionAsync(workflow.Id, adminId, decisionDto);
 
         Assert.NotNull(response);
-        Assert.Equal("reject", response.ApprovalStatus);
+        Assert.Equal("rejected", response.ApprovalStatus);
 
         // Verify that CreateInvoiceForBookingAsync was NEVER called
         mockInvoiceService.Verify(
