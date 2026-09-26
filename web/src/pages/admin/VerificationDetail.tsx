@@ -11,11 +11,13 @@ import {
   XCircle,
   Search,
   Clock,
+  AlertTriangle,
 } from "lucide-react";
 import { providerApi } from "../../api/providers";
 import type { ProviderProfileAdminDto, VerificationActionDto } from "../../api/types";
 import StatusBadge from "../../components/provider/StatusBadge";
 import DocumentCard from "../../components/provider/DocumentCard";
+import { extractApiError } from "../../lib/api";
 import "./VerificationDetail.css";
 
 export default function VerificationDetail() {
@@ -24,6 +26,7 @@ export default function VerificationDetail() {
 
   const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
   const [rejectNote, setRejectNote] = useState("");
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const { data: profile, isLoading } = useQuery({
     queryKey: ["adminProviderProfile", id],
@@ -35,20 +38,64 @@ export default function VerificationDetail() {
     mutationFn: async (payload: VerificationActionDto) => {
       if (!id) throw new Error("No id");
       await providerApi.updateVerification(id, payload);
+      return payload;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["adminProviderProfile", id] });
+    onSuccess: async (payload) => {
+      setErrorMessage(null);
+      // Immediately update local cache so the UI transitions instantly (0ms lag)
+      queryClient.setQueryData<ProviderProfileAdminDto>(
+        ["adminProviderProfile", id],
+        (old) => {
+          if (!old) return old;
+          return {
+            ...old,
+            verificationStatus: payload.newStatus,
+          };
+        }
+      );
+
       setIsRejectModalOpen(false);
       setRejectNote("");
+
+      // Refetch to sync fresh server audit logs & status
+      await queryClient.invalidateQueries({ queryKey: ["adminProviderProfile", id] });
+      await queryClient.refetchQueries({ queryKey: ["adminProviderProfile", id] });
+
+      // Invalidate the queue list and summary KPI counters so navigating back is fresh
+      await queryClient.invalidateQueries({ queryKey: ["verificationQueue"] });
+      await queryClient.invalidateQueries({ queryKey: ["verificationSummary"] });
+    },
+    onError: (err) => {
+      setErrorMessage(extractApiError(err, "Failed to update verification status."));
     },
   });
 
   const documentReviewMutation = useMutation({
     mutationFn: async ({ certId, status }: { certId: string; status: "Approved" | "Rejected" }) => {
       await providerApi.reviewCertification(certId, status);
+      return { certId, status };
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["adminProviderProfile", id] });
+    onSuccess: async ({ certId, status }) => {
+      setErrorMessage(null);
+      // Immediately update certification status in cache
+      queryClient.setQueryData<ProviderProfileAdminDto>(
+        ["adminProviderProfile", id],
+        (old) => {
+          if (!old) return old;
+          return {
+            ...old,
+            certifications: old.certifications.map((c) =>
+              c.id === certId ? { ...c, reviewStatus: status } : c
+            ),
+          };
+        }
+      );
+
+      await queryClient.invalidateQueries({ queryKey: ["adminProviderProfile", id] });
+      await queryClient.refetchQueries({ queryKey: ["adminProviderProfile", id] });
+    },
+    onError: (err) => {
+      setErrorMessage(extractApiError(err, "Failed to update document review status."));
     },
   });
 
@@ -135,10 +182,29 @@ export default function VerificationDetail() {
           <div className="admin-action-panel">
             <h3>Verification Actions</h3>
 
+            {errorMessage && (
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                  padding: "0.75rem",
+                  marginBottom: "1rem",
+                  borderRadius: "8px",
+                  backgroundColor: "var(--bg-danger, #fee2e2)",
+                  color: "var(--text-danger, #b91c1c)",
+                  fontSize: "0.85rem",
+                }}
+              >
+                <AlertTriangle size={16} />
+                <span>{errorMessage}</span>
+              </div>
+            )}
+
             {/* Legal Admin Transitions:
-                            Pending -> InReview, Verified, Rejected
-                            InReview -> Verified, Rejected
-                        */}
+                Pending -> InReview, Verified, Rejected
+                InReview -> Verified, Rejected
+            */}
             <button
               className="panel-btn btn-start-review"
               disabled={!isPending || statusMutation.isPending}
@@ -153,7 +219,8 @@ export default function VerificationDetail() {
               disabled={(!isPending && !isInReview) || statusMutation.isPending}
               onClick={() => statusMutation.mutate({ newStatus: "Verified" })}
             >
-              <CheckCircle size={18} /> Approve & Verify
+              <CheckCircle size={18} />
+              {statusMutation.isPending ? "Processing..." : "Approve & Verify"}
             </button>
 
             <button
@@ -321,9 +388,9 @@ export default function VerificationDetail() {
                   border: "1px solid var(--text-danger)",
                 }}
                 onClick={() => statusMutation.mutate({ newStatus: "Rejected", note: rejectNote })}
-                disabled={!rejectNote.trim()}
+                disabled={!rejectNote.trim() || statusMutation.isPending}
               >
-                Confirm Rejection
+                {statusMutation.isPending ? "Processing..." : "Confirm Rejection"}
               </button>
             </div>
           </div>

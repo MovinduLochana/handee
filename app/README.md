@@ -27,10 +27,15 @@ flutter run
 ```
 
 **2. Running on a Physical Device**
-If you are testing on a real device, you must pass the `DEVICE` flag. This switches the backend URL to your PC's actual LAN IP address (e.g. `192.168.1.3`) so the phone can reach it over the network.
-Make sure your phone is on the **same Wi-Fi network** as your PC, and then run:
+If you are testing on a real device, pass the `DEVICE` flag. By default, it connects to your LAN IP (`192.168.1.2` or overridden via `DEVICE_IP`):
 ```bash
+# Using default local Wi-Fi IP:
 flutter run --dart-define=DEVICE=true
+
+# Or explicitly specifying your PC's IP address:
+flutter run --dart-define=DEVICE=true --dart-define=DEVICE_IP=192.168.1.2
 ```
 
-> **Note**: Your backend `launchSettings.json` must be bound to `http://0.0.0.0:xxxx` in order for a physical device to successfully resolve the connection over Wi-Fi.
+> **Tip**: If connected via USB debugging, you can also run:
+> `adb reverse tcp:5057 tcp:5057`
+> The script `run-services.ps1` sets this up and automatically detects your LAN IP.

@@ -8,8 +8,11 @@ class ApiEndpoints {
   // Base URL configuration (Supports localhost, Android Emulator 10.0.2.2, or live backend)
   // Default to the Android Emulator (10.0.2.2) or localhost.
   // Use --dart-define=DEVICE=true to target a Physical Device over Wi-Fi
+  // Optional: --dart-define=DEVICE_IP=192.168.1.x or --dart-define=BASE_URL=http://...
   static const bool usePhysicalDevice = bool.fromEnvironment('DEVICE', defaultValue: false);
-  static const String physicalDeviceIp = '192.168.1.3';
+  static const String physicalDeviceIp = String.fromEnvironment('DEVICE_IP', defaultValue: '192.168.1.2');
+  static const String customBaseUrl = String.fromEnvironment('BASE_URL', defaultValue: '');
+  static const int defaultPort = int.fromEnvironment('PORT', defaultValue: 5057);
 
   static String get defaultHost {
     if (kIsWeb) return 'localhost';
@@ -18,8 +21,11 @@ class ApiEndpoints {
     }
     return usePhysicalDevice ? physicalDeviceIp : 'localhost';
   }
-  static const int defaultPort = 5057;
-  static String get baseUrl => 'http://$defaultHost:$defaultPort';
+
+  static String get baseUrl {
+    if (customBaseUrl.isNotEmpty) return customBaseUrl;
+    return 'http://$defaultHost:$defaultPort';
+  }
 
   // Auth endpoints (AuthController)
   static const String login = '/auth/login';

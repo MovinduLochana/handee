@@ -40,11 +40,12 @@ class _PublicProviderProfileScreenState extends State<PublicProviderProfileScree
           }
 
           final services = providerData.selectedProviderServices;
+          final bannerHeight = MediaQuery.sizeOf(context).width;
 
           return CustomScrollView(
             slivers: [
               SliverAppBar(
-                expandedHeight: 400,
+                expandedHeight: bannerHeight,
                 pinned: true,
                 flexibleSpace: FlexibleSpaceBar(
                   background: Stack(
@@ -53,7 +54,7 @@ class _PublicProviderProfileScreenState extends State<PublicProviderProfileScree
                       Container(color: AppColors.primaryUltraLight),
                       if (provider.fullProfilePhotoUrl != null)
                         TweenAnimationBuilder<double>(
-                          tween: Tween<double>(begin: 1.2, end: 1.0),
+                          tween: Tween<double>(begin: 1.1, end: 1.0),
                           duration: const Duration(milliseconds: 1500),
                           curve: Curves.easeOutQuart,
                           builder: (context, scale, child) {
@@ -83,7 +84,7 @@ class _PublicProviderProfileScreenState extends State<PublicProviderProfileScree
                         ),
                       ),
                       Positioned(
-                        bottom: 16,
+                        bottom: 12,
                         left: 16,
                         right: 16,
                         child: Column(
@@ -102,14 +103,14 @@ class _PublicProviderProfileScreenState extends State<PublicProviderProfileScree
                                   ),
                                 ),
                                 const SizedBox(width: 8),
-                                  const Icon(Icons.verified, color: Colors.blueAccent, size: 20),
+                                const Icon(Icons.verified, color: Colors.blueAccent, size: 20),
                               ],
                             ),
                             if (provider.headline != null && provider.headline!.isNotEmpty) ...[
-                              const SizedBox(height: 8),
+                              const SizedBox(height: 6),
                               Text(provider.headline!, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600, letterSpacing: -0.3)),
                             ],
-                            const SizedBox(height: 12),
+                            const SizedBox(height: 8),
                             Row(
                               children: [
                                 const Icon(Icons.star, color: Colors.amber, size: 16),
@@ -129,7 +130,7 @@ class _PublicProviderProfileScreenState extends State<PublicProviderProfileScree
               ),
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.all(24),
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -142,11 +143,11 @@ class _PublicProviderProfileScreenState extends State<PublicProviderProfileScree
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Row(
+                                    const Row(
                                       children: [
-                                        const Icon(Icons.work_outline, size: 16, color: AppColors.primary),
-                                        const SizedBox(width: 4),
-                                        const Text('Experience', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.textMuted)),
+                                        Icon(Icons.work_outline, size: 16, color: AppColors.primary),
+                                        SizedBox(width: 4),
+                                        Text('Experience', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.textMuted)),
                                       ],
                                     ),
                                     const SizedBox(height: 2),
@@ -166,11 +167,11 @@ class _PublicProviderProfileScreenState extends State<PublicProviderProfileScree
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Row(
+                                    const Row(
                                       children: [
-                                        const Icon(Icons.chat_bubble_outline, size: 16, color: AppColors.primary),
-                                        const SizedBox(width: 4),
-                                        const Text('Languages', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.textMuted)),
+                                        Icon(Icons.chat_bubble_outline, size: 16, color: AppColors.primary),
+                                        SizedBox(width: 4),
+                                        Text('Languages', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.textMuted)),
                                       ],
                                     ),
                                     const SizedBox(height: 2),
@@ -180,43 +181,43 @@ class _PublicProviderProfileScreenState extends State<PublicProviderProfileScree
                               ),
                           ],
                         ),
-                        const SizedBox(height: 32),
+                        const SizedBox(height: 14),
                         const Divider(height: 1, thickness: 1, color: AppColors.borderLight),
-                        const SizedBox(height: 32),
+                        const SizedBox(height: 14),
                       ],
 
                       // Bio Section
-                      Row(
+                      const Row(
                         children: [
-                          const Icon(Icons.person_pin, size: 28, color: AppColors.primary),
-                          const SizedBox(width: 8),
-                          const Text(
+                          Icon(Icons.person_pin, size: 28, color: AppColors.primary),
+                          SizedBox(width: 8),
+                          Text(
                             'About',
                             style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, letterSpacing: -1.0, color: AppColors.textPrimary),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 12),
                       Text(
                         provider.description ?? provider.bio ?? "This provider hasn't added an overview yet.",
                         style: const TextStyle(fontSize: 16, color: AppColors.textSecondary, height: 1.6),
                       ),
-                      const SizedBox(height: 32),
+                      const SizedBox(height: 14),
                       const Divider(height: 1, thickness: 1, color: AppColors.borderLight),
-                      const SizedBox(height: 32),
+                      const SizedBox(height: 14),
                       
                       // Skills Section
-                      Row(
+                      const Row(
                         children: [
-                          const Icon(Icons.military_tech, size: 28, color: AppColors.primary),
-                          const SizedBox(width: 8),
-                          const Text(
+                          Icon(Icons.military_tech, size: 28, color: AppColors.primary),
+                          SizedBox(width: 8),
+                          Text(
                             'Expertise',
                             style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, letterSpacing: -1.0, color: AppColors.textPrimary),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 14),
                       Wrap(
                         spacing: 12,
                         runSpacing: 12,
@@ -237,22 +238,22 @@ class _PublicProviderProfileScreenState extends State<PublicProviderProfileScree
                           );
                         }).toList(),
                       ),
-                      const SizedBox(height: 32),
+                      const SizedBox(height: 14),
                       const Divider(height: 1, thickness: 1, color: AppColors.borderLight),
-                      const SizedBox(height: 32),
+                      const SizedBox(height: 14),
                       
                       // Services Section
-                      Row(
+                      const Row(
                         children: [
-                          const Icon(Icons.design_services, size: 28, color: AppColors.primary),
-                          const SizedBox(width: 8),
-                          const Text(
+                          Icon(Icons.design_services, size: 28, color: AppColors.primary),
+                          SizedBox(width: 8),
+                          Text(
                             'Bookable Services',
                             style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, letterSpacing: -1.0, color: AppColors.textPrimary),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 14),
                       if (services.isEmpty)
                         const Text("This provider hasn't added any services yet.", style: TextStyle(color: AppColors.textSecondary))
                       else
@@ -262,7 +263,7 @@ class _PublicProviderProfileScreenState extends State<PublicProviderProfileScree
                             padding: EdgeInsets.zero,
                             scrollDirection: Axis.horizontal,
                             itemCount: services.length,
-                            separatorBuilder: (_, __) => const SizedBox(width: 16),
+                            separatorBuilder: (context, index) => const SizedBox(width: 16),
                             itemBuilder: (context, index) {
                               final listing = services[index];
                               return SizedBox(
@@ -282,7 +283,7 @@ class _PublicProviderProfileScreenState extends State<PublicProviderProfileScree
                             },
                           ),
                         ),
-                      const SizedBox(height: 160),
+                      const SizedBox(height: 90),
                     ],
                   ),
                 ),
@@ -306,11 +307,11 @@ class _PublicProviderProfileScreenState extends State<PublicProviderProfileScree
                );
              },
              child: Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              decoration: const BoxDecoration(
                 color: Colors.white,
-                border: const Border(top: BorderSide(color: AppColors.borderLight)),
-                boxShadow: const [
+                border: Border(top: BorderSide(color: AppColors.borderLight)),
+                boxShadow: [
                   BoxShadow(
                     color: AppColors.cardShadow,
                     blurRadius: 24,

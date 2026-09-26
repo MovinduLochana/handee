@@ -20,7 +20,7 @@ class ProfileScreen extends StatelessWidget {
         title: const Text('Account & Settings'),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         child: Column(
           children: [
             // User Header Card
@@ -83,7 +83,7 @@ class ProfileScreen extends StatelessWidget {
               ),
             ),
 
-            const SizedBox(height: 20),
+            const SizedBox(height: 12),
 
             // Presentation Mode: Role Switcher
             Container(
@@ -95,7 +95,7 @@ class ProfileScreen extends StatelessWidget {
               child: ListTile(
                 leading: Container(
                   padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
+                  decoration: const BoxDecoration(
                     color: AppColors.primaryUltraLight,
                     shape: BoxShape.circle,
                   ),
@@ -108,7 +108,7 @@ class ProfileScreen extends StatelessWidget {
               ),
             ),
 
-            const SizedBox(height: 20),
+            const SizedBox(height: 12),
 
             // Backend & API Configuration
             Container(
