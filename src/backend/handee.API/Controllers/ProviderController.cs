@@ -31,9 +31,11 @@ public class ProviderController(
             var profile = await profileService.GetProfileByUserIdAsync(userId.Value, ct);
             return Ok(profile);
         }
-        catch (KeyNotFoundException ex)
+        catch (KeyNotFoundException)
         {
-            return NotFound(new { error = ex.Message });
+            await profileService.CreateProfileAsync(userId.Value, ct);
+            var profile = await profileService.GetProfileByUserIdAsync(userId.Value, ct);
+            return Ok(profile);
         }
     }
 

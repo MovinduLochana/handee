@@ -71,6 +71,75 @@ public static class InvoiceSeeder
             await db.SaveChangesAsync();
         }
 
+        // 4.1 Ensure provider profile exists for provider@handee.lk (Nimal Jayawardena)
+        var providerProfile = await db.ProviderProfiles
+            .Include(p => p.Certifications)
+            .Include(p => p.AuditLogs)
+            .FirstOrDefaultAsync(p => p.UserId == provider.Id);
+        if (providerProfile == null)
+        {
+            providerProfile = new ProviderProfile
+            {
+                Id = Guid.NewGuid(),
+                UserId = provider.Id,
+                Headline = "Expert Plumber & AC Repair Specialist",
+                Bio = "Certified technician with 10+ years of hands-on experience in residential and commercial maintenance across Colombo.",
+                Description = "Dedicated to fast turnaround times and high customer satisfaction. Specializes in emergency leak repairs, pipe fitting, and inverter AC systems.",
+                YearsOfExperience = 10,
+                ServiceCategories = [plumbingCategory, acCategory],
+                Languages = ["English", "Sinhala"],
+                ServicesOffered = ["Emergency Plumbing", "Leak Detection", "Pipe Fitting", "AC Installation", "AC Gas Refill"],
+                IsAvailableForWork = true,
+                ServiceAreaLatitude = 6.9271,
+                ServiceAreaLongitude = 79.8612,
+                ServiceAreaDisplayName = "Colombo & Western Province",
+                ServiceRadiusKm = 25,
+                VerificationStatus = handee.API.Entities.VerificationStatus.Verified,
+                RatingAggregate = 4.9m,
+                TotalReviewCount = 24,
+                CreatedAt = DateTimeOffset.UtcNow.AddMonths(-3),
+                AddressLine1 = "77 Galle Road",
+                City = "Colombo",
+                Country = "Sri Lanka"
+            };
+
+            providerProfile.Certifications.Add(new Certification
+            {
+                Id = Guid.NewGuid(),
+                ProviderProfileId = providerProfile.Id,
+                Type = CertificationType.NIC,
+                FileUrl = "/uploads/nic_nimal.pdf",
+                OriginalFileName = "nimal_nic.pdf",
+                UploadedAt = DateTimeOffset.UtcNow.AddMonths(-3),
+                ReviewStatus = DocumentReviewStatus.Approved
+            });
+
+            providerProfile.Certifications.Add(new Certification
+            {
+                Id = Guid.NewGuid(),
+                ProviderProfileId = providerProfile.Id,
+                Type = CertificationType.TradeCertification,
+                FileUrl = "/uploads/nvq_plumbing_license.pdf",
+                OriginalFileName = "nvq_plumbing_license.pdf",
+                UploadedAt = DateTimeOffset.UtcNow.AddMonths(-3),
+                ReviewStatus = DocumentReviewStatus.Approved
+            });
+
+            providerProfile.AuditLogs.Add(new VerificationAuditLog
+            {
+                Id = Guid.NewGuid(),
+                ProviderProfileId = providerProfile.Id,
+                AdminUserId = Guid.Empty,
+                PreviousStatus = handee.API.Entities.VerificationStatus.Pending,
+                NewStatus = handee.API.Entities.VerificationStatus.Verified,
+                Timestamp = DateTimeOffset.UtcNow.AddMonths(-3),
+                Note = "Provider identity and NVQ trade licenses verified and approved by Admin."
+            });
+
+            db.ProviderProfiles.Add(providerProfile);
+            await db.SaveChangesAsync();
+        }
+
         // 5. Seed Job 1 & Booking 1: Completed & Paid with Settled Payout
         var jobRequest1 = new JobRequest
         {

@@ -139,34 +139,37 @@ public class InvoiceService : IInvoiceService
 
     public async Task<List<InvoiceResponseDto>> GetCustomerInvoicesAsync(Guid customerId)
     {
-        return await _context.Invoices
+        var invoices = await _context.Invoices
             .Include(i => i.Customer)
             .Include(i => i.Provider)
             .Where(i => i.CustomerId == customerId)
             .OrderByDescending(i => i.CreatedAt)
-            .Select(i => MapToDto(i, i.Customer.FullName, i.Provider.FullName))
             .ToListAsync();
+
+        return invoices.Select(i => MapToDto(i, i.Customer?.FullName, i.Provider?.FullName)).ToList();
     }
 
     public async Task<List<InvoiceResponseDto>> GetProviderInvoicesAsync(Guid providerId)
     {
-        return await _context.Invoices
+        var invoices = await _context.Invoices
             .Include(i => i.Customer)
             .Include(i => i.Provider)
             .Where(i => i.ProviderId == providerId)
             .OrderByDescending(i => i.CreatedAt)
-            .Select(i => MapToDto(i, i.Customer.FullName, i.Provider.FullName))
             .ToListAsync();
+
+        return invoices.Select(i => MapToDto(i, i.Customer?.FullName, i.Provider?.FullName)).ToList();
     }
 
     public async Task<List<InvoiceResponseDto>> GetAllInvoicesAsync()
     {
-        return await _context.Invoices
+        var invoices = await _context.Invoices
             .Include(i => i.Customer)
             .Include(i => i.Provider)
             .OrderByDescending(i => i.CreatedAt)
-            .Select(i => MapToDto(i, i.Customer.FullName, i.Provider.FullName))
             .ToListAsync();
+
+        return invoices.Select(i => MapToDto(i, i.Customer?.FullName, i.Provider?.FullName)).ToList();
     }
 
     public async Task<InvoiceResponseDto?> UpdateInvoiceStatusAsync(Guid id, UpdateInvoiceStatusDto dto)
