@@ -128,8 +128,12 @@ class ApiClient {
     String message = 'Request failed with status $statusCode';
     try {
       final decoded = jsonDecode(response.body);
-      if (decoded is Map && decoded.containsKey('message')) {
-        message = decoded['message'].toString();
+      if (decoded is Map) {
+        if (decoded.containsKey('message')) {
+          message = decoded['message'].toString();
+        } else if (decoded.containsKey('error')) {
+          message = decoded['error'].toString();
+        }
       } else if (decoded is String) {
         message = decoded;
       }

@@ -23,6 +23,7 @@ class BookingModel {
   /// so read category/description from these.
   final String? category;
   final String? description;
+  final String? notes;
 
   BookingModel({
     required this.id,
@@ -42,6 +43,7 @@ class BookingModel {
     this.price,
     this.category,
     this.description,
+    this.notes,
   });
 
   bool get isRequested => status.toLowerCase() == 'requested';
@@ -97,6 +99,7 @@ class BookingModel {
       price: (json['price'] as num?)?.toDouble(),
       category: json['category']?.toString(),
       description: json['description']?.toString(),
+      notes: json['notes']?.toString(),
     );
   }
 
@@ -112,6 +115,7 @@ class BookingModel {
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt?.toIso8601String(),
       'price': price,
+      'notes': notes,
     };
   }
 
@@ -131,6 +135,9 @@ class BookingModel {
     String? customerPhone,
     String? serviceLocation,
     double? price,
+    String? category,
+    String? description,
+    String? notes,
   }) {
     return BookingModel(
       id: id ?? this.id,
@@ -148,6 +155,9 @@ class BookingModel {
       customerPhone: customerPhone ?? this.customerPhone,
       serviceLocation: serviceLocation ?? this.serviceLocation,
       price: price ?? this.price,
+      category: category ?? this.category,
+      description: description ?? this.description,
+      notes: notes ?? this.notes,
     );
   }
 }

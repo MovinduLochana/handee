@@ -7,6 +7,7 @@ import { bookingApi, BOOKING_STATUSES, LEGAL_BOOKING_TRANSITIONS } from "../../a
 import { jobRequestApi, JOB_REQUEST_STATUSES, JOB_URGENCIES } from "../../api/jobRequests";
 import type {
   BookingResponseDto,
+  CreateListingBookingDto,
   JobRequestResponseDto,
   PagedResult,
   ServiceCategoryResponseDto,
@@ -21,7 +22,7 @@ import {
 } from "../fixtures/bookingFixtures";
 
 vi.mock("../../lib/api", () => ({
-  api: { get: vi.fn(), put: vi.fn() },
+  api: { get: vi.fn(), put: vi.fn(), post: vi.fn() },
 }));
 
 // ─── Compile-time: each field list must be exactly the interface's keys ─────
@@ -87,6 +88,12 @@ const STATUS_DTO_KEYS = exactKeys<UpdateBookingStatusDto>()(["status"]);
 
 const SCHEDULE_DTO_KEYS = exactKeys<UpdateBookingScheduleDto>()(["scheduledAt"]);
 
+const CREATE_LISTING_BOOKING_DTO_KEYS = exactKeys<CreateListingBookingDto>()([
+  "serviceListingId",
+  "scheduledAt",
+  "notes",
+]);
+
 // ─── Runtime: compare against the real C# source ────────────────────────────
 // Git tracks these under handee.API/ (the casing that resolves on Linux too).
 // Vitest runs from web/ (under jsdom, import.meta.url isn't a file: URL).
@@ -122,6 +129,7 @@ describe.skipIf(!hasBackend)("TypeScript contracts match the C# backend source",
     ["DTO/PagedResult.cs", PAGED_KEYS],
     ["DTO/UpdateBookingStatusDto.cs", STATUS_DTO_KEYS],
     ["DTO/UpdateBookingScheduleDto.cs", SCHEDULE_DTO_KEYS],
+    ["DTO/CreateListingBookingDto.cs", CREATE_LISTING_BOOKING_DTO_KEYS],
   ])("%s has exactly the interface's fields", (file, keys) => {
     expect(recordFields(source(file))).toEqual([...keys]);
   });
@@ -214,5 +222,19 @@ describe("parsing real-shaped API responses", () => {
     expect(api.put).toHaveBeenNthCalledWith(3, `/bookings/${booking.id}/schedule`, {
       scheduledAt: null,
     });
+  });
+
+  it("createFromListing POSTs the payload to /bookings", async () => {
+    vi.mocked(api.post).mockResolvedValue({ data: booking });
+    const payload = {
+      serviceListingId: "11111111-1111-1111-1111-111111111111",
+      scheduledAt: "2026-10-01T10:00:00.000Z",
+      notes: "Please arrive on time",
+    };
+
+    const res = await bookingApi.createFromListing(payload);
+
+    expect(api.post).toHaveBeenCalledWith("/bookings", payload);
+    expect(res).toEqual(booking);
   });
 });

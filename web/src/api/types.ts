@@ -270,6 +270,13 @@ export interface UpdateBookingScheduleDto {
   scheduledAt: string | null;
 }
 
+/** DTO/CreateListingBookingDto.cs */
+export interface CreateListingBookingDto {
+  serviceListingId: string;
+  scheduledAt: string;
+  notes?: string | null;
+}
+
 /** Query params of GET /job-requests (JobRequestController.GetForStaff). */
 export interface JobRequestStaffParams {
   status?: JobRequestStatus;

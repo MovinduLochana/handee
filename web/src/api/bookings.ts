@@ -3,6 +3,7 @@ import type {
   BookingResponseDto,
   BookingStaffParams,
   BookingStatus,
+  CreateListingBookingDto,
   PagedResult,
   UpdateBookingScheduleDto,
   UpdateBookingStatusDto,
@@ -73,6 +74,16 @@ export const bookingApi = {
    */
   async updateSchedule(id: string, data: UpdateBookingScheduleDto): Promise<BookingResponseDto> {
     const response = await api.put<BookingResponseDto>(`/bookings/${id}/schedule`, data);
+    return response.data;
+  },
+
+  /**
+   * Creates a direct booking from a service listing.
+   * Expected: 201 Created — BookingResponseDto,
+   * 400 on collision or validation error, 404 if listing missing.
+   */
+  async createFromListing(data: CreateListingBookingDto): Promise<BookingResponseDto> {
+    const response = await api.post<BookingResponseDto>("/bookings", data);
     return response.data;
   },
 };
