@@ -72,7 +72,7 @@ class ApiClient {
       final uri = _buildUri(path, queryParams);
       final response = await _httpClient
           .get(uri, headers: _buildHeaders())
-          .timeout(const Duration(seconds: 8));
+          .timeout(const Duration(seconds: 35));
       return _handleResponse(response);
     } catch (e) {
       debugPrint('ApiClient GET error on $path: $e');
@@ -89,7 +89,7 @@ class ApiClient {
             headers: _buildHeaders(),
             body: body != null ? jsonEncode(body) : null,
           )
-          .timeout(const Duration(seconds: 10));
+          .timeout(const Duration(seconds: 35));
       return _handleResponse(response);
     } catch (e) {
       debugPrint('ApiClient POST error on $path: $e');
@@ -106,7 +106,7 @@ class ApiClient {
             headers: _buildHeaders(),
             body: body != null ? jsonEncode(body) : null,
           )
-          .timeout(const Duration(seconds: 10));
+          .timeout(const Duration(seconds: 35));
       return _handleResponse(response);
     } catch (e) {
       debugPrint('ApiClient PUT error on $path: $e');
