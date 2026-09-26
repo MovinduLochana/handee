@@ -522,7 +522,7 @@ async def test_assistant_query():
         customer_id="cust-123",
         query="Looking for an AC repair expert to clean my air conditioner"
     )
-    res = asyncio.run(process_assistant_query(req))
+    res = await process_assistant_query(req)
     assert res.category == "AC Repair"
     assert len(res.suggested_providers) > 0
     assert len(res.suggestions) > 0

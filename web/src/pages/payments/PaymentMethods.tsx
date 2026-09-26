@@ -20,12 +20,10 @@ export default function PaymentMethods() {
     queryFn: usersApi.getProfile,
   });
 
-  const {
-    methods,
-    addCard,
-    removeCard,
-    setCardDefault,
-  } = usePaymentMethods(userProfile?.id, userProfile?.fullName || "TEST CUSTOMER");
+  const { methods, addCard, removeCard, setCardDefault } = usePaymentMethods(
+    userProfile?.id,
+    userProfile?.fullName || "TEST CUSTOMER",
+  );
 
   const [showAddForm, setShowAddForm] = useState(false);
   const [newCard, setNewCard] = useState({
@@ -63,7 +61,8 @@ export default function PaymentMethods() {
           <div>
             <h1 className="payments-title">Saved Payment Methods</h1>
             <p className="payments-subtitle">
-              Manage your sandbox payment cards and digital wallets — seamlessly synced with checkout
+              Manage your sandbox payment cards and digital wallets — seamlessly synced with
+              checkout
             </p>
           </div>
         </div>
@@ -96,7 +95,8 @@ export default function PaymentMethods() {
       >
         <Sparkles size={22} color="var(--accent)" />
         <div style={{ fontSize: "0.88rem", color: "var(--text)" }}>
-          <strong style={{ color: "var(--text-h)" }}>Live Checkout Sync:</strong> All cards in this vault automatically appear on the Secure Checkout screen for instant settlement.
+          <strong style={{ color: "var(--text-h)" }}>Live Checkout Sync:</strong> All cards in this
+          vault automatically appear on the Secure Checkout screen for instant settlement.
           {userProfile && (
             <span style={{ marginLeft: "0.5rem", color: "var(--text-muted)" }}>
               Vault attached to <strong>{userProfile.fullName || userProfile.email}</strong>
@@ -111,18 +111,26 @@ export default function PaymentMethods() {
             <h3 className="payments-card-title">
               <CreditCard size={18} /> Add Sandbox Card
             </h3>
-            <button
-              onClick={() => setShowAddForm(false)}
-              className="btn-secondary btn-sm"
-            >
+            <button onClick={() => setShowAddForm(false)} className="btn-secondary btn-sm">
               Cancel
             </button>
           </div>
 
-          <form onSubmit={handleAddCard} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+          <form
+            onSubmit={handleAddCard}
+            style={{ display: "flex", flexDirection: "column", gap: "1rem" }}
+          >
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
               <div>
-                <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 600, marginBottom: "0.3rem", color: "var(--text-muted)" }}>
+                <label
+                  style={{
+                    display: "block",
+                    fontSize: "0.8rem",
+                    fontWeight: 600,
+                    marginBottom: "0.3rem",
+                    color: "var(--text-muted)",
+                  }}
+                >
                   Cardholder Name
                 </label>
                 <input
@@ -143,7 +151,15 @@ export default function PaymentMethods() {
               </div>
 
               <div>
-                <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 600, marginBottom: "0.3rem", color: "var(--text-muted)" }}>
+                <label
+                  style={{
+                    display: "block",
+                    fontSize: "0.8rem",
+                    fontWeight: 600,
+                    marginBottom: "0.3rem",
+                    color: "var(--text-muted)",
+                  }}
+                >
                   Card Label / Nickname
                 </label>
                 <input
@@ -165,7 +181,15 @@ export default function PaymentMethods() {
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
               <div>
-                <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 600, marginBottom: "0.3rem", color: "var(--text-muted)" }}>
+                <label
+                  style={{
+                    display: "block",
+                    fontSize: "0.8rem",
+                    fontWeight: 600,
+                    marginBottom: "0.3rem",
+                    color: "var(--text-muted)",
+                  }}
+                >
                   Card Brand
                 </label>
                 <select
@@ -187,7 +211,15 @@ export default function PaymentMethods() {
                 </select>
               </div>
               <div>
-                <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 600, marginBottom: "0.3rem", color: "var(--text-muted)" }}>
+                <label
+                  style={{
+                    display: "block",
+                    fontSize: "0.8rem",
+                    fontWeight: 600,
+                    marginBottom: "0.3rem",
+                    color: "var(--text-muted)",
+                  }}
+                >
                   Last 4 Digits
                 </label>
                 <input
@@ -211,7 +243,15 @@ export default function PaymentMethods() {
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
               <div>
-                <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 600, marginBottom: "0.3rem", color: "var(--text-muted)" }}>
+                <label
+                  style={{
+                    display: "block",
+                    fontSize: "0.8rem",
+                    fontWeight: 600,
+                    marginBottom: "0.3rem",
+                    color: "var(--text-muted)",
+                  }}
+                >
                   Expiry Month
                 </label>
                 <input
@@ -231,7 +271,15 @@ export default function PaymentMethods() {
                 />
               </div>
               <div>
-                <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 600, marginBottom: "0.3rem", color: "var(--text-muted)" }}>
+                <label
+                  style={{
+                    display: "block",
+                    fontSize: "0.8rem",
+                    fontWeight: 600,
+                    marginBottom: "0.3rem",
+                    color: "var(--text-muted)",
+                  }}
+                >
                   Expiry Year
                 </label>
                 <input
@@ -252,14 +300,19 @@ export default function PaymentMethods() {
               </div>
             </div>
 
-            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginTop: "0.25rem" }}>
+            <div
+              style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginTop: "0.25rem" }}
+            >
               <input
                 type="checkbox"
                 id="isDefaultCheckbox"
                 checked={newCard.isDefault}
                 onChange={(e) => setNewCard({ ...newCard, isDefault: e.target.checked })}
               />
-              <label htmlFor="isDefaultCheckbox" style={{ fontSize: "0.85rem", cursor: "pointer", color: "var(--text)" }}>
+              <label
+                htmlFor="isDefaultCheckbox"
+                style={{ fontSize: "0.85rem", cursor: "pointer", color: "var(--text)" }}
+              >
                 Set as default payment card for checkout
               </label>
             </div>
@@ -283,7 +336,14 @@ export default function PaymentMethods() {
           </button>
         </div>
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "1.25rem", marginBottom: "2rem" }}>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+            gap: "1.25rem",
+            marginBottom: "2rem",
+          }}
+        >
           {methods.map((method) => (
             <div
               key={method.id}
@@ -294,7 +354,14 @@ export default function PaymentMethods() {
                 marginBottom: 0,
               }}
             >
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "0.75rem" }}>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "flex-start",
+                  marginBottom: "0.75rem",
+                }}
+              >
                 <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
                   <div className="stat-icon-wrapper blue" style={{ width: 44, height: 44 }}>
                     <CreditCard size={22} />
@@ -309,7 +376,10 @@ export default function PaymentMethods() {
                   </div>
                 </div>
                 {method.isDefault ? (
-                  <span className="badge-status Succeeded" style={{ display: "inline-flex", alignItems: "center", gap: "0.25rem" }}>
+                  <span
+                    className="badge-status Succeeded"
+                    style={{ display: "inline-flex", alignItems: "center", gap: "0.25rem" }}
+                  >
                     <CheckCircle2 size={12} /> Default
                   </span>
                 ) : (
@@ -322,13 +392,29 @@ export default function PaymentMethods() {
                 )}
               </div>
 
-              <div style={{ fontSize: "0.82rem", color: "var(--text-muted)", marginBottom: "0.75rem" }}>
+              <div
+                style={{ fontSize: "0.82rem", color: "var(--text-muted)", marginBottom: "0.75rem" }}
+              >
                 <span>Holder: </span>
-                <strong style={{ color: "var(--text)" }}>{method.holderName || "TEST CUSTOMER"}</strong>
+                <strong style={{ color: "var(--text)" }}>
+                  {method.holderName || "TEST CUSTOMER"}
+                </strong>
               </div>
 
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.85rem", color: "var(--text-muted)", paddingTop: "0.75rem", borderTop: "1px solid var(--border)" }}>
-                <span>Expires {String(method.expiryMonth).padStart(2, "0")}/{method.expiryYear}</span>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  fontSize: "0.85rem",
+                  color: "var(--text-muted)",
+                  paddingTop: "0.75rem",
+                  borderTop: "1px solid var(--border)",
+                }}
+              >
+                <span>
+                  Expires {String(method.expiryMonth).padStart(2, "0")}/{method.expiryYear}
+                </span>
                 <button
                   onClick={() => removeCard(method.id)}
                   style={{
@@ -361,7 +447,9 @@ export default function PaymentMethods() {
       >
         <ShieldCheck size={28} color="var(--accent)" />
         <div style={{ fontSize: "0.88rem", color: "var(--text-muted)" }}>
-          <strong style={{ color: "var(--text-h)" }}>Sandbox Security Vault:</strong> All card details are stored in simulated vault storage for grading and testing. No actual financial charges are incurred.
+          <strong style={{ color: "var(--text-h)" }}>Sandbox Security Vault:</strong> All card
+          details are stored in simulated vault storage for grading and testing. No actual financial
+          charges are incurred.
         </div>
       </div>
     </div>

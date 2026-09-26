@@ -3,15 +3,7 @@ import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { paymentsApi } from "../../api/payments";
 import { usersApi } from "../../api/users";
-import {
-  FileText,
-  CreditCard,
-  Eye,
-  Receipt,
-  CheckCircle2,
-  Clock,
-  ArrowRight,
-} from "lucide-react";
+import { FileText, CreditCard, Eye, Receipt, CheckCircle2, Clock, ArrowRight } from "lucide-react";
 import "./Payments.css";
 
 export default function InvoicesList() {

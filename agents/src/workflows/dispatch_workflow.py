@@ -4,7 +4,13 @@ from typing import Any, Dict, List, Optional
 from langgraph.graph import StateGraph, END
 
 from src.core.state import AgentWorkflowState
-from src.schemas.contracts import JobDispatchRequest, PriceEstimationInput
+from src.schemas.contracts import (
+    JobDispatchRequest,
+    PriceEstimationInput,
+    ProviderCandidateProfile,
+    ValidationInput,
+    ValidationRiskTier,
+)
 from src.tools.domain_tools import classify_job_category, estimate_scope
 from src.tools.action_tools import search_providers, estimate_price, estimate_price_detailed
 from src.tools.validation_rules import evaluate_validation_tier
@@ -166,19 +172,39 @@ async def validation_safety_node(state: AgentWorkflowState) -> Dict[str, Any]:
     scope = state.get("estimated_scope") or {}
     ambiguity_flag = scope.get("ambiguity_flag", False)
     
-    # Run deterministic validation rules
-    validation = evaluate_validation_tier(
-        provider=selected_provider,
+    complexity = scope.get("complexity", "Medium")
+    provider_profile: Optional[ProviderCandidateProfile] = None
+    if selected_provider:
+        provider_profile = ProviderCandidateProfile(
+            id=str(selected_provider.get("id") or selected_provider.get("userId") or "unknown"),
+            userId=str(selected_provider.get("userId") or selected_provider.get("id") or "unknown"),
+            fullName=str(selected_provider.get("fullName") or "Unknown Provider"),
+            isVerified=bool(selected_provider.get("isVerified") or selected_provider.get("verificationStatus") == "Verified"),
+            verificationStatus=str(selected_provider.get("verificationStatus") or ("Verified" if selected_provider.get("isVerified") else "Pending")),
+            rating=float(selected_provider.get("rating", 0.0)),
+            totalReviews=int(selected_provider.get("totalReviews", 0)),
+            hourlyRate=float(selected_provider["hourlyRate"]) if selected_provider.get("hourlyRate") is not None else None,
+            skillCategories=list(selected_provider.get("skillCategories") or []),
+            serviceArea=selected_provider.get("serviceArea"),
+        )
+
+    val_input = ValidationInput(
+        provider=provider_profile,
         estimated_price=price,
         category=category,
+        budget_min=state.get("budget_min"),
         budget_max=budget_max,
-        ambiguity_flag=ambiguity_flag
+        ambiguity_flag=ambiguity_flag,
+        complexity=complexity,
     )
+
+    # Run deterministic validation rules
+    validation = evaluate_validation_tier(val_input)
     
     risk_tier = validation.risk_tier
-    if risk_tier == "approved_for_auto_dispatch":
+    if risk_tier == ValidationRiskTier.APPROVED_FOR_AUTO_DISPATCH:
         approval_status = "approved"
-    elif risk_tier == "approved_with_audit":
+    elif risk_tier == ValidationRiskTier.APPROVED_WITH_AUDIT:
         approval_status = "approved"
     else:
         approval_status = "pending"
@@ -190,15 +216,22 @@ async def validation_safety_node(state: AgentWorkflowState) -> Dict[str, Any]:
         "action": "evaluate_safety_and_risk_rules",
         "input_data": {
             "provider_id": selected_provider.get("userId") if selected_provider else None,
+            "provider_name": selected_provider.get("fullName") if selected_provider else None,
             "estimated_price": price,
-            "category": category
+            "category": category,
+            "ambiguity_flag": ambiguity_flag,
+            "budget_max": budget_max,
         },
         "output_data": {
-            "risk_tier": risk_tier,
+            "risk_tier": str(risk_tier),
             "is_verified": validation.is_verified_provider,
             "rating_passed": validation.rating_passed,
             "price_passed": validation.is_price_within_band,
-            "reasons": validation.reasons
+            "scope_clarity_passed": validation.scope_clarity_passed,
+            "hard_failures_count": validation.hard_failures_count,
+            "soft_signals_count": validation.soft_signals_count,
+            "reasons": validation.reasons,
+            "evaluated_rules": [r.model_dump() for r in validation.evaluated_rules],
         },
         "duration_ms": duration_ms,
         "timestamp": time.time()
@@ -207,18 +240,19 @@ async def validation_safety_node(state: AgentWorkflowState) -> Dict[str, Any]:
     final_result = {
         "workflow_id": state.get("workflow_id"),
         "job_id": state.get("job_id"),
-        "validation_tier": risk_tier,
+        "validation_tier": str(risk_tier),
         "approval_status": approval_status,
         "category": category,
         "estimated_price": price,
         "selected_provider": selected_provider,
         "reasons": validation.reasons,
+        "evaluated_rules": [r.model_dump() for r in validation.evaluated_rules],
         "scope": scope
     }
     
     existing_logs = state.get("step_logs") or []
     return {
-        "validation_tier": risk_tier,
+        "validation_tier": str(risk_tier),
         "approval_status": approval_status,
         "final_result": final_result,
         "step_logs": existing_logs + [step_log]

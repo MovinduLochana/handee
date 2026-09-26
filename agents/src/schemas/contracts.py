@@ -89,15 +89,57 @@ class AssistantQueryResponse(BaseModel):
     suggestions: List[str] = Field(default_factory=list)
 
 
-# Output validation 
+# ─── Validation / Safety Agent contracts ─────────────────────────────────────
+
+
+class ValidationRiskTier(StrEnum):
+    APPROVED_FOR_AUTO_DISPATCH = "approved_for_auto_dispatch"
+    APPROVED_WITH_AUDIT = "approved_with_audit"
+    REQUIRES_HUMAN_APPROVAL = "requires_human_approval"
+
+
+class ProviderCandidateProfile(BaseModel):
+    id: str = Field(..., description="Unique provider ID")
+    userId: str = Field(..., description="User account ID")
+    fullName: str = Field(..., description="Provider display name")
+    isVerified: bool = Field(default=False, description="Explicit verification boolean flag")
+    verificationStatus: str = Field(default="Pending", description="VerificationStatus enum string")
+    rating: float = Field(default=0.0, ge=0.0, le=5.0, description="Rating aggregate (0.0 to 5.0)")
+    totalReviews: int = Field(default=0, ge=0, description="Count of completed customer reviews")
+    hourlyRate: Optional[float] = Field(None, ge=0.0, description="Hourly rate benchmark in LKR")
+    skillCategories: List[str] = Field(default_factory=list, description="Associated trade categories")
+    serviceArea: Optional[str] = Field(None, description="Primary service area or city")
+
+
+class ValidationRuleCheck(BaseModel):
+    rule_id: str
+    rule_name: str
+    is_hard_rule: bool
+    passed: bool
+    actual_value: Any
+    threshold: Any
+    message: str
+
+
+class ValidationInput(BaseModel):
+    provider: Optional[ProviderCandidateProfile] = None
+    estimated_price: float = Field(..., gt=0, description="Proposed job price quote in LKR")
+    category: Annotated[ServiceCategoryName, BeforeValidator(_parse_category)]
+    budget_min: Optional[float] = Field(None, ge=0.0)
+    budget_max: Optional[float] = Field(None, ge=0.0)
+    ambiguity_flag: bool = False
+    complexity: Literal["Low", "Medium", "High"] = "Medium"
+
+
 class ValidationResult(BaseModel):
-    risk_tier: str = Field(
-        ...,
-        description="One of: approved_for_auto_dispatch, approved_with_audit, requires_human_approval",
-    )
+    risk_tier: ValidationRiskTier
     is_verified_provider: bool
     is_price_within_band: bool
     rating_passed: bool
+    scope_clarity_passed: bool = True
+    hard_failures_count: int = 0
+    soft_signals_count: int = 0
+    evaluated_rules: List[ValidationRuleCheck] = Field(default_factory=list)
     reasons: List[str] = Field(default_factory=list)
 
 

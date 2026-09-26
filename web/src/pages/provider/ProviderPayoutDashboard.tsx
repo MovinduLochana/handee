@@ -195,7 +195,12 @@ export default function ProviderPayoutDashboard() {
                       <Link
                         to="/invoices"
                         className="btn-secondary btn-sm"
-                        style={{ display: "inline-flex", alignItems: "center", gap: "0.25rem", padding: "0.3rem 0.6rem" }}
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "0.25rem",
+                          padding: "0.3rem 0.6rem",
+                        }}
                       >
                         <Receipt size={13} /> View Invoice
                       </Link>
