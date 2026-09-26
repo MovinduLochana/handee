@@ -19,14 +19,24 @@ async def process_assistant_query(request: AssistantQueryRequest) -> AssistantQu
     
     # 2. Query matching providers & listings
     providers = await search_providers(category, "Colombo")
-    listings = search_service_listings(query, category)
+    listings = await search_service_listings(query, category)
     
     benchmark = CATEGORY_BENCHMARKS.get(category, 3500.0)
     
     # Format intelligent friendly response
     top_provider = providers[0] if providers else None
-    
-    if top_provider:
+    top_listing = listings[0] if listings else None
+
+    if top_listing and top_listing.get("providerName"):
+        listing_title = top_listing["title"]
+        listing_price = int(top_listing["price"])
+        listing_prov = top_listing["providerName"]
+        reply = (
+            f"I found {category} services on Handee! "
+            f"Recommended listing: **{listing_title}** by **{listing_prov}** (Rs. {listing_price:,}). "
+            f"Platform benchmark pricing for {category} starts around Rs. {int(benchmark):,}."
+        )
+    elif top_provider:
         prov_name = top_provider.get("fullName", "Verified Provider")
         prov_rating = top_provider.get("rating", 4.8)
         reply = (
@@ -46,7 +56,6 @@ async def process_assistant_query(request: AssistantQueryRequest) -> AssistantQu
     ]
     
     if listings:
-        top_listing = listings[0]
         suggestions.append(f"Book {top_listing['title']} (Rs. {int(top_listing['price']):,})")
     
     suggestions.append("Find emergency providers")

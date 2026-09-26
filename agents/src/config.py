@@ -9,7 +9,7 @@ class Settings(BaseSettings):
 
     API_KEY: str = ""
 
-    BACKEND_BASE_URL: str = "http://localhost:5000"
+    BACKEND_BASE_URL: str = "http://localhost:5057"
     REDIS_URL: str = "redis://localhost:6379/0"
 
     OPENAI_API_KEY: str = ""
