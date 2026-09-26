@@ -13,6 +13,8 @@ class Settings(BaseSettings):
     REDIS_URL: str = "redis://localhost:6379/0"
 
     OPENAI_API_KEY: str = ""
+    OPENAI_BASE_URL: str = "https://generativelanguage.googleapis.com/v1beta/openai/"
+    DEFAULT_MODEL: str = "gemini-3.8-flash"
     AZURE_OPENAI_API_KEY: str = ""
     AZURE_OPENAI_ENDPOINT: str = ""
     AZURE_OPENAI_DEPLOYMENT_NAME: str = ""
