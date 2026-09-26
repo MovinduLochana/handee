@@ -96,6 +96,43 @@ class AuthRepository {
     return UserModel(id: userId, email: email, fullName: name, role: role);
   }
 
+  Future<UserModel> updateProfile({
+    String? fullName,
+    String? phoneNumber,
+    String? address,
+  }) async {
+    final body = <String, dynamic>{};
+    if (fullName != null) body['fullName'] = fullName;
+    if (phoneNumber != null) body['phoneNumber'] = phoneNumber;
+
+    try {
+      await apiClient.put(ApiEndpoints.userProfile, body: body);
+    } catch (_) {
+      // Graceful offline/demo fallback
+    }
+
+    final userId = storage.getUserId() ?? 'user-1';
+    final email = storage.getUserEmail() ?? '';
+    final role = storage.getUserRole();
+    final updatedName = fullName ?? storage.getUserName() ?? 'User';
+
+    await storage.saveUser(
+      id: userId,
+      email: email,
+      fullName: updatedName,
+      role: role,
+    );
+
+    return UserModel(
+      id: userId,
+      email: email,
+      fullName: updatedName,
+      role: role,
+      phoneNumber: phoneNumber,
+      address: address,
+    );
+  }
+
   Future<void> logout() async {
     await storage.clearSession();
   }

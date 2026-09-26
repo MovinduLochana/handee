@@ -123,7 +123,7 @@ class _CustomerBookingsScreenState extends State<CustomerBookingsScreen> with Si
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      booking.jobRequest?.categoryName ?? 'General Service',
+                      booking.category ?? booking.jobRequest?.categoryName ?? 'General Service',
                       style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
                     ),
                     StatusBadge(status: booking.status),
@@ -131,7 +131,7 @@ class _CustomerBookingsScreenState extends State<CustomerBookingsScreen> with Si
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  booking.jobRequest?.description ?? 'Routine service booking',
+                  booking.description ?? booking.jobRequest?.description ?? 'Routine service booking',
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
@@ -147,7 +147,7 @@ class _CustomerBookingsScreenState extends State<CustomerBookingsScreen> with Si
                         const Icon(Icons.person_pin, size: 16, color: AppColors.primary),
                         const SizedBox(width: 4),
                         Text(
-                          booking.provider?.fullName ?? 'Assigned Tradesperson',
+                          booking.providerName ?? booking.provider?.fullName ?? 'Assigned Tradesperson',
                           style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
                         ),
                       ],

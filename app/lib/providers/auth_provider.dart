@@ -80,6 +80,32 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  Future<bool> updateProfile({
+    String? fullName,
+    String? phoneNumber,
+    String? address,
+  }) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      _currentUser = await authRepo.updateProfile(
+        fullName: fullName,
+        phoneNumber: phoneNumber,
+        address: address,
+      );
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString().replaceAll('ApiException', '').trim();
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
   /// Fast demo role switch between Customer and Provider.
   Future<void> switchRole(String newRole) async {
     if (_currentUser == null) {

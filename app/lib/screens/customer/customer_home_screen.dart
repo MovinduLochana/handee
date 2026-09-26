@@ -377,12 +377,12 @@ class _CustomerHomeTab extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              activeBooking.provider?.fullName ?? 'Assigned Tradesperson',
+                              activeBooking.providerName ?? activeBooking.provider?.fullName ?? 'Assigned Tradesperson',
                               style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
                             ),
                             const SizedBox(height: 3),
                             Text(
-                              activeBooking.jobRequest?.categoryName ?? 'Service in Progress',
+                              activeBooking.category ?? activeBooking.jobRequest?.categoryName ?? 'Service in Progress',
                               style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
                             ),
                           ],
