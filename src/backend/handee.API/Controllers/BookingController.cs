@@ -10,6 +10,7 @@ using handee.API.Interfaces;
 namespace handee.API.Controllers;
 
 [ApiController]
+[Route("bookings")]
 [Route("api/bookings")]
 [Authorize]
 public class BookingController : ControllerBase
