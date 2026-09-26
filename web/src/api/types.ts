@@ -293,3 +293,37 @@ export interface BookingStaffParams {
   page?: number;
   pageSize?: number;
 }
+
+/** DTO/SlotResponseDto.cs */
+export interface ProviderAvailabilitySlotDto {
+  id: string;
+  providerId: string;
+  startTime: string;
+  endTime: string;
+  isBooked: boolean;
+  createdAt: string;
+  updatedAt: string | null;
+}
+
+/** DTO/CreateSlotDto.cs */
+export interface CreateSlotDto {
+  startTime: string;
+  endTime: string;
+}
+
+/** DTO/BatchCreateSlotsDto.cs */
+export interface BatchCreateSlotsDto {
+  slots: CreateSlotDto[];
+}
+
+/** DTO/RecurringScheduleDto.cs */
+export interface RecurringScheduleDto {
+  daysOfWeek: number[]; // 0 = Sunday, 1 = Monday, ...
+  dailyStartTime: string; // "09:00:00"
+  dailyEndTime: string; // "17:00:00"
+  slotDurationMinutes: number;
+  startDate: string; // ISO string
+  endDate: string; // ISO string
+  timeZoneOffsetMinutes?: number;
+}
+

@@ -281,4 +281,42 @@ public class ListingBookingServiceTests
         Assert.Equal(9, created.ScheduledAt!.Value.Hour);
         Assert.Equal(0, created.ScheduledAt!.Value.Minute);
     }
+
+    [Fact]
+    public async Task CreateFromListingAsync_WhenListingEstimatedDurationExceedsSingleSlot_SuccessfullyBooksAndReservesSlots()
+    {
+        var (db, listing, customerId, providerId) = await SeedListingAsync(
+            isActive: true, fixedPrice: 5000m, duration: TimeSpan.FromHours(2));
+        var sut = new BookingService(db);
+
+        var tomorrow = DateTimeOffset.UtcNow.Date.AddDays(1);
+        var slot1 = new ProviderAvailabilitySlot
+        {
+            ProviderId = providerId,
+            StartTime = tomorrow.AddHours(9),
+            EndTime = tomorrow.AddHours(10),
+            IsBooked = false
+        };
+        var slot2 = new ProviderAvailabilitySlot
+        {
+            ProviderId = providerId,
+            StartTime = tomorrow.AddHours(10),
+            EndTime = tomorrow.AddHours(11),
+            IsBooked = false
+        };
+        db.ProviderAvailabilitySlots.AddRange(slot1, slot2);
+        await db.SaveChangesAsync();
+
+        var dto = new CreateListingBookingDto(listing.Id, tomorrow.AddHours(9));
+
+        var result = await sut.CreateFromListingAsync(dto, customerId);
+
+        Assert.NotNull(result);
+        Assert.Equal("Requested", result.Status);
+
+        var updatedSlot1 = await db.ProviderAvailabilitySlots.FindAsync(slot1.Id);
+        var updatedSlot2 = await db.ProviderAvailabilitySlots.FindAsync(slot2.Id);
+        Assert.True(updatedSlot1!.IsBooked);
+        Assert.True(updatedSlot2!.IsBooked);
+    }
 }

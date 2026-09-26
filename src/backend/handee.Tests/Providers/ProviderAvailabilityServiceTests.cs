@@ -222,4 +222,260 @@ public class ProviderAvailabilityServiceTests
 
         Assert.Equal(2, result.Count);
     }
+
+    [Fact]
+    public async Task GetForProviderAsync_Filters_Past_Slots()
+    {
+        using var db = CreateContext();
+        var providerId = Guid.NewGuid();
+        db.ProviderAvailabilitySlots.AddRange(
+            new ProviderAvailabilitySlot
+            {
+                ProviderId = providerId,
+                StartTime = DateTimeOffset.UtcNow.AddDays(-1),
+                EndTime = DateTimeOffset.UtcNow.AddDays(-1).AddHours(1),
+                IsBooked = false
+            },
+            new ProviderAvailabilitySlot
+            {
+                ProviderId = providerId,
+                StartTime = DateTimeOffset.UtcNow.AddDays(1),
+                EndTime = DateTimeOffset.UtcNow.AddDays(1).AddHours(1),
+                IsBooked = false
+            });
+        await db.SaveChangesAsync();
+
+        var sut = new ProviderAvailabilityService(db);
+        var result = await sut.GetForProviderAsync(providerId);
+
+        Assert.Single(result);
+        Assert.True(result[0].StartTime > DateTimeOffset.UtcNow);
+    }
+
+    [Fact]
+    public async Task GetForProviderAsync_Filters_By_DateRange()
+    {
+        using var db = CreateContext();
+        var providerId = Guid.NewGuid();
+        var baseDate = DateTimeOffset.UtcNow.AddDays(1);
+        db.ProviderAvailabilitySlots.AddRange(
+            new ProviderAvailabilitySlot
+            {
+                ProviderId = providerId,
+                StartTime = baseDate,
+                EndTime = baseDate.AddHours(1),
+                IsBooked = false
+            },
+            new ProviderAvailabilitySlot
+            {
+                ProviderId = providerId,
+                StartTime = baseDate.AddDays(2),
+                EndTime = baseDate.AddDays(2).AddHours(1),
+                IsBooked = false
+            },
+            new ProviderAvailabilitySlot
+            {
+                ProviderId = providerId,
+                StartTime = baseDate.AddDays(4),
+                EndTime = baseDate.AddDays(4).AddHours(1),
+                IsBooked = false
+            });
+        await db.SaveChangesAsync();
+
+        var sut = new ProviderAvailabilityService(db);
+        var result = await sut.GetForProviderAsync(
+            providerId,
+            startDate: baseDate.AddDays(1),
+            endDate: baseDate.AddDays(3));
+
+        Assert.Single(result);
+        Assert.Equal(baseDate.AddDays(2), result[0].StartTime);
+    }
+
+    [Fact]
+    public async Task CreateBatchSlotsAsync_Creates_All_Slots()
+    {
+        using var db = CreateContext();
+        var providerId = Guid.NewGuid();
+        var start = DateTimeOffset.UtcNow.AddDays(2);
+
+        var dto = new BatchCreateSlotsDto
+        {
+            Slots = new List<CreateSlotDto>
+            {
+                new() { StartTime = start, EndTime = start.AddHours(1) },
+                new() { StartTime = start.AddHours(1), EndTime = start.AddHours(2) },
+                new() { StartTime = start.AddHours(2), EndTime = start.AddHours(3) }
+            }
+        };
+
+        var sut = new ProviderAvailabilityService(db);
+        var result = await sut.CreateBatchSlotsAsync(providerId, dto);
+
+        Assert.Equal(3, result.Count);
+        Assert.Equal(3, await db.ProviderAvailabilitySlots.CountAsync());
+    }
+
+    [Fact]
+    public async Task CreateBatchSlotsAsync_Rejects_If_Batch_Has_Internal_Overlap()
+    {
+        using var db = CreateContext();
+        var providerId = Guid.NewGuid();
+        var start = DateTimeOffset.UtcNow.AddDays(2);
+
+        var dto = new BatchCreateSlotsDto
+        {
+            Slots = new List<CreateSlotDto>
+            {
+                new() { StartTime = start, EndTime = start.AddHours(2) },
+                new() { StartTime = start.AddHours(1), EndTime = start.AddHours(3) }
+            }
+        };
+
+        var sut = new ProviderAvailabilityService(db);
+        await Assert.ThrowsAsync<ValidationException>(() =>
+            sut.CreateBatchSlotsAsync(providerId, dto));
+
+        Assert.Empty(db.ProviderAvailabilitySlots);
+    }
+
+    [Fact]
+    public async Task CreateBatchSlotsAsync_Rejects_If_Overlaps_Existing_Slot()
+    {
+        using var db = CreateContext();
+        var providerId = Guid.NewGuid();
+        var start = DateTimeOffset.UtcNow.AddDays(2);
+
+        db.ProviderAvailabilitySlots.Add(new ProviderAvailabilitySlot
+        {
+            ProviderId = providerId,
+            StartTime = start,
+            EndTime = start.AddHours(2)
+        });
+        await db.SaveChangesAsync();
+
+        var dto = new BatchCreateSlotsDto
+        {
+            Slots = new List<CreateSlotDto>
+            {
+                new() { StartTime = start.AddHours(3), EndTime = start.AddHours(4) },
+                new() { StartTime = start.AddMinutes(30), EndTime = start.AddHours(1) } // overlaps
+            }
+        };
+
+        var sut = new ProviderAvailabilityService(db);
+        await Assert.ThrowsAsync<ValidationException>(() =>
+            sut.CreateBatchSlotsAsync(providerId, dto));
+
+        Assert.Single(db.ProviderAvailabilitySlots);
+    }
+
+    [Fact]
+    public async Task CreateRecurringSlotsAsync_Generates_Weekly_Slots()
+    {
+        using var db = CreateContext();
+        var providerId = Guid.NewGuid();
+
+        // Find the next upcoming Monday
+        var today = DateTimeOffset.UtcNow.Date;
+        var daysUntilMonday = ((int)DayOfWeek.Monday - (int)today.DayOfWeek + 7) % 7;
+        if (daysUntilMonday == 0) daysUntilMonday = 7;
+        var nextMonday = new DateTimeOffset(today.AddDays(daysUntilMonday), TimeSpan.Zero);
+
+        var dto = new RecurringScheduleDto
+        {
+            DaysOfWeek = new List<DayOfWeek> { DayOfWeek.Monday },
+            DailyStartTime = TimeSpan.FromHours(9),
+            DailyEndTime = TimeSpan.FromHours(11),
+            SlotDurationMinutes = 60,
+            StartDate = nextMonday,
+            EndDate = nextMonday.AddDays(7) // Covers next Monday and the following Monday
+        };
+
+        var sut = new ProviderAvailabilityService(db);
+        var result = await sut.CreateRecurringSlotsAsync(providerId, dto);
+
+        // 2 slots per Monday (09:00-10:00, 10:00-11:00) across 2 Mondays = 4 slots
+        Assert.Equal(4, result.Count);
+        Assert.All(result, s => Assert.Equal(DayOfWeek.Monday, s.StartTime.DayOfWeek));
+    }
+
+    [Fact]
+    public async Task CreateRecurringSlotsAsync_WithTimeZoneOffset_GeneratesSlotsInLocalTime()
+    {
+        using var db = CreateContext();
+        var providerId = Guid.NewGuid();
+        // Sri Lanka / India offset: +05:30 = 330 minutes
+        var offsetMinutes = 330;
+        var offset = TimeSpan.FromMinutes(offsetMinutes);
+
+        var localMonday = new DateTimeOffset(new DateTime(2026, 11, 2, 0, 0, 0), offset);
+
+        var dto = new RecurringScheduleDto
+        {
+            DaysOfWeek = new List<DayOfWeek> { DayOfWeek.Monday },
+            DailyStartTime = TimeSpan.FromHours(9), // 09:00 local
+            DailyEndTime = TimeSpan.FromHours(11),   // 11:00 local
+            SlotDurationMinutes = 60,
+            StartDate = localMonday.ToUniversalTime(), // Sent as UTC from frontend
+            EndDate = localMonday.AddDays(1).ToUniversalTime(),
+            TimeZoneOffsetMinutes = offsetMinutes
+        };
+
+        var sut = new ProviderAvailabilityService(db);
+        var result = await sut.CreateRecurringSlotsAsync(providerId, dto);
+
+        Assert.Equal(2, result.Count);
+        // Slot 1: 09:00 local (+05:30) = 03:30 UTC
+        var slot1 = result[0];
+        Assert.Equal(TimeSpan.Zero, slot1.StartTime.Offset); // Stored as UTC (0 offset) for PostgreSQL
+        Assert.Equal(9, slot1.StartTime.ToOffset(offset).Hour);
+        Assert.Equal(0, slot1.StartTime.ToOffset(offset).Minute);
+        Assert.Equal(10, slot1.EndTime.ToOffset(offset).Hour);
+        Assert.Equal(3, slot1.StartTime.Hour); // 03:30 UTC
+        Assert.Equal(30, slot1.StartTime.Minute);
+    }
+
+    [Fact]
+    public async Task GetForProviderAsync_Excludes_Slots_Overlapping_Active_Booking()
+    {
+        using var db = CreateContext();
+        var providerId = Guid.NewGuid();
+        var customerId = Guid.NewGuid();
+        var start = DateTimeOffset.UtcNow.AddDays(2);
+
+        // Slot 1: 10:00 - 11:00 (has active booking)
+        var slot1 = new ProviderAvailabilitySlot
+        {
+            ProviderId = providerId,
+            StartTime = start.AddHours(10),
+            EndTime = start.AddHours(11),
+            IsBooked = false // not yet flagged in slot table
+        };
+        // Slot 2: 12:00 - 13:00 (free)
+        var slot2 = new ProviderAvailabilitySlot
+        {
+            ProviderId = providerId,
+            StartTime = start.AddHours(12),
+            EndTime = start.AddHours(13),
+            IsBooked = false
+        };
+        db.ProviderAvailabilitySlots.AddRange(slot1, slot2);
+
+        // Add overlapping active booking for slot1
+        db.Bookings.Add(new Booking
+        {
+            ProviderId = providerId,
+            CustomerId = customerId,
+            Status = BookingStatus.Accepted,
+            ScheduledAt = start.AddHours(10)
+        });
+        await db.SaveChangesAsync();
+
+        var sut = new ProviderAvailabilityService(db);
+        var result = await sut.GetForProviderAsync(providerId);
+
+        Assert.Single(result);
+        Assert.Equal(slot2.Id, result[0].Id);
+    }
 }

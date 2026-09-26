@@ -9,8 +9,8 @@ using handee.API.Interfaces;
 namespace handee.API.Controllers;
 
 [ApiController]
-[Route("provider-availability")]
 [Route("api/provider-availability")]
+[Route("provider-availability")]
 [Authorize]
 public class ProviderAvailabilityController : ControllerBase
 {
@@ -21,7 +21,7 @@ public class ProviderAvailabilityController : ControllerBase
         _availabilityService = availabilityService;
     }
 
-    // POST /provider-availability
+    // POST /api/provider-availability
     [HttpPost]
     [Authorize(Roles = "Provider")]
     public async Task<IActionResult> Create([FromBody] CreateSlotDto dto)
@@ -40,11 +40,53 @@ public class ProviderAvailabilityController : ControllerBase
         }
     }
 
-    // GET /provider-availability/{providerId}
-    [HttpGet("{providerId:guid}")]
-    public async Task<IActionResult> GetForProvider(Guid providerId)
+    // POST /api/provider-availability/batch
+    [HttpPost("batch")]
+    [Authorize(Roles = "Provider")]
+    public async Task<IActionResult> CreateBatch([FromBody] BatchCreateSlotsDto dto)
     {
-        var result = await _availabilityService.GetForProviderAsync(providerId);
+        var providerId = User.GetUserId();
+        if (providerId is null) return Unauthorized();
+
+        try
+        {
+            var result = await _availabilityService.CreateBatchSlotsAsync(providerId.Value, dto);
+            return StatusCode(StatusCodes.Status201Created, result);
+        }
+        catch (ValidationException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
+
+    // POST /api/provider-availability/recurring
+    [HttpPost("recurring")]
+    [Authorize(Roles = "Provider")]
+    public async Task<IActionResult> CreateRecurring([FromBody] RecurringScheduleDto dto)
+    {
+        var providerId = User.GetUserId();
+        if (providerId is null) return Unauthorized();
+
+        try
+        {
+            var result = await _availabilityService.CreateRecurringSlotsAsync(providerId.Value, dto);
+            return StatusCode(StatusCodes.Status201Created, result);
+        }
+        catch (ValidationException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
+
+    // GET /api/provider-availability/{providerId}
+    [HttpGet("{providerId:guid}")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetForProvider(
+        Guid providerId,
+        [FromQuery] DateTimeOffset? startDate = null,
+        [FromQuery] DateTimeOffset? endDate = null)
+    {
+        var result = await _availabilityService.GetForProviderAsync(providerId, startDate, endDate);
         return Ok(result);
     }
 

@@ -1,8 +1,10 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import BookingModal from "../../../components/public/BookingModal";
 import { bookingApi } from "../../../api/bookings";
-import type { ServiceListingDto } from "../../../api/types";
+import { providerAvailabilityApi } from "../../../api/providerAvailability";
+import type { ServiceListingDto, ProviderAvailabilitySlotDto } from "../../../api/types";
 import { booking, httpError } from "../../fixtures/bookingFixtures";
 
 vi.mock("../../../api/bookings", async (importOriginal) => {
@@ -15,6 +17,17 @@ vi.mock("../../../api/bookings", async (importOriginal) => {
     },
   };
 });
+
+vi.mock("../../../api/providerAvailability", () => ({
+  providerAvailabilityApi: {
+    getForProvider: vi.fn(),
+    getMine: vi.fn(),
+    create: vi.fn(),
+    createBatch: vi.fn(),
+    createRecurring: vi.fn(),
+    delete: vi.fn(),
+  },
+}));
 
 const sampleListing: ServiceListingDto = {
   id: "list-12345",
@@ -33,31 +46,83 @@ const sampleListing: ServiceListingDto = {
   providerFullName: "Ruwan Perera",
 };
 
+const sampleSlots: ProviderAvailabilitySlotDto[] = [
+  {
+    id: "slot-1",
+    providerId: "prov-9999",
+    startTime: "2026-10-15T09:00:00.000Z",
+    endTime: "2026-10-15T10:00:00.000Z",
+    isBooked: false,
+    createdAt: "2026-09-01T00:00:00.000Z",
+    updatedAt: null,
+  },
+];
+
 describe("BookingModal", () => {
   const onClose = vi.fn();
   const onSuccess = vi.fn();
+  let queryClient: QueryClient;
+
+  const renderComponent = () => {
+    return render(
+      <QueryClientProvider client={queryClient}>
+        <BookingModal listing={sampleListing} onClose={onClose} onSuccess={onSuccess} />
+      </QueryClientProvider>,
+    );
+  };
 
   beforeEach(() => {
     vi.clearAllMocks();
+    queryClient = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false },
+      },
+    });
+    vi.mocked(providerAvailabilityApi.getForProvider).mockResolvedValue(sampleSlots);
   });
 
-  it("renders service details and form inputs for scheduling", () => {
-    render(<BookingModal listing={sampleListing} onClose={onClose} onSuccess={onSuccess} />);
+  it("renders service details, available slots, and form inputs for scheduling", async () => {
+    renderComponent();
 
     expect(screen.getByText("AC Deep Cleaning & Gas Refill")).toBeInTheDocument();
     expect(screen.getByText(/LKR 6500.00/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/schedule date/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/(schedule|selected) date/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/special notes/i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /confirm booking/i })).toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(screen.getByText(/Provider Available Slots/i)).toBeInTheDocument();
+    });
   });
 
-  it("submits booking with scheduledAt and notes via bookingApi.createFromListing", async () => {
+  it("allows selecting a provider availability slot chip to set scheduledAt", async () => {
     vi.mocked(bookingApi.createFromListing).mockResolvedValue(booking);
+    renderComponent();
 
-    render(<BookingModal listing={sampleListing} onClose={onClose} onSuccess={onSuccess} />);
+    // Wait for slot chip to appear
+    const slotChip = await screen.findByRole("button", { name: /oct/i });
+    expect(slotChip).toBeInTheDocument();
+
+    fireEvent.click(slotChip);
+
+    const submitBtn = screen.getByRole("button", { name: /confirm booking/i });
+    fireEvent.click(submitBtn);
+
+    await waitFor(() => {
+      expect(bookingApi.createFromListing).toHaveBeenCalledWith({
+        serviceListingId: "list-12345",
+        scheduledAt: expect.stringMatching(/^2026-10-15T/),
+        notes: undefined,
+      });
+    });
+  });
+
+  it("submits booking with custom scheduledAt and notes via bookingApi.createFromListing", async () => {
+    vi.mocked(bookingApi.createFromListing).mockResolvedValue(booking);
+    renderComponent();
 
     // Future date: 2026-10-15T10:00
-    const dateInput = screen.getByLabelText(/schedule date/i);
+    const dateInput = screen.getByLabelText(/(schedule|selected) date/i);
     fireEvent.change(dateInput, { target: { value: "2026-10-15T10:00" } });
 
     const notesInput = screen.getByLabelText(/special notes/i);
@@ -85,9 +150,9 @@ describe("BookingModal", () => {
       httpError(400, "Provider is not available at the requested time slot."),
     );
 
-    render(<BookingModal listing={sampleListing} onClose={onClose} onSuccess={onSuccess} />);
+    renderComponent();
 
-    const dateInput = screen.getByLabelText(/schedule date/i);
+    const dateInput = screen.getByLabelText(/(schedule|selected) date/i);
     fireEvent.change(dateInput, { target: { value: "2026-10-15T10:00" } });
 
     const submitBtn = screen.getByRole("button", { name: /confirm booking/i });

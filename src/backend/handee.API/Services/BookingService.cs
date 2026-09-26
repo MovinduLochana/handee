@@ -320,11 +320,12 @@ public class BookingService : IBookingService
             ProviderAvailabilitySlot? matchingSlot = null;
             if (hasSlots)
             {
+                // Find an unbooked slot that covers the requested appointment start time
                 matchingSlot = await _db.ProviderAvailabilitySlots
                     .FirstOrDefaultAsync(s => s.ProviderId == listing.ProviderId
                                               && !s.IsBooked
-                                              && s.StartTime <= startTime
-                                              && s.EndTime >= endTime, ct);
+                                              && s.StartTime <= startTime.AddMinutes(2)
+                                              && startTime < s.EndTime, ct);
 
                 if (matchingSlot == null)
                 {
@@ -351,11 +352,26 @@ public class BookingService : IBookingService
                 throw new ValidationException("Provider already has an active booking during the requested time slot.");
             }
 
-            // If slot matched, mark it as booked
+            // If slot matched, mark the matched slot and any overlapping slots across the appointment duration as booked
             if (matchingSlot != null)
             {
-                matchingSlot.IsBooked = true;
-                matchingSlot.UpdatedAt = DateTimeOffset.UtcNow;
+                var slotsToBook = await _db.ProviderAvailabilitySlots
+                    .Where(s => s.ProviderId == listing.ProviderId
+                                && !s.IsBooked
+                                && s.StartTime < endTime
+                                && startTime < s.EndTime)
+                    .ToListAsync(ct);
+
+                if (!slotsToBook.Contains(matchingSlot))
+                {
+                    slotsToBook.Add(matchingSlot);
+                }
+
+                foreach (var s in slotsToBook)
+                {
+                    s.IsBooked = true;
+                    s.UpdatedAt = DateTimeOffset.UtcNow;
+                }
             }
 
             var customer = await _db.Users.FindAsync([customerId], ct);

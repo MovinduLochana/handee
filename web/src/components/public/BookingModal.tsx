@@ -1,6 +1,8 @@
 import { useState, useId } from "react";
-import { X, Clock, Banknote, CalendarCheck, AlignLeft, Calendar, AlertCircle } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { X, Clock, Banknote, CalendarCheck, AlignLeft, Calendar, AlertCircle, Check } from "lucide-react";
 import { bookingApi } from "../../api/bookings";
+import { providerAvailabilityApi } from "../../api/providerAvailability";
 import type { BookingResponseDto, ServiceListingDto } from "../../api/types";
 import "./BookingModal.css";
 
@@ -13,6 +15,13 @@ interface BookingModalProps {
 export default function BookingModal({ listing, onClose, onSuccess }: BookingModalProps) {
   const scheduleId = useId();
   const notesId = useId();
+
+  // Fetch provider's available slots
+  const { data: availableSlots = [], isLoading: isLoadingSlots } = useQuery({
+    queryKey: ["providerAvailabilitySlots", listing.providerId],
+    queryFn: () => providerAvailabilityApi.getForProvider(listing.providerId),
+    enabled: !!listing.providerId,
+  });
 
   // Default to tomorrow 10:00 AM in local ISO-slice (YYYY-MM-DDTHH:mm)
   const [scheduledAt, setScheduledAt] = useState(() => {
@@ -122,9 +131,49 @@ export default function BookingModal({ listing, onClose, onSuccess }: BookingMod
             )}
 
             <div className="booking-form-fields">
+              <div className="available-slots-section">
+                <span className="available-slots-label">
+                  <Clock size={14} style={{ display: "inline", verticalAlign: "middle", marginRight: 4 }} />
+                  Provider Available Slots
+                </span>
+                {isLoadingSlots ? (
+                  <span className="no-slots-hint">Loading provider slots...</span>
+                ) : availableSlots.length === 0 ? (
+                  <span className="no-slots-hint">
+                    No discrete slots configured. You may select any daytime working hour below.
+                  </span>
+                ) : (
+                  <div className="slots-chip-group">
+                    {availableSlots.slice(0, 8).map((slot) => {
+                      const d = new Date(slot.startTime);
+                      const pad = (n: number) => String(n).padStart(2, "0");
+                      const slotIsoSlice = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+                      const isSelected = scheduledAt === slotIsoSlice;
+                      const dateLabel = d.toLocaleDateString([], { month: "short", day: "numeric" });
+                      const timeLabel = d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
+                      return (
+                        <button
+                          key={slot.id}
+                          type="button"
+                          className={`slot-chip ${isSelected ? "selected" : ""}`}
+                          onClick={() => {
+                            setScheduledAt(slotIsoSlice);
+                            setErrorMessage(null);
+                          }}
+                        >
+                          {isSelected && <Check size={14} />}
+                          <span>{dateLabel} · {timeLabel}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
               <div className="form-group">
                 <label htmlFor={scheduleId} className="form-label">
-                  <Calendar size={16} /> Schedule Date & Time
+                  <Calendar size={16} /> Selected Date & Time
                 </label>
                 <input
                   id={scheduleId}

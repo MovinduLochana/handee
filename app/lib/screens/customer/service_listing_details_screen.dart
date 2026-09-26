@@ -5,6 +5,7 @@ import '../../core/constants/colors.dart';
 import '../../core/network/api_client.dart';
 import '../../data/models/service_listing_model.dart';
 import '../../providers/booking_provider.dart';
+import '../../widgets/provider_availability_slot_picker.dart';
 
 class ServiceListingDetailsScreen extends StatelessWidget {
   final ServiceListingModel listing;
@@ -594,6 +595,26 @@ class _BookingFormSheetState extends State<_BookingFormSheet> {
                 ),
                 const SizedBox(height: 16),
               ],
+
+              // Provider Availability Slots Section
+              ProviderAvailabilitySlotPicker(
+                providerId: widget.listing.providerId,
+                selectedSlotTime: DateTime(
+                  _selectedDate.year,
+                  _selectedDate.month,
+                  _selectedDate.day,
+                  _selectedTime.hour,
+                  _selectedTime.minute,
+                ),
+                onSlotSelected: (slotDateTime) {
+                  setState(() {
+                    _selectedDate = slotDateTime;
+                    _selectedTime = TimeOfDay(hour: slotDateTime.hour, minute: slotDateTime.minute);
+                    _errorMessage = null;
+                  });
+                },
+              ),
+              const SizedBox(height: 18),
 
               // Date Picker Field
               const Text(
