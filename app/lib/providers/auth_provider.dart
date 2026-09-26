@@ -15,7 +15,7 @@ class AuthProvider extends ChangeNotifier {
     required this.authRepo,
     required this.storage,
   }) {
-    _loadUser();
+    loadUser();
   }
 
   UserModel? get currentUser => _currentUser;
@@ -26,9 +26,12 @@ class AuthProvider extends ChangeNotifier {
   bool get isProvider => _currentUser?.isProvider ?? false;
   bool get useMockApi => storage.getUseMock();
 
-  Future<void> _loadUser() async {
-    _currentUser = await authRepo.getCurrentUser();
-    notifyListeners();
+  Future<void> loadUser({bool force = false}) async {
+    final user = await authRepo.getCurrentUser();
+    if (force || _currentUser == null) {
+      _currentUser = user;
+      notifyListeners();
+    }
   }
 
   Future<bool> login(String email, String password) async {
@@ -79,8 +82,17 @@ class AuthProvider extends ChangeNotifier {
 
   /// Fast demo role switch between Customer and Provider.
   Future<void> switchRole(String newRole) async {
-    if (_currentUser == null) return;
-    _currentUser = _currentUser!.copyWith(role: newRole);
+    if (_currentUser == null) {
+      final isProv = newRole.toLowerCase() == 'provider';
+      _currentUser = UserModel(
+        id: storage.getUserId() ?? (isProv ? 'provider-demo-01' : 'user-demo'),
+        email: storage.getUserEmail() ?? (isProv ? 'provider@handee.lk' : 'customer@handee.lk'),
+        fullName: storage.getUserName() ?? (isProv ? 'Sunil Perera (Electrician)' : 'Kasun Perera'),
+        role: newRole,
+      );
+    } else {
+      _currentUser = _currentUser!.copyWith(role: newRole);
+    }
     await storage.setUserRole(newRole);
     notifyListeners();
   }

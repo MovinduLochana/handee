@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../core/constants/colors.dart';
 import '../providers/auth_provider.dart';
+import '../screens/customer/customer_home_screen.dart';
+import '../screens/provider/provider_home_screen.dart';
 
 class RoleSwitchSheet extends StatelessWidget {
   const RoleSwitchSheet({super.key});
@@ -9,6 +11,7 @@ class RoleSwitchSheet extends StatelessWidget {
   static void show(BuildContext context) {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) => const RoleSwitchSheet(),
     );
@@ -16,7 +19,7 @@ class RoleSwitchSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final auth = context.watch<AuthProvider>();
+    final auth = context.read<AuthProvider>();
     final currentRole = auth.currentUser?.role ?? 'Customer';
 
     return Container(
@@ -25,64 +28,87 @@ class RoleSwitchSheet extends StatelessWidget {
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       padding: const EdgeInsets.all(24),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Center(
-            child: Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: AppColors.border,
-                borderRadius: BorderRadius.circular(2),
+      child: SafeArea(
+        top: false,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.border,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
               ),
-            ),
+              const SizedBox(height: 20),
+              const Text(
+                'Switch Role (Presentation Mode)',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Quickly toggle between Customer and Service Provider experiences to test the complete cross-platform workflow.',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: AppColors.textSecondary,
+                  height: 1.4,
+                ),
+              ),
+              const SizedBox(height: 20),
+              _buildRoleOption(
+                context: context,
+                title: 'Customer Experience',
+                subtitle: 'Instant Match job submission, real-time tracking, AI assistant',
+                icon: Icons.person_outline,
+                isSelected: currentRole.toLowerCase() == 'customer',
+                onTap: () async {
+                  if (currentRole.toLowerCase() == 'customer') {
+                    Navigator.pop(context);
+                    return;
+                  }
+                  final navigator = Navigator.of(context, rootNavigator: true);
+                  Navigator.pop(context);
+                  await auth.switchRole('Customer');
+                  navigator.pushAndRemoveUntil(
+                    MaterialPageRoute(builder: (_) => const CustomerHomeScreen()),
+                    (route) => false,
+                  );
+                },
+              ),
+              const SizedBox(height: 12),
+              _buildRoleOption(
+                context: context,
+                title: 'Service Provider Experience (Field App)',
+                subtitle: 'Live dispatch queue, countdown timer, accept/decline, job progression',
+                icon: Icons.handyman_outlined,
+                isSelected: currentRole.toLowerCase() == 'provider',
+                onTap: () async {
+                  if (currentRole.toLowerCase() == 'provider') {
+                    Navigator.pop(context);
+                    return;
+                  }
+                  final navigator = Navigator.of(context, rootNavigator: true);
+                  Navigator.pop(context);
+                  await auth.switchRole('Provider');
+                  navigator.pushAndRemoveUntil(
+                    MaterialPageRoute(builder: (_) => const ProviderHomeScreen()),
+                    (route) => false,
+                  );
+                },
+              ),
+              const SizedBox(height: 20),
+            ],
           ),
-          const SizedBox(height: 20),
-          const Text(
-            'Switch Role (Presentation Mode)',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Quickly toggle between Customer and Service Provider experiences to test the complete cross-platform workflow.',
-            style: TextStyle(
-              fontSize: 13,
-              color: AppColors.textSecondary,
-              height: 1.4,
-            ),
-          ),
-          const SizedBox(height: 20),
-          _buildRoleOption(
-            context: context,
-            title: 'Customer Experience',
-            subtitle: 'Instant Match job submission, real-time tracking, AI assistant',
-            icon: Icons.person_outline,
-            isSelected: currentRole.toLowerCase() == 'customer',
-            onTap: () {
-              auth.switchRole('Customer');
-              Navigator.pop(context);
-            },
-          ),
-          const SizedBox(height: 12),
-          _buildRoleOption(
-            context: context,
-            title: 'Service Provider Experience (Field App)',
-            subtitle: 'Live dispatch queue, countdown timer, accept/decline, job progression',
-            icon: Icons.handyman_outlined,
-            isSelected: currentRole.toLowerCase() == 'provider',
-            onTap: () {
-              auth.switchRole('Provider');
-              Navigator.pop(context);
-            },
-          ),
-          const SizedBox(height: 20),
-        ],
+        ),
       ),
     );
   }
