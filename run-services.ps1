@@ -108,6 +108,11 @@ Write-Host " Selected Profile : $ProfileName" -ForegroundColor Yellow
 Write-Host " Working Directory: $RootDir" -ForegroundColor DarkGray
 Write-Host "-----------------------------------------------------------------" -ForegroundColor Cyan
 
+# Terminate any lingering backend process to prevent .exe file locking during dotnet build
+Get-Process -Name "handee.API", "Handee.Api" -ErrorAction SilentlyContinue | ForEach-Object {
+    Stop-Process -Id $_.Id -Force -ErrorAction SilentlyContinue
+}
+
 # -----------------------------------------------------------------------------
 # Dependency Checks
 # -----------------------------------------------------------------------------
