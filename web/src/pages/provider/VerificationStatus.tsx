@@ -14,27 +14,20 @@ export default function VerificationStatusTracker() {
   const queryClient = useQueryClient();
   const [uploadError, setUploadError] = useState<string | null>(null);
 
-  // We use getMyProfile to get the ID, then fetch the full Admin projection to get AuditLogs
-  const { data: myProfile, isLoading: isMeLoading } = useQuery({
+  const { data: myProfile, isLoading, isError } = useQuery({
     queryKey: ["myProfile"],
     queryFn: providerApi.getMyProfile,
-  });
-
-  const { data: fullProfile, isLoading: isFullLoading } = useQuery({
-    queryKey: ["providerProfile", myProfile?.id],
-    queryFn: () => providerApi.getProfile(myProfile!.id!) as Promise<ProviderProfileAdminDto>,
-    enabled: !!myProfile?.id,
+    retry: 1,
   });
 
   // Handle Rejected Resubmission line-by-line
   const resubmitMutation = useMutation({
     mutationFn: async ({ file, type }: { file: File; type: any }) => {
-      if (!fullProfile) throw new Error("No profile state");
-      await providerApi.uploadDocument(fullProfile.id, file, type);
+      if (!myProfile) throw new Error("No profile state");
+      await providerApi.uploadDocument(myProfile.id, file, type);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["myProfile"] });
-      queryClient.invalidateQueries({ queryKey: ["providerProfile", myProfile?.id] });
       setUploadError(null);
     },
     onError: (err) => {
@@ -46,22 +39,16 @@ export default function VerificationStatusTracker() {
     resubmitMutation.mutate({ file, type });
   };
 
-  if (isMeLoading || isFullLoading) {
+  if (isLoading) {
     return <div className="state-container">Loading status...</div>;
   }
 
-  if (!fullProfile) {
-    return (
-      <div className="state-container">
-        <p className="text-muted">Loading profile data...</p>
-      </div>
-    );
-  }
-
-  const { verificationStatus, auditLogs = [], certifications = [] } = fullProfile;
-
-  // Check if it's a fresh profile that hasn't started the wizard
-  if (verificationStatus === "Pending" && certifications.length === 0) {
+  // If profile not found, errored, or fresh with no certs, show prompt to start verification
+  if (
+    isError ||
+    !myProfile ||
+    (myProfile.verificationStatus === "Pending" && (myProfile.certifications ?? []).length === 0)
+  ) {
     return (
       <div className="empty-state verification-not-started animate-fade-up">
         <AlertOctagon size={48} className="empty-state-icon" style={{ opacity: 0.5 }} />
@@ -79,6 +66,8 @@ export default function VerificationStatusTracker() {
       </div>
     );
   }
+
+  const { verificationStatus, auditLogs = [], certifications = [] } = myProfile;
 
   // Determine hero UI based on status
   const getHeroConfig = () => {

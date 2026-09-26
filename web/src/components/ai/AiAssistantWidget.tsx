@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import { X, Send, Sparkles, Bot, User, Star, CheckCircle, ChevronRight } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { agentsApi, type AssistantQueryResponse } from "../../api/agents";
+import { usersApi } from "../../api/users";
 
 interface ChatMessage {
   id: string;
@@ -11,6 +13,12 @@ interface ChatMessage {
 }
 
 export default function AiAssistantWidget() {
+  const { data: userProfile } = useQuery({
+    queryKey: ["userProfile"],
+    queryFn: usersApi.getProfile,
+    retry: false,
+  });
+
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -47,7 +55,7 @@ export default function AiAssistantWidget() {
     setIsLoading(true);
 
     try {
-      const response = await agentsApi.queryAssistant(text.trim());
+      const response = await agentsApi.queryAssistant(text.trim(), userProfile?.id || "guest-customer");
       const botMsg: ChatMessage = {
         id: `bot-${Date.now()}`,
         sender: "assistant",

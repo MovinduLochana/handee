@@ -20,7 +20,7 @@ builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
     {
-        policy.WithOrigins("http://localhost:5173")
+        policy.SetIsOriginAllowed(origin => true)
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials();
@@ -95,9 +95,9 @@ builder.Services.AddStackExchangeRedisCache(options =>
 builder.Services.AddHttpClient("GoogleMaps");
 builder.Services.AddHttpClient("AgentService", client =>
 {
-    var baseUrl = builder.Configuration["AgentService:BaseUrl"] ?? "http://localhost:8000";
+    var baseUrl = builder.Configuration["AgentService:BaseUrl"] ?? "http://127.0.0.1:8000";
     client.BaseAddress = new Uri(baseUrl);
-    client.Timeout = TimeSpan.FromSeconds(15);
+    client.Timeout = TimeSpan.FromSeconds(30);
 });
 
 // ── OpenTelemetry ─────────────────────────────────────────────────────────────
@@ -157,7 +157,10 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 
-app.UseHttpsRedirection();
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
 
 // CORS must be called before UseStaticFiles so that CORS headers apply to the images
 app.UseCors();

@@ -59,7 +59,11 @@ public class ProviderProfileRepository(AppDbContext db) : IProviderProfileReposi
         {
             var term = searchTerm.ToLower();
             query = query.Where(p => (p.User.FullName != null && p.User.FullName.ToLower().Contains(term)) ||
-                                     (p.User.Email != null && p.User.Email.ToLower().Contains(term)));
+                                     (p.User.Email != null && p.User.Email.ToLower().Contains(term)) ||
+                                     (p.Headline != null && p.Headline.ToLower().Contains(term)) ||
+                                     (p.Bio != null && p.Bio.ToLower().Contains(term)) ||
+                                     (p.Description != null && p.Description.ToLower().Contains(term)) ||
+                                     p.ServiceCategories.Any(s => s.Name.ToLower().Contains(term)));
         }
 
         if (lat.HasValue && lng.HasValue)

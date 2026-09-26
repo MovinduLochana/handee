@@ -120,7 +120,7 @@ class _ProviderJobsScreenState extends State<ProviderJobsScreen> with SingleTick
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      booking.jobRequest?.categoryName ?? 'Plumbing Service',
+                      booking.category ?? booking.jobRequest?.categoryName ?? 'Field Service',
                       style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
                     ),
                     StatusBadge(status: booking.status),
@@ -128,7 +128,7 @@ class _ProviderJobsScreenState extends State<ProviderJobsScreen> with SingleTick
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  booking.jobRequest?.description ?? 'Field job request',
+                  booking.description ?? booking.jobRequest?.description ?? 'Field job request',
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),

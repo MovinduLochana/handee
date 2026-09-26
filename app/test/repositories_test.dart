@@ -110,6 +110,52 @@ void main() {
     expect(result.status, 'PendingAiReview');
   });
 
+  test('JobRequestRepository fetches agent workflow via GET /job-requests/{id}/workflow', () async {
+    const jobId = 'job-req-555';
+    final mockClient = MockClient((request) async {
+      if (request.url.path == '/job-requests/$jobId/workflow') {
+        return http.Response(
+          jsonEncode({
+            'id': 'wf-item-1',
+            'jobRequestId': jobId,
+            'workflowId': 'wf-1234',
+            'objective': 'Major leak',
+            'plan': ['Step 1', 'Step 2'],
+            'validationTier': 'ApprovedForAutoDispatch',
+            'approvalStatus': 'Approved',
+            'estimatedPrice': 4200.0,
+            'selectedProviderName': 'Sunil Perera',
+            'createdAt': DateTime.now().toIso8601String(),
+            'stepLogs': [
+              {
+                'id': 'log-1',
+                'stepNumber': 1,
+                'agentName': 'Coordinator / Planner Agent',
+                'action': 'build_execution_plan',
+                'durationMs': 15,
+                'timestamp': DateTime.now().toIso8601String(),
+              }
+            ]
+          }),
+          200,
+        );
+      }
+      return http.Response('Not Found', 404);
+    });
+
+    final apiClient = ApiClient(storage: storage, httpClient: mockClient, baseUrl: 'http://test');
+    final repo = JobRequestRepository(apiClient: apiClient, storage: storage);
+
+    final workflow = await repo.getJobWorkflow(jobId);
+    expect(workflow, isNotNull);
+    expect(workflow!.workflowId, 'wf-1234');
+    expect(workflow.estimatedPrice, 4200.0);
+    expect(workflow.selectedProviderName, 'Sunil Perera');
+    expect(workflow.isAutoApproved, isTrue);
+    expect(workflow.stepLogs.length, 1);
+    expect(workflow.stepLogs.first.agentName, 'Coordinator / Planner Agent');
+  });
+
   test('BookingRepository reschedules via PUT /bookings/{id}/schedule', () async {
     final scheduledAt = DateTime.utc(2026, 10, 1, 9, 30);
     Map<String, dynamic>? capturedBody;

@@ -1,6 +1,7 @@
 import '../../core/constants/api_endpoints.dart';
 import '../../core/network/api_client.dart';
 import '../../core/services/storage_service.dart';
+import '../models/agent_workflow_model.dart';
 import '../models/job_request_model.dart';
 
 class JobRequestRepository {
@@ -50,6 +51,18 @@ class JobRequestRepository {
     final response = await apiClient.get(ApiEndpoints.jobRequestById(id));
     if (response is Map<String, dynamic>) {
       return JobRequestModel.fromJson(response);
+    }
+    return null;
+  }
+
+  Future<AgentWorkflowModel?> getJobWorkflow(String jobId) async {
+    try {
+      final response = await apiClient.get(ApiEndpoints.jobRequestWorkflow(jobId));
+      if (response is Map<String, dynamic>) {
+        return AgentWorkflowModel.fromJson(response);
+      }
+    } catch (_) {
+      // 404 if workflow not yet persisted
     }
     return null;
   }

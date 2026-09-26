@@ -37,9 +37,13 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     _controller.forward();
 
     // Check session after brief splash delay
-    Future.delayed(const Duration(milliseconds: 1800), () {
+    Future.delayed(const Duration(milliseconds: 1800), () async {
       if (!mounted) return;
       final auth = context.read<AuthProvider>();
+      if (!auth.isAuthenticated) {
+        await auth.loadUser();
+      }
+      if (!mounted) return;
 
       if (auth.isAuthenticated) {
         if (auth.isProvider) {

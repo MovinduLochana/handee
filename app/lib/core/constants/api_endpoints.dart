@@ -42,6 +42,7 @@ class ApiEndpoints {
   static const String jobRequests = '/job-requests';
   static const String myJobRequests = '/job-requests/mine';
   static String jobRequestById(String id) => '/job-requests/$id';
+  static String jobRequestWorkflow(String id) => '/job-requests/$id/workflow';
 
   // Bookings (BookingController)
   static const String bookings = '/bookings';

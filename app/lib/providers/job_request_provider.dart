@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../data/models/agent_workflow_model.dart';
 import '../data/models/job_request_model.dart';
 import '../data/repositories/job_request_repository.dart';
 
@@ -7,6 +8,7 @@ class JobRequestProvider extends ChangeNotifier {
 
   List<JobRequestModel> _requests = [];
   JobRequestModel? _currentTrackedRequest;
+  AgentWorkflowModel? _currentWorkflow;
   bool _isLoading = false;
   bool _isSubmitting = false;
   String? _errorMessage;
@@ -15,6 +17,7 @@ class JobRequestProvider extends ChangeNotifier {
 
   List<JobRequestModel> get requests => _requests;
   JobRequestModel? get currentTrackedRequest => _currentTrackedRequest;
+  AgentWorkflowModel? get currentWorkflow => _currentWorkflow;
   bool get isLoading => _isLoading;
   bool get isSubmitting => _isSubmitting;
   String? get errorMessage => _errorMessage;
@@ -74,27 +77,42 @@ class JobRequestProvider extends ChangeNotifier {
 
   void setCurrentTrackedRequest(JobRequestModel request) {
     _currentTrackedRequest = request;
+    _currentWorkflow = null;
     notifyListeners();
+    fetchWorkflowForTrackedRequest();
   }
 
-  /// Re-fetches the tracked request from the server.
-  ///
-  /// Replaces a previous client-side `Timer` simulation that fabricated
-  /// status progression locally. Status is owned by the backend (the agent
-  /// workflow moves PendingAiReview -> Open), so the only honest way to
-  /// observe progress is to ask the server.
+  Future<void> fetchWorkflowForTrackedRequest() async {
+    final tracked = _currentTrackedRequest;
+    if (tracked == null) return;
+
+    try {
+      final wf = await repository.getJobWorkflow(tracked.id);
+      if (wf != null) {
+        _currentWorkflow = wf;
+        notifyListeners();
+      }
+    } catch (_) {}
+  }
+
+  /// Re-fetches the tracked request and its agent workflow from the server.
   Future<void> refreshTrackedRequest() async {
     final tracked = _currentTrackedRequest;
     if (tracked == null) return;
 
     try {
       final fresh = await repository.getJobRequestById(tracked.id);
-      if (fresh == null) return;
+      if (fresh != null) {
+        _currentTrackedRequest = fresh;
+        final idx = _requests.indexWhere((r) => r.id == fresh.id);
+        if (idx != -1) {
+          _requests[idx] = fresh;
+        }
+      }
 
-      _currentTrackedRequest = fresh;
-      final idx = _requests.indexWhere((r) => r.id == fresh.id);
-      if (idx != -1) {
-        _requests[idx] = fresh;
+      final wf = await repository.getJobWorkflow(tracked.id);
+      if (wf != null) {
+        _currentWorkflow = wf;
       }
       notifyListeners();
     } catch (e) {
