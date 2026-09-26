@@ -20,7 +20,7 @@ builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
     {
-        policy.WithOrigins("http://localhost:5173")
+        policy.SetIsOriginAllowed(origin => true)
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials();
@@ -157,7 +157,10 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 
-app.UseHttpsRedirection();
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
 
 // CORS must be called before UseStaticFiles so that CORS headers apply to the images
 app.UseCors();

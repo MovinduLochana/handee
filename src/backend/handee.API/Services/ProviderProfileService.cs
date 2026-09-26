@@ -65,7 +65,13 @@ public class ProviderProfileService(
             var categories = await db.ServiceCategories
                 .Where(s => dto.ServiceCategoryIds.Contains(s.Id))
                 .ToListAsync(ct);
-            profile.ServiceCategories = categories;
+
+            profile.ServiceCategories ??= new List<ServiceCategory>();
+            profile.ServiceCategories.Clear();
+            foreach (var category in categories)
+            {
+                profile.ServiceCategories.Add(category);
+            }
         }
 
         // Update service area

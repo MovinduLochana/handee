@@ -41,6 +41,7 @@ export default function AppShell() {
   const roles = userProfile?.roles || [];
   const isAdmin = roles.includes("Admin");
   const isProvider = roles.includes("Provider");
+  const isCustomer = !!userProfile && !isProvider && !isAdmin;
 
   const { data: myProviderProfile } = useQuery({
     queryKey: ["myProfile"],
@@ -224,7 +225,7 @@ export default function AppShell() {
           <Outlet />
         </main>
       </div>
-      <AiAssistantWidget />
+      {isCustomer && <AiAssistantWidget />}
     </div>
   );
 }

@@ -111,10 +111,16 @@ public class ServiceListingService : IServiceListingService
 
         if (!string.IsNullOrWhiteSpace(query))
         {
-            queryable = queryable.Where(l => l.Title.Contains(query) || l.Description.Contains(query));
+            var term = query.Trim().ToLower();
+            queryable = queryable.Where(l =>
+                l.Title.ToLower().Contains(term) ||
+                l.Description.ToLower().Contains(term) ||
+                (l.Category != null && l.Category.Name.ToLower().Contains(term)) ||
+                (l.Provider != null && l.Provider.FullName.ToLower().Contains(term)));
         }
 
-        return await queryable.Select(l => MapToDto(l)).ToListAsync();
+        var listings = await queryable.ToListAsync();
+        return listings.Select(MapToDto);
     }
 
     public async Task DeleteListingAsync(Guid listingId, Guid providerId)
