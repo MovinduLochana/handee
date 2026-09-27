@@ -21,13 +21,18 @@ class UserModel {
   bool get isCustomer => role.toLowerCase() == 'customer';
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
+    final rolesList = json['roles'] as List<dynamic>?;
+    final parsedRole = (rolesList != null && rolesList.isNotEmpty)
+        ? rolesList.first.toString()
+        : (json['role']?.toString() ?? 'Customer');
+
     return UserModel(
       id: json['id']?.toString() ?? '',
       email: json['email']?.toString() ?? '',
       fullName: json['fullName']?.toString() ?? json['name']?.toString() ?? 'User',
-      role: json['role']?.toString() ?? 'Customer',
+      role: parsedRole,
       phoneNumber: json['phoneNumber']?.toString(),
-      avatarUrl: json['avatarUrl']?.toString(),
+      avatarUrl: json['avatarUrl']?.toString() ?? json['profilePictureUrl']?.toString(),
       address: json['address']?.toString(),
     );
   }
