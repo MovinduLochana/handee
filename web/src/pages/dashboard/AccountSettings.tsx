@@ -1,6 +1,7 @@
 import React, { useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { usersApi } from "../../api/users";
+import { getFullMediaUrl } from "../../lib/api";
 import { CheckCircle2, Loader2, Save, Camera } from "lucide-react";
 
 export default function AccountSettings() {
@@ -113,11 +114,7 @@ export default function AccountSettings() {
               </div>
             ) : userProfile?.profilePictureUrl ? (
               <img
-                src={
-                  userProfile.profilePictureUrl.startsWith("http")
-                    ? userProfile.profilePictureUrl
-                    : `http://localhost:5057${userProfile.profilePictureUrl}`
-                }
+                src={getFullMediaUrl(userProfile.profilePictureUrl)}
                 alt="Profile Avatar"
                 style={{
                   width: 80,

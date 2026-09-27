@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getRefreshToken } from "../../lib/tokenManager";
 import { usersApi } from "../../api/users";
 import { authApi } from "../../api/auth";
+import { getFullMediaUrl } from "../../lib/api";
 import "./PublicNavbar.css";
 
 export default function PublicNavbar() {
@@ -83,11 +84,7 @@ export default function PublicNavbar() {
                 </div>
                 {userProfile.profilePictureUrl ? (
                   <img
-                    src={
-                      userProfile.profilePictureUrl.startsWith("http")
-                        ? userProfile.profilePictureUrl
-                        : `http://localhost:5057${userProfile.profilePictureUrl}`
-                    }
+                    src={getFullMediaUrl(userProfile.profilePictureUrl)}
                     alt="Avatar"
                     style={{
                       width: 36,

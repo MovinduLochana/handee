@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { CheckCircle, MapPin } from "lucide-react";
 import type { ProviderProfileCustomerDto } from "../../api/types";
+import { getFullMediaUrl } from "../../lib/api";
 import StarRating from "./StarRating";
 import ServiceCategoryTag from "./ServiceCategoryTag";
 import "./ProviderCard.css";
@@ -11,9 +12,7 @@ interface ProviderCardProps {
 
 export default function ProviderCard({ provider }: ProviderCardProps) {
   const avatarUrl = provider.profilePictureUrl
-    ? provider.profilePictureUrl.startsWith("http")
-      ? provider.profilePictureUrl
-      : `http://localhost:5057${provider.profilePictureUrl}`
+    ? getFullMediaUrl(provider.profilePictureUrl)
     : null;
 
   return (

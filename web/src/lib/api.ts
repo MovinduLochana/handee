@@ -1,8 +1,16 @@
 import axios from "axios";
 import { getAccessToken, getRefreshToken, setTokens, clearTokens } from "./tokenManager";
 
-// Ideally injected via Vite ENV variables
-export const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5057";
+// Base URL: Injected via Vite ENV variables or defaults to deployed Azure Web App
+export const BASE_URL =
+  import.meta.env.VITE_API_URL || "https://sefproject-g3cmczhth2cygqgh.southeastasia-01.azurewebsites.net";
+
+export const getFullMediaUrl = (url?: string | null): string => {
+  if (!url) return "";
+  if (url.startsWith("http://") || url.startsWith("https://")) return url;
+  const cleanPath = url.startsWith("/") ? url : `/${url}`;
+  return `${BASE_URL}${cleanPath}`;
+};
 
 export const api = axios.create({
   baseURL: BASE_URL,

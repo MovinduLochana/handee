@@ -19,6 +19,7 @@ import ServiceCategoryTag from "../../components/provider/ServiceCategoryTag";
 import ServiceListingCard from "../../components/public/ServiceListingCard";
 import BookingModal from "../../components/public/BookingModal";
 import EmptyState from "../../components/provider/EmptyState";
+import { getFullMediaUrl } from "../../lib/api";
 import "./PublicProviderProfile.css";
 
 export default function PublicProviderProfile() {
@@ -86,11 +87,7 @@ export default function PublicProviderProfile() {
           <div className="public-avatar-wrapper animate-fade-up">
             {profile.profilePictureUrl ? (
               <img
-                src={
-                  profile.profilePictureUrl.startsWith("http")
-                    ? profile.profilePictureUrl
-                    : `http://localhost:5057${profile.profilePictureUrl}`
-                }
+                src={getFullMediaUrl(profile.profilePictureUrl)}
                 alt={profile.fullName}
                 className="public-avatar"
               />
@@ -276,7 +273,7 @@ export default function PublicProviderProfile() {
                           <div className="review-avatar">
                             {review.customerProfilePictureUrl ? (
                               <img
-                                src={`http://localhost:5057${review.customerProfilePictureUrl}`}
+                                src={getFullMediaUrl(review.customerProfilePictureUrl)}
                                 alt={review.customerName}
                                 loading="lazy"
                               />

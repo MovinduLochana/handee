@@ -5,6 +5,7 @@ import { Search, MapPin, Star, Eye } from "lucide-react";
 import { providerApi } from "../../api/providers";
 import { serviceCategoryApi } from "../../api/serviceCategories";
 import StatusBadge from "../../components/provider/StatusBadge";
+import { getFullMediaUrl } from "../../lib/api";
 import "./ProviderDirectory.css";
 
 export default function ProviderDirectory() {
@@ -128,7 +129,7 @@ export default function ProviderDirectory() {
                     <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
                       {provider.profilePictureUrl ? (
                         <img
-                          src={`http://localhost:5057${provider.profilePictureUrl}`}
+                          src={getFullMediaUrl(provider.profilePictureUrl)}
                           style={{ width: 40, height: 40, borderRadius: "50%", objectFit: "cover" }}
                           alt={provider.fullName}
                           loading="lazy"

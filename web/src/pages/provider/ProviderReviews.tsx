@@ -4,6 +4,7 @@ import { MessageSquare, Star, ChevronLeft, ChevronRight } from "lucide-react";
 import { providerApi } from "../../api/providers";
 import StarRating from "../../components/provider/StarRating";
 import EmptyState from "../../components/provider/EmptyState";
+import { getFullMediaUrl } from "../../lib/api";
 import "./ProviderReviews.css";
 
 export default function ProviderReviews() {
@@ -86,7 +87,7 @@ export default function ProviderReviews() {
                     <div className="review-avatar">
                       {review.customerProfilePictureUrl ? (
                         <img
-                          src={`http://localhost:5057${review.customerProfilePictureUrl}`}
+                          src={getFullMediaUrl(review.customerProfilePictureUrl)}
                           alt={review.customerName}
                           loading="lazy"
                         />
