@@ -151,6 +151,7 @@ builder.Services.AddControllers()
     .AddJsonOptions(opts =>
         opts.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter()));
 builder.Services.AddAuthorization();
+builder.Services.AddHealthChecks();
 
 var app = builder.Build();
 
@@ -226,5 +227,7 @@ app.UseAuthorization();
 
 app.MapControllers();
 app.MapHub<handee.API.Hubs.BookingHub>("/hubs/booking");
+app.MapHealthChecks("/health");
+app.MapGet("/", () => Results.Ok(new { status = "Healthy", service = "Handee.Api" }));
 
 app.Run();
