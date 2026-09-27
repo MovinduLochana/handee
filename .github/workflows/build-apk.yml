@@ -1,32 +1,111 @@
-name: Build Android APK
+name: Build & Release Android APK
 
-on: 
+on:
   workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Release Tag (e.g., v1.0.0; defaults to v1.0.<run_number> if blank)'
+        required: false
+        default: ''
+      release_name:
+        description: 'Release Title (defaults to "Handee Mobile <tag>" if blank)'
+        required: false
+        default: ''
+      api_url:
+        description: 'API Base URL override (leave blank to use deployed Azure URL)'
+        required: false
+        default: ''
+      draft:
+        description: 'Create as a draft release'
+        type: boolean
+        default: false
+      prerelease:
+        description: 'Mark as a pre-release'
+        type: boolean
+        default: false
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
 
 jobs:
-  build:
+  build-and-release:
+    name: Build & Publish Release APK
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-java@v4
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
 
-      - uses: subosito/flutter-action@v2
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
         with:
           channel: stable
+          cache: true
 
-      - run: flutter pub get
+      - name: Determine Tag & Release Name
+        id: release_info
+        shell: bash
+        run: |
+          if [ -n "${{ inputs.tag_name }}" ]; then
+            TAG="${{ inputs.tag_name }}"
+          elif [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            TAG="${GITHUB_REF#refs/tags/}"
+          else
+            TAG="v1.0.${{ github.run_number }}"
+          fi
+
+          if [ -n "${{ inputs.release_name }}" ]; then
+            NAME="${{ inputs.release_name }}"
+          else
+            NAME="Handee Mobile $TAG"
+          fi
+
+          echo "tag_name=$TAG" >> $GITHUB_OUTPUT
+          echo "release_name=$NAME" >> $GITHUB_OUTPUT
+
+      - name: Install Dependencies
+        run: flutter pub get
         working-directory: app
 
-      - run: flutter build apk --release
+      - name: Build Android Release APK
+        run: |
+          if [ -n "${{ inputs.api_url }}" ]; then
+            flutter build apk --release --dart-define=API_URL="${{ inputs.api_url }}"
+          else
+            flutter build apk --release
+          fi
         working-directory: app
 
+      - name: Prepare Named APK Asset
+        shell: bash
+        run: |
+          TAG="${{ steps.release_info.outputs.tag_name }}"
+          APK_SRC="app/build/app/outputs/flutter-apk/app-release.apk"
+          APK_DEST="app/build/app/outputs/flutter-apk/handee-${TAG}.apk"
+          if [ -f "$APK_SRC" ]; then
+            cp "$APK_SRC" "$APK_DEST"
+            echo "Created named APK: $APK_DEST"
+          fi
 
-      - uses: actions/upload-artifact@v4
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
         with:
-          name: app-release
-          path: app/build/app/outputs/flutter-apk/*.apk
+          tag_name: ${{ steps.release_info.outputs.tag_name }}
+          name: ${{ steps.release_info.outputs.release_name }}
+          files: |
+            app/build/app/outputs/flutter-apk/app-release.apk
+            app/build/app/outputs/flutter-apk/handee-*.apk
+          draft: ${{ inputs.draft || false }}
+          prerelease: ${{ inputs.prerelease || false }}
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
