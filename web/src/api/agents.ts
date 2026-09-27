@@ -74,7 +74,8 @@ export interface AssistantQueryResponse {
   suggestions?: string[];
 }
 
-const AGENT_SERVICE_URL = "http://localhost:8000";
+const AGENT_SERVICE_URL =
+  import.meta.env.VITE_AGENT_SERVICE_URL || "https://handee-production.up.railway.app";
 
 export const agentsApi = {
   /**

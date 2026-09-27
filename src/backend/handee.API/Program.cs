@@ -95,7 +95,7 @@ builder.Services.AddStackExchangeRedisCache(options =>
 builder.Services.AddHttpClient("GoogleMaps");
 builder.Services.AddHttpClient("AgentService", client =>
 {
-    var baseUrl = builder.Configuration["AgentService:BaseUrl"] ?? "http://127.0.0.1:8000";
+    var baseUrl = builder.Configuration["AgentService:BaseUrl"] ?? "https://handee-production.up.railway.app";
     client.BaseAddress = new Uri(baseUrl);
     client.Timeout = TimeSpan.FromSeconds(30);
 });
