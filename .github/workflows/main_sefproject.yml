@@ -16,17 +16,23 @@ jobs:
       - name: Set up .NET Core
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '10.0.x'   # or '9.0.x' if 10 doesn't work
+          dotnet-version: '10.0.x'   # Change to '9.0.x' or '8.0.x' if needed
 
-      - name: Build with dotnet
-        run: dotnet build --configuration Release
+      - name: Restore dependencies
+        run: dotnet restore
+        working-directory: src/backend/Handee.Api
 
-      - name: dotnet publish
-        run: dotnet publish -c Release -o ./publish
+      - name: Build
+        run: dotnet build --configuration Release --no-restore
+        working-directory: src/backend/Handee.Api
+
+      - name: Publish
+        run: dotnet publish -c Release -o ./publish --no-build
+        working-directory: src/backend/Handee.Api
 
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'sefproject'
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-          package: ./publish
+          package: src/backend/Handee.Api/publish
