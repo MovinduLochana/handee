@@ -71,7 +71,7 @@ export default function AiAssistantWidget() {
       const errorMsg: ChatMessage = {
         id: `err-${Date.now()}`,
         sender: "assistant",
-        text: "I am having trouble reaching the AI agent service. Please ensure the agent subsystem is running on port 8000.",
+        text: "I am having trouble reaching the AI agent service. Please try again shortly.",
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, errorMsg]);
