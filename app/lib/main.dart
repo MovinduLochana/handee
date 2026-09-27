@@ -77,6 +77,7 @@ Widget buildHandeeApp({
     providers: [
       Provider<ServiceCategoryRepository>.value(value: serviceCategoryRepository),
       ChangeNotifierProvider<AuthProvider>(
+        lazy: false,
         create: (_) => AuthProvider(
           authRepo: authRepository,
           storage: storageService,

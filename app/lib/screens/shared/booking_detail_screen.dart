@@ -188,7 +188,7 @@ class BookingDetailScreen extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          booking.provider?.fullName ?? 'Nimal Jayawardena',
+                          booking.providerName ?? booking.provider?.fullName ?? 'Nimal Jayawardena',
                           style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
                         ),
                         const SizedBox(height: 3),

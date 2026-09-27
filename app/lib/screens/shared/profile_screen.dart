@@ -4,6 +4,8 @@ import '../../core/constants/colors.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/role_switch_sheet.dart';
 import '../auth/login_screen.dart';
+import '../customer/edit_customer_profile_screen.dart';
+import '../provider/edit_provider_profile_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -84,6 +86,52 @@ class ProfileScreen extends StatelessWidget {
             ),
 
             const SizedBox(height: 20),
+
+            // Profile Fulfillment / Edit Card
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppColors.borderLight),
+              ),
+              child: ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: const BoxDecoration(
+                    color: AppColors.primaryUltraLight,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    isProvider ? Icons.construction : Icons.edit_note,
+                    color: AppColors.primary,
+                    size: 20,
+                  ),
+                ),
+                title: Text(
+                  isProvider ? 'Manage Trade Profile & Skills' : 'Edit Customer Profile',
+                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                ),
+                subtitle: Text(
+                  isProvider
+                      ? 'Update trade skills, rates, experience & service areas'
+                      : 'Update name, phone number & primary address',
+                  style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                ),
+                trailing: const Icon(Icons.arrow_forward_ios, size: 14),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => isProvider
+                          ? const EditProviderProfileScreen()
+                          : const EditCustomerProfileScreen(),
+                    ),
+                  );
+                },
+              ),
+            ),
+
+            const SizedBox(height: 16),
 
             // Presentation Mode: Role Switcher
             Container(
