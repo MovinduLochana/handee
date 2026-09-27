@@ -71,14 +71,9 @@ class RoleSwitchSheet extends StatelessWidget {
                 icon: Icons.person_outline,
                 isSelected: currentRole.toLowerCase() == 'customer',
                 onTap: () async {
-                  if (currentRole.toLowerCase() == 'customer') {
-                    Navigator.pop(context);
-                    return;
-                  }
-                  final navigator = Navigator.of(context, rootNavigator: true);
-                  Navigator.pop(context);
+                  final nav = Navigator.of(context, rootNavigator: true);
                   await auth.switchRole('Customer');
-                  navigator.pushAndRemoveUntil(
+                  nav.pushAndRemoveUntil(
                     MaterialPageRoute(builder: (_) => const CustomerHomeScreen()),
                     (route) => false,
                   );
@@ -92,14 +87,9 @@ class RoleSwitchSheet extends StatelessWidget {
                 icon: Icons.handyman_outlined,
                 isSelected: currentRole.toLowerCase() == 'provider',
                 onTap: () async {
-                  if (currentRole.toLowerCase() == 'provider') {
-                    Navigator.pop(context);
-                    return;
-                  }
-                  final navigator = Navigator.of(context, rootNavigator: true);
-                  Navigator.pop(context);
+                  final nav = Navigator.of(context, rootNavigator: true);
                   await auth.switchRole('Provider');
-                  navigator.pushAndRemoveUntil(
+                  nav.pushAndRemoveUntil(
                     MaterialPageRoute(builder: (_) => const ProviderHomeScreen()),
                     (route) => false,
                   );
