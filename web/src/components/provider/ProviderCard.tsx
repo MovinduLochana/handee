@@ -11,9 +11,7 @@ interface ProviderCardProps {
 }
 
 export default function ProviderCard({ provider }: ProviderCardProps) {
-  const avatarUrl = provider.profilePictureUrl
-    ? getFullMediaUrl(provider.profilePictureUrl)
-    : null;
+  const avatarUrl = provider.profilePictureUrl ? getFullMediaUrl(provider.profilePictureUrl) : null;
 
   return (
     <Link to={`/providers/${provider.id}`} className="provider-card">

@@ -3,7 +3,8 @@ import { getAccessToken, getRefreshToken, setTokens, clearTokens } from "./token
 
 // Base URL: Injected via Vite ENV variables or defaults to deployed Azure Web App
 export const BASE_URL =
-  import.meta.env.VITE_API_URL || "https://sefproject-g3cmczhth2cygqgh.southeastasia-01.azurewebsites.net";
+  import.meta.env.VITE_API_URL ||
+  "https://sefproject-g3cmczhth2cygqgh.southeastasia-01.azurewebsites.net";
 
 export const getFullMediaUrl = (url?: string | null): string => {
   if (!url) return "";
