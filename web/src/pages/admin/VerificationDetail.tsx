@@ -16,6 +16,7 @@ import { providerApi } from "../../api/providers";
 import type { ProviderProfileAdminDto, VerificationActionDto } from "../../api/types";
 import StatusBadge from "../../components/provider/StatusBadge";
 import DocumentCard from "../../components/provider/DocumentCard";
+import { getFullMediaUrl } from "../../lib/api";
 import "./VerificationDetail.css";
 
 export default function VerificationDetail() {
@@ -81,7 +82,7 @@ export default function VerificationDetail() {
           <div className="provider-summary-card">
             {profile.profilePictureUrl ? (
               <img
-                src={`http://localhost:5057${profile.profilePictureUrl}`}
+                src={getFullMediaUrl(profile.profilePictureUrl)}
                 alt={profile.fullName}
                 className="provider-summary-avatar"
               />

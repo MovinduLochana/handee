@@ -6,6 +6,7 @@ import { adminApi } from "../../api/admin";
 import { serviceCategoryApi } from "../../api/serviceCategories";
 import StatusBadge from "../../components/provider/StatusBadge";
 import type { VerificationStatus } from "../../api/types";
+import { getFullMediaUrl } from "../../lib/api";
 import "./VerificationQueue.css";
 
 export default function VerificationQueue() {
@@ -242,7 +243,7 @@ export default function VerificationQueue() {
                     <div className="provider-cell">
                       {provider.profilePictureUrl ? (
                         <img
-                          src={`http://localhost:5057${provider.profilePictureUrl}`}
+                          src={getFullMediaUrl(provider.profilePictureUrl)}
                           alt={`${provider.fullName} avatar`}
                           loading="lazy"
                         />

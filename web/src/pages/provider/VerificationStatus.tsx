@@ -14,7 +14,11 @@ export default function VerificationStatusTracker() {
   const queryClient = useQueryClient();
   const [uploadError, setUploadError] = useState<string | null>(null);
 
-  const { data: myProfile, isLoading, isError } = useQuery({
+  const {
+    data: myProfile,
+    isLoading,
+    isError,
+  } = useQuery({
     queryKey: ["myProfile"],
     queryFn: providerApi.getMyProfile,
     retry: 1,

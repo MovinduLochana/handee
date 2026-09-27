@@ -23,6 +23,7 @@ import { authApi } from "../../api/auth";
 import { usersApi } from "../../api/users";
 import { providerApi } from "../../api/providers";
 import { getRefreshToken } from "../../lib/tokenManager";
+import { getFullMediaUrl } from "../../lib/api";
 import AiAssistantWidget from "../ai/AiAssistantWidget";
 import "./AppShell.css";
 
@@ -163,11 +164,7 @@ export default function AppShell() {
                 </div>
                 {userProfile.profilePictureUrl ? (
                   <img
-                    src={
-                      userProfile.profilePictureUrl.startsWith("http")
-                        ? userProfile.profilePictureUrl
-                        : `http://localhost:5057${userProfile.profilePictureUrl}`
-                    }
+                    src={getFullMediaUrl(userProfile.profilePictureUrl)}
                     alt="Avatar"
                     style={{
                       width: 36,

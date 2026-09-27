@@ -2,6 +2,7 @@ import { useRef } from "react";
 import { FileText, Download, Upload } from "lucide-react";
 import StatusBadge from "./StatusBadge";
 import type { CertificationDto } from "../../api/types";
+import { getFullMediaUrl } from "../../lib/api";
 import "./DocumentCard.css";
 
 interface DocumentCardProps {
@@ -60,11 +61,7 @@ export default function DocumentCard({
       <div className="document-card-actions">
         {certification.fileUrl && (
           <a
-            href={
-              certification.fileUrl.startsWith("http")
-                ? certification.fileUrl
-                : `http://localhost:5057${certification.fileUrl}`
-            }
+            href={getFullMediaUrl(certification.fileUrl)}
             target="_blank"
             rel="noopener noreferrer"
             className="document-action-btn"

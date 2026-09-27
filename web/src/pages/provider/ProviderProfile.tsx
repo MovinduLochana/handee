@@ -7,7 +7,7 @@ import { serviceCategoryApi } from "../../api/serviceCategories";
 import { serviceListingsApi } from "../../api/serviceListings";
 import ServiceCategoryTag from "../../components/provider/ServiceCategoryTag";
 import StatusBadge from "../../components/provider/StatusBadge";
-import { extractApiError } from "../../lib/api";
+import { extractApiError, getFullMediaUrl } from "../../lib/api";
 import LocationPicker from "../../components/provider/LocationPicker";
 import ServiceListingCard from "../../components/public/ServiceListingCard";
 import "./ProviderProfile.css";
@@ -185,11 +185,7 @@ export default function ProviderProfile() {
         <div className="profile-avatar-wrapper">
           {myProfile.profilePictureUrl ? (
             <img
-              src={
-                myProfile.profilePictureUrl.startsWith("http")
-                  ? myProfile.profilePictureUrl
-                  : `http://localhost:5057${myProfile.profilePictureUrl}`
-              }
+              src={getFullMediaUrl(myProfile.profilePictureUrl)}
               alt="Profile"
               className="profile-avatar"
             />
