@@ -156,7 +156,14 @@ export default function JobRequestDetail() {
 
         {/* ── AI Agent Dispatch Workflow Section ── */}
         <section className="booking-card" style={{ gridColumn: "1 / -1" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: "1rem",
+            }}
+          >
             <h2 style={{ display: "flex", alignItems: "center", gap: "0.5rem", margin: 0 }}>
               <Bot size={20} color="var(--accent)" /> AI Dispatch & Multi-Agent Analysis
             </h2>
@@ -172,7 +179,14 @@ export default function JobRequestDetail() {
           {isWorkflowLoading ? (
             <p className="booking-description">Loading agent dispatch workflow...</p>
           ) : !workflow ? (
-            <div style={{ padding: "1rem", backgroundColor: "var(--bg)", borderRadius: "8px", border: "1px dashed var(--border)" }}>
+            <div
+              style={{
+                padding: "1rem",
+                backgroundColor: "var(--bg)",
+                borderRadius: "8px",
+                border: "1px dashed var(--border)",
+              }}
+            >
               <p style={{ margin: 0, color: "var(--text-muted)", fontSize: "0.9rem" }}>
                 No multi-agent dispatch workflow has been processed for this job request yet.
               </p>
@@ -195,14 +209,14 @@ export default function JobRequestDetail() {
                         workflow.validationTier === "approved_for_auto_dispatch"
                           ? "rgba(34, 197, 94, 0.12)"
                           : workflow.validationTier === "approved_with_audit"
-                          ? "rgba(59, 130, 246, 0.12)"
-                          : "rgba(239, 68, 68, 0.12)",
+                            ? "rgba(59, 130, 246, 0.12)"
+                            : "rgba(239, 68, 68, 0.12)",
                       color:
                         workflow.validationTier === "approved_for_auto_dispatch"
                           ? "#22c55e"
                           : workflow.validationTier === "approved_with_audit"
-                          ? "#3b82f6"
-                          : "#ef4444",
+                            ? "#3b82f6"
+                            : "#ef4444",
                     }}
                   >
                     {workflow.validationTier}
@@ -219,8 +233,8 @@ export default function JobRequestDetail() {
                         workflow.approvalStatus.toLowerCase() === "approved"
                           ? "#22c55e"
                           : workflow.approvalStatus.toLowerCase() === "pending"
-                          ? "#eab308"
-                          : "#ef4444",
+                            ? "#eab308"
+                            : "#ef4444",
                     }}
                   >
                     {workflow.approvalStatus}
@@ -231,7 +245,11 @@ export default function JobRequestDetail() {
                 <dd>
                   {workflow.selectedProviderName ? (
                     <span style={{ fontWeight: 600, color: "var(--text-h)" }}>
-                      {workflow.selectedProviderName} ({workflow.selectedProviderId ? String(workflow.selectedProviderId).slice(0, 8) : "N/A"})
+                      {workflow.selectedProviderName} (
+                      {workflow.selectedProviderId
+                        ? String(workflow.selectedProviderId).slice(0, 8)
+                        : "N/A"}
+                      )
                     </span>
                   ) : (
                     <span style={{ color: "var(--text-muted)" }}>None assigned</span>
@@ -240,7 +258,9 @@ export default function JobRequestDetail() {
 
                 <dt>AI Estimated Price</dt>
                 <dd style={{ fontWeight: 700, color: "var(--accent)" }}>
-                  {workflow.estimatedPrice ? `LKR ${workflow.estimatedPrice.toLocaleString()}` : "Not estimated"}
+                  {workflow.estimatedPrice
+                    ? `LKR ${workflow.estimatedPrice.toLocaleString()}`
+                    : "Not estimated"}
                 </dd>
 
                 {workflow.decidedAt && (
@@ -261,7 +281,14 @@ export default function JobRequestDetail() {
               {/* Step Logs */}
               {workflow.stepLogs && workflow.stepLogs.length > 0 && (
                 <div style={{ marginTop: "1rem" }}>
-                  <h3 style={{ fontSize: "0.95rem", fontWeight: 700, marginBottom: "0.75rem", color: "var(--text-h)" }}>
+                  <h3
+                    style={{
+                      fontSize: "0.95rem",
+                      fontWeight: 700,
+                      marginBottom: "0.75rem",
+                      color: "var(--text-h)",
+                    }}
+                  >
                     Multi-Agent Execution Pipeline ({workflow.stepLogs.length} Steps)
                   </h3>
                   <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
@@ -303,7 +330,13 @@ export default function JobRequestDetail() {
                               >
                                 {step.stepNumber}
                               </span>
-                              <span style={{ fontWeight: 600, color: "var(--text-h)", fontSize: "0.9rem" }}>
+                              <span
+                                style={{
+                                  fontWeight: 600,
+                                  color: "var(--text-h)",
+                                  fontSize: "0.9rem",
+                                }}
+                              >
                                 {step.agentName}
                               </span>
                               <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>
@@ -333,7 +366,13 @@ export default function JobRequestDetail() {
                             >
                               {step.inputData && (
                                 <div>
-                                  <div style={{ fontWeight: 700, color: "var(--text-muted)", marginBottom: "0.2rem" }}>
+                                  <div
+                                    style={{
+                                      fontWeight: 700,
+                                      color: "var(--text-muted)",
+                                      marginBottom: "0.2rem",
+                                    }}
+                                  >
                                     Input Payload:
                                   </div>
                                   <pre
@@ -352,7 +391,13 @@ export default function JobRequestDetail() {
                               )}
                               {step.outputData && (
                                 <div>
-                                  <div style={{ fontWeight: 700, color: "var(--text-muted)", marginBottom: "0.2rem" }}>
+                                  <div
+                                    style={{
+                                      fontWeight: 700,
+                                      color: "var(--text-muted)",
+                                      marginBottom: "0.2rem",
+                                    }}
+                                  >
                                     Output Result:
                                   </div>
                                   <pre
