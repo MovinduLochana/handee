@@ -85,7 +85,7 @@ export const agentsApi = {
     const params: Record<string, string> = {};
     if (tier) params.tier = tier;
     if (status) params.status = status;
-    const response = await api.get<AgentWorkflowResponseDto[]>("/admin/agent-workflows", {
+    const response = await api.get<AgentWorkflowResponseDto[]>("/api/admin/agent-workflows", {
       params,
     });
     return response.data;
@@ -95,7 +95,7 @@ export const agentsApi = {
    * Admin: Get single workflow by ID.
    */
   async getWorkflowById(id: string): Promise<AgentWorkflowResponseDto> {
-    const response = await api.get<AgentWorkflowResponseDto>(`/admin/agent-workflows/${id}`);
+    const response = await api.get<AgentWorkflowResponseDto>(`/api/admin/agent-workflows/${id}`);
     return response.data;
   },
 
@@ -108,7 +108,7 @@ export const agentsApi = {
     note?: string,
   ): Promise<AgentWorkflowResponseDto> {
     const response = await api.post<AgentWorkflowResponseDto>(
-      `/admin/agent-workflows/${id}/decision`,
+      `/api/admin/agent-workflows/${id}/decision`,
       {
         decision,
         note: note || `Admin decision: ${decision} via Web Portal`,
