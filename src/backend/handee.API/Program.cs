@@ -13,6 +13,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
+using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -86,9 +87,10 @@ builder.Services.Configure<AuthOptions>(builder.Configuration.GetSection(AuthOpt
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection(EmailSettings.SectionName));
 
 // ── Redis Cache ───────────────────────────────────────────────────────────────
+var redisConn = builder.Configuration.GetConnectionString("Redis") ?? "localhost:6379";
 builder.Services.AddStackExchangeRedisCache(options =>
 {
-    options.Configuration = builder.Configuration.GetConnectionString("Redis") ?? "localhost:6379";
+    options.ConfigurationOptions = ParseRedisConnectionString(redisConn);
 });
 
 // ── HTTP Clients ─────────────────────────────────────────────────────────────
@@ -226,6 +228,56 @@ app.UseAuthorization();
 app.MapControllers();
 app.MapHub<handee.API.Hubs.BookingHub>("/hubs/booking");
 app.MapHealthChecks("/health");
-app.MapGet("/", () => Results.Ok(new { status = "Healthy", service = "Handee.Api" }));
-
 app.Run();
+return;
+
+static ConfigurationOptions ParseRedisConnectionString(string connectionString)
+{
+    if (Uri.TryCreate(connectionString, UriKind.Absolute, out var uri) &&
+        (uri.Scheme.Equals("redis", StringComparison.OrdinalIgnoreCase) ||
+         uri.Scheme.Equals("rediss", StringComparison.OrdinalIgnoreCase)))
+    {
+        var config = new ConfigurationOptions
+        {
+            EndPoints = { { uri.Host, uri.Port > 0 ? uri.Port : 6379 } },
+            Ssl = uri.Scheme.Equals("rediss", StringComparison.OrdinalIgnoreCase),
+            AbortOnConnectFail = false,
+            ConnectTimeout = 5000,
+            SyncTimeout = 5000
+        };
+
+        if (!string.IsNullOrEmpty(uri.UserInfo))
+        {
+            var parts = uri.UserInfo.Split(':', 2);
+            if (parts.Length == 2)
+            {
+                if (!string.IsNullOrEmpty(parts[0]) && !parts[0].Equals("default", StringComparison.OrdinalIgnoreCase))
+                {
+                    config.User = parts[0];
+                }
+                config.Password = parts[1];
+            }
+            else if (parts.Length == 1)
+            {
+                config.Password = parts[0];
+            }
+        }
+
+        return config;
+    }
+
+    try
+    {
+        var config = ConfigurationOptions.Parse(connectionString);
+        config.AbortOnConnectFail = false;
+        return config;
+    }
+    catch
+    {
+        return new ConfigurationOptions
+        {
+            EndPoints = { { "localhost", 6379 } },
+            AbortOnConnectFail = false
+        };
+    }
+}

@@ -26,11 +26,18 @@ public class ProviderTrustService(
 
         // Try cache first
         var cacheKey = $"trust:{providerId}";
-        var cached = await cache.GetStringAsync(cacheKey, ct);
-        if (cached is not null)
+        try
         {
-            logger.LogDebug("Trust signal cache HIT for {ProviderId}", providerId);
-            return System.Text.Json.JsonSerializer.Deserialize<TrustSignalDto>(cached)!;
+            var cached = await cache.GetStringAsync(cacheKey, ct);
+            if (cached is not null)
+            {
+                logger.LogDebug("Trust signal cache HIT for {ProviderId}", providerId);
+                return System.Text.Json.JsonSerializer.Deserialize<TrustSignalDto>(cached)!;
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Trust signal cache read failed for {ProviderId}, querying DB", providerId);
         }
 
         var profile = await profileRepo.GetByIdAsync(providerId, ct)
@@ -56,9 +63,16 @@ public class ProviderTrustService(
             IsAvailableForWork: profile.IsAvailableForWork);
 
         // Cache result
-        var serialized = System.Text.Json.JsonSerializer.Serialize(dto);
-        await cache.SetStringAsync(cacheKey, serialized,
-            new DistributedCacheEntryOptions { AbsoluteExpirationRelativeToNow = CacheTtl }, ct);
+        try
+        {
+            var serialized = System.Text.Json.JsonSerializer.Serialize(dto);
+            await cache.SetStringAsync(cacheKey, serialized,
+                new DistributedCacheEntryOptions { AbsoluteExpirationRelativeToNow = CacheTtl }, ct);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Trust signal cache write failed for {ProviderId}", providerId);
+        }
 
         span?.SetTag("verificationStatus", dto.VerificationStatus.ToString());
         logger.LogInformation("Trust signal computed for {ProviderId}: {Status}", providerId, dto.VerificationStatus);
@@ -67,6 +81,15 @@ public class ProviderTrustService(
     }
 
     /// <summary>Busts the trust-signal cache for a provider (call after verification status changes).</summary>
-    public async Task InvalidateCacheAsync(Guid providerId, CancellationToken ct = default) =>
-        await cache.RemoveAsync($"trust:{providerId}", ct);
+    public async Task InvalidateCacheAsync(Guid providerId, CancellationToken ct = default)
+    {
+        try
+        {
+            await cache.RemoveAsync($"trust:{providerId}", ct);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Trust signal cache invalidation failed for {ProviderId}", providerId);
+        }
+    }
 }

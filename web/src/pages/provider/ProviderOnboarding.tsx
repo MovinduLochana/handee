@@ -451,23 +451,23 @@ export default function ProviderOnboarding() {
 
         {/* ── STEP 3: Finish ── */}
         {currentStep === 3 && (
-          <CardContent className="text-center py-12 px-6 space-y-6">
+          <CardContent className="text-center py-16 px-6 space-y-6">
             <div className="flex justify-center text-primary">
               <CheckCircle2 className="w-16 h-16 text-primary" />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-3 max-w-md mx-auto">
               <h2 className="text-2xl font-bold tracking-tight text-foreground">
                 Profile Saved Successfully!
               </h2>
-              <p className="text-muted-foreground max-w-md mx-auto text-sm">
+              <p className="text-muted-foreground text-sm leading-relaxed">
                 Your provider profile has been created. To unlock all features and start accepting
                 jobs, you must verify your identity.
               </p>
             </div>
 
-            <div className="flex flex-col gap-3 items-center max-w-xs mx-auto pt-4">
+            <div className="flex flex-col sm:flex-row gap-3 items-center justify-center max-w-md mx-auto pt-6">
               <Button
-                className="w-full justify-center gap-2"
+                className="w-full sm:w-auto justify-center gap-2"
                 onClick={() => navigate("/provider/submit-verification")}
               >
                 <ShieldCheck className="w-4 h-4" /> Verify Identity Now
@@ -475,7 +475,7 @@ export default function ProviderOnboarding() {
 
               <Button
                 variant="outline"
-                className="w-full justify-center"
+                className="w-full sm:w-auto justify-center"
                 onClick={() => navigate("/dashboard")}
               >
                 Skip for now, go to Dashboard

@@ -66,8 +66,8 @@ export default function PublicProviderProfile() {
           title="Provider Not Found"
           description="This provider profile doesn't exist or is currently unavailable."
           action={
-            <Link to="/" className={buttonVariants()}>
-              Return Home
+            <Link to="/providers" className={buttonVariants()}>
+              Back to Providers
             </Link>
           }
         />
@@ -84,7 +84,7 @@ export default function PublicProviderProfile() {
             to="/providers"
             className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
           >
-            <ArrowLeft className="w-4 h-4" /> Back to Search
+            <ArrowLeft className="w-4 h-4" /> Back to Providers
           </Link>
         </nav>
 
@@ -167,11 +167,13 @@ export default function PublicProviderProfile() {
                 </div>
 
                 {profile.bio && (
-                  <p className="text-sm text-muted-foreground leading-relaxed">{profile.bio}</p>
+                  <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
+                    {profile.bio}
+                  </p>
                 )}
                 {profile.description && (
                   <div className="pt-3 border-t border-border">
-                    <p className="text-sm text-muted-foreground leading-relaxed">
+                    <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
                       {profile.description}
                     </p>
                   </div>
