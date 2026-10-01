@@ -13,8 +13,8 @@ using handee.API.Data;
 namespace handee.API.Data.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260930104252_RemoveLegacyAvailabilitySlots")]
-    partial class RemoveLegacyAvailabilitySlots
+    [Migration("20261001085210_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
