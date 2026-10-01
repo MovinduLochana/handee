@@ -1,3 +1,17 @@
+booking
+hours ballan onboarding
+form sect combo
+form font
+colcbo search city
+
+location and address overlap issue
+mobile phone pay doenest work
+redis not working on web (specially on verifiactnio action on https://handee-mu.vercel.app/admin/verifications/*)
+back to service from providers goes to home
+desc not retailo new lines
+
+verfications
+
 # Handee — Integrated Full-Stack & Agentic AI Marketplace
 
 **Handee** is a trust-verified marketplace connecting homeowners with vetted tradespeople (plumbers, electricians, AC technicians, painters, carpenters, and more) across Sri Lanka.
