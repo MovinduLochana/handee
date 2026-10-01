@@ -84,3 +84,44 @@ def generate_invoice_breakdown_tool(
         })
 
     return items
+
+
+def prepare_payment_handoff_tool(
+    job_id: str,
+    estimated_price: float,
+    breakdown: PriceBreakdown,
+    risk_tier: ValidationRiskTier,
+    approval_status: str,
+    line_items: List[Dict[str, Any]],
+    provider_id: Optional[str] = None,
+    customer_id: Optional[str] = None,
+    currency: str = "LKR",
+) -> PaymentHandoffPayload:
+    """
+    Tool 3: Approval-to-Payment Handoff tool.
+    Prepares the handoff payload consumed by ASP.NET Core AgentWorkflowService
+    to transition the booking into invoice generation and payment escrow hold.
+    """
+    gateway_action = (
+        "escrow_hold"
+        if risk_tier in [ValidationRiskTier.APPROVED_FOR_AUTO_DISPATCH, ValidationRiskTier.APPROVED_WITH_AUDIT]
+        else "manual_audit_review"
+    )
+
+    return PaymentHandoffPayload(
+        job_id=job_id,
+        booking_id=job_id,
+        provider_id=provider_id,
+        customer_id=customer_id,
+        total_amount=estimated_price,
+        service_labor=breakdown.service_labor,
+        platform_fee=breakdown.platform_fee,
+        urgency_surcharge=breakdown.urgency_surcharge,
+        currency=currency,
+        risk_tier=risk_tier,
+        approval_status=approval_status,
+        invoice_generation_triggered=True,
+        payment_gateway_action=gateway_action,
+        line_items=line_items,
+    )
+
