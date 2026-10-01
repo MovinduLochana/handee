@@ -90,9 +90,13 @@ class AuthRepository {
 
     if (phoneNumber != null || address != null) {
       try {
-        loggedInUser = await updateProfile(
+        await updateProfile(
           phoneNumber: phoneNumber,
           address: address,
+        );
+        loggedInUser = loggedInUser.copyWith(
+          phoneNumber: phoneNumber ?? loggedInUser.phoneNumber,
+          address: address ?? loggedInUser.address,
         );
       } catch (_) {}
     }

@@ -80,6 +80,55 @@ void main() {
     expect(storage.getUserRole(), 'Customer');
   });
 
+  test('AuthRepository preserves loggedInUser avatarUrl, verificationStatus and existing phone during address update', () async {
+    final client = ApiClient(
+      storage: storage,
+      httpClient: MockClient((req) async {
+        if (req.url.path == '/auth/register') {
+          return http.Response(jsonEncode({
+            'id': 'user-1',
+            'email': 'user@handee.lk',
+            'fullName': 'User One',
+            'role': 'Customer',
+          }), 201);
+        }
+        if (req.url.path == '/auth/login') {
+          return http.Response(jsonEncode({
+            'accessToken': 'jwt-access',
+            'refreshToken': 'jwt-refresh',
+          }), 200);
+        }
+        if (req.url.path == '/users/me') {
+          return http.Response(jsonEncode({
+            'id': 'user-1',
+            'email': 'user@handee.lk',
+            'fullName': 'User One',
+            'roles': ['Customer'],
+            'phoneNumber': '0779998888',
+            'profilePictureUrl': 'https://example.com/avatar.jpg',
+            'providerVerificationStatus': 'Verified',
+          }), 200);
+        }
+        return http.Response('{}', 200);
+      }),
+      baseUrl: 'http://localhost',
+    );
+
+    final authRepo = AuthRepository(apiClient: client, storage: storage);
+    final user = await authRepo.register(
+      fullName: 'User One',
+      email: 'user@handee.lk',
+      password: 'Password123!',
+      role: 'Customer',
+      address: 'Kandy, Sri Lanka',
+    );
+
+    expect(user.address, 'Kandy, Sri Lanka');
+    expect(user.phoneNumber, '0779998888');
+    expect(user.avatarUrl, 'https://example.com/avatar.jpg');
+    expect(user.providerVerificationStatus, 'Verified');
+  });
+
   test('UserModel parses providerVerificationStatus correctly', () {
     final userJson = {
       'id': 'provider-123',
