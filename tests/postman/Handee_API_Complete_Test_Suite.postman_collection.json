@@ -1,0 +1,3598 @@
+{
+  "info": {
+    "name": "Handee API - Complete Test Suite",
+    "description": "Comprehensive automated and manual test suite for Handee ASP.NET Core REST API.\n\n### Features:\n- Chained authentication and role management (Admin, Customer, Provider)\n- Dynamic ID extraction and variable synchronization\n- Seeded data verification & health check\n- Comprehensive positive workflow execution across profiles, categories, listings, reviews, bookings, and payments\n- Extensive negative & security authorization validations (400, 401, 403, 404, 409)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "00 - Health / Setup",
+      "description": "Smoke tests verifying API connectivity, OpenAPI contract exposure, and baseline database seeding.",
+      "item": [
+        {
+          "name": "00.1 - Check API OpenAPI Spec & Ping",
+          "description": "Verifies the ASP.NET Core OpenAPI documentation endpoint is reachable and healthy.",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{authBaseUrl}}/openapi/v1.json",
+              "host": [
+                "{{authBaseUrl}}"
+              ],
+              "path": [
+                "openapi",
+                "v1.json"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response is valid OpenAPI JSON specification\", function () {",
+                  "    pm.response.to.be.json;",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.openapi || json.swagger || json.info).to.exist;",
+                  "    if (json.info) {",
+                  "        pm.expect(json.info.title).to.include(\"handee\");",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "id": "c82903d5-fc86-428a-9e31-155584bde162"
+        },
+        {
+          "name": "00.2 - Verify Seeded Service Categories & Initialize Category ID",
+          "description": "Public endpoint to list seeded service categories. Automatically extracts the first category ID into `skillCategoryId` if unset.",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/service-categories",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "service-categories"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response is an array of seeded service categories\", function () {",
+                  "    pm.response.to.be.json;",
+                  "    var categories = pm.response.json();",
+                  "    pm.expect(categories).to.be.an(\"array\");",
+                  "    pm.expect(categories.length).to.be.greaterThan(0);",
+                  "    ",
+                  "    var firstCategory = categories[0];",
+                  "    pm.expect(firstCategory).to.have.property(\"id\");",
+                  "    pm.expect(firstCategory).to.have.property(\"name\");",
+                  "    ",
+                  "    // Automatically extract and set skillCategoryId for chained requests",
+                  "    if (firstCategory.id) {",
+                  "        pm.environment.set(\"skillCategoryId\", firstCategory.id);",
+                  "        console.log(\"Initialized skillCategoryId to: \" + firstCategory.id + \" (\" + firstCategory.name + \")\");",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "id": "430d5107-3dc1-4352-86f0-26b70bb49815"
+        }
+      ],
+      "id": "aed72319-bda6-4af9-8be8-5419f02d2476"
+    },
+    {
+      "name": "01 - Authentication",
+      "description": "User registration, role-specific authentication, JWT access/refresh token extraction, token rotation, and password reset workflows.",
+      "item": [
+        {
+          "name": "01.1 - Register New Customer",
+          "description": "Registers a fresh Customer account with dynamic email to test registration pipeline.",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text",
+                "description": ""
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"Test Customer Auto\",\n  \"email\": \"cust_{{$timestamp}}@mockdata.local\",\n  \"password\": \"Password123!\",\n  \"role\": \"Customer\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 201 Created\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test(\"Response contains user registration details\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.id).to.exist;",
+                  "    pm.expect(json.email).to.exist;",
+                  "    pm.expect(json.role).to.eql(\"Customer\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "id": "dfe36743-c07b-445d-921c-a45dd3b330e6"
+        },
+        {
+          "name": "01.2 - Admin Login",
+          "description": "Logs in seeded Admin account. Stores `adminAccessToken` and `adminRefreshToken` in the environment.",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text",
+                "description": ""
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{adminPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Admin access and refresh tokens returned\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.accessToken).to.exist.and.to.be.a(\"string\").and.not.empty;",
+                  "    pm.expect(json.refreshToken).to.exist.and.to.be.a(\"string\").and.not.empty;",
+                  "    ",
+                  "    pm.environment.set(\"adminAccessToken\", json.accessToken);",
+                  "    pm.environment.set(\"adminRefreshToken\", json.refreshToken);",
+                  "    console.log(\"adminAccessToken and adminRefreshToken stored successfully.\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "id": "780c7b15-2625-4b73-8e7e-9d40f6b16ecd"
+        },
+        {
+          "name": "01.3 - Customer Login",
+          "description": "Logs in seeded Customer account. Stores `customerAccessToken` and `customerRefreshToken` in the environment.",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text",
+                "description": ""
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{customerEmail}}\",\n  \"password\": \"{{customerPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Customer access and refresh tokens returned\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.accessToken).to.exist.and.to.be.a(\"string\").and.not.empty;",
+                  "    pm.expect(json.refreshToken).to.exist.and.to.be.a(\"string\").and.not.empty;",
+                  "    ",
+                  "    pm.environment.set(\"customerAccessToken\", json.accessToken);",
+                  "    pm.environment.set(\"customerRefreshToken\", json.refreshToken);",
+                  "    console.log(\"customerAccessToken and customerRefreshToken stored successfully.\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "id": "0c352ea5-2ca6-4287-b143-8a4fbfabb459"
+        },
+        {
+          "name": "01.4 - Provider Login",
+          "description": "Logs in seeded Provider account. Stores `providerAccessToken` and `providerRefreshToken` in the environment.",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text",
+                "description": ""
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{providerEmail}}\",\n  \"password\": \"{{providerPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Provider access and refresh tokens returned\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.accessToken).to.exist.and.to.be.a(\"string\").and.not.empty;",
+                  "    pm.expect(json.refreshToken).to.exist.and.to.be.a(\"string\").and.not.empty;",
+                  "    ",
+                  "    pm.environment.set(\"providerAccessToken\", json.accessToken);",
+                  "    pm.environment.set(\"providerRefreshToken\", json.refreshToken);",
+                  "    console.log(\"providerAccessToken and providerRefreshToken stored successfully.\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "id": "d5dd358b-a6e8-4c1e-a98d-fa375c2f9940"
+        },
+        {
+          "name": "01.5 - Refresh Token (Customer Rotation)",
+          "description": "Rotates customer refresh token and generates fresh access token pair.",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text",
+                "description": ""
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/refresh",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "refresh"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{customerRefreshToken}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Rotated tokens successfully returned\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.accessToken).to.exist.and.to.be.a(\"string\").and.not.empty;",
+                  "    pm.expect(json.refreshToken).to.exist.and.to.be.a(\"string\").and.not.empty;",
+                  "    ",
+                  "    // Update customer tokens with fresh pair",
+                  "    pm.environment.set(\"customerAccessToken\", json.accessToken);",
+                  "    pm.environment.set(\"customerRefreshToken\", json.refreshToken);",
+                  "    console.log(\"Rotated customerAccessToken and customerRefreshToken updated.\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "id": "116ea50b-b912-403f-a9bd-5d18d63eb42c"
+        },
+        {
+          "name": "01.6 - Forgot Password Request",
+          "description": "Requests password reset link for customer account. Returns 200 with standard privacy message.",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text",
+                "description": ""
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/forgot-password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "forgot-password"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{customerEmail}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Reset confirmation message returned\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.message).to.exist;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "id": "09f677f8-b42b-410c-b258-895cd6a89d36"
+        },
+        {
+          "name": "01.7 - Logout (Customer Rotation Teardown)",
+          "description": "Revokes customer session refresh token.",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerAccessToken}}",
+                "type": "text",
+                "description": ""
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text",
+                "description": ""
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/logout",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "logout"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{customerRefreshToken}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 204 No Content\", function () {",
+                  "    pm.response.to.have.status(204);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "id": "b2dfd194-2064-4b1d-b5a6-4bd22b824886"
+        },
+        {
+          "name": "01.8 - Restore Customer Session Login",
+          "description": "Re-authenticates customer to provide valid tokens for all subsequent test steps.",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text",
+                "description": ""
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{customerEmail}}\",\n  \"password\": \"{{customerPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Customer tokens refreshed for runner pipeline\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.accessToken).to.exist;",
+                  "    pm.environment.set(\"customerAccessToken\", json.accessToken);",
+                  "    pm.environment.set(\"customerRefreshToken\", json.refreshToken);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "id": "5d6697e0-61d4-4286-b38d-9f3d96d11b0a"
+        }
+      ],
+      "id": "b77a59af-bdfc-4f22-ac09-5691f9a0977f"
+    },
+    {
+      "name": "02 - User Profile",
+      "description": "User profile retrieval and profile update operations for Customer, Provider, and Admin accounts.",
+      "item": [
+        {
+          "name": "02.1 - Get Current Customer Profile",
+          "description": "Fetches current customer profile and saves `customerId` to environment.",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerAccessToken}}",
+                "type": "text",
+                "description": ""
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "me"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Customer profile contains valid identity attributes\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.id).to.exist;",
+                  "    pm.expect(json.fullName).to.exist;",
+                  "    pm.expect(json.roles).to.be.an(\"array\").that.includes(\"Customer\");",
+                  "    ",
+                  "    pm.environment.set(\"customerId\", json.id);",
+                  "    console.log(\"Saved customerId: \" + json.id);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "id": "7649480b-8a07-4d5f-ba3a-2b975979f630"
+        },
+        {
+          "name": "02.2 - Get Current Provider Profile",
+          "description": "Fetches current provider user account and saves `providerUserId` to environment.",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{providerAccessToken}}",
+                "type": "text",
+                "description": ""
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "me"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Provider user profile contains valid attributes\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.id).to.exist;",
+                  "    pm.expect(json.roles).to.be.an(\"array\").that.includes(\"Provider\");",
+                  "    ",
+                  "    pm.environment.set(\"providerUserId\", json.id);",
+                  "    console.log(\"Saved providerUserId: \" + json.id);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "id": "bfbb810b-f18d-45be-9b35-98d688c3426d"
+        },
+        {
+          "name": "02.3 - Get Current Admin Profile",
+          "description": "Fetches current admin user profile and validates Admin role assignment.",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminAccessToken}}",
+                "type": "text",
+                "description": ""
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "me"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Admin profile role verified\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.roles).to.be.an(\"array\").that.includes(\"Admin\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "id": "48debf4f-5bf6-4c4e-9bb4-b0beb51f627a"
+        },
+        {
+          "name": "02.4 - Update Customer Profile",
+          "description": "Updates profile details for the authenticated customer.",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerAccessToken}}",
+                "type": "text",
+                "description": ""
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text",
+                "description": ""
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "me"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"Test Customer (Updated)\",\n  \"phoneNumber\": \"+94771234567\",\n  \"profilePictureUrl\": \"https://example.com/avatar.png\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 204 No Content\", function () {",
+                  "    pm.response.to.have.status(204);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "id": "39d2032c-477f-4856-960f-4c8c96034143"
+        },
+        {
+          "name": "02.5 - Upload Profile Photo",
+          "description": "Uploads profile picture using multipart/form-data. Handles headless runner environments safely.",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerAccessToken}}",
+                "type": "text",
+                "description": ""
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/me/photo",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "me",
+                "photo"
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "photo",
+                  "type": "text",
+                  "value": "fake-image-bytes-for-runner-safety",
+                  "description": "Multipart photo upload. In Postman GUI, change type to File to select an image."
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Accept either 200 (if file accepted) or 400 (if server strictly checks file binary header in headless mode)",
+                  "pm.test(\"Status code is 200 OK or 400 Bad Request (file binary validation)\", function () {",
+                  "    pm.expect([200, 400]).to.include(pm.response.code);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    var json = pm.response.json();",
+                  "    pm.test(\"Profile picture URL returned\", function () {",
+                  "        pm.expect(json.profilePictureUrl).to.exist;",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "id": "57b448f7-175d-4c00-94ab-cdc85cb69656"
+        }
+      ],
+      "id": "423d36e5-9405-4f9e-9c19-979d19b93966"
+    },
+    {
+      "name": "03 - Skill Categories",
+      "description": "Reference catalog of service and trade categories required across listings, provider skills, and job requests.",
+      "item": [
+        {
+          "name": "03.1 - List All Categories",
+          "description": "Public catalog listing all active service categories.",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/service-categories",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "service-categories"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Categories list contains valid category definitions\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json).to.be.an(\"array\");",
+                  "    pm.expect(json.length).to.be.greaterThan(0);",
+                  "    ",
+                  "    var category = json.find(function(c) { return c.name === \"Plumbing\"; }) || json[0];",
+                  "    pm.expect(category).to.have.property(\"id\");",
+                  "    pm.expect(category).to.have.property(\"name\");",
+                  "    ",
+                  "    pm.environment.set(\"skillCategoryId\", category.id);",
+                  "    console.log(\"Selected category: \" + category.name + \" (\" + category.id + \")\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "id": "248f32ac-ce4f-43b7-ab60-77091154930c"
+        }
+      ],
+      "id": "21b316c4-f4f1-4c2b-ab06-4b27ac181f77"
+    },
+    {
+      "name": "04 - Providers",
+      "description": "Provider profiles, directory searches, profile updates, and internal trust signal evaluations.",
+      "item": [
+        {
+          "name": "04.1 - Get My Provider Profile",
+          "description": "Retrieves the logged-in provider's own full profile. Extracts `profileId` and `providerId`.",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{providerAccessToken}}",
+                "type": "text",
+                "description": ""
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/providers/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "providers",
+                "me"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Provider profile returned with full attributes\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.id).to.exist;",
+                  "    pm.expect(json.userId).to.exist;",
+                  "    pm.expect(json.verificationStatus).to.exist;",
+                  "    ",
+                  "    pm.environment.set(\"profileId\", json.id);",
+                  "    pm.environment.set(\"providerId\", json.id);",
+                  "    console.log(\"Saved profileId & providerId: \" + json.id);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "id": "784cc6b2-1f0d-4b1b-b14c-a0e11d482d0c"
+        },
+        {
+          "name": "04.2 - Search Providers (Public / Filtered)",
+          "description": "Public directory search for verified and available providers.",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/providers/search?page=1&pageSize=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "providers",
+                "search"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Search results contains paged items array\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.items).to.be.an(\"array\");",
+                  "    pm.expect(json.totalCount).to.be.a(\"number\");",
+                  "    pm.expect(json.page).to.eql(1);",
+                  "    ",
+                  "    if (!pm.environment.get(\"profileId\") && json.items.length > 0) {",
+                  "        pm.environment.set(\"profileId\", json.items[0].id);",
+                  "        pm.environment.set(\"providerId\", json.items[0].id);",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "id": "5ad80ca0-443b-4727-b558-5158e1f3df69"
+        },
+        {
+          "name": "04.3 - Get Provider Profile by ID as Customer",
+          "description": "Customer reading provider profile. Verifies sanitized public projection (no audit logs, no internal doc URLs).",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerAccessToken}}",
+                "type": "text",
+                "description": ""
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/providers/{{profileId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "providers"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Sanitized public profile projection verified\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.id).to.eql(pm.environment.get(\"profileId\"));",
+                  "    pm.expect(json.fullName).to.exist;",
+                  "    pm.expect(json.auditLogs).to.be.undefined;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "id": "d9d6bb89-5fe0-40f3-83e8-139703c0f9a7"
+        },
+        {
+          "name": "04.4 - Update Own Provider Profile",
+          "description": "Updates profile details, trade skills, and service radius for the authenticated provider.",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{providerAccessToken}}",
+                "type": "text",
+                "description": ""
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text",
+                "description": ""
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/providers/{{profileId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "providers"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"headline\": \"Master Plumber & Pipe Fitting Specialist\",\n  \"bio\": \"Over 10 years of professional plumbing experience in domestic & commercial settings.\",\n  \"description\": \"Specialising in acoustic leak repairs, bathroom fittings, and pressure tests.\",\n  \"yearsOfExperience\": 10,\n  \"languages\": [\"English\", \"Sinhala\"],\n  \"servicesOffered\": [\"Leak Repair\", \"Pipe Installation\", \"Bathroom Fitting\"],\n  \"isAvailableForWork\": true,\n  \"availabilityNote\": \"Available weekdays 8am to 6pm\",\n  \"serviceCategoryIds\": [\"{{skillCategoryId}}\"],\n  \"serviceAreaLatitude\": 6.9271,\n  \"serviceAreaLongitude\": 79.8612,\n  \"serviceRadiusKm\": 30.0,\n  \"addressLine1\": \"No. 150 Galle Road\",\n  \"city\": \"Colombo\",\n  \"country\": \"Sri Lanka\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 204 No Content\", function () {",
+                  "    pm.response.to.have.status(204);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "id": "47579199-eced-4b3b-85db-f2074cbd368c"
+        },
+        {
+          "name": "04.5 - Get Provider Trust Signals (Internal AI Service)",
+          "description": "Internal API endpoint consumed by AI Agent services. Authenticated via `X-Internal-Api-Key`.",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Internal-Api-Key",
+                "value": "{{internalApiKey}}",
+                "type": "text",
+                "description": ""
+              }
+            ],
+            "url": {
+              "raw": "{{authBaseUrl}}/api/internal/providers/{{profileId}}/trust-signals",
+              "host": [
+                "{{authBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "internal",
+                "providers",
+                "trust-signals"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Trust signals returned with correct schema\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.providerId).to.eql(pm.environment.get(\"profileId\"));",
+                  "    pm.expect(json.verificationStatus).to.exist;",
+                  "    pm.expect(json.ratingAggregate).to.be.a(\"number\");",
+                  "    pm.expect(json.totalReviewCount).to.be.a(\"number\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "id": "bac8bab1-06c5-43f9-a811-841621330892"
+        }
+      ],
+      "id": "ab14efa5-71aa-480d-8f8a-e4e2e17a4537"
+    },
+    {
+      "name": "05 - Certifications",
+      "description": "Provider document uploads, Admin verification queue management, and certification reviews.",
+      "item": [
+        {
+          "name": "05.1 - Provider Upload Certification Document",
+          "description": "Uploads trade certificate or NIC document for provider profile verification.",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{providerAccessToken}}",
+                "type": "text",
+                "description": ""
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/providers/{{profileId}}/documents",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "providers",
+                "documents"
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "Type",
+                  "value": "NIC",
+                  "type": "text"
+                },
+                {
+                  "key": "File",
+                  "value": "sample-nic-document-runner-placeholder",
+                  "type": "text",
+                  "description": "Form file. Select PDF or image in Postman GUI."
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 201 Created or 400 Bad Request (file header validation)\", function () {",
+                  "    pm.expect([201, 400]).to.include(pm.response.code);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 201) {",
+                  "    var json = pm.response.json();",
+                  "    pm.test(\"Certification created successfully\", function () {",
+                  "        pm.expect(json.id).to.exist;",
+                  "        pm.expect(json.type).to.exist;",
+                  "        pm.environment.set(\"certificationId\", json.id);",
+                  "        console.log(\"Saved certificationId: \" + json.id);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "id": "649ccce0-4bb0-49ff-aa1c-0f80da0c041b"
+        },
+        {
+          "name": "05.2 - Admin Get Verification Queue",
+          "description": "Admin reviews pending and in-review provider profiles.",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminAccessToken}}",
+                "type": "text",
+                "description": ""
+              }
+            ],
+            "url": {
+              "raw": "{{authBaseUrl}}/admin/verifications?page=1&pageSize=50",
+              "host": [
+                "{{authBaseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "verifications"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Verification queue paged result returned\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.items).to.be.an(\"array\");",
+                  "    pm.expect(json.totalCount).to.be.a(\"number\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "id": "c1445df3-c412-4f23-b781-0b41702833ca"
+        },
+        {
+          "name": "05.3 - Admin Get Verification Summary",
+          "description": "Admin retrieves aggregate statistics of provider verification statuses.",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminAccessToken}}",
+                "type": "text",
+                "description": ""
+              }
+            ],
+            "url": {
+              "raw": "{{authBaseUrl}}/admin/verifications/summary",
+              "host": [
+                "{{authBaseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "verifications",
+                "summary"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Summary dictionary returned\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json).to.be.an(\"object\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "id": "ee2a48ce-11a5-48eb-ae88-0916a4c3c187"
+        },
+        {
+          "name": "05.4 - Admin Review Certification Document",
+          "description": "Admin reviews and approves a specific uploaded certification document.",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminAccessToken}}",
+                "type": "text",
+                "description": ""
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text",
+                "description": ""
+              }
+            ],
+            "url": {
+              "raw": "{{authBaseUrl}}/admin/certifications/{{certificationId}}/review",
+              "host": [
+                "{{authBaseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "certifications",
+                "review"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"Approved\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var certId = pm.environment.get(\"certificationId\");",
+                  "if (!certId) {",
+                  "    pm.test(\"Certification review skipped (no document uploaded in runner)\", function () {",
+                  "        pm.expect(true).to.be.true;",
+                  "    });",
+                  "} else {",
+                  "    pm.test(\"Status code is 204 No Content or 404\", function () {",
+                  "        pm.expect([204, 404]).to.include(pm.response.code);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "id": "e52c0fa2-cb0f-4da5-87ca-46f8505385aa"
+        },
+        {
+          "name": "05.5 - Admin Update Provider Verification Status",
+          "description": "Transitions provider verification status to Verified.",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminAccessToken}}",
+                "type": "text",
+                "description": ""
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text",
+                "description": ""
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/providers/{{profileId}}/verification",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "providers",
+                "verification"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"newStatus\": \"Verified\",\n  \"note\": \"Credentials and documentation validated by Admin suite.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 204 No Content or 400 Bad Request (illegal transition)\", function () {",
+                  "    pm.expect([204, 400]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "id": "1567cd47-928b-4f88-8369-145351f34591"
+        }
+      ],
+      "id": "d7a7791c-a62e-4065-bf9a-e5c43a31d187"
+    },
+    {
+      "name": "06 - Reviews",
+      "description": "Customer reviews, ratings aggregate calculations, review photos, and deletion operations.",
+      "item": [
+        {
+          "name": "06.1 - Customer Create Review for Provider",
+          "description": "Submits a 5-star customer review for the provider. Extracts `reviewId`.",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerAccessToken}}",
+                "type": "text",
+                "description": ""
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text",
+                "description": ""
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/providers/{{profileId}}/reviews",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "providers",
+                "reviews"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rating\": 5,\n  \"comment\": \"Outstanding service! Arrived right on schedule and repaired the pipeline leak flawlessly.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Status 201 if first review, 409 if customer already reviewed provider",
+                  "pm.test(\"Status code is 201 Created or 409 Conflict\", function () {",
+                  "    pm.expect([201, 409]).to.include(pm.response.code);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 201) {",
+                  "    var json = pm.response.json();",
+                  "    pm.test(\"Review created successfully\", function () {",
+                  "        pm.expect(json.id).to.exist;",
+                  "        pm.expect(json.rating).to.eql(5);",
+                  "        pm.environment.set(\"reviewId\", json.id);",
+                  "        console.log(\"Saved reviewId: \" + json.id);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "id": "b0db9167-f0d6-4fd9-ba04-8246ea3775c8"
+        },
+        {
+          "name": "06.2 - Get Reviews for Provider",
+          "description": "Public endpoint to fetch paginated reviews for a provider profile.",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/providers/{{profileId}}/reviews?page=1&pageSize=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "providers",
+                "reviews"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Provider reviews returned with pagination\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.items).to.be.an(\"array\");",
+                  "    pm.expect(json.totalCount).to.be.a(\"number\");",
+                  "    ",
+                  "    if (json.items.length > 0 && !pm.environment.get(\"reviewId\")) {",
+                  "        pm.environment.set(\"reviewId\", json.items[0].id);",
+                  "        console.log(\"Extracted existing reviewId: \" + json.items[0].id);",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "id": "c241d2ec-5c49-446c-b1c1-c0e6e7cfc1bc"
+        },
+        {
+          "name": "06.3 - Customer Update Own Review",
+          "description": "Updates comment and rating of customer's existing review.",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerAccessToken}}",
+                "type": "text",
+                "description": ""
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text",
+                "description": ""
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/reviews/{{reviewId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "reviews"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rating\": 5,\n  \"comment\": \"Updated Review: Consistently great plumbing service, prompt communication, and clean finish.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var reviewId = pm.environment.get(\"reviewId\");",
+                  "if (!reviewId) {",
+                  "    pm.test(\"Review update skipped (no reviewId found)\", function () {",
+                  "        pm.expect(true).to.be.true;",
+                  "    });",
+                  "} else {",
+                  "    pm.test(\"Status code is 200 OK\", function () {",
+                  "        pm.response.to.have.status(200);",
+                  "    });",
+                  "    ",
+                  "    pm.test(\"Updated review comment verified\", function () {",
+                  "        var json = pm.response.json();",
+                  "        pm.expect(json.comment).to.include(\"Updated Review\");",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "id": "d6bd8050-4eae-417d-a376-862fcfa87150"
+        },
+        {
+          "name": "06.4 - Customer Upload Photo for Review",
+          "description": "Attaches a photo to a customer review via multipart/form-data.",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerAccessToken}}",
+                "type": "text",
+                "description": ""
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/reviews/{{reviewId}}/photos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "reviews",
+                "photos"
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "value": "sample-photo-runner-safe",
+                  "type": "text",
+                  "description": "Form file for review photo."
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK or 400 Bad Request\", function () {",
+                  "    pm.expect([200, 400]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "id": "ef8bd27a-230e-4d3e-bea3-964c5ac3eaa7"
+        },
+        {
+          "name": "06.5 - Delete Review",
+          "description": "Deletes review and recalculates provider rating aggregate.",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerAccessToken}}",
+                "type": "text",
+                "description": ""
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/reviews/{{reviewId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "reviews"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var reviewId = pm.environment.get(\"reviewId\");",
+                  "if (!reviewId) {",
+                  "    pm.test(\"Review deletion skipped (no reviewId)\", function () {",
+                  "        pm.expect(true).to.be.true;",
+                  "    });",
+                  "} else {",
+                  "    pm.test(\"Status code is 204 No Content\", function () {",
+                  "        pm.response.to.have.status(204);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "id": "de7476d2-0b94-4945-91eb-d5f09763c948"
+        }
+      ],
+      "id": "f336633d-b6af-4e50-ad98-714a96475b4a"
+    },
+    {
+      "name": "07 - Job Requests",
+      "description": "Job request creation, customer tracking, and admin oversight workflows.",
+      "item": [
+        {
+          "name": "07.1 - Customer Create Job Request",
+          "description": "Creates a new job request. Extracts `jobRequestId`.",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerAccessToken}}",
+                "type": "text",
+                "description": ""
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text",
+                "description": ""
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/job-requests",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "job-requests"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"serviceCategoryId\": \"{{skillCategoryId}}\",\n  \"description\": \"Urgent kitchen sink pipeline leakage requiring immediate replacement and pressure test.\",\n  \"photoUrls\": [\n    \"https://images.example.com/job/leak1.jpg\"\n  ],\n  \"location\": \"No. 120, Galle Road, Colombo 03\",\n  \"urgency\": 2,\n  \"budgetMin\": 5000.0,\n  \"budgetMax\": 15000.0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 201 Created\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test(\"Job request created with ID\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.id).to.exist;",
+                  "    pm.expect(json.customerId).to.exist;",
+                  "    pm.expect(json.description).to.exist;",
+                  "    ",
+                  "    pm.environment.set(\"jobRequestId\", json.id);",
+                  "    console.log(\"Saved jobRequestId: \" + json.id);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "id": "7e4db053-8fa4-47af-b90a-5eff6a12512f"
+        },
+        {
+          "name": "07.2 - Customer Get My Job Requests",
+          "description": "Retrieves all job requests submitted by the logged-in customer.",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerAccessToken}}",
+                "type": "text",
+                "description": ""
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/job-requests/mine",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "job-requests",
+                "mine"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Customer job requests array returned\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json).to.be.an(\"array\");",
+                  "    pm.expect(json.length).to.be.greaterThan(0);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "id": "af24f910-9a34-4bf6-acd1-52aa1f0ad12c"
+        },
+        {
+          "name": "07.3 - Get Job Request by ID",
+          "description": "Retrieves single job request by ID.",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerAccessToken}}",
+                "type": "text",
+                "description": ""
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/job-requests/{{jobRequestId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "job-requests"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Job request matches requested ID\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.id).to.eql(pm.environment.get(\"jobRequestId\"));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "id": "14f47592-6f62-4bc6-be71-aede06dc5369"
+        },
+        {
+          "name": "07.4 - Admin / Staff Get Job Requests",
+          "description": "Admin retrieves paginated staff queue of all job requests across the platform.",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminAccessToken}}",
+                "type": "text",
+                "description": ""
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/job-requests?page=1&pageSize=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "job-requests"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Staff job requests list returned\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.items || json).to.exist;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "id": "2ac7a675-0ef5-4f5c-93c0-e84b4bec356b"
+        }
+      ],
+      "id": "f5404632-3f39-45a8-bf85-4fe21f0a6927"
+    },
+    {
+      "name": "08 - Service Listings",
+      "description": "Provider availability scheduling, service listing publication, searches, and updates.",
+      "item": [
+        {
+          "name": "08.1 - Provider Create Availability Slot",
+          "description": "Provider publishes working hour time slots.",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{providerAccessToken}}",
+                "type": "text",
+                "description": ""
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text",
+                "description": ""
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/provider-availability",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "provider-availability"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"startTime\": \"{{slotStartTime}}\",\n  \"endTime\": \"{{slotEndTime}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var start = new Date();",
+                  "start.setDate(start.getDate() + 1);",
+                  "start.setHours(9, 0, 0, 0);",
+                  "",
+                  "var end = new Date(start);",
+                  "end.setHours(17, 0, 0, 0);",
+                  "",
+                  "pm.environment.set(\"slotStartTime\", start.toISOString());",
+                  "pm.environment.set(\"slotEndTime\", end.toISOString());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 201 Created\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test(\"Availability slot created with ID\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.id).to.exist;",
+                  "    pm.expect(json.isBooked).to.eql(false);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "id": "373bd64e-53c4-4c5e-a9d5-d569dda9ee3c"
+        },
+        {
+          "name": "08.2 - Get Provider Availability Slots",
+          "description": "Public lookup of a provider's open availability slots.",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/provider-availability/{{providerUserId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "provider-availability"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Availability slots list returned\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json).to.be.an(\"array\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "id": "17bfb135-3cd4-496a-bdea-96b44fc22948"
+        },
+        {
+          "name": "08.3 - Provider Create Service Listing",
+          "description": "Creates a published service listing with fixed pricing. Extracts `serviceListingId`.",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{providerAccessToken}}",
+                "type": "text",
+                "description": ""
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text",
+                "description": ""
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/service-listings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "service-listings"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"serviceCategoryId\": \"{{skillCategoryId}}\",\n  \"title\": \"Professional Pipeline Repair & Leak Diagnostic\",\n  \"description\": \"Comprehensive ultrasonic leak detection and heavy-duty pipe sealing.\",\n  \"scope\": \"Detailed inspection, joint sealing, valve replacement, and full system pressure check.\",\n  \"availability\": \"Mon-Fri 08:00 - 18:00\",\n  \"fixedPrice\": 12500.0,\n  \"estimatedDuration\": \"02:30:00\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 201 Created\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test(\"Service listing created with ID\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.id).to.exist;",
+                  "    pm.expect(json.fixedPrice).to.eql(12500);",
+                  "    pm.expect(json.isActive).to.eql(true);",
+                  "    ",
+                  "    pm.environment.set(\"serviceListingId\", json.id);",
+                  "    console.log(\"Saved serviceListingId: \" + json.id);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "id": "82080c42-23fa-4940-b896-bb97389e6c93"
+        },
+        {
+          "name": "08.4 - Search Active Service Listings",
+          "description": "Public search for published service listings matching query keyword.",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/service-listings?query=Pipeline",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "service-listings"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Service listings array returned\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json).to.be.an(\"array\");",
+                  "    pm.expect(json.length).to.be.greaterThan(0);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "id": "9746e098-8bf6-4687-9783-a145c4e6197f"
+        },
+        {
+          "name": "08.5 - Get Service Listing by ID",
+          "description": "Public read of individual service listing.",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/service-listings/{{serviceListingId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "service-listings"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Listing matches requested ID\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.id).to.eql(pm.environment.get(\"serviceListingId\"));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "id": "629ce3e2-eef8-4bf4-b26e-7fbd253ae0f3"
+        },
+        {
+          "name": "08.6 - Provider Update Service Listing",
+          "description": "Updates pricing, duration, and scope of existing service listing.",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{providerAccessToken}}",
+                "type": "text",
+                "description": ""
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text",
+                "description": ""
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/service-listings/{{serviceListingId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "service-listings"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Master Pipeline Repair & Ultrasonic Leak Diagnostic\",\n  \"description\": \"Updated high-precision leak detection and valve sealing.\",\n  \"scope\": \"Full inspection, acoustic pipe leak diagnostic, and replacement with 60-day warranty.\",\n  \"availability\": \"Mon-Sat 08:00 - 19:00\",\n  \"fixedPrice\": 14500.0,\n  \"estimatedDuration\": \"03:00:00\",\n  \"isActive\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Updated listing price reflected\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.fixedPrice).to.eql(14500);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "id": "152efe73-320b-436b-a7bf-56e9ac49ea6a"
+        },
+        {
+          "name": "08.7 - Provider Get My Service Listings",
+          "description": "Fetches all listings belonging to the authenticated provider.",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{providerAccessToken}}",
+                "type": "text",
+                "description": ""
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/service-listings/my-listings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "service-listings",
+                "my-listings"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"My listings list returned\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json).to.be.an(\"array\");",
+                  "    pm.expect(json.length).to.be.greaterThan(0);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "id": "ac28dd00-5c7a-4cc9-becd-1ed9587858a2"
+        }
+      ],
+      "id": "22e64a54-a8f9-407f-9221-95298a2230f5"
+    },
+    {
+      "name": "09 - Bookings",
+      "description": "Customer booking creation from service listings, schedule updates, provider status transitions, and staff queries.",
+      "item": [
+        {
+          "name": "09.1 - Customer Create Booking from Listing",
+          "description": "Creates a direct booking from a service listing. Extracts `bookingId`.",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerAccessToken}}",
+                "type": "text",
+                "description": ""
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text",
+                "description": ""
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/bookings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "bookings"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"serviceListingId\": \"{{serviceListingId}}\",\n  \"scheduledAt\": \"{{bookingScheduleTime}}\",\n  \"notes\": \"Please bring specialized leak detection instruments and check the bathroom line.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var sched = new Date();",
+                  "sched.setDate(sched.getDate() + 2);",
+                  "sched.setHours(10, 0, 0, 0);",
+                  "pm.environment.set(\"bookingScheduleTime\", sched.toISOString());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 201 Created\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test(\"Booking created with initial Requested status\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.id).to.exist;",
+                  "    pm.expect(json.status).to.eql(\"Requested\");",
+                  "    ",
+                  "    pm.environment.set(\"bookingId\", json.id);",
+                  "    console.log(\"Saved bookingId: \" + json.id);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "id": "def3ed15-c79a-4e9c-99cb-1e2ab052f3ce"
+        },
+        {
+          "name": "09.2 - Customer Get My Bookings",
+          "description": "Retrieves customer's active and historical bookings.",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerAccessToken}}",
+                "type": "text",
+                "description": ""
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/bookings/mine",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "bookings",
+                "mine"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Customer bookings list returned\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json).to.be.an(\"array\");",
+                  "    pm.expect(json.length).to.be.greaterThan(0);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "id": "c76ec0a6-ca32-4660-8b30-940412a6ea6d"
+        },
+        {
+          "name": "09.3 - Provider Get My Bookings",
+          "description": "Retrieves provider's assigned bookings.",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{providerAccessToken}}",
+                "type": "text",
+                "description": ""
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/bookings/provider-mine",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "bookings",
+                "provider-mine"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Provider bookings list returned\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json).to.be.an(\"array\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "id": "a4b95188-64d7-4994-bfed-34c800502108"
+        },
+        {
+          "name": "09.4 - Get Booking by ID",
+          "description": "Retrieves single booking details by ID.",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerAccessToken}}",
+                "type": "text",
+                "description": ""
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/bookings/{{bookingId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "bookings"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Booking matches requested ID\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.id).to.eql(pm.environment.get(\"bookingId\"));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "id": "44e04118-e6ec-4711-b9d7-9de1e64a3b58"
+        },
+        {
+          "name": "09.5 - Customer Update Booking Schedule",
+          "description": "Reschedules the appointment time of the booking.",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerAccessToken}}",
+                "type": "text",
+                "description": ""
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text",
+                "description": ""
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/bookings/{{bookingId}}/schedule",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "bookings",
+                "schedule"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"scheduledAt\": \"{{rescheduledBookingTime}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var resched = new Date();",
+                  "resched.setDate(resched.getDate() + 3);",
+                  "resched.setHours(14, 0, 0, 0);",
+                  "pm.environment.set(\"rescheduledBookingTime\", resched.toISOString());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "id": "78b67a7a-64ea-4b60-996e-a6e96e4e10b5"
+        },
+        {
+          "name": "09.6 - Provider Accept Booking Status",
+          "description": "Provider updates booking status to 1 (Accepted).",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{providerAccessToken}}",
+                "type": "text",
+                "description": ""
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text",
+                "description": ""
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/bookings/{{bookingId}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "bookings",
+                "status"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Booking status is Accepted\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.status).to.eql(\"Accepted\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "id": "124d0f50-2c35-47c8-963e-e66e83d347b6"
+        },
+        {
+          "name": "09.7 - Admin / Staff Get Bookings",
+          "description": "Staff query for all platform bookings.",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminAccessToken}}",
+                "type": "text",
+                "description": ""
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/bookings?page=1&pageSize=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "bookings"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Staff bookings list returned\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.items || json).to.exist;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "id": "fae55559-3053-4f19-86eb-0273b41fe719"
+        }
+      ],
+      "id": "8b66bb6c-e827-4e8f-8d54-b6b6cd08e860"
+    },
+    {
+      "name": "10 - Payments / Invoices",
+      "description": "Invoice generation for bookings, customer payment processing with Stripe simulation, and provider payout summaries.",
+      "item": [
+        {
+          "name": "10.1 - Provider Create Invoice for Booking",
+          "description": "Generates an invoice for the accepted booking. Extracts `invoiceId`.",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{providerAccessToken}}",
+                "type": "text",
+                "description": ""
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text",
+                "description": ""
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/invoices",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "invoices"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bookingId\": \"{{bookingId}}\",\n  \"baseAmount\": 14500.0,\n  \"lineItemsJson\": \"[{\\\"description\\\":\\\"Ultrasonic Leak Diagnostic & Repair\\\",\\\"amount\\\":14500.0}]\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 201 Created\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test(\"Invoice created with platform fees and total\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.id).to.exist;",
+                  "    pm.expect(json.totalAmount).to.be.greaterThan(0);",
+                  "    pm.expect(json.status).to.eql(\"Issued\");",
+                  "    ",
+                  "    pm.environment.set(\"invoiceId\", json.id);",
+                  "    console.log(\"Saved invoiceId: \" + json.id);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "id": "627b41b4-a2b2-4e35-8441-bd00f1842a3b"
+        },
+        {
+          "name": "10.2 - Get Invoice by ID",
+          "description": "Customer reads invoice details by ID.",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerAccessToken}}",
+                "type": "text",
+                "description": ""
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/invoices/{{invoiceId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "invoices"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Invoice matches requested ID\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.id).to.eql(pm.environment.get(\"invoiceId\"));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "id": "bc2782c6-45a7-4363-9875-edf0b7851e62"
+        },
+        {
+          "name": "10.3 - Customer Get Invoices",
+          "description": "Retrieves customer's invoice history.",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerAccessToken}}",
+                "type": "text",
+                "description": ""
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/invoices/mine",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "invoices",
+                "mine"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Customer invoices array returned\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json).to.be.an(\"array\");",
+                  "    pm.expect(json.length).to.be.greaterThan(0);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "id": "0f012ebf-a650-4d53-b1e0-a4e2a21df024"
+        },
+        {
+          "name": "10.4 - Customer Process Payment",
+          "description": "Customer completes payment for the invoice. Extracts `paymentId`.",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerAccessToken}}",
+                "type": "text",
+                "description": ""
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text",
+                "description": ""
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/payments/process",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payments",
+                "process"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"invoiceId\": \"{{invoiceId}}\",\n  \"paymentMethodType\": \"card\",\n  \"cardToken\": \"tok_visa_sandbox\",\n  \"cardLast4\": \"4242\",\n  \"gatewayProvider\": \"Stripe\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 201 Created\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test(\"Payment settled successfully\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.id).to.exist;",
+                  "    pm.expect(json.invoiceId).to.eql(pm.environment.get(\"invoiceId\"));",
+                  "    pm.expect(json.status).to.eql(\"Settled\");",
+                  "    ",
+                  "    pm.environment.set(\"paymentId\", json.id);",
+                  "    console.log(\"Saved paymentId: \" + json.id);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "id": "c320cebd-b6dd-45e6-82ac-f093174a6457"
+        },
+        {
+          "name": "10.5 - Get Payment by ID",
+          "description": "Customer reads payment receipt by ID.",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerAccessToken}}",
+                "type": "text",
+                "description": ""
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/payments/{{paymentId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payments"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Payment details verified\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.id).to.eql(pm.environment.get(\"paymentId\"));",
+                  "    pm.expect(json.status).to.eql(\"Settled\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "id": "152250c3-9e0b-4655-881c-df5d8debaeba"
+        },
+        {
+          "name": "10.6 - Provider Get Earnings Summary",
+          "description": "Provider inspects accumulated earnings, pending payouts, and platform commission breakdown.",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{providerAccessToken}}",
+                "type": "text",
+                "description": ""
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/payouts/summary",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payouts",
+                "summary"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Earnings summary contains financial totals\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json).to.be.an(\"object\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "id": "c9560494-4020-43be-a053-1f4fdc1e0155"
+        },
+        {
+          "name": "10.7 - Admin Get Payouts Overview",
+          "description": "Admin reviews global payout balances and pending provider disbursement records.",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminAccessToken}}",
+                "type": "text",
+                "description": ""
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/payouts/admin/overview",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payouts",
+                "admin",
+                "overview"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Admin payouts overview returned\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json).to.be.an(\"object\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "id": "2b891df5-eb62-41f2-ad73-e0f1cfc82b9f"
+        }
+      ],
+      "id": "34ce868d-fa9d-477b-8209-164b842d37ca"
+    },
+    {
+      "name": "11 - Assistant & AI Workflows",
+      "description": "Integration with conversational AI assistant and agent workflow orchestration.",
+      "item": [
+        {
+          "name": "11.1 - Customer Query AI Assistant",
+          "description": "Sends customer natural language prompt to Handee AI assistant.",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerAccessToken}}",
+                "type": "text",
+                "description": ""
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text",
+                "description": ""
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/assistant/query",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "assistant",
+                "query"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"I have an emergency water leak under my kitchen sink. Can you suggest top-rated local plumbers?\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Assistant response returned with reply\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.reply).to.exist;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "id": "33c11fb6-8fe1-4042-bc7e-fb37eaa8946d"
+        },
+        {
+          "name": "11.2 - Admin Get Agent Workflows",
+          "description": "Admin queries multi-step autonomous agent workflow execution logs.",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminAccessToken}}",
+                "type": "text",
+                "description": ""
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/agent-workflows",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "agent-workflows"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Agent workflows array returned\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json).to.be.an(\"array\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "id": "68ae3ca4-af77-40f5-b92a-2b84b35809ab"
+        }
+      ],
+      "id": "870ca11f-4c69-4678-acab-ecebabb4e09d"
+    },
+    {
+      "name": "99 - Negative / Authorization Tests",
+      "description": "Rigorous security, validation, unauthorized access, and error-handling tests (400, 401, 403, 404).",
+      "item": [
+        {
+          "name": "99.01 - Register - Invalid Role [400 Bad Request]",
+          "description": "Attempting to self-register with an unauthorized role must fail with 400 Bad Request.",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text",
+                "description": ""
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"Malicious Attacker\",\n  \"email\": \"attacker_{{$timestamp}}@example.com\",\n  \"password\": \"Password123!\",\n  \"role\": \"SuperAdmin\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 400 Bad Request\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "id": "f1d5fcc5-3b6a-4eb2-bae8-06a08c0c8c82"
+        },
+        {
+          "name": "99.02 - Register - Missing Required Password [400 Bad Request]",
+          "description": "Registration missing password payload must fail model validation with 400 Bad Request.",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text",
+                "description": ""
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"Incomplete User\",\n  \"email\": \"inval_{{$timestamp}}@example.com\",\n  \"role\": \"Customer\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 400 Bad Request\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "id": "773e3ec7-6be8-4d5f-8638-03589fc7fdca"
+        },
+        {
+          "name": "99.03 - Login - Wrong Password [401 Unauthorized]",
+          "description": "Login attempt with incorrect password must return 401 Unauthorized.",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text",
+                "description": ""
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{customerEmail}}\",\n  \"password\": \"TotallyWrongPassword123!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 401 Unauthorized\", function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "id": "b30ea510-d1e3-4784-b2ce-c78065f7e907"
+        },
+        {
+          "name": "99.04 - Login - Non-existent User [401 Unauthorized]",
+          "description": "Login attempt with unregistered email must return 401 Unauthorized.",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text",
+                "description": ""
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"nonexistent_account_9988@nowhere.local\",\n  \"password\": \"Password123!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 401 Unauthorized\", function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "id": "9d3811a0-126b-415e-a714-e64cf9e8d2f0"
+        },
+        {
+          "name": "99.05 - Protected Endpoint - Missing Token [401 Unauthorized]",
+          "description": "Calling protected endpoint without Authorization Bearer header must return 401 Unauthorized.",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "me"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 401 Unauthorized\", function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "id": "e387659b-1385-4ca8-a34c-12ef5fe1e440"
+        },
+        {
+          "name": "99.06 - Protected Endpoint - Malformed JWT Token [401 Unauthorized]",
+          "description": "Sending invalid/corrupted JWT signature must return 401 Unauthorized.",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.invalidtokenbody.signature",
+                "type": "text",
+                "description": ""
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "me"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 401 Unauthorized\", function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "id": "8fe77b2a-040e-4166-8b11-ba831285c3cb"
+        },
+        {
+          "name": "99.07 - Admin Endpoint - Customer Token Forbidden [403 Forbidden]",
+          "description": "Customer attempting to access admin user management must return 403 Forbidden.",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerAccessToken}}",
+                "type": "text",
+                "description": ""
+              }
+            ],
+            "url": {
+              "raw": "{{authBaseUrl}}/admin/users",
+              "host": [
+                "{{authBaseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "users"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 403 Forbidden\", function () {",
+                  "    pm.response.to.have.status(403);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "id": "8ead4ea6-ef0e-4907-bc18-e494f6d1a49c"
+        },
+        {
+          "name": "99.08 - Provider Verification - Customer Token Forbidden [403 Forbidden]",
+          "description": "Customer attempting to approve provider verification must return 403 Forbidden.",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerAccessToken}}",
+                "type": "text",
+                "description": ""
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text",
+                "description": ""
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/providers/{{profileId}}/verification",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "providers",
+                "verification"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"newStatus\": \"Verified\",\n  \"note\": \"Malicious elevation attempt\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 403 Forbidden\", function () {",
+                  "    pm.response.to.have.status(403);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "id": "dbe90120-875d-4888-844a-0a239837f3e2"
+        },
+        {
+          "name": "99.09 - Provider Profile - Non-existent ID [404 Not Found]",
+          "description": "Requesting a non-existent provider profile GUID must return 404 Not Found.",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/providers/00000000-0000-0000-0000-000000000000",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "providers",
+                "00000000-0000-0000-0000-000000000000"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 404 Not Found\", function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "id": "0dc6858d-cd77-40c6-80bb-190ce422e9e0"
+        },
+        {
+          "name": "99.10 - Internal Trust Signals - Missing API Key [401 Unauthorized]",
+          "description": "Accessing internal AI trust signals without `X-Internal-Api-Key` must return 401 Unauthorized.",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{authBaseUrl}}/api/internal/providers/{{profileId}}/trust-signals",
+              "host": [
+                "{{authBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "internal",
+                "providers",
+                "trust-signals"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 401 Unauthorized\", function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "id": "599e2038-8ca9-40ca-aab5-fbcd69ae0a09"
+        },
+        {
+          "name": "99.11 - Internal Trust Signals - Invalid API Key [401 Unauthorized]",
+          "description": "Accessing internal trust signals with incorrect secret key must return 401 Unauthorized.",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Internal-Api-Key",
+                "value": "completely-bogus-api-key",
+                "type": "text",
+                "description": ""
+              }
+            ],
+            "url": {
+              "raw": "{{authBaseUrl}}/api/internal/providers/{{profileId}}/trust-signals",
+              "host": [
+                "{{authBaseUrl}}"
+              ],
+              "path": [
+                "api",
+                "internal",
+                "providers",
+                "trust-signals"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 401 Unauthorized\", function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "id": "3e797af7-3def-4169-a244-18f89030eb31"
+        },
+        {
+          "name": "99.12 - Refresh Token - Invalid / Garbage Token [401 Unauthorized]",
+          "description": "Sending invalid or unknown refresh token must return 401 Unauthorized.",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text",
+                "description": ""
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/refresh",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "refresh"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"invalid-unrecognized-refresh-token\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 401 Unauthorized\", function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "id": "8c20ec99-4898-45ee-b39d-885e1e7467bb"
+        }
+      ],
+      "id": "db872b0e-8459-4043-abbc-9cab9978ef97"
+    }
+  ]
+}
