@@ -218,3 +218,49 @@ class PriceEstimationOutput(BaseModel):
     is_budget_constrained: bool = False
     confidence_score: float = 0.95
 
+
+class PaymentHandoffPayload(BaseModel):
+    job_id: str
+    booking_id: Optional[str] = None
+    provider_id: Optional[str] = None
+    customer_id: Optional[str] = None
+    total_amount: float
+    service_labor: float
+    platform_fee: float
+    urgency_surcharge: float = 0.0
+    currency: str = "LKR"
+    risk_tier: ValidationRiskTier
+    approval_status: str
+    invoice_generation_triggered: bool = True
+    payment_gateway_action: str = "escrow_hold"
+    line_items: List[Dict[str, Any]] = Field(default_factory=list)
+
+
+class PricingAgentInput(BaseModel):
+    job_id: str = Field(..., description="Unique job or booking identifier")
+    category: str = Field(..., description="Service trade category")
+    scope: Dict[str, Any] = Field(default_factory=dict, description="Job scope & complexity estimation")
+    urgency: str = Field(default="normal", description="Urgency level")
+    budget_min: Optional[float] = Field(None, description="Customer minimum budget")
+    budget_max: Optional[float] = Field(None, description="Customer maximum budget")
+    provider_id: Optional[str] = Field(None, description="Assigned or candidate provider ID")
+    customer_id: Optional[str] = Field(None, description="Requesting customer ID")
+
+
+class PricingAgentResult(BaseModel):
+    agent_name: str = "PricingAndInvoicingAgent"
+    job_id: str
+    category: str
+    estimated_price: float
+    currency: str = "LKR"
+    breakdown: PriceBreakdown
+    risk_tier: ValidationRiskTier
+    approval_status: str
+    is_budget_constrained: bool = False
+    confidence_score: float = 0.95
+    validation_rules: List[ValidationRuleCheck] = Field(default_factory=list)
+    payment_handoff: PaymentHandoffPayload
+    step_logs: List[Dict[str, Any]] = Field(default_factory=list)
+    reasoning_summary: str
+
+
