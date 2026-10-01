@@ -14,6 +14,19 @@ import {
   SlidersHorizontal,
 } from "lucide-react";
 import { agentWorkflowApi, type AgentWorkflowDto } from "../../api/agentWorkflow";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 export default function AgentWorkflow() {
   const [workflows, setWorkflows] = useState<AgentWorkflowDto[]>([]);
@@ -105,15 +118,15 @@ export default function AgentWorkflow() {
     const s = status.toLowerCase();
     switch (s) {
       case "pending":
-        return <Clock size={16} style={{ color: "#eab308" }} />;
+        return <Clock className="h-4 w-4 text-amber-500" />;
       case "approved":
-        return <CheckCircle size={16} style={{ color: "#22c55e" }} />;
+        return <CheckCircle className="h-4 w-4 text-emerald-500" />;
       case "rejected":
-        return <XCircle size={16} style={{ color: "#ef4444" }} />;
+        return <XCircle className="h-4 w-4 text-destructive" />;
       case "revised":
-        return <RefreshCw size={16} style={{ color: "#3b82f6" }} />;
+        return <RefreshCw className="h-4 w-4 text-blue-500" />;
       default:
-        return <Activity size={16} />;
+        return <Activity className="h-4 w-4" />;
     }
   };
 
@@ -121,58 +134,31 @@ export default function AgentWorkflow() {
     const t = tier.toLowerCase();
     if (t === "approved_for_auto_dispatch") {
       return (
-        <span
-          style={{
-            padding: "0.25rem 0.75rem",
-            borderRadius: "999px",
-            fontSize: "0.82rem",
-            fontWeight: 600,
-            backgroundColor: "rgba(34, 197, 94, 0.12)",
-            color: "#22c55e",
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "0.35rem",
-          }}
+        <Badge
+          variant="outline"
+          className="border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 gap-1 font-medium"
         >
-          <CheckCircle size={13} /> Auto-Dispatch
-        </span>
+          <CheckCircle className="h-3 w-3" /> Auto-Dispatch
+        </Badge>
       );
     }
     if (t === "approved_with_audit") {
       return (
-        <span
-          style={{
-            padding: "0.25rem 0.75rem",
-            borderRadius: "999px",
-            fontSize: "0.82rem",
-            fontWeight: 600,
-            backgroundColor: "rgba(59, 130, 246, 0.12)",
-            color: "#3b82f6",
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "0.35rem",
-          }}
+        <Badge
+          variant="outline"
+          className="border-blue-500/30 bg-blue-500/10 text-blue-600 dark:text-blue-400 gap-1 font-medium"
         >
-          <AlertCircle size={13} /> Audit Required
-        </span>
+          <AlertCircle className="h-3 w-3" /> Audit Required
+        </Badge>
       );
     }
     return (
-      <span
-        style={{
-          padding: "0.25rem 0.75rem",
-          borderRadius: "999px",
-          fontSize: "0.82rem",
-          fontWeight: 600,
-          backgroundColor: "rgba(239, 68, 68, 0.12)",
-          color: "#ef4444",
-          display: "inline-flex",
-          alignItems: "center",
-          gap: "0.35rem",
-        }}
+      <Badge
+        variant="outline"
+        className="border-destructive/30 bg-destructive/10 text-destructive gap-1 font-medium"
       >
-        <Shield size={13} /> Human Approval
-      </span>
+        <Shield className="h-3 w-3" /> Human Approval
+      </Badge>
     );
   };
 
@@ -187,596 +173,302 @@ export default function AgentWorkflow() {
   };
 
   return (
-    <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "1.5rem" }}>
+    <div className="max-w-7xl mx-auto p-6 space-y-6">
       {/* Header */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "flex-start",
-          marginBottom: "2rem",
-        }}
-      >
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1
-            style={{ fontFamily: "var(--heading)", fontSize: "1.875rem", marginBottom: "0.5rem" }}
-          >
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">
             Agent Monitoring & HITL Governance
           </h1>
-          <p style={{ color: "var(--text)", maxWidth: "800px", lineHeight: 1.6 }}>
+          <p className="text-muted-foreground max-w-3xl mt-1 text-sm leading-relaxed">
             Supervise the four-agent dispatch pipeline. Matches flagged as high risk require manual
             administrator review before job dispatch under the Human-in-the-Loop policy.
           </p>
         </div>
-        <button
-          onClick={fetchWorkflows}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "0.5rem",
-            padding: "0.6rem 1.1rem",
-            backgroundColor: "var(--bg)",
-            border: "1px solid var(--border)",
-            borderRadius: "8px",
-            cursor: "pointer",
-            fontWeight: 500,
-            color: "var(--text-h)",
-          }}
-        >
-          <RefreshCw size={15} className={loading ? "animate-spin" : ""} />
+        <Button variant="outline" onClick={fetchWorkflows} className="gap-2 shrink-0">
+          <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
           Refresh
-        </button>
+        </Button>
       </div>
 
       {/* KPI Cards */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-          gap: "1rem",
-          marginBottom: "2rem",
-        }}
-      >
-        <div
-          style={{
-            backgroundColor: "var(--bg)",
-            padding: "1.25rem",
-            borderRadius: "10px",
-            border: "1px solid var(--border)",
-          }}
-        >
-          <div style={{ fontSize: "0.85rem", color: "var(--text)", marginBottom: "0.25rem" }}>
-            Total Runs
-          </div>
-          <div style={{ fontSize: "1.75rem", fontWeight: 700, color: "var(--text-h)" }}>
-            {totalCount}
-          </div>
-        </div>
-        <div
-          style={{
-            backgroundColor: "var(--bg)",
-            padding: "1.25rem",
-            borderRadius: "10px",
-            border: "1px solid var(--border)",
-          }}
-        >
-          <div style={{ fontSize: "0.85rem", color: "var(--text)", marginBottom: "0.25rem" }}>
-            Requires Human Approval
-          </div>
-          <div
-            style={{
-              fontSize: "1.75rem",
-              fontWeight: 700,
-              color: pendingCount > 0 ? "#ef4444" : "var(--text-h)",
-            }}
-          >
-            {pendingCount}
-          </div>
-        </div>
-        <div
-          style={{
-            backgroundColor: "var(--bg)",
-            padding: "1.25rem",
-            borderRadius: "10px",
-            border: "1px solid var(--border)",
-          }}
-        >
-          <div style={{ fontSize: "0.85rem", color: "var(--text)", marginBottom: "0.25rem" }}>
-            Approved With Audit
-          </div>
-          <div style={{ fontSize: "1.75rem", fontWeight: 700, color: "#3b82f6" }}>{auditCount}</div>
-        </div>
-        <div
-          style={{
-            backgroundColor: "var(--bg)",
-            padding: "1.25rem",
-            borderRadius: "10px",
-            border: "1px solid var(--border)",
-          }}
-        >
-          <div style={{ fontSize: "0.85rem", color: "var(--text)", marginBottom: "0.25rem" }}>
-            Auto-Dispatched
-          </div>
-          <div style={{ fontSize: "1.75rem", fontWeight: 700, color: "#22c55e" }}>
-            {autoDispatchCount}
-          </div>
-        </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card>
+          <CardHeader className="p-4 pb-2">
+            <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+              Total Runs
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-4 pt-0">
+            <div className="text-3xl font-bold text-foreground">{totalCount}</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="p-4 pb-2">
+            <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+              Requires Human Approval
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-4 pt-0">
+            <div
+              className={`text-3xl font-bold ${pendingCount > 0 ? "text-destructive" : "text-foreground"}`}
+            >
+              {pendingCount}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="p-4 pb-2">
+            <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+              Approved With Audit
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-4 pt-0">
+            <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">{auditCount}</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="p-4 pb-2">
+            <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+              Auto-Dispatched
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-4 pt-0">
+            <div className="text-3xl font-bold text-emerald-600 dark:text-emerald-400">
+              {autoDispatchCount}
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Filter Tabs */}
-      <div
-        style={{
-          display: "flex",
-          gap: "0.5rem",
-          marginBottom: "1.5rem",
-          flexWrap: "wrap",
-          alignItems: "center",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "0.5rem",
-            marginRight: "1rem",
-            color: "var(--text)",
-          }}
-        >
-          <SlidersHorizontal size={16} /> Filter Tier:
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground mr-1 font-medium">
+            <SlidersHorizontal className="h-3.5 w-3.5" /> Filter Tier:
+          </div>
+          {[
+            { key: "all", label: "All Tiers" },
+            { key: "requires_human_approval", label: "Requires Approval" },
+            { key: "approved_with_audit", label: "Audit Required" },
+            { key: "approved_for_auto_dispatch", label: "Auto-Dispatch" },
+          ].map((tab) => (
+            <Button
+              key={tab.key}
+              variant={selectedTier === tab.key ? "default" : "outline"}
+              size="sm"
+              onClick={() => setSelectedTier(tab.key)}
+              className="text-xs"
+            >
+              {tab.label}
+            </Button>
+          ))}
         </div>
-        {[
-          { key: "all", label: "All Tiers" },
-          { key: "requires_human_approval", label: "Requires Approval" },
-          { key: "approved_with_audit", label: "Audit Required" },
-          { key: "approved_for_auto_dispatch", label: "Auto-Dispatch" },
-        ].map((tab) => (
-          <button
-            key={tab.key}
-            onClick={() => setSelectedTier(tab.key)}
-            style={{
-              padding: "0.45rem 0.9rem",
-              borderRadius: "6px",
-              border: "1px solid var(--border)",
-              backgroundColor: selectedTier === tab.key ? "var(--text-h)" : "var(--bg)",
-              color: selectedTier === tab.key ? "var(--bg)" : "var(--text)",
-              cursor: "pointer",
-              fontSize: "0.875rem",
-              fontWeight: 500,
-            }}
-          >
-            {tab.label}
-          </button>
-        ))}
 
-        <div style={{ marginLeft: "auto", display: "flex", gap: "0.5rem" }}>
+        <div className="flex items-center gap-2">
           {[
             { key: "all", label: "All Status" },
             { key: "pending", label: "Pending" },
             { key: "approved", label: "Approved" },
           ].map((st) => (
-            <button
+            <Button
               key={st.key}
+              variant={selectedStatus === st.key ? "default" : "outline"}
+              size="sm"
               onClick={() => setSelectedStatus(st.key)}
-              style={{
-                padding: "0.45rem 0.9rem",
-                borderRadius: "6px",
-                border: "1px solid var(--border)",
-                backgroundColor: selectedStatus === st.key ? "var(--text-h)" : "var(--bg)",
-                color: selectedStatus === st.key ? "var(--bg)" : "var(--text)",
-                cursor: "pointer",
-                fontSize: "0.875rem",
-                fontWeight: 500,
-              }}
+              className="text-xs"
             >
               {st.label}
-            </button>
+            </Button>
           ))}
         </div>
       </div>
 
       {/* Workflows Table */}
-      <div
-        style={{
-          backgroundColor: "var(--bg)",
-          borderRadius: "12px",
-          border: "1px solid var(--border)",
-          overflow: "hidden",
-        }}
-      >
+      <Card className="overflow-hidden">
         {loading ? (
-          <div style={{ padding: "3rem", textAlign: "center", color: "var(--text)" }}>
-            <RefreshCw size={24} className="animate-spin" style={{ margin: "0 auto 1rem" }} />
+          <div className="p-12 text-center text-muted-foreground">
+            <RefreshCw className="h-6 w-6 animate-spin mx-auto mb-3" />
             Loading agent workflows...
           </div>
         ) : error ? (
-          <div style={{ padding: "3rem", textAlign: "center", color: "#ef4444" }}>
-            <AlertCircle size={24} style={{ margin: "0 auto 1rem" }} />
+          <div className="p-12 text-center text-destructive">
+            <AlertCircle className="h-6 w-6 mx-auto mb-3" />
             {error}
           </div>
         ) : workflows.length === 0 ? (
-          <div style={{ padding: "3rem", textAlign: "center", color: "var(--text)" }}>
+          <div className="p-12 text-center text-muted-foreground">
             No agent workflows match the selected criteria.
           </div>
         ) : (
-          <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
-            <thead>
-              <tr
-                style={{
-                  borderBottom: "1px solid var(--border)",
-                  backgroundColor: "var(--social-bg)",
-                }}
-              >
-                <th style={{ padding: "1rem 1.25rem", fontWeight: 600, color: "var(--text-h)" }}>
-                  Job / Workflow
-                </th>
-                <th style={{ padding: "1rem 1.25rem", fontWeight: 600, color: "var(--text-h)" }}>
-                  Objective
-                </th>
-                <th style={{ padding: "1rem 1.25rem", fontWeight: 600, color: "var(--text-h)" }}>
-                  Candidate Provider
-                </th>
-                <th style={{ padding: "1rem 1.25rem", fontWeight: 600, color: "var(--text-h)" }}>
-                  Quote
-                </th>
-                <th style={{ padding: "1rem 1.25rem", fontWeight: 600, color: "var(--text-h)" }}>
-                  Risk Tier
-                </th>
-                <th style={{ padding: "1rem 1.25rem", fontWeight: 600, color: "var(--text-h)" }}>
-                  Approval
-                </th>
-                <th style={{ padding: "1rem 1.25rem", fontWeight: 600, color: "var(--text-h)" }}>
-                  Action
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {workflows.map((wf) => (
-                <tr key={wf.id} style={{ borderBottom: "1px solid var(--border)" }}>
-                  <td style={{ padding: "1.25rem", fontWeight: 500, color: "var(--text-h)" }}>
-                    <div style={{ fontFamily: "var(--mono)", fontSize: "0.85rem" }}>
-                      {wf.workflowId || wf.id.slice(0, 8)}
-                    </div>
-                    <div style={{ fontSize: "0.75rem", color: "var(--text)", marginTop: "0.2rem" }}>
-                      {new Date(wf.createdAt).toLocaleDateString()}
-                    </div>
-                  </td>
-                  <td style={{ padding: "1.25rem", maxWidth: "260px" }}>
-                    <div
-                      style={{
-                        whiteSpace: "nowrap",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        fontSize: "0.9rem",
-                      }}
-                    >
-                      {wf.objective}
-                    </div>
-                  </td>
-                  <td style={{ padding: "1.25rem" }}>
-                    {wf.selectedProviderName ? (
-                      <span
-                        style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: "0.35rem",
-                          fontSize: "0.9rem",
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Job / Workflow</TableHead>
+                  <TableHead>Objective</TableHead>
+                  <TableHead>Candidate Provider</TableHead>
+                  <TableHead>Quote</TableHead>
+                  <TableHead>Risk Tier</TableHead>
+                  <TableHead>Approval</TableHead>
+                  <TableHead className="text-right">Action</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {workflows.map((wf) => (
+                  <TableRow key={wf.id}>
+                    <TableCell className="font-medium">
+                      <div className="font-mono text-xs">{wf.workflowId || wf.id.slice(0, 8)}</div>
+                      <div className="text-xs text-muted-foreground mt-0.5">
+                        {new Date(wf.createdAt).toLocaleDateString()}
+                      </div>
+                    </TableCell>
+                    <TableCell className="max-w-xs">
+                      <div className="truncate text-sm font-medium">{wf.objective}</div>
+                    </TableCell>
+                    <TableCell>
+                      {wf.selectedProviderName ? (
+                        <span className="inline-flex items-center gap-1.5 text-sm font-medium">
+                          <UserCheck className="h-4 w-4 text-emerald-500 shrink-0" />
+                          {wf.selectedProviderName}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">None Assigned</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="font-mono font-semibold text-sm">
+                      {wf.estimatedPrice ? `Rs. ${wf.estimatedPrice.toLocaleString()}` : "—"}
+                    </TableCell>
+                    <TableCell>{getTierBadge(wf.validationTier)}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1.5">
+                        {getStatusIcon(wf.approvalStatus)}
+                        <span className="text-xs capitalize">{wf.approvalStatus}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        size="sm"
+                        variant={
+                          wf.approvalStatus.toLowerCase() === "pending" ? "default" : "outline"
+                        }
+                        onClick={() => {
+                          setSelectedWorkflow(wf);
+                          setActionSuccess(null);
+                          setDecisionNote("");
                         }}
+                        className="gap-1 text-xs"
                       >
-                        <UserCheck size={15} style={{ color: "#22c55e" }} />
-                        {wf.selectedProviderName}
-                      </span>
-                    ) : (
-                      <span style={{ color: "var(--text)", fontSize: "0.85rem" }}>
-                        None Assigned
-                      </span>
-                    )}
-                  </td>
-                  <td style={{ padding: "1.25rem", fontFamily: "var(--mono)", fontWeight: 600 }}>
-                    {wf.estimatedPrice ? `Rs. ${wf.estimatedPrice.toLocaleString()}` : "—"}
-                  </td>
-                  <td style={{ padding: "1.25rem" }}>{getTierBadge(wf.validationTier)}</td>
-                  <td style={{ padding: "1.25rem" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
-                      {getStatusIcon(wf.approvalStatus)}
-                      <span style={{ fontSize: "0.85rem", textTransform: "capitalize" }}>
-                        {wf.approvalStatus}
-                      </span>
-                    </div>
-                  </td>
-                  <td style={{ padding: "1.25rem" }}>
-                    <button
-                      onClick={() => {
-                        setSelectedWorkflow(wf);
-                        setActionSuccess(null);
-                        setDecisionNote("");
-                      }}
-                      style={{
-                        padding: "0.45rem 0.9rem",
-                        backgroundColor:
-                          wf.approvalStatus.toLowerCase() === "pending"
-                            ? "var(--text-h)"
-                            : "transparent",
-                        color:
-                          wf.approvalStatus.toLowerCase() === "pending"
-                            ? "var(--bg)"
-                            : "var(--text)",
-                        border: "1px solid var(--border)",
-                        borderRadius: "6px",
-                        cursor: "pointer",
-                        fontWeight: 500,
-                        fontSize: "0.85rem",
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: "0.3rem",
-                      }}
-                    >
-                      {wf.approvalStatus.toLowerCase() === "pending" ? "Review" : "Audit"}
-                      <ChevronRight size={14} />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                        {wf.approvalStatus.toLowerCase() === "pending" ? "Review" : "Audit"}
+                        <ChevronRight className="h-3.5 w-3.5" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         )}
-      </div>
+      </Card>
 
       {/* Review & Audit Modal Drawer */}
       {selectedWorkflow && (
         <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            backgroundColor: "rgba(0, 0, 0, 0.65)",
-            backdropFilter: "blur(4px)",
-            display: "flex",
-            justifyContent: "flex-end",
-            zIndex: 1000,
-          }}
+          className="fixed inset-0 bg-black/60 backdrop-blur-xs flex justify-end z-50 animate-in fade-in duration-200"
           onClick={() => setSelectedWorkflow(null)}
         >
           <div
-            style={{
-              width: "100%",
-              maxWidth: "640px",
-              backgroundColor: "var(--bg-surface, var(--bg))",
-              height: "100dvh",
-              maxHeight: "100vh",
-              boxShadow: "-8px 0 32px rgba(0, 0, 0, 0.25)",
-              display: "flex",
-              flexDirection: "column",
-              overflow: "hidden",
-              borderLeft: "1px solid var(--border)",
-            }}
+            className="w-full max-w-xl bg-card border-l border-border h-dvh max-h-screen shadow-2xl flex flex-col overflow-hidden text-card-foreground"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Modal Sticky Header */}
-            <div
-              style={{
-                flexShrink: 0,
-                padding: "1.25rem 1.75rem",
-                borderBottom: "1px solid var(--border)",
-                backgroundColor: "var(--bg-surface-elevated, var(--bg))",
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "flex-start",
-                gap: "1rem",
-              }}
-            >
+            {/* Modal Header */}
+            <div className="shrink-0 p-5 border-b border-border bg-card flex justify-between items-start gap-4">
               <div>
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "0.5rem",
-                    marginBottom: "0.35rem",
-                  }}
-                >
-                  <span
-                    style={{
-                      fontSize: "0.75rem",
-                      fontFamily: "var(--mono)",
-                      padding: "0.2rem 0.5rem",
-                      borderRadius: "4px",
-                      backgroundColor: "var(--social-bg)",
-                      border: "1px solid var(--border)",
-                      color: "var(--text-h)",
-                      fontWeight: 600,
-                    }}
-                  >
+                <div className="flex items-center gap-2 mb-1.5">
+                  <span className="text-xs font-mono px-2 py-0.5 bg-muted border border-border rounded font-semibold text-foreground">
                     {selectedWorkflow.workflowId || selectedWorkflow.id.slice(0, 8)}
                   </span>
                   {getTierBadge(selectedWorkflow.validationTier)}
                 </div>
-                <h2
-                  style={{
-                    fontFamily: "var(--heading)",
-                    fontSize: "1.35rem",
-                    fontWeight: 700,
-                    color: "var(--text-h)",
-                    margin: 0,
-                  }}
-                >
-                  Workflow Audit & Governance
-                </h2>
-                <div
-                  style={{ fontSize: "0.78rem", color: "var(--text-muted)", marginTop: "0.25rem" }}
-                >
+                <h2 className="text-lg font-bold text-foreground">Workflow Audit & Governance</h2>
+                <div className="text-xs text-muted-foreground mt-0.5">
                   Initiated: {new Date(selectedWorkflow.createdAt).toLocaleString()}
                 </div>
               </div>
-              <button
+              <Button
+                variant="ghost"
+                size="icon"
                 onClick={() => setSelectedWorkflow(null)}
                 aria-label="Close audit drawer"
-                style={{
-                  background: "transparent",
-                  border: "1px solid var(--border)",
-                  borderRadius: "8px",
-                  width: "34px",
-                  height: "34px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  cursor: "pointer",
-                  color: "var(--text-muted)",
-                }}
+                className="h-8 w-8 text-muted-foreground hover:text-foreground"
               >
-                <X size={18} />
-              </button>
+                <X className="h-4 w-4" />
+              </Button>
             </div>
 
             {/* Scrollable Body Content */}
-            <div
-              style={{
-                flex: "1 1 auto",
-                overflowY: "auto",
-                padding: "1.5rem 1.75rem",
-                display: "flex",
-                flexDirection: "column",
-                gap: "1.25rem",
-                minHeight: 0,
-              }}
-            >
+            <div className="flex-1 overflow-y-auto p-5 space-y-5 min-h-0">
               {/* Success alert */}
               {actionSuccess && (
-                <div
-                  style={{
-                    padding: "0.85rem 1.1rem",
-                    backgroundColor: "rgba(34, 197, 94, 0.12)",
-                    border: "1px solid rgba(34, 197, 94, 0.3)",
-                    color: "#16a34a",
-                    borderRadius: "8px",
-                    fontSize: "0.875rem",
-                    fontWeight: 500,
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "0.6rem",
-                  }}
-                >
-                  <CheckCircle size={18} />
-                  <span>{actionSuccess}</span>
-                </div>
+                <Alert className="border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400">
+                  <CheckCircle className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                  <AlertDescription className="font-medium text-xs">
+                    {actionSuccess}
+                  </AlertDescription>
+                </Alert>
               )}
 
               {/* Job Summary & Provider Overview Card */}
-              <div
-                style={{
-                  backgroundColor: "var(--social-bg)",
-                  border: "1px solid var(--border)",
-                  borderRadius: "10px",
-                  padding: "1.25rem",
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: "0.78rem",
-                    color: "var(--text-muted)",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.05em",
-                    marginBottom: "0.4rem",
-                  }}
-                >
-                  Customer Job Request
-                </div>
-                <div
-                  style={{
-                    fontWeight: 600,
-                    color: "var(--text-h)",
-                    fontSize: "1rem",
-                    marginBottom: "1rem",
-                  }}
-                >
-                  {selectedWorkflow.objective}
-                </div>
+              <Card className="bg-muted/50">
+                <CardContent className="p-4 space-y-3">
+                  <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                    Customer Job Request
+                  </div>
+                  <div className="font-medium text-sm text-foreground">
+                    {selectedWorkflow.objective}
+                  </div>
 
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr 1fr",
-                    gap: "0.85rem",
-                    fontSize: "0.85rem",
-                    paddingTop: "0.85rem",
-                    borderTop: "1px solid var(--border)",
-                  }}
-                >
-                  <div>
-                    <span style={{ color: "var(--text-muted)", fontSize: "0.78rem" }}>
-                      Candidate Provider:
-                    </span>
-                    <div
-                      style={{
-                        fontWeight: 600,
-                        color: "var(--text-h)",
-                        marginTop: "0.2rem",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "0.35rem",
-                      }}
-                    >
-                      {selectedWorkflow.selectedProviderName ? (
-                        <>
-                          <UserCheck size={15} style={{ color: "#22c55e" }} />
-                          {selectedWorkflow.selectedProviderName}
-                        </>
-                      ) : (
-                        <span style={{ color: "var(--text)" }}>None Assigned</span>
-                      )}
+                  <div className="grid grid-cols-2 gap-4 pt-3 border-t border-border text-xs">
+                    <div>
+                      <span className="text-muted-foreground">Candidate Provider:</span>
+                      <div className="font-medium text-foreground mt-0.5 flex items-center gap-1.5">
+                        {selectedWorkflow.selectedProviderName ? (
+                          <>
+                            <UserCheck className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+                            {selectedWorkflow.selectedProviderName}
+                          </>
+                        ) : (
+                          <span className="text-muted-foreground">None Assigned</span>
+                        )}
+                      </div>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Estimated Quote:</span>
+                      <div className="font-bold text-foreground mt-0.5 font-mono text-sm">
+                        {selectedWorkflow.estimatedPrice
+                          ? `Rs. ${selectedWorkflow.estimatedPrice.toLocaleString()}`
+                          : "—"}
+                      </div>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Approval Status:</span>
+                      <div className="font-medium text-foreground mt-0.5 flex items-center gap-1.5 capitalize">
+                        {getStatusIcon(selectedWorkflow.approvalStatus)}
+                        {selectedWorkflow.approvalStatus}
+                      </div>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Job Request ID:</span>
+                      <div className="font-mono text-foreground mt-0.5 text-xs truncate">
+                        {selectedWorkflow.jobRequestId || "N/A"}
+                      </div>
                     </div>
                   </div>
-                  <div>
-                    <span style={{ color: "var(--text-muted)", fontSize: "0.78rem" }}>
-                      Estimated Quote:
-                    </span>
-                    <div
-                      style={{
-                        fontWeight: 700,
-                        color: "var(--text-h)",
-                        marginTop: "0.2rem",
-                        fontFamily: "var(--mono)",
-                        fontSize: "1rem",
-                      }}
-                    >
-                      {selectedWorkflow.estimatedPrice
-                        ? `Rs. ${selectedWorkflow.estimatedPrice.toLocaleString()}`
-                        : "—"}
-                    </div>
-                  </div>
-                  <div>
-                    <span style={{ color: "var(--text-muted)", fontSize: "0.78rem" }}>
-                      Approval Status:
-                    </span>
-                    <div
-                      style={{
-                        fontWeight: 600,
-                        color: "var(--text-h)",
-                        marginTop: "0.2rem",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "0.35rem",
-                        textTransform: "capitalize",
-                      }}
-                    >
-                      {getStatusIcon(selectedWorkflow.approvalStatus)}
-                      {selectedWorkflow.approvalStatus}
-                    </div>
-                  </div>
-                  <div>
-                    <span style={{ color: "var(--text-muted)", fontSize: "0.78rem" }}>
-                      Job Request ID:
-                    </span>
-                    <div
-                      style={{
-                        fontFamily: "var(--mono)",
-                        color: "var(--text-h)",
-                        marginTop: "0.2rem",
-                        fontSize: "0.82rem",
-                      }}
-                    >
-                      {selectedWorkflow.jobRequestId || "N/A"}
-                    </div>
-                  </div>
-                </div>
-              </div>
+                </CardContent>
+              </Card>
 
               {/* Validation Rules & Audit Checklist */}
               {(() => {
@@ -784,150 +476,69 @@ export default function AgentWorkflow() {
                 const rules = res?.evaluated_rules || [];
                 const reasons = res?.reasons || [];
                 return (
-                  <div>
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        marginBottom: "0.6rem",
-                      }}
-                    >
-                      <h3
-                        style={{
-                          fontSize: "0.95rem",
-                          fontWeight: 700,
-                          margin: 0,
-                          color: "var(--text-h)",
-                        }}
-                      >
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                         Validation Rules & Audit Checklist
                       </h3>
                       {rules.length > 0 && (
-                        <span
-                          style={{
-                            fontSize: "0.75rem",
-                            color: "var(--text-muted)",
-                            fontFamily: "var(--mono)",
-                          }}
-                        >
+                        <span className="text-xs text-muted-foreground font-mono">
                           {rules.filter((r: any) => r.passed).length}/{rules.length} Passed
                         </span>
                       )}
                     </div>
 
                     {reasons.length > 0 && (
-                      <div
-                        style={{
-                          padding: "0.8rem 1rem",
-                          backgroundColor: "rgba(239, 68, 68, 0.08)",
-                          border: "1px solid rgba(239, 68, 68, 0.25)",
-                          borderRadius: "8px",
-                          marginBottom: "0.75rem",
-                        }}
-                      >
-                        <div
-                          style={{
-                            fontSize: "0.8rem",
-                            fontWeight: 600,
-                            color: "#dc2626",
-                            marginBottom: "0.3rem",
-                          }}
-                        >
+                      <div className="p-3 bg-destructive/10 border border-destructive/20 rounded text-xs space-y-1.5">
+                        <div className="font-semibold text-destructive">
                           Flagged Safety Concerns:
                         </div>
-                        <ul
-                          style={{
-                            margin: 0,
-                            paddingLeft: "1.2rem",
-                            fontSize: "0.82rem",
-                            color: "var(--text-h)",
-                          }}
-                        >
+                        <ul className="list-disc pl-4 space-y-0.5 text-foreground">
                           {reasons.map((r: string, i: number) => (
-                            <li key={i} style={{ marginBottom: "0.2rem" }}>
-                              {r}
-                            </li>
+                            <li key={i}>{r}</li>
                           ))}
                         </ul>
                       </div>
                     )}
 
                     {rules.length > 0 ? (
-                      <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                      <div className="space-y-2">
                         {rules.map((rule: any, idx: number) => (
                           <div
                             key={idx}
-                            style={{
-                              display: "flex",
-                              alignItems: "flex-start",
-                              justifyContent: "space-between",
-                              gap: "0.75rem",
-                              padding: "0.75rem 0.9rem",
-                              borderRadius: "8px",
-                              border: `1px solid ${rule.passed ? "rgba(34, 197, 94, 0.25)" : "rgba(239, 68, 68, 0.25)"}`,
-                              backgroundColor: rule.passed
-                                ? "rgba(34, 197, 94, 0.05)"
-                                : "rgba(239, 68, 68, 0.05)",
-                              fontSize: "0.85rem",
-                            }}
+                            className={`flex items-start justify-between gap-3 p-3 rounded border text-xs ${
+                              rule.passed
+                                ? "bg-emerald-500/5 border-emerald-500/20"
+                                : "bg-destructive/5 border-destructive/20"
+                            }`}
                           >
-                            <div style={{ flex: 1 }}>
-                              <div
-                                style={{
-                                  display: "flex",
-                                  alignItems: "center",
-                                  gap: "0.45rem",
-                                  marginBottom: "0.2rem",
-                                }}
-                              >
-                                <span style={{ fontWeight: 600, color: "var(--text-h)" }}>
+                            <div className="flex-1 space-y-1">
+                              <div className="flex items-center gap-2">
+                                <span className="font-semibold text-foreground">
                                   {rule.rule_name}
                                 </span>
                                 {rule.rule_id && (
-                                  <span
-                                    style={{
-                                      fontSize: "0.7rem",
-                                      fontFamily: "var(--mono)",
-                                      padding: "0.1rem 0.4rem",
-                                      borderRadius: "4px",
-                                      backgroundColor: "var(--bg)",
-                                      border: "1px solid var(--border)",
-                                      color: "var(--text-muted)",
-                                    }}
-                                  >
+                                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-muted border border-border text-muted-foreground">
                                     {rule.rule_id}
                                   </span>
                                 )}
                               </div>
-                              <div
-                                style={{
-                                  fontSize: "0.8rem",
-                                  color: "var(--text)",
-                                  lineHeight: 1.4,
-                                }}
-                              >
+                              <div className="text-muted-foreground leading-relaxed">
                                 {rule.message}
                               </div>
                             </div>
-                            <div style={{ marginTop: "2px" }}>
+                            <div className="shrink-0 mt-0.5">
                               {rule.passed ? (
-                                <CheckCircle size={18} color="#22c55e" />
+                                <CheckCircle className="h-4 w-4 text-emerald-500" />
                               ) : (
-                                <XCircle size={18} color="#ef4444" />
+                                <XCircle className="h-4 w-4 text-destructive" />
                               )}
                             </div>
                           </div>
                         ))}
                       </div>
                     ) : (
-                      <div
-                        style={{
-                          fontSize: "0.82rem",
-                          color: "var(--text-muted)",
-                          padding: "0.5rem 0",
-                        }}
-                      >
+                      <div className="text-xs text-muted-foreground py-2">
                         No granular rule checks recorded in workflow payload.
                       </div>
                     )}
@@ -936,18 +547,11 @@ export default function AgentWorkflow() {
               })()}
 
               {/* Agent Execution Steps */}
-              <div>
-                <h3
-                  style={{
-                    fontSize: "0.95rem",
-                    fontWeight: 700,
-                    marginBottom: "0.6rem",
-                    color: "var(--text-h)",
-                  }}
-                >
+              <div className="space-y-3">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   Agent Execution Steps
                 </h3>
-                <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}>
+                <div className="space-y-2">
                   {selectedWorkflow.stepLogs && selectedWorkflow.stepLogs.length > 0 ? (
                     selectedWorkflow.stepLogs.map((step) => {
                       const stepKey = step.id || step.stepNumber;
@@ -955,47 +559,19 @@ export default function AgentWorkflow() {
                       return (
                         <div
                           key={stepKey}
-                          style={{
-                            padding: "0.85rem",
-                            borderRadius: "8px",
-                            border: "1px solid var(--border)",
-                            backgroundColor: "var(--bg)",
-                            fontSize: "0.85rem",
-                          }}
+                          className="p-3 rounded border border-border bg-card text-xs space-y-1.5"
                         >
-                          <div
-                            style={{
-                              display: "flex",
-                              justifyContent: "space-between",
-                              alignItems: "center",
-                              marginBottom: "0.3rem",
-                            }}
-                          >
-                            <span style={{ fontWeight: 600, color: "var(--text-h)" }}>
+                          <div className="flex justify-between items-center">
+                            <span className="font-semibold text-foreground">
                               Step {step.stepNumber}: {step.agentName}
                             </span>
-                            <span
-                              style={{
-                                color: "var(--text-muted)",
-                                fontFamily: "var(--mono)",
-                                fontSize: "0.72rem",
-                                padding: "0.15rem 0.45rem",
-                                borderRadius: "4px",
-                                backgroundColor: "var(--social-bg)",
-                              }}
-                            >
+                            <span className="text-muted-foreground font-mono text-[11px] px-1.5 py-0.5 rounded bg-muted">
                               {step.durationMs}ms
                             </span>
                           </div>
-                          <div
-                            style={{
-                              color: "var(--text)",
-                              fontSize: "0.8rem",
-                              marginBottom: step.outputData ? "0.4rem" : 0,
-                            }}
-                          >
+                          <div className="text-muted-foreground">
                             Action:{" "}
-                            <code style={{ fontFamily: "var(--mono)", color: "var(--accent)" }}>
+                            <code className="font-mono text-primary font-medium">
                               {step.action}
                             </code>
                           </div>
@@ -1004,46 +580,20 @@ export default function AgentWorkflow() {
                               <button
                                 type="button"
                                 onClick={() => toggleStepExpand(stepKey)}
-                                style={{
-                                  background: "transparent",
-                                  border: "none",
-                                  padding: 0,
-                                  color: "var(--text-muted)",
-                                  fontSize: "0.75rem",
-                                  cursor: "pointer",
-                                  display: "inline-flex",
-                                  alignItems: "center",
-                                  gap: "0.25rem",
-                                  marginTop: "0.2rem",
-                                  textDecoration: "underline",
-                                }}
+                                className="text-muted-foreground hover:text-foreground text-[11px] inline-flex items-center gap-1 underline underline-offset-2 mt-1"
                               >
                                 {isExpanded ? (
                                   <>
-                                    <ChevronDown size={13} /> Hide Payload
+                                    <ChevronDown className="h-3 w-3" /> Hide Payload
                                   </>
                                 ) : (
                                   <>
-                                    <ChevronRight size={13} /> View Output Payload
+                                    <ChevronRight className="h-3 w-3" /> View Output Payload
                                   </>
                                 )}
                               </button>
                               {isExpanded && (
-                                <div
-                                  style={{
-                                    marginTop: "0.4rem",
-                                    padding: "0.6rem",
-                                    backgroundColor: "var(--social-bg)",
-                                    borderRadius: "6px",
-                                    fontFamily: "var(--mono)",
-                                    fontSize: "0.73rem",
-                                    maxHeight: "150px",
-                                    overflowY: "auto",
-                                    wordBreak: "break-all",
-                                    whiteSpace: "pre-wrap",
-                                    border: "1px solid var(--border)",
-                                  }}
-                                >
+                                <div className="mt-2 p-2 bg-muted rounded font-mono text-[11px] max-h-36 overflow-y-auto break-all whitespace-pre-wrap border border-border">
                                   {step.outputData}
                                 </div>
                               )}
@@ -1053,7 +603,7 @@ export default function AgentWorkflow() {
                       );
                     })
                   ) : (
-                    <div style={{ fontSize: "0.82rem", color: "var(--text-muted)" }}>
+                    <div className="text-xs text-muted-foreground">
                       No detailed step logs recorded for this workflow run.
                     </div>
                   )}
@@ -1061,177 +611,81 @@ export default function AgentWorkflow() {
               </div>
             </div>
 
-            {/* Pinned Sticky Bottom Action Footer (flex-shrink: 0, ALWAYS visible, NEVER cut off!) */}
-            <div
-              style={{
-                flexShrink: 0,
-                borderTop: "1px solid var(--border)",
-                padding: "1.25rem 1.75rem",
-                backgroundColor: "var(--bg-surface-elevated, var(--bg))",
-                boxShadow: "0 -4px 16px rgba(0, 0, 0, 0.05)",
-                zIndex: 10,
-              }}
-            >
+            {/* Bottom Action Footer */}
+            <div className="shrink-0 border-t border-border p-5 bg-card">
               {selectedWorkflow.approvalStatus.toLowerCase() === "pending" ? (
-                <div>
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      marginBottom: "0.45rem",
-                    }}
-                  >
-                    <h4
-                      style={{
-                        fontSize: "0.88rem",
-                        fontWeight: 700,
-                        margin: 0,
-                        color: "var(--text-h)",
-                      }}
-                    >
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <h4 className="text-xs font-semibold uppercase tracking-wider text-foreground">
                       Record HITL Decision
                     </h4>
-                    <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
-                      Action required
-                    </span>
+                    <span className="text-[11px] text-muted-foreground">Action required</span>
                   </div>
-                  <textarea
+                  <Textarea
                     value={decisionNote}
                     onChange={(e) => setDecisionNote(e.target.value)}
                     placeholder="Optional review note or feedback..."
                     rows={2}
-                    style={{
-                      width: "100%",
-                      padding: "0.65rem 0.85rem",
-                      borderRadius: "8px",
-                      border: "1px solid var(--border-strong, var(--border))",
-                      backgroundColor: "var(--bg)",
-                      color: "var(--text-h)",
-                      fontSize: "0.85rem",
-                      marginBottom: "0.75rem",
-                      resize: "none",
-                      boxSizing: "border-box",
-                      fontFamily: "inherit",
-                    }}
+                    className="text-xs resize-none"
                   />
-                  <div
-                    style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.6rem" }}
-                  >
-                    <button
+                  <div className="grid grid-cols-3 gap-2">
+                    <Button
                       type="button"
                       disabled={submittingDecision}
                       onClick={() => handleDecision("Approve")}
-                      style={{
-                        padding: "0.65rem 0.5rem",
-                        backgroundColor: "#16a34a",
-                        color: "#fff",
-                        border: "none",
-                        borderRadius: "8px",
-                        cursor: submittingDecision ? "not-allowed" : "pointer",
-                        fontWeight: 600,
-                        fontSize: "0.82rem",
-                        display: "inline-flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        gap: "0.35rem",
-                        boxShadow: "0 2px 4px rgba(22, 163, 74, 0.2)",
-                        opacity: submittingDecision ? 0.7 : 1,
-                      }}
+                      className="gap-1.5 text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
+                      size="sm"
                     >
-                      <CheckCircle size={15} />
+                      <CheckCircle className="h-3.5 w-3.5" />
                       Approve Match
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       type="button"
                       disabled={submittingDecision}
                       onClick={() => handleDecision("Revise")}
-                      style={{
-                        padding: "0.65rem 0.5rem",
-                        backgroundColor: "#d97706",
-                        color: "#fff",
-                        border: "none",
-                        borderRadius: "8px",
-                        cursor: submittingDecision ? "not-allowed" : "pointer",
-                        fontWeight: 600,
-                        fontSize: "0.82rem",
-                        display: "inline-flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        gap: "0.35rem",
-                        boxShadow: "0 2px 4px rgba(217, 119, 6, 0.2)",
-                        opacity: submittingDecision ? 0.7 : 1,
-                      }}
+                      className="gap-1.5 text-xs bg-amber-600 hover:bg-amber-700 text-white"
+                      size="sm"
                     >
-                      <RefreshCw size={15} />
+                      <RefreshCw className="h-3.5 w-3.5" />
                       Request Revision
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       type="button"
+                      variant="destructive"
                       disabled={submittingDecision}
                       onClick={() => handleDecision("Reject")}
-                      style={{
-                        padding: "0.65rem 0.5rem",
-                        backgroundColor: "#dc2626",
-                        color: "#fff",
-                        border: "none",
-                        borderRadius: "8px",
-                        cursor: submittingDecision ? "not-allowed" : "pointer",
-                        fontWeight: 600,
-                        fontSize: "0.82rem",
-                        display: "inline-flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        gap: "0.35rem",
-                        boxShadow: "0 2px 4px rgba(220, 38, 38, 0.2)",
-                        opacity: submittingDecision ? 0.7 : 1,
-                      }}
+                      className="gap-1.5 text-xs"
+                      size="sm"
                     >
-                      <XCircle size={15} />
+                      <XCircle className="h-3.5 w-3.5" />
                       Reject Match
-                    </button>
+                    </Button>
                   </div>
                 </div>
               ) : (
-                <div
-                  style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}
-                >
+                <div className="flex justify-between items-center text-xs">
                   <div>
-                    <div style={{ fontSize: "0.78rem", color: "var(--text-muted)" }}>
+                    <div className="text-muted-foreground">
                       Decision recorded on:{" "}
                       {selectedWorkflow.decidedAt
                         ? new Date(selectedWorkflow.decidedAt).toLocaleString()
                         : "System Auto-Dispatch"}
                     </div>
                     {selectedWorkflow.decisionNote && (
-                      <div
-                        style={{
-                          fontSize: "0.82rem",
-                          color: "var(--text-h)",
-                          marginTop: "0.2rem",
-                          fontStyle: "italic",
-                        }}
-                      >
+                      <div className="text-foreground mt-0.5 italic">
                         "{selectedWorkflow.decisionNote}"
                       </div>
                     )}
                   </div>
-                  <button
+                  <Button
                     type="button"
+                    variant="outline"
+                    size="sm"
                     onClick={() => setSelectedWorkflow(null)}
-                    style={{
-                      padding: "0.45rem 0.9rem",
-                      borderRadius: "6px",
-                      border: "1px solid var(--border)",
-                      backgroundColor: "var(--bg)",
-                      color: "var(--text-h)",
-                      fontSize: "0.82rem",
-                      fontWeight: 500,
-                      cursor: "pointer",
-                    }}
+                    className="text-xs"
                   >
                     Close
-                  </button>
+                  </Button>
                 </div>
               )}
             </div>

@@ -5,8 +5,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getRefreshToken } from "../../lib/tokenManager";
 import { usersApi } from "../../api/users";
 import { authApi } from "../../api/auth";
-import { getFullMediaUrl } from "../../lib/api";
-import "./PublicNavbar.css";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export default function PublicNavbar() {
   const navigate = useNavigate();
@@ -41,117 +41,67 @@ export default function PublicNavbar() {
   });
 
   return (
-    <nav className="public-nav-bar">
-      <Link to="/" className="brand">
+    <nav className="public-nav-bar flex justify-between items-center px-8 py-5 border-b border-border bg-background text-foreground">
+      <Link
+        to="/"
+        className="brand text-2xl font-bold tracking-tight text-foreground hover:opacity-90 transition-opacity"
+      >
         Handee
       </Link>
-      <div className="nav-actions">
+      <div className="nav-actions flex items-center gap-4">
         {isLoggedIn ? (
-          <div style={{ display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
+          <div className="flex items-center gap-3 flex-wrap">
             {userProfile && (
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "0.75rem",
-                  marginRight: "0.5rem",
-                }}
-                className="animate-fade-up"
-              >
-                <div
-                  style={{
-                    textAlign: "right",
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "2px",
-                    marginRight: "0.25rem",
-                  }}
-                >
-                  <div style={{ fontWeight: 600, fontSize: "0.95rem", color: "var(--text-h)" }}>
+              <div className="flex items-center gap-3 mr-2 animate-fade-up">
+                <div className="text-right flex flex-col gap-0.5 mr-1">
+                  <div className="font-semibold text-sm text-foreground">
                     {userProfile.fullName}
                   </div>
-                  <div
-                    style={{
-                      fontSize: "0.65rem",
-                      color: "var(--text-muted)",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.05em",
-                      fontWeight: 700,
-                    }}
-                  >
+                  <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">
                     {userProfile.roles?.[0] || "Member"}
                   </div>
                 </div>
-                {userProfile.profilePictureUrl ? (
-                  <img
-                    src={getFullMediaUrl(userProfile.profilePictureUrl)}
-                    alt="Avatar"
-                    style={{
-                      width: 36,
-                      height: 36,
-                      borderRadius: "50%",
-                      objectFit: "cover",
-                      border: "1px solid var(--border)",
-                    }}
-                  />
-                ) : (
-                  <div
-                    style={{
-                      width: 36,
-                      height: 36,
-                      borderRadius: "50%",
-                      backgroundColor: "var(--accent)",
-                      color: "#fff",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontWeight: "bold",
-                    }}
-                  >
+                <Avatar className="h-9 w-9 border border-border">
+                  {userProfile.profilePictureUrl && (
+                    <AvatarImage
+                      src={getFullMediaUrl(userProfile.profilePictureUrl)}
+                      alt={userProfile.fullName}
+                    />
+                  )}
+                  <AvatarFallback className="bg-primary text-primary-foreground font-bold text-xs">
                     {userProfile.fullName.charAt(0).toUpperCase()}
-                  </div>
-                )}
+                  </AvatarFallback>
+                </Avatar>
               </div>
             )}
 
-            <Link
-              to="/dashboard"
-              className="login-link"
-              style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}
-            >
-              <LayoutDashboard size={18} /> Dashboard
-            </Link>
+            <Button asChild variant="default" size="sm">
+              <Link to="/dashboard" className="flex items-center gap-2">
+                <LayoutDashboard className="h-4 w-4" /> Dashboard
+              </Link>
+            </Button>
 
-            <button
+            <Button
+              variant="outline"
+              size="icon"
               onClick={() => logoutMutation.mutate()}
               disabled={logoutMutation.isPending}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "0.5rem",
-                backgroundColor: "transparent",
-                border: "1px solid var(--border)",
-                color: "var(--text-h)",
-                padding: "0.5rem 1rem",
-                borderRadius: "8px",
-                cursor: logoutMutation.isPending ? "default" : "pointer",
-                fontSize: "0.9rem",
-                fontWeight: 600,
-                transition: "all 0.2s var(--ease-spring)",
-                opacity: logoutMutation.isPending ? 0.6 : 1,
-              }}
-              className="hover-lift"
+              aria-label="Sign out"
             >
-              <LogOut size={16} />
-            </button>
+              <LogOut className="h-4 w-4" />
+            </Button>
           </div>
         ) : (
-          <>
-            <Link to="/register/provider">Join as a Pro</Link>
-            <Link to="/login" className="login-link">
-              Sign In
-            </Link>
-          </>
+          <div className="flex items-center gap-3">
+            <Button asChild variant="ghost" size="sm">
+              <Link to="/register/provider">Join as a Pro</Link>
+            </Button>
+            <Button asChild variant="default" size="sm">
+              <Link to="/login" className="login-link">
+                Sign In
+              </Link>
+            </Button>
+          </div>
         )}
       </div>
     </nav>

@@ -4,7 +4,18 @@ import { useMutation } from "@tanstack/react-query";
 import { authApi } from "../../api/auth";
 import { extractApiError } from "../../lib/api";
 import { Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
-import "./Auth.css";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  CardFooter,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export default function ResetPassword() {
   const [searchParams] = useSearchParams();
@@ -40,118 +51,91 @@ export default function ResetPassword() {
 
   if (!token || !email) {
     return (
-      <div className="auth-container">
-        <div className="auth-card">
-          <div className="brand">Handee</div>
-          <h2>Invalid link</h2>
-          <p className="subtitle">This password reset link is invalid or has expired.</p>
-          <div className="auth-links" style={{ marginTop: "1.5rem", justifyContent: "center" }}>
-            <Link to="/forgot-password" style={{ fontWeight: 600 }}>
-              Request a new link
-            </Link>
-          </div>
-        </div>
+      <div className="min-h-screen flex items-center justify-center bg-muted/40 p-4">
+        <Card className="w-full max-w-md bg-card text-card-foreground border-border shadow-lg text-center">
+          <CardHeader className="space-y-2">
+            <div className="text-3xl font-black tracking-tight text-foreground">Handee</div>
+            <CardTitle className="text-2xl font-bold tracking-tight">Invalid link</CardTitle>
+            <CardDescription>This password reset link is invalid or has expired.</CardDescription>
+          </CardHeader>
+          <CardFooter className="flex justify-center">
+            <Button asChild variant="outline">
+              <Link to="/forgot-password">Request a new link</Link>
+            </Button>
+          </CardFooter>
+        </Card>
       </div>
     );
   }
 
   if (isSuccess) {
     return (
-      <div className="auth-container">
-        <div className="auth-card" style={{ textAlign: "center" }}>
-          <div className="brand">Handee</div>
-          <h2>Password Reset</h2>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "center",
-              margin: "1.5rem 0",
-              color: "var(--success)",
-            }}
-          >
-            <CheckCircle2 size={56} strokeWidth={1.5} />
-          </div>
-          <p className="subtitle">Your password has been successfully reset.</p>
-          {/* Fixed box-sizing bleeding bug */}
-          <Link
-            to="/login"
-            className="btn-primary"
-            style={{
-              display: "flex",
-              justifyContent: "center",
-              boxSizing: "border-box",
-              marginTop: "2rem",
-              textDecoration: "none",
-            }}
-          >
-            Log in to your account
-          </Link>
-        </div>
+      <div className="min-h-screen flex items-center justify-center bg-muted/40 p-4">
+        <Card className="w-full max-w-md bg-card text-card-foreground border-border shadow-lg text-center">
+          <CardHeader className="space-y-2">
+            <div className="text-3xl font-black tracking-tight text-foreground">Handee</div>
+            <CardTitle className="text-2xl font-bold tracking-tight">Password Reset</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex justify-center text-primary">
+              <CheckCircle2 className="h-14 w-14" strokeWidth={1.5} />
+            </div>
+            <p className="text-muted-foreground text-sm">
+              Your password has been successfully reset.
+            </p>
+            <Button asChild className="w-full mt-4">
+              <Link to="/login">Log in to your account</Link>
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="auth-container">
-      <div className="auth-card">
-        <div className="brand">Handee</div>
-        <h2>Create new password</h2>
-        <p className="subtitle">Enter a new password for {email}.</p>
+    <div className="min-h-screen flex items-center justify-center bg-muted/40 p-4">
+      <Card className="w-full max-w-md bg-card text-card-foreground border-border shadow-lg">
+        <CardHeader className="text-center space-y-2">
+          <div className="text-3xl font-black tracking-tight text-foreground">Handee</div>
+          <CardTitle className="text-2xl font-bold tracking-tight">Create new password</CardTitle>
+          <CardDescription>Enter a new password for {email}.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {authError && (
+            <Alert variant="destructive" className="mb-6">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{authError}</AlertDescription>
+            </Alert>
+          )}
 
-        {authError && (
-          <div
-            style={{
-              backgroundColor: "var(--bg-danger)",
-              color: "var(--text-danger)",
-              padding: "1rem",
-              borderRadius: "8px",
-              marginBottom: "1.5rem",
-              display: "flex",
-              alignItems: "center",
-              gap: "0.75rem",
-              fontSize: "0.9rem",
-              fontWeight: 500,
-            }}
-            className="animate-fade-up"
-          >
-            <AlertCircle size={20} />
-            <div>{authError}</div>
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label htmlFor="password">New Password</label>
-            <input
-              type="password"
-              id="password"
-              name="password"
-              placeholder="••••••••"
-              required
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="password">New Password</Label>
+              <Input
+                type="password"
+                id="password"
+                name="password"
+                placeholder="••••••••"
+                required
+                disabled={resetPasswordMutation.isPending}
+              />
+            </div>
+            <Button
+              type="submit"
+              className="w-full mt-2"
               disabled={resetPasswordMutation.isPending}
-            />
-          </div>
-          <button
-            type="submit"
-            className="btn-primary"
-            disabled={resetPasswordMutation.isPending}
-            style={{
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              gap: "0.5rem",
-            }}
-          >
-            {resetPasswordMutation.isPending ? (
-              <>
-                <Loader2 size={20} className="animate-spin" /> Resetting...
-              </>
-            ) : (
-              "Reset password"
-            )}
-          </button>
-        </form>
-      </div>
+            >
+              {resetPasswordMutation.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" /> Resetting...
+                </>
+              ) : (
+                "Reset password"
+              )}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   );
 }

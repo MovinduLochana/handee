@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Moon, Sun } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export default function ThemeToggle() {
   const [theme, setTheme] = useState<"light" | "dark">(() => {
@@ -11,6 +12,11 @@ export default function ThemeToggle() {
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
+    if (theme === "dark") {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
     localStorage.setItem("theme", theme);
   }, [theme]);
 
@@ -19,35 +25,19 @@ export default function ThemeToggle() {
   };
 
   return (
-    <button
+    <Button
+      variant="outline"
+      size="icon"
       onClick={toggleTheme}
-      style={{
-        position: "fixed",
-        bottom: "1.5rem",
-        right: "1.5rem",
-        width: "3rem",
-        height: "3rem",
-        borderRadius: "50%",
-        backgroundColor: "var(--bg-surface)",
-        border: "1px solid var(--border)",
-        boxShadow: "var(--shadow-md)",
-        color: "var(--text-h)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        cursor: "pointer",
-        zIndex: 50,
-        transition: "all 0.3s var(--ease-spring)",
-      }}
-      className="hover-lift"
+      className="fixed bottom-6 right-6 h-12 w-12 rounded-full shadow-md z-50 bg-background text-foreground hover:bg-accent border-border transition-transform active:scale-95"
       aria-label="Toggle Theme"
       title={theme === "light" ? "Switch to Dark Mode" : "Switch to Light Mode"}
     >
       {theme === "light" ? (
-        <Moon size={18} strokeWidth={2.5} />
+        <Moon className="h-5 w-5" strokeWidth={2.5} />
       ) : (
-        <Sun size={18} strokeWidth={2.5} />
+        <Sun className="h-5 w-5" strokeWidth={2.5} />
       )}
-    </button>
+    </Button>
   );
 }

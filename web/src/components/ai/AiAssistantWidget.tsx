@@ -3,6 +3,9 @@ import { X, Send, Sparkles, Bot, User, Star, CheckCircle, ChevronRight } from "l
 import { useQuery } from "@tanstack/react-query";
 import { agentsApi, type AssistantQueryResponse } from "../../api/agents";
 import { usersApi } from "../../api/users";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 
 interface ChatMessage {
   id: string;
@@ -90,237 +93,105 @@ export default function AiAssistantWidget() {
     <>
       {/* Floating Trigger Button */}
       {!isOpen && (
-        <button
+        <Button
           onClick={() => setIsOpen(true)}
-          style={{
-            position: "fixed",
-            bottom: "1.75rem",
-            right: "1.75rem",
-            backgroundColor: "var(--accent, #6366f1)",
-            color: "#fff",
-            border: "none",
-            borderRadius: "50px",
-            padding: "0.85rem 1.35rem",
-            display: "flex",
-            alignItems: "center",
-            gap: "0.6rem",
-            boxShadow: "0 8px 24px rgba(99, 102, 241, 0.4)",
-            cursor: "pointer",
-            fontWeight: 600,
-            fontSize: "0.95rem",
-            zIndex: 9999,
-            transition: "transform 0.2s, box-shadow 0.2s",
-          }}
-          onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.05)")}
-          onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
+          className="fixed bottom-6 right-6 rounded-full px-5 py-6 shadow-xl gap-2 z-50 text-sm font-semibold hover:scale-105 transition-transform"
         >
-          <Sparkles size={18} />
+          <Sparkles className="h-4 w-4" />
           <span>Ask Handee AI</span>
-        </button>
+        </Button>
       )}
 
       {/* Chat Window */}
       {isOpen && (
-        <div
-          style={{
-            position: "fixed",
-            bottom: "1.5rem",
-            right: "1.5rem",
-            width: "400px",
-            maxWidth: "calc(100vw - 2rem)",
-            height: "560px",
-            maxHeight: "calc(100vh - 4rem)",
-            backgroundColor: "var(--bg-surface, #1e293b)",
-            border: "1px solid var(--border, #334155)",
-            borderRadius: "16px",
-            boxShadow: "0 16px 40px rgba(0, 0, 0, 0.5)",
-            display: "flex",
-            flexDirection: "column",
-            overflow: "hidden",
-            zIndex: 99999,
-          }}
-        >
+        <div className="fixed bottom-6 right-6 w-96 max-w-[calc(100vw-2rem)] h-[560px] max-h-[calc(100vh-4rem)] bg-card border border-border rounded-xl shadow-2xl flex flex-col overflow-hidden z-50 animate-in fade-in duration-200">
           {/* Header */}
-          <div
-            style={{
-              padding: "1rem 1.25rem",
-              background: "linear-gradient(135deg, var(--accent, #6366f1), #4338ca)",
-              color: "#fff",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
-              <div
-                style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: "50%",
-                  background: "rgba(255, 255, 255, 0.2)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <Bot size={18} />
+          <div className="p-4 bg-primary text-primary-foreground flex justify-between items-center shrink-0">
+            <div className="flex items-center gap-2.5">
+              <div className="h-8 w-8 rounded-full bg-primary-foreground/20 flex items-center justify-center">
+                <Bot className="h-4 w-4" />
               </div>
               <div>
-                <div style={{ fontWeight: 700, fontSize: "0.95rem" }}>Handee AI Assistant</div>
-                <div
-                  style={{
-                    fontSize: "0.75rem",
-                    opacity: 0.85,
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "0.3rem",
-                  }}
-                >
-                  <span
-                    style={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: "#22c55e" }}
-                  />
-                  FastAPI Agent &middot; Active
+                <div className="font-bold text-sm leading-tight">Handee AI Assistant</div>
+                <div className="text-[11px] opacity-90 flex items-center gap-1.5 mt-0.5">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                  FastAPI Agent · Active
                 </div>
               </div>
             </div>
-            <button
+            <Button
+              variant="ghost"
+              size="icon"
               onClick={() => setIsOpen(false)}
-              style={{
-                background: "none",
-                border: "none",
-                color: "#fff",
-                cursor: "pointer",
-                padding: "0.25rem",
-              }}
+              className="h-7 w-7 text-primary-foreground hover:bg-primary-foreground/20 hover:text-primary-foreground"
             >
-              <X size={20} />
-            </button>
+              <X className="h-4 w-4" />
+            </Button>
           </div>
 
           {/* Messages Body */}
-          <div
-            style={{
-              flex: 1,
-              padding: "1rem",
-              overflowY: "auto",
-              display: "flex",
-              flexDirection: "column",
-              gap: "1rem",
-            }}
-          >
+          <div className="flex-1 p-4 overflow-y-auto space-y-4 min-h-0 text-xs">
             {messages.map((m) => (
               <div
                 key={m.id}
-                style={{
-                  display: "flex",
-                  gap: "0.5rem",
-                  alignSelf: m.sender === "user" ? "flex-end" : "flex-start",
-                  maxWidth: "90%",
-                }}
+                className={`flex gap-2 max-w-[90%] ${
+                  m.sender === "user" ? "ml-auto flex-row-reverse" : "mr-auto"
+                }`}
               >
-                {m.sender === "assistant" && (
-                  <div
-                    style={{
-                      width: 28,
-                      height: 28,
-                      borderRadius: "50%",
-                      backgroundColor: "oklch(45% 0.2 260 / 0.15)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      flexShrink: 0,
-                      marginTop: "0.2rem",
-                    }}
-                  >
-                    <Bot size={15} color="var(--accent)" />
+                {m.sender === "assistant" ? (
+                  <div className="h-7 w-7 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0 mt-0.5">
+                    <Bot className="h-3.5 w-3.5" />
+                  </div>
+                ) : (
+                  <div className="h-7 w-7 rounded-full bg-muted flex items-center justify-center shrink-0 mt-0.5 text-muted-foreground">
+                    <User className="h-3.5 w-3.5" />
                   </div>
                 )}
 
-                <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                <div className="space-y-2">
                   <div
-                    style={{
-                      padding: "0.75rem 1rem",
-                      borderRadius: "12px",
-                      fontSize: "0.88rem",
-                      lineHeight: 1.5,
-                      backgroundColor:
-                        m.sender === "user"
-                          ? "var(--accent, #6366f1)"
-                          : "var(--bg-surface-elevated, #0f172a)",
-                      color: m.sender === "user" ? "#fff" : "var(--text-h, #f8fafc)",
-                      border: m.sender === "assistant" ? "1px solid var(--border)" : "none",
-                    }}
+                    className={`p-3 rounded-xl leading-relaxed text-xs ${
+                      m.sender === "user"
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted text-foreground border border-border"
+                    }`}
                   >
                     {m.text}
 
                     {m.data?.category && (
-                      <div style={{ marginTop: "0.5rem" }}>
-                        <span
-                          style={{
-                            fontSize: "0.75rem",
-                            padding: "0.2rem 0.5rem",
-                            borderRadius: "4px",
-                            backgroundColor: "rgba(99, 102, 241, 0.15)",
-                            color: "var(--accent, #6366f1)",
-                            fontWeight: 600,
-                          }}
+                      <div className="mt-2">
+                        <Badge
+                          variant="outline"
+                          className="border-primary/30 bg-primary/10 text-primary text-[10px]"
                         >
                           Category: {m.data.category}
-                        </span>
+                        </Badge>
                       </div>
                     )}
                   </div>
 
                   {/* Suggested Providers Cards */}
                   {m.data?.suggested_providers && m.data.suggested_providers.length > 0 && (
-                    <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
-                      <span
-                        style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--text-muted)" }}
-                      >
+                    <div className="space-y-1.5">
+                      <span className="text-[11px] font-bold text-muted-foreground block">
                         Recommended Verified Specialists:
                       </span>
                       {m.data.suggested_providers.map((p) => (
                         <div
                           key={p.id}
-                          style={{
-                            background: "var(--bg-surface-elevated)",
-                            border: "1px solid var(--border)",
-                            borderRadius: "8px",
-                            padding: "0.6rem 0.75rem",
-                            fontSize: "0.82rem",
-                          }}
+                          className="bg-card border border-border rounded p-2.5 text-xs space-y-1"
                         >
-                          <div
-                            style={{
-                              display: "flex",
-                              justifyContent: "space-between",
-                              alignItems: "center",
-                            }}
-                          >
-                            <div style={{ display: "flex", alignItems: "center", gap: "0.35rem" }}>
-                              <strong style={{ color: "var(--text-h)" }}>{p.fullName}</strong>
-                              {p.isVerified && <CheckCircle size={13} color="#22c55e" />}
+                          <div className="flex justify-between items-center">
+                            <div className="flex items-center gap-1 font-semibold text-foreground">
+                              {p.fullName}
+                              {p.isVerified && <CheckCircle className="h-3 w-3 text-emerald-500" />}
                             </div>
-                            <span
-                              style={{
-                                color: "#eab308",
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "0.15rem",
-                                fontWeight: 600,
-                              }}
-                            >
-                              <Star size={12} fill="#eab308" /> {p.rating || 4.9}
+                            <span className="text-amber-500 flex items-center gap-0.5 font-semibold text-[11px]">
+                              <Star className="h-3 w-3 fill-amber-500" /> {p.rating || 4.9}
                             </span>
                           </div>
-                          <div
-                            style={{
-                              color: "var(--text-muted)",
-                              fontSize: "0.78rem",
-                              marginTop: "0.2rem",
-                            }}
-                          >
-                            Area: {p.serviceArea || "Colombo"} &middot; Rate: Rs.{" "}
+                          <div className="text-[11px] text-muted-foreground">
+                            Area: {p.serviceArea || "Colombo"} · Rate: Rs.{" "}
                             {p.hourlyRate?.toLocaleString() || "3,500"}/hr
                           </div>
                         </div>
@@ -330,28 +201,13 @@ export default function AiAssistantWidget() {
 
                   {/* Suggestion Quick Chips */}
                   {m.data?.suggestions && m.data.suggestions.length > 0 && (
-                    <div
-                      style={{
-                        display: "flex",
-                        flexWrap: "wrap",
-                        gap: "0.35rem",
-                        marginTop: "0.25rem",
-                      }}
-                    >
+                    <div className="flex flex-wrap gap-1 mt-1">
                       {m.data.suggestions.map((sugg, idx) => (
                         <button
                           key={idx}
+                          type="button"
                           onClick={() => handleSend(sugg)}
-                          style={{
-                            background: "none",
-                            border: "1px solid var(--accent)",
-                            color: "var(--accent)",
-                            borderRadius: "14px",
-                            padding: "0.25rem 0.6rem",
-                            fontSize: "0.75rem",
-                            cursor: "pointer",
-                            textAlign: "left",
-                          }}
+                          className="text-[11px] px-2.5 py-1 rounded-full border border-primary/30 text-primary hover:bg-primary/10 transition-colors text-left"
                         >
                           {sugg}
                         </button>
@@ -359,38 +215,12 @@ export default function AiAssistantWidget() {
                     </div>
                   )}
                 </div>
-
-                {m.sender === "user" && (
-                  <div
-                    style={{
-                      width: 28,
-                      height: 28,
-                      borderRadius: "50%",
-                      backgroundColor: "var(--border)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      flexShrink: 0,
-                      marginTop: "0.2rem",
-                    }}
-                  >
-                    <User size={15} color="var(--text-muted)" />
-                  </div>
-                )}
               </div>
             ))}
 
             {isLoading && (
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "0.5rem",
-                  color: "var(--text-muted)",
-                  fontSize: "0.85rem",
-                }}
-              >
-                <Bot size={16} />
+              <div className="flex items-center gap-2 text-muted-foreground text-xs">
+                <Bot className="h-4 w-4 animate-bounce" />
                 <span>AI agents analyzing query...</span>
               </div>
             )}
@@ -399,37 +229,19 @@ export default function AiAssistantWidget() {
 
           {/* Quick Prompts (if chat is fresh) */}
           {messages.length === 1 && (
-            <div
-              style={{
-                padding: "0 1rem 0.5rem",
-                display: "flex",
-                flexDirection: "column",
-                gap: "0.35rem",
-              }}
-            >
-              <span style={{ fontSize: "0.72rem", color: "var(--text-muted)", fontWeight: 600 }}>
+            <div className="px-4 pb-2 space-y-1">
+              <span className="text-[11px] text-muted-foreground font-semibold block">
                 Try asking:
               </span>
               {starterPrompts.map((p, i) => (
                 <button
                   key={i}
+                  type="button"
                   onClick={() => handleSend(p)}
-                  style={{
-                    padding: "0.4rem 0.6rem",
-                    borderRadius: "6px",
-                    border: "1px solid var(--border)",
-                    background: "var(--bg-surface-elevated)",
-                    color: "var(--text)",
-                    fontSize: "0.78rem",
-                    textAlign: "left",
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                  }}
+                  className="w-full p-2 rounded border border-border bg-muted/50 hover:bg-muted text-foreground text-xs text-left flex items-center justify-between transition-colors"
                 >
-                  <span>{p}</span>
-                  <ChevronRight size={13} color="var(--text-muted)" />
+                  <span className="truncate">{p}</span>
+                  <ChevronRight className="h-3 w-3 text-muted-foreground shrink-0 ml-1" />
                 </button>
               ))}
             </div>
@@ -441,48 +253,23 @@ export default function AiAssistantWidget() {
               e.preventDefault();
               handleSend();
             }}
-            style={{
-              padding: "0.75rem 1rem",
-              borderTop: "1px solid var(--border)",
-              display: "flex",
-              gap: "0.5rem",
-              background: "var(--bg-surface)",
-            }}
+            className="p-3 border-t border-border flex gap-2 bg-card shrink-0"
           >
-            <input
+            <Input
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Ask anything or request trade work..."
-              style={{
-                flex: 1,
-                padding: "0.6rem 0.85rem",
-                borderRadius: "8px",
-                border: "1px solid var(--border)",
-                background: "var(--bg-surface-elevated)",
-                color: "var(--text-h)",
-                fontSize: "0.88rem",
-                outline: "none",
-              }}
+              className="h-9 text-xs flex-1"
             />
-            <button
+            <Button
               type="submit"
               disabled={isLoading || !input.trim()}
-              style={{
-                backgroundColor: "var(--accent, #6366f1)",
-                color: "#fff",
-                border: "none",
-                borderRadius: "8px",
-                padding: "0.6rem 0.9rem",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                opacity: isLoading || !input.trim() ? 0.6 : 1,
-              }}
+              size="icon"
+              className="h-9 w-9 shrink-0"
             >
-              <Send size={16} />
-            </button>
+              <Send className="h-4 w-4" />
+            </Button>
           </form>
         </div>
       )}

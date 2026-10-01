@@ -1,5 +1,5 @@
 import type { ServiceCategoryDto } from "../../api/types";
-import "./ServiceCategoryTag.css";
+import { Badge } from "@/components/ui/badge";
 
 interface ServiceCategoryTagProps {
   category: ServiceCategoryDto;
@@ -15,8 +15,13 @@ export default function ServiceCategoryTag({
   const isClickable = !!onClick;
 
   return (
-    <span
-      className={`skill-tag ${selected ? "skill-tag-selected" : ""} ${isClickable ? "skill-tag-clickable" : ""}`}
+    <Badge
+      variant={selected ? "default" : "outline"}
+      className={`skill-tag inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium transition-colors ${
+        isClickable
+          ? "cursor-pointer select-none hover:bg-accent hover:text-accent-foreground active:scale-95"
+          : ""
+      } ${selected ? "shadow-xs" : "bg-card text-card-foreground hover:bg-muted"}`}
       onClick={onClick}
       role={isClickable ? "button" : undefined}
       tabIndex={isClickable ? 0 : undefined}
@@ -36,13 +41,13 @@ export default function ServiceCategoryTag({
           src={category.iconUrl}
           alt=""
           loading="lazy"
-          className="skill-tag-icon"
+          className="skill-tag-icon h-3.5 w-3.5 object-contain"
           onError={(e) => {
-            (e.target as HTMLImageElement).style.display = "none";
+            (e.target as HTMLImageElement).classList.add("hidden");
           }}
         />
       )}
       {category.name}
-    </span>
+    </Badge>
   );
 }

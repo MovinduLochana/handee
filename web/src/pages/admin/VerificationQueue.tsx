@@ -7,7 +7,18 @@ import { serviceCategoryApi } from "../../api/serviceCategories";
 import StatusBadge from "../../components/provider/StatusBadge";
 import type { VerificationStatus } from "../../api/types";
 import { getFullMediaUrl } from "../../lib/api";
-import "./VerificationQueue.css";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 export default function VerificationQueue() {
   const [statusFilter, setStatusFilter] = useState<VerificationStatus | "All">("All");
@@ -62,116 +73,96 @@ export default function VerificationQueue() {
 
   const isLoading = isLoadingQueue || isLoadingSummary;
 
-  if (isLoading) return <div style={{ padding: "2rem" }}>Loading queue...</div>;
+  if (isLoading)
+    return <div className="p-12 text-center text-muted-foreground text-sm">Loading queue...</div>;
 
   return (
-    <div className="admin-page-container animate-fade-up">
-      <header className="admin-header">
-        <div>
-          <h1 className="admin-title">Verification Queue</h1>
-          <p className="admin-subtitle">Review and process provider applications.</p>
-        </div>
+    <div className="max-w-7xl mx-auto p-6 space-y-6">
+      <header className="space-y-1">
+        <h1 className="text-3xl font-bold tracking-tight text-foreground">Verification Queue</h1>
+        <p className="text-muted-foreground text-sm">Review and process provider applications.</p>
       </header>
 
-      <div className="kpi-grid">
-        <button
-          type="button"
-          className="kpi-card kpi-pending hover-lift"
-          onClick={() => handleKpiClick("Pending")}
-          style={{
-            cursor: "pointer",
-            textAlign: "left",
-            background: "transparent",
-            border: "none",
-            font: "inherit",
-            color: "inherit",
-          }}
-        >
-          <div className="kpi-icon">
-            <Clock size={24} />
-          </div>
-          <div>
-            <div className="kpi-value">{kpis.pending}</div>
-            <div className="kpi-label">Pending Review</div>
-          </div>
+      {/* KPI Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <button type="button" className="text-left group" onClick={() => handleKpiClick("Pending")}>
+          <Card className="hover:border-amber-500/50 transition-colors">
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className="h-10 w-10 rounded bg-amber-500/10 flex items-center justify-center text-amber-500">
+                <Clock className="h-5 w-5" />
+              </div>
+              <div>
+                <div className="text-2xl font-bold text-foreground">{kpis.pending}</div>
+                <div className="text-xs text-muted-foreground">Pending Review</div>
+              </div>
+            </CardContent>
+          </Card>
         </button>
+
         <button
           type="button"
-          className="kpi-card kpi-review hover-lift"
+          className="text-left group"
           onClick={() => handleKpiClick("InReview")}
-          style={{
-            cursor: "pointer",
-            textAlign: "left",
-            background: "transparent",
-            border: "none",
-            font: "inherit",
-            color: "inherit",
-          }}
         >
-          <div className="kpi-icon">
-            <Users size={24} />
-          </div>
-          <div>
-            <div className="kpi-value">{kpis.inReview}</div>
-            <div className="kpi-label">Currently In Review</div>
-          </div>
+          <Card className="hover:border-blue-500/50 transition-colors">
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className="h-10 w-10 rounded bg-blue-500/10 flex items-center justify-center text-blue-500">
+                <Users className="h-5 w-5" />
+              </div>
+              <div>
+                <div className="text-2xl font-bold text-foreground">{kpis.inReview}</div>
+                <div className="text-xs text-muted-foreground">Currently In Review</div>
+              </div>
+            </CardContent>
+          </Card>
         </button>
+
         <button
           type="button"
-          className="kpi-card kpi-verified hover-lift"
+          className="text-left group"
           onClick={() => handleKpiClick("Verified")}
-          style={{
-            cursor: "pointer",
-            textAlign: "left",
-            background: "transparent",
-            border: "none",
-            font: "inherit",
-            color: "inherit",
-          }}
         >
-          <div className="kpi-icon">
-            <CheckCircle size={24} />
-          </div>
-          <div>
-            <div className="kpi-value">{kpis.verified}</div>
-            <div className="kpi-label">Total Verified</div>
-          </div>
+          <Card className="hover:border-emerald-500/50 transition-colors">
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className="h-10 w-10 rounded bg-emerald-500/10 flex items-center justify-center text-emerald-500">
+                <CheckCircle className="h-5 w-5" />
+              </div>
+              <div>
+                <div className="text-2xl font-bold text-foreground">{kpis.verified}</div>
+                <div className="text-xs text-muted-foreground">Total Verified</div>
+              </div>
+            </CardContent>
+          </Card>
         </button>
+
         <button
           type="button"
-          className="kpi-card kpi-rejected hover-lift"
+          className="text-left group"
           onClick={() => handleKpiClick("Rejected")}
-          style={{
-            cursor: "pointer",
-            textAlign: "left",
-            background: "transparent",
-            border: "none",
-            font: "inherit",
-            color: "inherit",
-          }}
         >
-          <div className="kpi-icon">
-            <AlertOctagon size={24} />
-          </div>
-          <div>
-            <div className="kpi-value">{kpis.rejected}</div>
-            <div className="kpi-label">Total Rejected</div>
-          </div>
+          <Card className="hover:border-destructive/50 transition-colors">
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className="h-10 w-10 rounded bg-destructive/10 flex items-center justify-center text-destructive">
+                <AlertOctagon className="h-5 w-5" />
+              </div>
+              <div>
+                <div className="text-2xl font-bold text-foreground">{kpis.rejected}</div>
+                <div className="text-xs text-muted-foreground">Total Rejected</div>
+              </div>
+            </CardContent>
+          </Card>
         </button>
       </div>
 
-      <div className="directory-toolbar animate-fade-up">
-        <div className="filter-group">
-          <label>Search Provider</label>
-          <div style={{ position: "relative" }}>
-            <Search
-              size={16}
-              style={{ position: "absolute", left: 12, top: 13, color: "var(--text-muted)" }}
-            />
-            <input
+      {/* Filter toolbar */}
+      <div className="flex flex-col sm:flex-row gap-4 items-stretch sm:items-end">
+        <div className="flex-1 space-y-1.5">
+          <label className="text-xs font-semibold text-muted-foreground">Search Provider</label>
+          <div className="relative">
+            <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground pointer-events-none" />
+            <Input
               type="text"
-              className="filter-input"
-              style={{ paddingLeft: "2.5rem" }}
+              className="pl-9 h-9 text-xs"
               placeholder="Name or email..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -180,10 +171,10 @@ export default function VerificationQueue() {
           </div>
         </div>
 
-        <div className="filter-group">
-          <label>Status</label>
+        <div className="w-full sm:w-48 space-y-1.5">
+          <label className="text-xs font-semibold text-muted-foreground">Status</label>
           <select
-            className="filter-input"
+            className="w-full h-9 rounded border border-border bg-background px-3 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value as any)}
           >
@@ -195,10 +186,10 @@ export default function VerificationQueue() {
           </select>
         </div>
 
-        <div className="filter-group">
-          <label>Service Category</label>
+        <div className="w-full sm:w-48 space-y-1.5">
+          <label className="text-xs font-semibold text-muted-foreground">Service Category</label>
           <select
-            className="filter-input"
+            className="w-full h-9 rounded border border-border bg-background px-3 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
             value={skillFilter}
             onChange={(e) => setSkillFilter(e.target.value)}
           >
@@ -211,115 +202,94 @@ export default function VerificationQueue() {
           </select>
         </div>
 
-        <button className="filter-btn" onClick={handleSearch}>
-          <Search size={16} /> Search
-        </button>
+        <Button onClick={handleSearch} className="h-9 gap-1.5 text-xs">
+          <Search className="h-3.5 w-3.5" /> Search
+        </Button>
       </div>
 
-      <div className="directory-table-card animate-fade-up animate-delay-100">
-        <table className="directory-table">
-          <thead>
-            <tr>
-              <th>Provider</th>
-              <th>Skills</th>
-              <th>Signed Up</th>
-              <th>Status</th>
-              <th style={{ textAlign: "right" }}>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.length === 0 ? (
-              <tr>
-                <td colSpan={4} style={{ textAlign: "center", padding: "3rem" }}>
-                  <div style={{ color: "var(--text-muted)" }}>
+      <Card className="overflow-hidden">
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Provider</TableHead>
+                <TableHead>Skills</TableHead>
+                <TableHead>Signed Up</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {items.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center p-12 text-muted-foreground text-sm">
                     No providers found matching this filter.
-                  </div>
-                </td>
-              </tr>
-            ) : (
-              items.map((provider) => (
-                <tr key={provider.id}>
-                  <td>
-                    <div className="provider-cell">
-                      {provider.profilePictureUrl ? (
-                        <img
-                          src={getFullMediaUrl(provider.profilePictureUrl)}
-                          alt={`${provider.fullName} avatar`}
-                          loading="lazy"
-                        />
-                      ) : (
-                        <div
-                          style={{
-                            width: 36,
-                            height: 36,
-                            borderRadius: "50%",
-                            background: "var(--accent)",
-                            color: "#fff",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            fontWeight: "bold",
-                          }}
-                        >
-                          {provider.fullName.charAt(0)}
-                        </div>
-                      )}
-                      <div>
-                        <div className="provider-name">{provider.fullName}</div>
-                        <div className="provider-sub truncate" style={{ maxWidth: 200 }}>
-                          {provider.serviceAreaDisplayName || "No location set"}
+                  </TableCell>
+                </TableRow>
+              ) : (
+                items.map((provider) => (
+                  <TableRow key={provider.id}>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-9 w-9">
+                          {provider.profilePictureUrl && (
+                            <AvatarImage
+                              src={getFullMediaUrl(provider.profilePictureUrl)}
+                              alt={provider.fullName}
+                            />
+                          )}
+                          <AvatarFallback className="text-xs font-bold bg-primary text-primary-foreground">
+                            {provider.fullName.charAt(0)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <div className="font-semibold text-foreground text-sm">
+                            {provider.fullName}
+                          </div>
+                          <div className="text-xs text-muted-foreground truncate max-w-xs">
+                            {provider.serviceAreaDisplayName || "No location set"}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </td>
-                  <td>
-                    <div style={{ display: "flex", gap: "4px", flexWrap: "wrap" }}>
-                      {provider.serviceCategories.slice(0, 2).map((s) => (
-                        <span
-                          key={s.id}
-                          style={{
-                            fontSize: "0.75rem",
-                            padding: "2px 8px",
-                            background: "var(--bg-surface-elevated)",
-                            border: "1px solid var(--border)",
-                            borderRadius: "4px",
-                          }}
-                        >
-                          {s.name}
-                        </span>
-                      ))}
-                      {provider.serviceCategories.length > 2 && (
-                        <span
-                          style={{
-                            fontSize: "0.75rem",
-                            padding: "2px 8px",
-                            color: "var(--text-muted)",
-                          }}
-                        >
-                          +{provider.serviceCategories.length - 2} more
-                        </span>
-                      )}
-                    </div>
-                  </td>
-                  <td>
-                    <div style={{ fontSize: "0.85rem" }}>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-1.5 flex-wrap">
+                        {provider.serviceCategories.slice(0, 2).map((s) => (
+                          <span
+                            key={s.id}
+                            className="text-[11px] px-2 py-0.5 rounded bg-muted border border-border text-muted-foreground"
+                          >
+                            {s.name}
+                          </span>
+                        ))}
+                        {provider.serviceCategories.length > 2 && (
+                          <span className="text-[11px] px-1.5 py-0.5 text-muted-foreground">
+                            +{provider.serviceCategories.length - 2} more
+                          </span>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground">
                       {new Date(provider.createdAt).toLocaleDateString()}
-                    </div>
-                  </td>
-                  <td>
-                    <StatusBadge status={provider.verificationStatus} size="sm" />
-                  </td>
-                  <td style={{ textAlign: "right" }}>
-                    <Link to={`/admin/verifications/${provider.id}`} className="table-action-btn">
-                      <Eye size={14} /> View
-                    </Link>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+                    </TableCell>
+                    <TableCell>
+                      <StatusBadge status={provider.verificationStatus} size="sm" />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Link
+                        to={`/admin/verifications/${provider.id}`}
+                        className={buttonVariants({ variant: "outline", size: "sm" })}
+                      >
+                        <Eye className="h-3.5 w-3.5 mr-1" /> View
+                      </Link>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </Card>
     </div>
   );
 }

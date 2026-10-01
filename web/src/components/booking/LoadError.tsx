@@ -1,7 +1,8 @@
 import { AlertTriangle, RefreshCw } from "lucide-react";
 import { extractApiError } from "../../lib/api";
 import { getHttpStatus } from "./httpStatus";
-import "./BookingComponents.css";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 
 interface LoadErrorProps {
   title: string;
@@ -18,17 +19,29 @@ export default function LoadError({ title, error, onRetry }: LoadErrorProps) {
       : extractApiError(error, "Something went wrong while contacting the server.");
 
   return (
-    <div className="booking-error-banner" role="alert">
-      <AlertTriangle size={18} />
-      <div className="booking-error-text">
-        <strong>{title}</strong>
-        <span>{message}</span>
+    <Alert
+      variant="destructive"
+      className="booking-error-banner flex items-start justify-between gap-4 p-4 my-4"
+      role="alert"
+    >
+      <div className="flex items-start gap-3">
+        <AlertTriangle className="h-5 w-5 shrink-0 mt-0.5" />
+        <div className="booking-error-text space-y-1">
+          <AlertTitle className="font-semibold">{title}</AlertTitle>
+          <AlertDescription className="text-sm">{message}</AlertDescription>
+        </div>
       </div>
       {onRetry && (
-        <button type="button" className="page-btn" onClick={onRetry}>
-          <RefreshCw size={14} /> Retry
-        </button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={onRetry}
+          className="page-btn shrink-0 flex items-center gap-1.5 h-8"
+        >
+          <RefreshCw className="h-3.5 w-3.5" /> Retry
+        </Button>
       )}
-    </div>
+    </Alert>
   );
 }

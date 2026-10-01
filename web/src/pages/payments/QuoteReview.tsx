@@ -11,7 +11,18 @@ import {
   AlertCircle,
   HelpCircle,
 } from "lucide-react";
-import "./Payments.css";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 export default function QuoteReview() {
   const { id: bookingId } = useParams<{ id: string }>();
@@ -62,218 +73,173 @@ export default function QuoteReview() {
   };
 
   return (
-    <div className="payments-page">
-      <div className="payments-header">
+    <div className="max-w-5xl mx-auto p-6 space-y-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "0.5rem",
-              marginBottom: "0.25rem",
-            }}
-          >
-            <span className="sandbox-badge">
-              <Zap size={14} /> AI Estimate & Verified Quote
-            </span>
+          <div className="flex items-center gap-2 mb-1">
+            <Badge
+              variant="outline"
+              className="border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 gap-1 text-xs"
+            >
+              <Zap className="h-3 w-3" /> AI Estimate & Verified Quote
+            </Badge>
           </div>
-          <h1 className="payments-title">Quote Review</h1>
-          <p className="payments-subtitle">
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">Quote Review</h1>
+          <p className="text-muted-foreground text-sm mt-0.5">
             Booking Ref:{" "}
-            <strong style={{ color: "var(--text-h)" }}>{bookingId?.slice(0, 8)}...</strong> •
+            <strong className="text-foreground font-mono">{bookingId?.slice(0, 8)}...</strong> •
             Transparent breakdown with zero hidden fees
           </p>
         </div>
-        <Link to="/bookings" className="btn-secondary">
+        <Link to="/bookings" className={buttonVariants({ variant: "outline" })}>
           Back to Bookings
         </Link>
       </div>
 
       {isLoading && (
-        <div className="payments-card" style={{ textAlign: "center", padding: "3rem" }}>
-          <div className="spinner" style={{ margin: "0 auto 1rem" }} />
-          <p>Calculating verified quote breakdown...</p>
-        </div>
+        <Card>
+          <CardContent className="text-center p-12 text-muted-foreground">
+            <p>Calculating verified quote breakdown...</p>
+          </CardContent>
+        </Card>
       )}
 
       {error && !invoice && (
-        <div
-          className="payments-card"
-          style={{
-            borderLeft: "4px solid var(--warning)",
-            backgroundColor: "var(--bg-warning)",
-            color: "var(--text-warning)",
-          }}
-        >
-          <div style={{ display: "flex", gap: "0.75rem", alignItems: "flex-start" }}>
-            <AlertCircle size={20} style={{ flexShrink: 0, marginTop: "2px" }} />
-            <div>
-              <strong>Using Estimated Baseline:</strong> Detailed invoice is pending provider
-              dispatch. Below is the automated AI baseline quote for this category.
-            </div>
-          </div>
-        </div>
+        <Alert className="border-amber-500/30 bg-amber-500/10 text-amber-800 dark:text-amber-300">
+          <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+          <AlertDescription>
+            <strong>Using Estimated Baseline:</strong> Detailed invoice is pending provider
+            dispatch. Below is the automated AI baseline quote for this category.
+          </AlertDescription>
+        </Alert>
       )}
 
-      <div className="checkout-grid">
-        <div>
-          <div className="payments-card">
-            <div className="payments-card-header">
-              <h2 className="payments-card-title">
-                <FileText size={20} color="var(--accent)" />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+        <div className="lg:col-span-2 space-y-6">
+          <Card>
+            <CardHeader className="pb-3 flex flex-row items-center justify-between">
+              <CardTitle className="text-base font-bold flex items-center gap-2">
+                <FileText className="h-4 w-4 text-primary" />
                 Itemised Service Estimate
-              </h2>
-              <span className="badge-status Issued">Price Locked</span>
-            </div>
-
-            <div className="payments-table-container">
-              <table className="payments-table">
-                <thead>
-                  <tr>
-                    <th>Item Description</th>
-                    <th>Type</th>
-                    <th style={{ textAlign: "right" }}>Amount (LKR)</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {parsedItems.map((line, idx) => (
-                    <tr key={idx}>
-                      <td style={{ fontWeight: 600 }}>{line.item}</td>
-                      <td>
-                        <span
-                          style={{
-                            fontSize: "0.75rem",
-                            padding: "0.2rem 0.5rem",
-                            background: "var(--bg-surface-elevated)",
-                            borderRadius: "4px",
-                          }}
-                        >
-                          {line.type || "Service"}
-                        </span>
-                      </td>
-                      <td style={{ textAlign: "right", fontWeight: 600 }}>
-                        {line.price.toLocaleString()}
-                      </td>
-                    </tr>
-                  ))}
-                  <tr>
-                    <td style={{ color: "var(--text-muted)" }}>Platform Trust & Safety Fee</td>
-                    <td>
-                      <span
-                        style={{
-                          fontSize: "0.75rem",
-                          padding: "0.2rem 0.5rem",
-                          background: "oklch(45% 0.2 260 / 0.1)",
-                          color: "var(--accent)",
-                          borderRadius: "4px",
-                        }}
-                      >
-                        15% Included
-                      </span>
-                    </td>
-                    <td style={{ textAlign: "right", color: "var(--text-muted)" }}>
-                      {platformFee.toLocaleString()}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-
-            <div className="invoice-summary-box">
-              <div className="summary-row">
-                <span>Base Service Rate:</span>
-                <span>LKR {baseAmount.toLocaleString()}</span>
-              </div>
-              <div className="summary-row">
-                <span>Trust & Platform Fee (15%):</span>
-                <span>LKR {platformFee.toLocaleString()}</span>
-              </div>
-              <div className="summary-row total">
-                <span>Total Payable:</span>
-                <span style={{ color: "var(--accent)" }}>LKR {totalAmount.toLocaleString()}</span>
-              </div>
-            </div>
-          </div>
-
-          <div
-            className="payments-card"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: "1rem",
-              flexWrap: "wrap",
-            }}
-          >
-            <div>
-              <h3
-                style={{ margin: 0, fontSize: "1.05rem", fontWeight: 700, color: "var(--text-h)" }}
+              </CardTitle>
+              <Badge
+                variant="outline"
+                className="border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 text-xs font-semibold"
               >
-                Ready to confirm this quote?
-              </h3>
-              <p style={{ margin: "0.25rem 0 0", fontSize: "0.85rem", color: "var(--text-muted)" }}>
-                Your payment will only be released to the provider upon your satisfaction.
-              </p>
-            </div>
-            <div style={{ display: "flex", gap: "0.75rem" }}>
-              <button className="btn-primary" onClick={handleAcceptQuote} disabled={isAccepted}>
-                <CheckCircle2 size={16} />
+                Price Locked
+              </Badge>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="border border-border rounded overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Item Description</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead className="text-right">Amount (LKR)</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {parsedItems.map((line, idx) => (
+                      <TableRow key={idx}>
+                        <TableCell className="font-medium text-sm">{line.item}</TableCell>
+                        <TableCell>
+                          <Badge variant="secondary" className="text-xs">
+                            {line.type || "Service"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right font-semibold text-sm">
+                          {line.price.toLocaleString()}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    <TableRow>
+                      <TableCell className="text-muted-foreground text-xs">
+                        Platform Trust & Safety Fee
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant="outline"
+                          className="border-primary/30 bg-primary/10 text-primary text-xs"
+                        >
+                          15% Included
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right text-muted-foreground text-xs">
+                        {platformFee.toLocaleString()}
+                      </TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
+              </div>
+
+              <div className="flex flex-col items-end gap-2 text-sm">
+                <div className="flex justify-between w-full max-w-xs text-muted-foreground">
+                  <span>Base Service Rate:</span>
+                  <span>LKR {baseAmount.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between w-full max-w-xs text-muted-foreground">
+                  <span>Trust & Platform Fee (15%):</span>
+                  <span>LKR {platformFee.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between w-full max-w-xs font-bold text-lg text-foreground border-t border-border pt-3 mt-1">
+                  <span>Total Payable:</span>
+                  <span className="text-primary font-mono">LKR {totalAmount.toLocaleString()}</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div>
+                <h3 className="font-bold text-foreground text-sm">Ready to confirm this quote?</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Your payment will only be released to the provider upon your satisfaction.
+                </p>
+              </div>
+              <Button onClick={handleAcceptQuote} disabled={isAccepted} className="gap-2 shrink-0">
+                <CheckCircle2 className="h-4 w-4" />
                 Accept Quote & Pay
-                <ArrowRight size={16} />
-              </button>
-            </div>
-          </div>
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            </CardContent>
+          </Card>
         </div>
 
-        <div>
-          <div className="payments-card">
-            <h3
-              className="payments-card-title"
-              style={{ fontSize: "1.1rem", marginBottom: "1rem" }}
-            >
-              <ShieldCheck size={22} color="var(--success)" />
-              Handee Guarantee
-            </h3>
-            <ul
-              style={{
-                paddingLeft: "1.2rem",
-                margin: "0 0 1.5rem",
-                fontSize: "0.88rem",
-                color: "var(--text)",
-                lineHeight: "1.7",
-              }}
-            >
-              <li>
-                <strong>Escrow Protection:</strong> Funds remain securely held in sandbox escrow
-                until you approve job completion.
-              </li>
-              <li>
-                <strong>No Surprise Surges:</strong> Quote is binding for the initial agreed scope
-                of work.
-              </li>
-              <li>
-                <strong>Dispute Resolution:</strong> 24/7 dedicated mediation if work does not match
-                criteria.
-              </li>
-            </ul>
+        <div className="space-y-4">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base font-bold flex items-center gap-2">
+                <ShieldCheck className="h-5 w-5 text-emerald-500" />
+                Handee Guarantee
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4 text-xs text-muted-foreground">
+              <ul className="list-disc pl-4 space-y-2 text-foreground">
+                <li>
+                  <strong className="text-foreground">Escrow Protection:</strong> Funds remain
+                  securely held in sandbox escrow until you approve job completion.
+                </li>
+                <li>
+                  <strong className="text-foreground">No Surprise Surges:</strong> Quote is binding
+                  for the initial agreed scope of work.
+                </li>
+                <li>
+                  <strong className="text-foreground">Dispute Resolution:</strong> 24/7 dedicated
+                  mediation if work does not match criteria.
+                </li>
+              </ul>
 
-            <div
-              style={{
-                backgroundColor: "var(--bg-surface-elevated)",
-                borderRadius: "10px",
-                padding: "1rem",
-                display: "flex",
-                gap: "0.75rem",
-                alignItems: "center",
-              }}
-            >
-              <HelpCircle size={20} color="var(--text-muted)" />
-              <div style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>
-                Need adjustments or extra parts added? Contact your assigned provider through the
-                booking chat.
+              <div className="bg-muted p-3.5 rounded flex items-center gap-2.5 text-xs text-muted-foreground">
+                <HelpCircle className="h-5 w-5 shrink-0 text-muted-foreground" />
+                <div>
+                  Need adjustments or extra parts added? Contact your assigned provider through the
+                  booking chat.
+                </div>
               </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>

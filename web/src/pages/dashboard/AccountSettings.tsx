@@ -4,6 +4,12 @@ import { usersApi } from "../../api/users";
 import { getFullMediaUrl } from "../../lib/api";
 import { CheckCircle2, Loader2, Save, Camera } from "lucide-react";
 
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+
 export default function AccountSettings() {
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -55,301 +61,133 @@ export default function AccountSettings() {
 
   if (isLoading) {
     return (
-      <div style={{ display: "flex", justifyContent: "center", padding: "4rem" }}>
-        <Loader2 size={32} className="animate-spin" color="var(--accent)" />
+      <div className="flex justify-center p-16">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <div style={{ maxWidth: "600px" }} className="animate-fade-up">
-      <h1
-        style={{
-          fontFamily: "var(--font-sans)",
-          fontSize: "2.5rem",
-          fontWeight: 700,
-          marginBottom: "2.5rem",
-          color: "var(--text-h)",
-          letterSpacing: "-0.03em",
-        }}
-      >
-        Account Settings
-      </h1>
-
-      <div
-        style={{
-          backgroundColor: "var(--bg-surface)",
-          padding: "clamp(1.5rem, 5vw, 3rem)",
-          borderRadius: "16px",
-          border: "1px solid var(--border)",
-          boxShadow: "var(--shadow-md)",
-        }}
-      >
-        {/* Avatar Upload Container */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "1.5rem",
-            marginBottom: "2.5rem",
-            paddingBottom: "2.5rem",
-            borderBottom: "1px solid var(--border)",
-          }}
-        >
-          <div style={{ position: "relative" }}>
-            {uploadPhotoMutation.isPending ? (
-              <div
-                style={{
-                  width: 80,
-                  height: 80,
-                  borderRadius: "50%",
-                  backgroundColor: "var(--bg-surface-elevated)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  border: "1px solid var(--border)",
-                }}
-              >
-                <Loader2 size={24} className="animate-spin" color="var(--accent)" />
-              </div>
-            ) : userProfile?.profilePictureUrl ? (
-              <img
-                src={getFullMediaUrl(userProfile.profilePictureUrl)}
-                alt="Profile Avatar"
-                style={{
-                  width: 80,
-                  height: 80,
-                  borderRadius: "50%",
-                  objectFit: "cover",
-                  border: "1px solid var(--border)",
-                }}
-              />
-            ) : (
-              <div
-                style={{
-                  width: 80,
-                  height: 80,
-                  borderRadius: "50%",
-                  backgroundColor: "var(--accent)",
-                  color: "#fff",
-                  fontSize: "2rem",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontWeight: "bold",
-                }}
-              >
-                {userProfile?.fullName?.charAt(0)}
-              </div>
-            )}
-
-            {/* File picker button overlap */}
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploadPhotoMutation.isPending}
-              style={{
-                position: "absolute",
-                bottom: -5,
-                right: -5,
-                backgroundColor: "var(--bg-surface)",
-                border: "1px solid var(--border)",
-                borderRadius: "50%",
-                width: 32,
-                height: 32,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                cursor: "pointer",
-                boxShadow: "var(--shadow-sm)",
-              }}
-              className="hover-lift"
-              title="Upload profile picture"
-              aria-label="Upload profile picture"
-            >
-              <Camera size={14} color="var(--text)" />
-            </button>
-            <input
-              type="file"
-              ref={fileInputRef}
-              style={{ display: "none" }}
-              accept="image/png, image/jpeg, image/webp"
-              onChange={handleFileChange}
-            />
-          </div>
-          <div>
-            <h3
-              style={{
-                fontSize: "1.125rem",
-                fontWeight: 600,
-                color: "var(--text-h)",
-                marginBottom: "0.25rem",
-              }}
-            >
-              Profile Picture
-            </h3>
-            <p className="field-desc" style={{ maxWidth: "300px" }}>
-              Upload a new avatar supporting JPEG or PNG format. Max size 2MB.
-            </p>
-          </div>
-        </div>
-
-        <h2
-          style={{
-            fontSize: "1.25rem",
-            marginBottom: "1.5rem",
-            fontFamily: "var(--font-sans)",
-            fontWeight: 600,
-            color: "var(--text-h)",
-          }}
-        >
-          Personal Information
-        </h2>
-
-        <form onSubmit={handleSave}>
-          <div className="form-group" style={{ marginBottom: "1.25rem" }}>
-            <label
-              htmlFor="settings-name"
-              style={{
-                display: "block",
-                fontSize: "0.95rem",
-                marginBottom: "0.5rem",
-                fontWeight: 600,
-                color: "var(--text-h)",
-              }}
-            >
-              Full Name
-            </label>
-            <input
-              id="settings-name"
-              name="fullName"
-              type="text"
-              defaultValue={userProfile?.fullName}
-              style={{
-                width: "100%",
-                padding: "1rem 1.25rem",
-                borderRadius: "8px",
-                border: "2px solid var(--border)",
-                backgroundColor: "var(--bg)",
-                color: "var(--text-h)",
-                fontSize: "1rem",
-                transition: "all 0.2s cubic-bezier(0.16, 1, 0.3, 1)",
-                boxSizing: "border-box",
-              }}
-              className="truncate"
-              required
-            />
-          </div>
-          <div className="form-group" style={{ marginBottom: "1.25rem" }}>
-            <label
-              htmlFor="settings-email"
-              style={{
-                display: "block",
-                fontSize: "0.95rem",
-                marginBottom: "0.5rem",
-                fontWeight: 600,
-                color: "var(--text-h)",
-              }}
-            >
-              Email Address (Read-Only)
-            </label>
-            <input
-              id="settings-email"
-              name="email"
-              type="email"
-              value={userProfile?.email || ""}
-              readOnly
-              style={{
-                width: "100%",
-                padding: "1rem 1.25rem",
-                borderRadius: "8px",
-                border: "1px solid var(--border)",
-                backgroundColor: "var(--bg-surface-elevated)",
-                color: "var(--text-muted)",
-                fontSize: "1rem",
-                boxSizing: "border-box",
-                opacity: 0.8,
-              }}
-              className="truncate"
-            />
-          </div>
-          <div className="form-group" style={{ marginBottom: "2.5rem" }}>
-            <label
-              htmlFor="settings-phone"
-              style={{
-                display: "block",
-                fontSize: "0.95rem",
-                marginBottom: "0.5rem",
-                fontWeight: 600,
-                color: "var(--text-h)",
-              }}
-            >
-              Phone Number
-            </label>
-            <input
-              id="settings-phone"
-              name="phoneNumber"
-              type="tel"
-              defaultValue={userProfile?.phoneNumber || ""}
-              placeholder="+1 234 567 8900"
-              style={{
-                width: "100%",
-                padding: "1rem 1.25rem",
-                borderRadius: "8px",
-                border: "2px solid var(--border)",
-                backgroundColor: "var(--bg)",
-                color: "var(--text-h)",
-                fontSize: "1rem",
-                transition: "all 0.2s cubic-bezier(0.16, 1, 0.3, 1)",
-                boxSizing: "border-box",
-              }}
-              className="truncate"
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={status !== "idle" || updateProfileMutation.isPending}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "0.5rem",
-              width: "100%",
-              padding: "1.125rem",
-              backgroundColor: status === "saved" ? "#10b981" : "var(--accent)",
-              color: "#fff",
-              border: "none",
-              borderRadius: "8px",
-              fontWeight: 700,
-              fontSize: "1.05rem",
-              cursor: status === "idle" ? "pointer" : "default",
-              transition: "all 0.3s var(--ease-spring)",
-              boxShadow:
-                status === "saved"
-                  ? "0 4px 14px 0 rgba(16, 185, 129, 0.4)"
-                  : "0 4px 14px 0 rgba(37, 99, 235, 0.3)",
-              transform:
-                status === "saving" || updateProfileMutation.isPending ? "scale(0.98)" : "scale(1)",
-            }}
-          >
-            {status === "idle" && (
-              <>
-                <Save size={20} /> Save Changes
-              </>
-            )}
-            {(status === "saving" || updateProfileMutation.isPending) && (
-              <>
-                <Loader2 size={20} className="animate-spin" /> Saving...
-              </>
-            )}
-            {status === "saved" && (
-              <>
-                <CheckCircle2 size={20} /> Settings Updated
-              </>
-            )}
-          </button>
-        </form>
+    <div className="max-w-2xl mx-auto space-y-6 animate-fade-up">
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight text-foreground mb-1">Account Settings</h1>
+        <p className="text-muted-foreground text-sm">
+          Manage your personal details and contact information.
+        </p>
       </div>
+
+      <Card className="bg-card text-card-foreground border-border shadow-xs">
+        <CardContent className="p-6 sm:p-8 space-y-8">
+          {/* Avatar Upload Container */}
+          <div className="flex items-center gap-6 pb-6 border-b border-border">
+            <div className="relative">
+              {uploadPhotoMutation.isPending ? (
+                <div className="h-20 w-20 flex items-center justify-center bg-muted border border-border">
+                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                </div>
+              ) : (
+                <Avatar className="h-20 w-20 border-2 border-border shadow-sm">
+                  {userProfile?.profilePictureUrl && (
+                    <AvatarImage
+                      src={getFullMediaUrl(userProfile.profilePictureUrl)}
+                      alt="Profile Avatar"
+                    />
+                  )}
+                  <AvatarFallback className="bg-primary text-primary-foreground font-bold text-2xl">
+                    {userProfile?.fullName?.charAt(0) || "U"}
+                  </AvatarFallback>
+                </Avatar>
+              )}
+
+              {/* File picker button */}
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploadPhotoMutation.isPending}
+                className="absolute -bottom-1 -right-1 h-8 w-8 rounded-full shadow-sm bg-background border-border"
+                title="Upload profile picture"
+                aria-label="Upload profile picture"
+              >
+                <Camera className="h-4 w-4 text-muted-foreground" />
+              </Button>
+              <input
+                type="file"
+                ref={fileInputRef}
+                className="hidden"
+                accept="image/png, image/jpeg, image/webp"
+                onChange={handleFileChange}
+              />
+            </div>
+            <div>
+              <h3 className="font-semibold text-base text-foreground mb-1">Profile Picture</h3>
+              <p className="text-xs text-muted-foreground max-w-xs leading-relaxed">
+                Upload a new avatar supporting JPEG or PNG format. Max size 2MB.
+              </p>
+            </div>
+          </div>
+
+          <form onSubmit={handleSave} className="space-y-5">
+            <div className="space-y-2">
+              <Label htmlFor="settings-name">Full Name</Label>
+              <Input
+                id="settings-name"
+                name="fullName"
+                type="text"
+                defaultValue={userProfile?.fullName}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="settings-email">Email Address (Read-Only)</Label>
+              <Input
+                id="settings-email"
+                name="email"
+                type="email"
+                value={userProfile?.email || ""}
+                readOnly
+                className="bg-muted text-muted-foreground cursor-not-allowed opacity-80"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="settings-phone">Phone Number</Label>
+              <Input
+                id="settings-phone"
+                name="phoneNumber"
+                type="tel"
+                defaultValue={userProfile?.phoneNumber || ""}
+                placeholder="+1 234 567 8900"
+              />
+            </div>
+
+            <Button
+              type="submit"
+              disabled={status !== "idle" || updateProfileMutation.isPending}
+              className={`w-full h-11 text-sm font-semibold transition-all ${
+                status === "saved" ? "bg-emerald-600 hover:bg-emerald-700 text-white" : ""
+              }`}
+            >
+              {status === "idle" && (
+                <span className="flex items-center gap-2">
+                  <Save className="h-4 w-4" /> Save Changes
+                </span>
+              )}
+              {(status === "saving" || updateProfileMutation.isPending) && (
+                <span className="flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" /> Saving...
+                </span>
+              )}
+              {status === "saved" && (
+                <span className="flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4" /> Settings Updated
+                </span>
+              )}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   );
 }

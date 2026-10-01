@@ -6,8 +6,9 @@ import { providerApi } from "../../api/providers";
 import { extractApiError } from "../../lib/api";
 import StatusBadge from "../../components/provider/StatusBadge";
 import DocumentCard from "../../components/provider/DocumentCard";
-import type { ProviderProfileAdminDto } from "../../api/types";
-import "./VerificationStatus.css";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 export default function VerificationStatusTracker() {
   const navigate = useNavigate();
@@ -44,7 +45,7 @@ export default function VerificationStatusTracker() {
   };
 
   if (isLoading) {
-    return <div className="state-container">Loading status...</div>;
+    return <div className="p-8 text-center text-muted-foreground">Loading status...</div>;
   }
 
   // If profile not found, errored, or fresh with no certs, show prompt to start verification
@@ -54,20 +55,21 @@ export default function VerificationStatusTracker() {
     (myProfile.verificationStatus === "Pending" && (myProfile.certifications ?? []).length === 0)
   ) {
     return (
-      <div className="empty-state verification-not-started animate-fade-up">
-        <AlertOctagon size={48} className="empty-state-icon" style={{ opacity: 0.5 }} />
-        <h2>Verification Not Started</h2>
-        <p>
-          You haven't submitted your verification documents yet. Please complete the setup wizard to
-          verify your identity and start accepting jobs.
-        </p>
-        <button
-          onClick={() => navigate("/provider/submit-verification")}
-          className="wizard-btn wizard-btn-primary"
-        >
-          Start Verification
-        </button>
-      </div>
+      <Card className="max-w-xl mx-auto my-12 rounded-none border-border">
+        <CardContent className="flex flex-col items-center text-center p-8 space-y-4">
+          <AlertOctagon className="w-12 h-12 text-muted-foreground/60" />
+          <h2 className="text-2xl font-bold tracking-tight text-foreground">
+            Verification Not Started
+          </h2>
+          <p className="text-sm text-muted-foreground max-w-sm">
+            You haven't submitted your verification documents yet. Please complete the setup wizard
+            to verify your identity and start accepting jobs.
+          </p>
+          <Button onClick={() => navigate("/provider/submit-verification")} className="mt-2">
+            Start Verification
+          </Button>
+        </CardContent>
+      </Card>
     );
   }
 
@@ -78,38 +80,38 @@ export default function VerificationStatusTracker() {
     switch (verificationStatus) {
       case "Pending":
         return {
-          icon: <Clock size={32} />,
+          icon: <Clock className="w-8 h-8 text-amber-500" />,
           title: "Verification Pending",
           desc: "Your application has been received and is waiting for an administrator to begin the review process. Please check back later.",
-          cssClass: "hero-pending",
+          borderClass: "border-l-4 border-l-amber-500",
         };
       case "InReview":
         return {
-          icon: <CheckCircle size={32} />,
+          icon: <CheckCircle className="w-8 h-8 text-blue-500" />,
           title: "Application In Review",
           desc: "An administrator is currently reviewing your documents and profile details. We will notify you once a decision is made.",
-          cssClass: "hero-review",
+          borderClass: "border-l-4 border-l-blue-500",
         };
       case "Verified":
         return {
-          icon: <CheckCircle size={32} />,
+          icon: <CheckCircle className="w-8 h-8 text-emerald-500" />,
           title: "You are verified!",
           desc: "Congratulations! Your profile is verified and visible to customers in our marketplace. You can now accept jobs.",
-          cssClass: "hero-verified",
+          borderClass: "border-l-4 border-l-emerald-500",
         };
       case "Rejected":
         return {
-          icon: <AlertOctagon size={32} />,
+          icon: <AlertOctagon className="w-8 h-8 text-destructive" />,
           title: "Verification Rejected",
           desc: "Unfortunately, your application was rejected. Please review the notes below and resubmit updated documents.",
-          cssClass: "hero-rejected",
+          borderClass: "border-l-4 border-l-destructive",
         };
       default:
         return {
-          icon: <Clock size={32} />,
+          icon: <Clock className="w-8 h-8 text-muted-foreground" />,
           title: "Status Unknown",
           desc: "",
-          cssClass: "hero-pending",
+          borderClass: "border-l-4 border-l-border",
         };
     }
   };
@@ -117,24 +119,30 @@ export default function VerificationStatusTracker() {
   const hero = getHeroConfig();
 
   return (
-    <div className="status-page-container animate-fade-up">
-      <div className={`status-hero ${hero.cssClass}`}>
-        <div className="status-hero-icon">{hero.icon}</div>
-        <h1>{hero.title}</h1>
-        <p>{hero.desc}</p>
-      </div>
+    <div className="max-w-5xl mx-auto px-4 py-8 space-y-6">
+      <Card className={`rounded-none border-border ${hero.borderClass}`}>
+        <CardContent className="p-6 flex items-start gap-4">
+          <div className="shrink-0 pt-0.5">{hero.icon}</div>
+          <div className="space-y-1">
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">{hero.title}</h1>
+            <p className="text-sm text-muted-foreground">{hero.desc}</p>
+          </div>
+        </CardContent>
+      </Card>
 
-      <div className="status-grid">
-        <div className="status-column-left">
-          <div className="status-section">
-            <h2>Application Timeline</h2>
-
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Timeline Column */}
+        <Card className="rounded-none border-border">
+          <CardHeader>
+            <CardTitle className="text-lg">Application Timeline</CardTitle>
+          </CardHeader>
+          <CardContent>
             {auditLogs.length === 0 ? (
-              <p className="text-muted">
+              <p className="text-sm text-muted-foreground">
                 No status updates yet. Your application was just created.
               </p>
             ) : (
-              <div className="timeline">
+              <div className="relative pl-6 space-y-6 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-border">
                 {/* Sort descending (newest first) */}
                 {[...auditLogs]
                   .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
@@ -145,22 +153,22 @@ export default function VerificationStatusTracker() {
                     const docRejected =
                       isDocumentAudit && log.note && log.note.includes("status set to Rejected");
 
-                    let dotClass = "dot-pending";
+                    let dotBg = "bg-amber-500";
                     if (isDocumentAudit) {
-                      dotClass = docApproved
-                        ? "dot-verified"
+                      dotBg = docApproved
+                        ? "bg-emerald-500"
                         : docRejected
-                          ? "dot-rejected"
-                          : "dot-review";
+                          ? "bg-destructive"
+                          : "bg-blue-500";
                     } else {
-                      dotClass =
+                      dotBg =
                         log.newStatus === "Rejected"
-                          ? "dot-rejected"
+                          ? "bg-destructive"
                           : log.newStatus === "Verified"
-                            ? "dot-verified"
+                            ? "bg-emerald-500"
                             : log.newStatus === "InReview"
-                              ? "dot-review"
-                              : "dot-pending";
+                              ? "bg-blue-500"
+                              : "bg-amber-500";
                     }
 
                     const ts = new Date(log.timestamp).toLocaleString("en-LK", {
@@ -169,42 +177,37 @@ export default function VerificationStatusTracker() {
                     });
 
                     return (
-                      <div key={log.id} className="timeline-item">
-                        <div className={`timeline-dot ${dotClass}`} />
-                        <div className="timeline-content">
-                          <div className="timeline-header">
+                      <div key={log.id} className="relative">
+                        <div
+                          className={`absolute -left-[1.85rem] top-1 w-3 h-3 rounded-full border-2 border-background ${dotBg}`}
+                        />
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between gap-2">
                             <div>
                               {log.previousStatus !== log.newStatus ? (
                                 <StatusBadge status={log.newStatus} size="sm" />
                               ) : (
-                                <span
-                                  style={{
-                                    fontWeight: 600,
-                                    padding: "4px 10px",
-                                    borderRadius: "99px",
-                                    fontSize: "0.75rem",
-                                    backgroundColor: docApproved
-                                      ? "var(--bg-success)"
+                                <Badge
+                                  variant={
+                                    docApproved
+                                      ? "default"
                                       : docRejected
-                                        ? "var(--bg-danger)"
-                                        : "var(--bg-card)",
-                                    color: docApproved
-                                      ? "var(--text-success)"
-                                      : docRejected
-                                        ? "var(--text-danger)"
-                                        : "var(--text-h)",
-                                  }}
+                                        ? "destructive"
+                                        : "secondary"
+                                  }
+                                  className="rounded-none text-xs"
                                 >
                                   {docApproved ? "Approved" : docRejected ? "Rejected" : "Audited"}
-                                </span>
+                                </Badge>
                               )}
                             </div>
-                            <span className="timeline-date">{ts}</span>
+                            <span className="text-xs text-muted-foreground">{ts}</span>
                           </div>
                           {log.note && (
-                            <div className="timeline-note">
-                              <strong>Admin Note:</strong> {log.note}
-                            </div>
+                            <p className="text-xs text-muted-foreground pt-1">
+                              <span className="font-semibold text-foreground">Admin Note:</span>{" "}
+                              {log.note}
+                            </p>
                           )}
                         </div>
                       </div>
@@ -212,16 +215,19 @@ export default function VerificationStatusTracker() {
                   })}
               </div>
             )}
-          </div>
-        </div>
+          </CardContent>
+        </Card>
 
-        <div className="status-column-right">
-          <div className="status-section">
-            <h2>Submitted Documents</h2>
+        {/* Documents Column */}
+        <Card className="rounded-none border-border">
+          <CardHeader>
+            <CardTitle className="text-lg">Submitted Documents</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
             {certifications.length === 0 ? (
-              <p className="text-muted">No documents uploaded.</p>
+              <p className="text-sm text-muted-foreground">No documents uploaded.</p>
             ) : (
-              <div className="documents-list">
+              <div className="space-y-3">
                 {certifications.map((cert) => (
                   <DocumentCard key={cert.id} certification={cert} onResubmit={handleResubmit} />
                 ))}
@@ -229,20 +235,15 @@ export default function VerificationStatusTracker() {
             )}
 
             {(resubmitMutation.isPending || uploadError) && (
-              <div
-                style={{
-                  marginTop: "1rem",
-                  padding: "0.75rem",
-                  background: "var(--bg-card)",
-                  borderRadius: "var(--radius-md)",
-                }}
-              >
-                {resubmitMutation.isPending && <p>Uploading document...</p>}
-                {uploadError && <p className="text-danger">{uploadError}</p>}
+              <div className="p-3 border border-border bg-muted/40 rounded-none text-sm space-y-1">
+                {resubmitMutation.isPending && (
+                  <p className="text-muted-foreground">Uploading document...</p>
+                )}
+                {uploadError && <p className="text-destructive font-medium">{uploadError}</p>}
               </div>
             )}
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

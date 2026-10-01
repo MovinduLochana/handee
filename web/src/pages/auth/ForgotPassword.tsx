@@ -4,7 +4,18 @@ import { useMutation } from "@tanstack/react-query";
 import { authApi } from "../../api/auth";
 import { extractApiError } from "../../lib/api";
 import { Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
-import "./Auth.css";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  CardFooter,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export default function ForgotPassword() {
   const [authError, setAuthError] = useState("");
@@ -30,109 +41,83 @@ export default function ForgotPassword() {
 
   if (isSent) {
     return (
-      <div className="auth-container">
-        <div className="auth-card" style={{ textAlign: "center" }}>
-          <div className="brand">Handee</div>
-          <h2>Check your inbox</h2>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "center",
-              margin: "1.5rem 0",
-              color: "var(--success)",
-            }}
-          >
-            <CheckCircle2 size={56} strokeWidth={1.5} />
-          </div>
-          <p className="subtitle">
-            If an account exists for that email, we've sent a password reset link.
-          </p>
-          {/* Fixed box-sizing bleeding bug */}
-          <Link
-            to="/login"
-            className="btn-primary"
-            style={{
-              display: "flex",
-              justifyContent: "center",
-              boxSizing: "border-box",
-              marginTop: "2rem",
-              textDecoration: "none",
-            }}
-          >
-            Back to log in
-          </Link>
-        </div>
+      <div className="min-h-screen flex items-center justify-center bg-muted/40 p-4">
+        <Card className="w-full max-w-md bg-card text-card-foreground border-border shadow-lg text-center">
+          <CardHeader className="space-y-2">
+            <div className="text-3xl font-black tracking-tight text-foreground">Handee</div>
+            <CardTitle className="text-2xl font-bold tracking-tight">Check your inbox</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex justify-center text-primary">
+              <CheckCircle2 className="h-14 w-14" strokeWidth={1.5} />
+            </div>
+            <p className="text-muted-foreground text-sm">
+              If an account exists for that email, we've sent a password reset link.
+            </p>
+            <Button asChild className="w-full mt-4">
+              <Link to="/login">Back to log in</Link>
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="auth-container">
-      <div className="auth-card">
-        <div className="brand">Handee</div>
-        <h2>Reset your password</h2>
-        <p className="subtitle">Enter your email address to receive a recovery link.</p>
+    <div className="min-h-screen flex items-center justify-center bg-muted/40 p-4">
+      <Card className="w-full max-w-md bg-card text-card-foreground border-border shadow-lg">
+        <CardHeader className="text-center space-y-2">
+          <div className="text-3xl font-black tracking-tight text-foreground">Handee</div>
+          <CardTitle className="text-2xl font-bold tracking-tight">Reset your password</CardTitle>
+          <CardDescription>Enter your email address to receive a recovery link.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {authError && (
+            <Alert variant="destructive" className="mb-6">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{authError}</AlertDescription>
+            </Alert>
+          )}
 
-        {authError && (
-          <div
-            style={{
-              backgroundColor: "var(--bg-danger)",
-              color: "var(--text-danger)",
-              padding: "1rem",
-              borderRadius: "8px",
-              marginBottom: "1.5rem",
-              display: "flex",
-              alignItems: "center",
-              gap: "0.75rem",
-              fontSize: "0.9rem",
-              fontWeight: 500,
-            }}
-            className="animate-fade-up"
-          >
-            <AlertCircle size={20} />
-            <div>{authError}</div>
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label htmlFor="email">Email address</label>
-            <input
-              type="email"
-              id="email"
-              name="email"
-              placeholder="name@example.com"
-              required
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email address</Label>
+              <Input
+                type="email"
+                id="email"
+                name="email"
+                placeholder="name@example.com"
+                required
+                disabled={forgotPasswordMutation.isPending}
+              />
+            </div>
+            <Button
+              type="submit"
+              className="w-full mt-2"
               disabled={forgotPasswordMutation.isPending}
-            />
-          </div>
-          <button
-            type="submit"
-            className="btn-primary"
-            disabled={forgotPasswordMutation.isPending}
-            style={{
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              gap: "0.5rem",
-            }}
-          >
-            {forgotPasswordMutation.isPending ? (
-              <>
-                <Loader2 size={20} className="animate-spin" /> Sending...
-              </>
-            ) : (
-              "Send reset link"
-            )}
-          </button>
-        </form>
-
-        <div className="auth-links">
+            >
+              {forgotPasswordMutation.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" /> Sending...
+                </>
+              ) : (
+                "Send reset link"
+              )}
+            </Button>
+          </form>
+        </CardContent>
+        <CardFooter className="flex flex-col space-y-2 text-center text-sm text-muted-foreground">
           <div>
-            Remember your password? <Link to="/login">Sign in</Link>
+            Remember your password?{" "}
+            <Link
+              to="/login"
+              className="font-semibold text-primary underline-offset-4 hover:underline"
+            >
+              Sign in
+            </Link>
           </div>
-        </div>
-      </div>
+        </CardFooter>
+      </Card>
     </div>
   );
 }
