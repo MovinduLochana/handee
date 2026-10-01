@@ -2,6 +2,17 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { serviceCategoryApi } from "../../api/serviceCategories";
 import { Plus, Trash2, Edit2, Loader2, Save, X, Tag } from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 // Curated set of trade/service-relevant emojis
 const TRADE_EMOJIS = [
@@ -46,45 +57,18 @@ function EmojiPicker({ value, onChange }: { value: string; onChange: (v: string)
   const [open, setOpen] = useState(false);
 
   return (
-    <div style={{ position: "relative" }}>
-      <button
+    <div className="relative">
+      <Button
         type="button"
+        variant="outline"
         onClick={() => setOpen((o) => !o)}
         title="Pick an icon"
-        style={{
-          width: 48,
-          height: 48,
-          fontSize: "1.5rem",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          border: "1px solid #d1d5db",
-          borderRadius: 8,
-          background: "white",
-          cursor: "pointer",
-          flexShrink: 0,
-        }}
+        className="h-10 w-10 text-xl p-0 flex items-center justify-center shrink-0"
       >
-        {value || <Tag size={20} color="#9ca3af" />}
-      </button>
+        {value || <Tag className="h-4 w-4 text-muted-foreground" />}
+      </Button>
       {open && (
-        <div
-          style={{
-            position: "absolute",
-            zIndex: 50,
-            top: 54,
-            left: 0,
-            background: "white",
-            border: "1px solid #e5e7eb",
-            borderRadius: 10,
-            boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
-            padding: "0.75rem",
-            width: 260,
-            display: "grid",
-            gridTemplateColumns: "repeat(7, 1fr)",
-            gap: 4,
-          }}
-        >
+        <div className="absolute z-50 top-12 left-0 bg-popover text-popover-foreground border border-border rounded-lg shadow-lg p-3 w-64 grid grid-cols-7 gap-1">
           {/* Clear option */}
           <button
             type="button"
@@ -93,19 +77,11 @@ function EmojiPicker({ value, onChange }: { value: string; onChange: (v: string)
               onChange("");
               setOpen(false);
             }}
-            style={{
-              width: 32,
-              height: 32,
-              fontSize: "0.65rem",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              border: "1px dashed #d1d5db",
-              borderRadius: 6,
-              background: value === "" ? "#fee2e2" : "white",
-              cursor: "pointer",
-              color: "#9ca3af",
-            }}
+            className={`h-7 w-7 text-xs flex items-center justify-center border border-dashed rounded transition-colors ${
+              value === ""
+                ? "bg-destructive/10 border-destructive text-destructive"
+                : "border-border text-muted-foreground hover:bg-muted"
+            }`}
           >
             ✕
           </button>
@@ -118,20 +94,11 @@ function EmojiPicker({ value, onChange }: { value: string; onChange: (v: string)
                 onChange(emoji);
                 setOpen(false);
               }}
-              style={{
-                width: 32,
-                height: 32,
-                fontSize: "1.1rem",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                border: "1px solid",
-                borderColor: value === emoji ? "#2563eb" : "transparent",
-                borderRadius: 6,
-                background: value === emoji ? "#eff6ff" : "transparent",
-                cursor: "pointer",
-                transition: "all 0.1s",
-              }}
+              className={`h-7 w-7 text-base flex items-center justify-center rounded border transition-colors ${
+                value === emoji
+                  ? "border-primary bg-primary/10"
+                  : "border-transparent hover:bg-muted"
+              }`}
             >
               {emoji}
             </button>
@@ -152,65 +119,43 @@ function CategoryRow({
   onDelete: () => void;
 }) {
   return (
-    <tr style={{ borderBottom: "1px solid #e5e7eb" }}>
-      <td style={{ padding: "1rem" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-          <span
-            style={{
-              width: 36,
-              height: 36,
-              fontSize: "1.25rem",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              background: "#f3f4f6",
-              borderRadius: 8,
-              flexShrink: 0,
-            }}
-          >
-            {cat.iconUrl || <Tag size={16} color="#9ca3af" />}
+    <TableRow>
+      <TableCell>
+        <div className="flex items-center gap-3">
+          <span className="h-9 w-9 text-lg flex items-center justify-center bg-muted rounded shrink-0">
+            {cat.iconUrl || <Tag className="h-4 w-4 text-muted-foreground" />}
           </span>
-          <span style={{ fontWeight: 500 }}>{cat.name}</span>
+          <span className="font-medium text-foreground text-sm">{cat.name}</span>
         </div>
-      </td>
-      <td style={{ padding: "1rem", color: "#6b7280", fontSize: "0.9rem" }}>
+      </TableCell>
+      <TableCell className="text-muted-foreground text-xs">
         {cat.iconUrl ? (
-          <code style={{ background: "#f3f4f6", padding: "2px 6px", borderRadius: 4 }}>
-            {cat.iconUrl}
-          </code>
+          <code className="bg-muted px-1.5 py-0.5 rounded font-mono">{cat.iconUrl}</code>
         ) : (
-          <span style={{ color: "#d1d5db" }}>—</span>
+          <span className="text-muted-foreground/60">—</span>
         )}
-      </td>
-      <td style={{ padding: "1rem", textAlign: "right" }}>
-        <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.5rem" }}>
-          <button
+      </TableCell>
+      <TableCell className="text-right">
+        <div className="flex justify-end gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={onEdit}
-            style={{
-              background: "none",
-              border: "none",
-              color: "#4b5563",
-              cursor: "pointer",
-              padding: "4px",
-            }}
+            className="h-8 w-8 text-muted-foreground hover:text-foreground"
           >
-            <Edit2 size={16} />
-          </button>
-          <button
+            <Edit2 className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={onDelete}
-            style={{
-              background: "none",
-              border: "none",
-              color: "#ef4444",
-              cursor: "pointer",
-              padding: "4px",
-            }}
+            className="h-8 w-8 text-destructive hover:bg-destructive/10"
           >
-            <Trash2 size={16} />
-          </button>
+            <Trash2 className="h-4 w-4" />
+          </Button>
         </div>
-      </td>
-    </tr>
+      </TableCell>
+    </TableRow>
   );
 }
 
@@ -229,73 +174,45 @@ function EditRow({
   const [icon, setIcon] = useState(initial.iconUrl);
 
   return (
-    <tr style={{ borderBottom: "1px solid #e5e7eb", background: "#f0f9ff" }}>
-      <td style={{ padding: "1rem" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+    <TableRow className="bg-muted/30">
+      <TableCell>
+        <div className="flex items-center gap-3">
           <EmojiPicker value={icon} onChange={setIcon} />
-          <input
+          <Input
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Category name"
-            style={{
-              padding: "0.5rem 0.75rem",
-              border: "1px solid #d1d5db",
-              borderRadius: 6,
-              flex: 1,
-              fontSize: "0.9rem",
-            }}
+            className="h-9 text-xs flex-1"
             autoFocus
           />
         </div>
-      </td>
-      <td style={{ padding: "1rem", color: "#9ca3af", fontSize: "0.85rem" }}>
+      </TableCell>
+      <TableCell className="text-xs text-muted-foreground">
         {icon ? (
           <span>
-            Preview: <span style={{ fontSize: "1.5rem" }}>{icon}</span>
+            Preview: <span className="text-lg ml-1">{icon}</span>
           </span>
         ) : (
           "No icon selected"
         )}
-      </td>
-      <td style={{ padding: "1rem", textAlign: "right" }}>
-        <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.5rem" }}>
-          <button
+      </TableCell>
+      <TableCell className="text-right">
+        <div className="flex justify-end gap-2">
+          <Button
+            size="sm"
             onClick={() => onSave({ name, iconUrl: icon || null })}
             disabled={isPending || !name.trim()}
-            style={{
-              background: "#10b981",
-              color: "white",
-              border: "none",
-              padding: "0.5rem 0.75rem",
-              borderRadius: 6,
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              gap: "0.25rem",
-            }}
+            className="h-8 text-xs gap-1"
           >
-            <Save size={14} /> Save
-          </button>
-          <button
-            onClick={onCancel}
-            style={{
-              background: "#f3f4f6",
-              color: "#374151",
-              border: "none",
-              padding: "0.5rem 0.75rem",
-              borderRadius: 6,
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              gap: "0.25rem",
-            }}
-          >
-            <X size={14} /> Cancel
-          </button>
+            <Save className="h-3.5 w-3.5" /> Save
+          </Button>
+          <Button variant="outline" size="sm" onClick={onCancel} className="h-8 text-xs gap-1">
+            <X className="h-3.5 w-3.5" /> Cancel
+          </Button>
         </div>
-      </td>
-    </tr>
+      </TableCell>
+    </TableRow>
   );
 }
 
@@ -339,99 +256,43 @@ export default function ServiceCategoriesAdmin() {
   });
 
   return (
-    <div style={{ padding: "2rem", maxWidth: "860px", margin: "0 auto" }}>
-      {/* Header */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: "1.5rem",
-        }}
-      >
+    <div className="max-w-4xl mx-auto p-6 space-y-6">
+      <div className="flex justify-between items-center">
         <div>
-          <h2 style={{ margin: 0 }}>Service Categories</h2>
-          <p style={{ margin: "4px 0 0", color: "#6b7280", fontSize: "0.875rem" }}>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">Service Categories</h1>
+          <p className="text-muted-foreground text-sm mt-0.5">
             {categories.length} categor{categories.length === 1 ? "y" : "ies"} · Pick an emoji as
             the icon
           </p>
         </div>
-        <button
+        <Button
           onClick={() => {
             setIsCreating(true);
             setEditingId(null);
           }}
           disabled={isCreating}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "0.5rem",
-            padding: "0.6rem 1.1rem",
-            background: "#2563eb",
-            color: "white",
-            border: "none",
-            borderRadius: 8,
-            cursor: "pointer",
-            fontWeight: 600,
-          }}
+          className="gap-2"
         >
-          <Plus size={16} /> New Category
-        </button>
+          <Plus className="h-4 w-4" /> New Category
+        </Button>
       </div>
 
-      <div
-        style={{
-          backgroundColor: "white",
-          borderRadius: 10,
-          boxShadow: "0 1px 4px rgba(0,0,0,0.08)",
-          overflow: "visible",
-        }}
-      >
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
-          <thead style={{ backgroundColor: "#f9fafb", borderBottom: "1px solid #e5e7eb" }}>
-            <tr>
-              <th
-                style={{
-                  padding: "0.875rem 1rem",
-                  textAlign: "left",
-                  color: "#374151",
-                  fontWeight: 600,
-                  fontSize: "0.875rem",
-                }}
-              >
-                Category
-              </th>
-              <th
-                style={{
-                  padding: "0.875rem 1rem",
-                  textAlign: "left",
-                  color: "#374151",
-                  fontWeight: 600,
-                  fontSize: "0.875rem",
-                }}
-              >
-                Icon value
-              </th>
-              <th
-                style={{
-                  padding: "0.875rem 1rem",
-                  textAlign: "right",
-                  color: "#374151",
-                  fontWeight: 600,
-                  fontSize: "0.875rem",
-                }}
-              >
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody>
+      <Card className="overflow-visible">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Category</TableHead>
+              <TableHead>Icon value</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {isLoading && (
-              <tr>
-                <td colSpan={3} style={{ padding: "2.5rem", textAlign: "center" }}>
-                  <Loader2 size={24} className="animate-spin" style={{ color: "#2563eb" }} />
-                </td>
-              </tr>
+              <TableRow>
+                <TableCell colSpan={3} className="p-12 text-center text-muted-foreground">
+                  <Loader2 className="h-6 w-6 animate-spin mx-auto text-primary" />
+                </TableCell>
+              </TableRow>
             )}
 
             {/* New category row */}
@@ -469,15 +330,16 @@ export default function ServiceCategoriesAdmin() {
             )}
 
             {categories.length === 0 && !isCreating && !isLoading && (
-              <tr>
-                <td colSpan={3} style={{ padding: "3rem", textAlign: "center", color: "#9ca3af" }}>
-                  No categories yet. Click <strong>New Category</strong> to add one.
-                </td>
-              </tr>
+              <TableRow>
+                <TableCell colSpan={3} className="p-12 text-center text-muted-foreground text-sm">
+                  No categories yet. Click <strong className="text-foreground">New Category</strong>{" "}
+                  to add one.
+                </TableCell>
+              </TableRow>
             )}
-          </tbody>
-        </table>
-      </div>
+          </TableBody>
+        </Table>
+      </Card>
     </div>
   );
 }

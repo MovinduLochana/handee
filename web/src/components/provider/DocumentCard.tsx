@@ -3,7 +3,6 @@ import { FileText, Download, Upload } from "lucide-react";
 import StatusBadge from "./StatusBadge";
 import type { CertificationDto } from "../../api/types";
 import { getFullMediaUrl } from "../../lib/api";
-import "./DocumentCard.css";
 
 interface DocumentCardProps {
   certification: CertificationDto;
@@ -19,6 +18,9 @@ const typeLabels: Record<string, string> = {
   BusinessRegistration: "Business Registration",
   Other: "Other Document",
 };
+
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 
 export default function DocumentCard({
   certification,
@@ -42,76 +44,85 @@ export default function DocumentCard({
   });
 
   return (
-    <div className="document-card hover-lift">
-      <div className="document-card-icon">
-        <FileText size={24} />
-      </div>
-      <div className="document-card-info">
-        <div className="document-card-type">
-          {typeLabels[certification.type] ?? certification.type}
+    <Card className="document-card transition-shadow hover:shadow-md bg-card text-card-foreground border-border">
+      <CardContent className="p-4 flex items-center gap-4 flex-wrap sm:flex-nowrap">
+        <div className="document-card-icon h-10 w-10 shrink-0 flex items-center justify-center bg-muted text-muted-foreground border border-border">
+          <FileText className="h-5 w-5" />
         </div>
-        <div className="document-card-filename truncate">
-          {certification.originalFileName ?? "Unnamed file"}
+        <div className="document-card-info flex-1 min-w-0">
+          <div className="document-card-type text-sm font-semibold text-foreground">
+            {typeLabels[certification.type] ?? certification.type}
+          </div>
+          <div className="document-card-filename truncate text-xs text-muted-foreground">
+            {certification.originalFileName ?? "Unnamed file"}
+          </div>
+          <div className="document-card-meta text-[11px] text-muted-foreground mt-0.5">
+            Uploaded {uploadDate}
+          </div>
         </div>
-        <div className="document-card-meta">Uploaded {uploadDate}</div>
-      </div>
-      <div className="document-card-status">
-        <StatusBadge status={certification.reviewStatus} size="sm" />
-      </div>
-      <div className="document-card-actions">
-        {certification.fileUrl && (
-          <a
-            href={getFullMediaUrl(certification.fileUrl)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="document-action-btn"
-            title="View document"
-          >
-            <Download size={16} />
-          </a>
-        )}
-        {showActions && certification.reviewStatus === "Pending" && (
-          <>
-            {onApprove && (
-              <button
-                className="document-action-btn action-approve"
-                onClick={() => onApprove(certification.id)}
-                title="Approve"
+        <div className="document-card-status shrink-0">
+          <StatusBadge status={certification.reviewStatus} size="sm" />
+        </div>
+        <div className="document-card-actions flex items-center gap-2 shrink-0">
+          {certification.fileUrl && (
+            <Button asChild variant="outline" size="icon" className="h-8 w-8" title="View document">
+              <a
+                href={getFullMediaUrl(certification.fileUrl)}
+                target="_blank"
+                rel="noopener noreferrer"
               >
-                ✓
-              </button>
-            )}
-            {onReject && (
-              <button
-                className="document-action-btn action-reject"
-                onClick={() => onReject(certification.id)}
-                title="Reject"
+                <Download className="h-4 w-4" />
+              </a>
+            </Button>
+          )}
+          {showActions && certification.reviewStatus === "Pending" && (
+            <>
+              {onApprove && (
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950"
+                  onClick={() => onApprove(certification.id)}
+                  title="Approve"
+                >
+                  ✓
+                </Button>
+              )}
+              {onReject && (
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8 text-destructive hover:bg-destructive/10"
+                  onClick={() => onReject(certification.id)}
+                  title="Reject"
+                >
+                  ✕
+                </Button>
+              )}
+            </>
+          )}
+          {onResubmit && certification.reviewStatus === "Rejected" && (
+            <>
+              <input
+                type="file"
+                hidden
+                ref={fileInputRef}
+                accept="image/*,application/pdf"
+                onChange={handleFileChange}
+              />
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-8 w-8 text-primary"
+                onClick={() => fileInputRef.current?.click()}
+                title="Resubmit Document"
               >
-                ✕
-              </button>
-            )}
-          </>
-        )}
-        {onResubmit && certification.reviewStatus === "Rejected" && (
-          <>
-            <input
-              type="file"
-              hidden
-              ref={fileInputRef}
-              accept="image/*,application/pdf"
-              onChange={handleFileChange}
-            />
-            <button
-              className="document-action-btn"
-              onClick={() => fileInputRef.current?.click()}
-              title="Resubmit Document"
-              style={{ color: "var(--accent)", borderColor: "var(--border)" }}
-            >
-              <Upload size={14} style={{ marginTop: "2px" }} />
-            </button>
-          </>
-        )}
-      </div>
-    </div>
+                <Upload className="h-4 w-4" />
+              </Button>
+            </>
+          )}
+        </div>
+      </CardContent>
+    </Card>
   );
 }

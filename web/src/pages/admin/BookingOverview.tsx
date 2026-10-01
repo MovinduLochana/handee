@@ -7,8 +7,7 @@ import type { BookingStatus, JobRequestStatus } from "../../api/types";
 import BookingStatusBadge from "../../components/booking/BookingStatusBadge";
 import LoadError from "../../components/booking/LoadError";
 import EmptyState from "../../components/provider/EmptyState";
-import "./VerificationQueue.css";
-import "./BookingAdmin.css";
+import { Card, CardContent } from "@/components/ui/card";
 
 interface CountCard<S extends string> {
   status: S;
@@ -26,19 +25,24 @@ function CountSection<S extends BookingStatus | JobRequestStatus>({
 }) {
   const total = cards.reduce((sum, c) => sum + c.count, 0);
   return (
-    <section className="booking-overview-section">
-      <h2>
-        {title} <span className="booking-overview-total">{total} total</span>
-      </h2>
-      <div className="booking-count-grid">
+    <section className="space-y-3">
+      <div className="flex items-center gap-2">
+        <h2 className="text-xl font-bold tracking-tight text-foreground">{title}</h2>
+        <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+          {total} total
+        </span>
+      </div>
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
         {cards.map((c) => (
-          <Link
-            key={c.status}
-            to={`${listPath}?status=${c.status}`}
-            className="booking-count-card hover-lift"
-          >
-            <BookingStatusBadge status={c.status} size="sm" />
-            <span className="booking-count-value">{c.count}</span>
+          <Link key={c.status} to={`${listPath}?status=${c.status}`} className="group">
+            <Card className="hover:border-primary/50 transition-colors">
+              <CardContent className="p-4 flex flex-col items-center text-center gap-2">
+                <BookingStatusBadge status={c.status} size="sm" />
+                <span className="text-2xl font-bold text-foreground group-hover:text-primary transition-colors">
+                  {c.count}
+                </span>
+              </CardContent>
+            </Card>
           </Link>
         ))}
       </div>
@@ -47,8 +51,6 @@ function CountSection<S extends BookingStatus | JobRequestStatus>({
 }
 
 export default function BookingOverview() {
-  // No summary endpoint exists for bookings or job requests, so each count
-  // is the totalCount of a one-item page of the real staff list endpoint.
   const jobCounts = useQueries({
     queries: JOB_REQUEST_STATUSES.map((status) => ({
       queryKey: ["jobRequests", "count", status],
@@ -69,17 +71,15 @@ export default function BookingOverview() {
   const failed = all.find((q) => q.isError);
 
   const header = (
-    <header className="admin-header">
-      <div>
-        <h1 className="admin-title">Booking Overview</h1>
-        <p className="admin-subtitle">Job requests and bookings by status.</p>
-      </div>
+    <header className="space-y-1">
+      <h1 className="text-3xl font-bold tracking-tight text-foreground">Booking Overview</h1>
+      <p className="text-muted-foreground text-sm">Job requests and bookings by status.</p>
     </header>
   );
 
   if (failed)
     return (
-      <div className="admin-page-container animate-fade-up">
+      <div className="max-w-7xl mx-auto p-6 space-y-6">
         {header}
         <LoadError
           title="Couldn't load booking counts"
@@ -91,9 +91,9 @@ export default function BookingOverview() {
 
   if (all.some((q) => q.isLoading))
     return (
-      <div className="admin-page-container animate-fade-up">
+      <div className="max-w-7xl mx-auto p-6 space-y-6">
         {header}
-        <div className="booking-state">Loading overview...</div>
+        <div className="text-muted-foreground text-sm">Loading overview...</div>
       </div>
     );
 
@@ -108,7 +108,7 @@ export default function BookingOverview() {
   const grandTotal = [...jobCards, ...bookingCards].reduce((sum, c) => sum + c.count, 0);
 
   return (
-    <div className="admin-page-container animate-fade-up">
+    <div className="max-w-7xl mx-auto p-6 space-y-6">
       {header}
 
       {grandTotal === 0 ? (
@@ -121,7 +121,7 @@ export default function BookingOverview() {
         <>
           <CountSection title="Job Requests" cards={jobCards} listPath="/admin/job-requests" />
           <CountSection title="Bookings" cards={bookingCards} listPath="/admin/bookings" />
-          <p className="booking-scope-note" style={{ margin: 0 }}>
+          <p className="text-xs text-muted-foreground">
             Counts come from each status's filtered staff list (one request per status). There's no
             aggregate endpoint yet.
           </p>

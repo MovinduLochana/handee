@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { bookingApi, BOOKING_STATUS_LABELS, getLegalTransitions } from "../../api/bookings";
 import type { BookingStatus } from "../../api/types";
 import { extractApiError } from "../../lib/api";
-import "./BookingComponents.css";
+import { Button } from "@/components/ui/button";
 
 interface BookingStatusControlProps {
   bookingId: string;
@@ -36,11 +36,12 @@ export default function BookingStatusControl({
   });
 
   return (
-    <div className="booking-status-control">
+    <div className="booking-status-control flex items-center gap-1.5 flex-wrap">
       <select
         aria-label={`Change status of ${label}`}
         value={target}
         disabled={mutation.isPending}
+        className="h-8 border border-input bg-background px-2.5 py-1 text-xs text-foreground shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50"
         onChange={(e) => {
           mutation.reset();
           setTarget(e.target.value as BookingStatus | "");
@@ -53,16 +54,21 @@ export default function BookingStatusControl({
           </option>
         ))}
       </select>
-      <button
+      <Button
         type="button"
-        className="table-action-btn"
+        size="sm"
+        variant="default"
+        className="table-action-btn h-8 text-xs px-2.5"
         disabled={!target || mutation.isPending}
         onClick={() => target && mutation.mutate(target)}
       >
         {mutation.isPending ? "Saving…" : "Apply"}
-      </button>
+      </Button>
       {mutation.isError && (
-        <div role="alert" className="booking-inline-error">
+        <div
+          role="alert"
+          className="booking-inline-error w-full text-xs text-destructive font-medium mt-1"
+        >
           {extractApiError(mutation.error, "Status update failed.")}
         </div>
       )}
