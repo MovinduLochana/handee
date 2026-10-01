@@ -4,7 +4,6 @@ import { serviceCategoryApi } from "../../api/serviceCategories";
 import { serviceListingsApi } from "../../api/serviceListings";
 import { X, Save, Clock, Banknote, Type, AlignLeft, Info } from "lucide-react";
 import type { ServiceListingDto } from "../../api/types";
-import "./ServiceListingForm.css";
 
 interface ServiceListingFormProps {
   initialData?: ServiceListingDto | null;

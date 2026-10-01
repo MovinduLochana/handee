@@ -84,14 +84,26 @@ export default function Login() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
-              <Input
-                type="password"
-                id="password"
-                name="password"
-                placeholder="••••••••"
-                required
-                disabled={loginMutation.isPending}
-              />
+              <div className="relative">
+                <Input
+                  type={showPassword ? "text" : "password"}
+                  id="password"
+                  name="password"
+                  placeholder="••••••••"
+                  required
+                  disabled={loginMutation.isPending}
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  className="absolute right-0 top-0 h-full px-3 py-1 text-muted-foreground hover:text-foreground flex items-center justify-center transition-colors cursor-pointer"
+                  aria-label={showPassword ? "Hide" : "Show"}
+                  title={showPassword ? "Hide password" : "View password"}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
             </div>
             <Button type="submit" className="w-full mt-2" disabled={loginMutation.isPending}>
               {loginMutation.isPending ? (

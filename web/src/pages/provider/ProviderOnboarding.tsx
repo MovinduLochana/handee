@@ -9,7 +9,6 @@ import StepIndicator from "../../components/provider/StepIndicator";
 import ServiceCategoryTag from "../../components/provider/ServiceCategoryTag";
 import { extractApiError } from "../../lib/api";
 import LocationPicker from "../../components/provider/LocationPicker";
-import "./ProviderOnboarding.css";
 
 const LANGUAGE_OPTIONS = ["Sinhala", "English", "Tamil"];
 

@@ -6,7 +6,6 @@ import { providerApi } from "../../api/providers";
 import { extractApiError } from "../../lib/api";
 import StatusBadge from "../../components/provider/StatusBadge";
 import DocumentCard from "../../components/provider/DocumentCard";
-import "./VerificationStatus.css";
 
 export default function VerificationStatusTracker() {
   const navigate = useNavigate();

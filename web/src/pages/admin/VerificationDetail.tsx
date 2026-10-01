@@ -25,7 +25,6 @@ import type {
 import StatusBadge from "../../components/provider/StatusBadge";
 import DocumentCard from "../../components/provider/DocumentCard";
 import { extractApiError } from "../../lib/api";
-import "./VerificationDetail.css";
 
 export default function VerificationDetail() {
   const { id } = useParams<{ id: string }>();

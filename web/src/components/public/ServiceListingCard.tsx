@@ -1,6 +1,5 @@
 import { Clock, Edit2 } from "lucide-react";
 import type { ServiceListingDto } from "../../api/types";
-import "./ServiceListingCard.css";
 
 interface ServiceListingCardProps {
   listing: ServiceListingDto;

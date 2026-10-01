@@ -14,7 +14,6 @@ import {
 import { providerApi } from "../../api/providers";
 import { providerAvailabilityApi } from "../../api/providerAvailability";
 import type { DayOperatingScheduleDto, UpdateOperatingScheduleDto } from "../../api/types";
-import "./ProviderAvailability.css";
 
 interface DayDef {
   dayIndex: number;

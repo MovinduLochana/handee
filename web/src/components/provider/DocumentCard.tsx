@@ -20,7 +20,8 @@ const typeLabels: Record<string, string> = {
 };
 
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { cn } from "cn";
 
 export default function DocumentCard({
   certification,
@@ -65,15 +66,15 @@ export default function DocumentCard({
         </div>
         <div className="document-card-actions flex items-center gap-2 shrink-0">
           {certification.fileUrl && (
-            <Button asChild variant="outline" size="icon" className="h-8 w-8" title="View document">
-              <a
-                href={getFullMediaUrl(certification.fileUrl)}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <Download className="h-4 w-4" />
-              </a>
-            </Button>
+            <a
+              href={getFullMediaUrl(certification.fileUrl)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={cn(buttonVariants({ variant: "outline", size: "icon" }), "h-8 w-8")}
+              title="View document"
+            >
+              <Download className="h-4 w-4" />
+            </a>
           )}
           {showActions && certification.reviewStatus === "Pending" && (
             <>

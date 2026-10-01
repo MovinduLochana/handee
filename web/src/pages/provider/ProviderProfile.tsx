@@ -10,7 +10,6 @@ import StatusBadge from "../../components/provider/StatusBadge";
 import { extractApiError } from "../../lib/api";
 import LocationPicker from "../../components/provider/LocationPicker";
 import ServiceListingCard from "../../components/public/ServiceListingCard";
-import "./ProviderProfile.css";
 
 const LANGUAGE_OPTIONS = ["Sinhala", "English", "Tamil"];
 

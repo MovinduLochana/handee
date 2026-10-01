@@ -279,6 +279,7 @@ export interface BookingResponseDto {
   category: string | null;
   description: string | null;
   notes: string | null;
+  durationHours: number;
 }
 
 /** DTO/ServiceCategoryResponseDto.cs */

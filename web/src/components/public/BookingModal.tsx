@@ -9,7 +9,6 @@ import {
   ExternalLink,
 } from "lucide-react";
 import type { ServiceListingDto } from "../../api/types";
-import "./BookingModal.css";
 
 interface BookingModalProps {
   listing: ServiceListingDto;

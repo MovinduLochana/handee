@@ -2,6 +2,7 @@ import { render, screen } from "@testing-library/react";
 import { describe, it, expect } from "vitest";
 import DocumentCard from "../../../components/provider/DocumentCard";
 import type { CertificationDto } from "../../../api/types";
+import { getFullMediaUrl } from "../../../lib/api";
 
 describe("DocumentCard Component", () => {
   const mockCert: CertificationDto = {
@@ -22,7 +23,7 @@ describe("DocumentCard Component", () => {
 
     const viewBtn = screen.getByTitle(/view document/i);
     expect(viewBtn).toBeInTheDocument();
-    expect(viewBtn).toHaveAttribute("href", "http://localhost:5057/uploads/nic.pdf");
+    expect(viewBtn).toHaveAttribute("href", getFullMediaUrl("/uploads/nic.pdf"));
 
     // Contains svg element from Eye icon
     const svgIcon = viewBtn.querySelector("svg");

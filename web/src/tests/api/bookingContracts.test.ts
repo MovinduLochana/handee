@@ -56,6 +56,7 @@ const BOOKING_KEYS = exactKeys<BookingResponseDto>()([
   "category",
   "description",
   "notes",
+  "durationHours",
 ]);
 
 const JOB_REQUEST_KEYS = exactKeys<JobRequestResponseDto>()([

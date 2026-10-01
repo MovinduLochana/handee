@@ -19,7 +19,6 @@ import ServiceCategoryTag from "../../components/provider/ServiceCategoryTag";
 import ServiceListingCard from "../../components/public/ServiceListingCard";
 import BookingModal from "../../components/public/BookingModal";
 import EmptyState from "../../components/provider/EmptyState";
-import "./PublicProviderProfile.css";
 
 export default function PublicProviderProfile() {
   const { providerId } = useParams<{ providerId: string }>();
