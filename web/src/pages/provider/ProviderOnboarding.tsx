@@ -9,6 +9,19 @@ import StepIndicator from "../../components/provider/StepIndicator";
 import ServiceCategoryTag from "../../components/provider/ServiceCategoryTag";
 import { extractApiError } from "../../lib/api";
 import LocationPicker from "../../components/provider/LocationPicker";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  CardFooter,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const LANGUAGE_OPTIONS = ["Sinhala", "English", "Tamil"];
 
@@ -252,153 +265,148 @@ export default function ProviderOnboarding() {
     });
   };
 
-  if (isProfileLoading)
-    return <div style={{ padding: "2rem", textAlign: "center" }}>Loading onboarding...</div>;
+  if (isProfileLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-sm font-medium text-muted-foreground animate-pulse">Loading onboarding...</div>
+      </div>
+    );
+  }
 
   return (
-    <div className="wizard-container">
-      <header className="wizard-header animate-fade-up">
-        <h1>Provider Onboarding</h1>
-        <p>Welcome! Complete your profile to get started.</p>
+    <div className="container max-w-3xl mx-auto py-10 px-4 space-y-8 animate-fade-up">
+      <header className="text-center space-y-2">
+        <h1 className="text-3xl font-bold tracking-tight text-foreground">Provider Onboarding</h1>
+        <p className="text-sm text-muted-foreground">Welcome! Complete your profile to get started.</p>
       </header>
 
-      <div className="animate-fade-up animate-delay-200">
+      <div>
         <StepIndicator steps={STEPS} currentStep={currentStep} />
       </div>
 
-      {error && <div className="wizard-error animate-fade-up">{error}</div>}
+      {error && (
+        <Alert variant="destructive">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
 
-      <div className="wizard-card" key={`step-${currentStep}`}>
+      <Card className="shadow-sm border-border" key={`step-${currentStep}`}>
         {/* ── STEP 0: Info ── */}
         {currentStep === 0 && (
-          <div className="wizard-step">
-            <h2>Personal & Business Information</h2>
-            <p className="step-subtitle">Tell customers who you are and what you do best.</p>
-
-            <div className="wizard-field">
-              <label htmlFor="headline">Headline (required)</label>
-              <input
-                id="headline"
-                type="text"
-                placeholder="e.g. Master Plumber with 10+ years experience"
-                value={headline}
-                onChange={(e) => setHeadline(e.target.value)}
-              />
-            </div>
-
-            <div className="wizard-field">
-              <label htmlFor="experience">Years of Experience (required)</label>
-              <input
-                id="experience"
-                type="number"
-                min="0"
-                placeholder="0"
-                value={yearsOfExperience}
-                onChange={(e) => setYearsOfExperience(parseInt(e.target.value) || "")}
-              />
-            </div>
-
-            <div className="wizard-field">
-              <label htmlFor="bio">Short Bio (required)</label>
-              <textarea
-                id="bio"
-                placeholder="A brief summary of your expertise."
-                value={bio}
-                onChange={(e) => setBio(e.target.value)}
-                style={{ minHeight: "80px" }}
-              />
-            </div>
-
-            <div className="wizard-field">
-              <label htmlFor="description">Detailed Description</label>
-              <textarea
-                id="description"
-                placeholder="Elaborate on your past work, certifications, and approach to customer service."
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-              />
-            </div>
-
-            <div className="wizard-field">
-              <label>Languages (select all that apply)</label>
-              <div
-                style={{
-                  display: "flex",
-                  gap: "1.5rem",
-                  flexWrap: "wrap",
-                  marginTop: "0.5rem",
-                  padding: "0.25rem 0",
-                }}
-              >
-                {LANGUAGE_OPTIONS.map((lang) => (
-                  <label
-                    key={lang}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "0.5rem",
-                      cursor: "pointer",
-                      fontSize: "0.95rem",
-                      fontWeight: 600,
-                      color: "var(--text-h)",
-                      textTransform: "none",
-                    }}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={languages.includes(lang)}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setLanguages((prev) => [...prev, lang]);
-                        } else {
-                          setLanguages((prev) => prev.filter((l) => l !== lang));
-                        }
-                      }}
-                      style={{ width: "18px", height: "18px", cursor: "pointer" }}
-                    />
-                    {lang}
-                  </label>
-                ))}
+          <>
+            <CardHeader>
+              <CardTitle className="text-xl font-bold" role="heading" aria-level={2}>
+                Personal & Business Information
+              </CardTitle>
+              <CardDescription>Tell customers who you are and what you do best.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-5">
+              <div className="space-y-2">
+                <Label htmlFor="headline">Headline (required)</Label>
+                <Input
+                  id="headline"
+                  type="text"
+                  placeholder="e.g. Master Plumber with 10+ years experience"
+                  value={headline}
+                  onChange={(e) => setHeadline(e.target.value)}
+                />
               </div>
-            </div>
 
-            <h3 style={{ marginTop: "2rem", marginBottom: "0.5rem" }}>Address</h3>
-            <div className="wizard-field">
-              <label htmlFor="addressLine1">Address Line 1</label>
-              <input
-                id="addressLine1"
-                type="text"
-                placeholder="Street address"
-                value={addressLine1}
-                onChange={(e) => setAddressLine1(e.target.value)}
-              />
-            </div>
-            <div className="wizard-field">
-              <label htmlFor="addressLine2">Address Line 2</label>
-              <input
-                id="addressLine2"
-                type="text"
-                placeholder="Apt, suite, unit, etc. (optional)"
-                value={addressLine2}
-                onChange={(e) => setAddressLine2(e.target.value)}
-              />
-            </div>
-            <div className="form-row">
-              <div className="form-col" style={{ flex: 1 }}>
-                <div className="wizard-field">
-                  <label htmlFor="city">City</label>
-                  <input
+              <div className="space-y-2">
+                <Label htmlFor="experience">Years of Experience (required)</Label>
+                <Input
+                  id="experience"
+                  type="number"
+                  min="0"
+                  placeholder="0"
+                  value={yearsOfExperience}
+                  onChange={(e) => setYearsOfExperience(parseInt(e.target.value) || "")}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="bio">Short Bio (required)</Label>
+                <Textarea
+                  id="bio"
+                  placeholder="A brief summary of your expertise."
+                  value={bio}
+                  onChange={(e) => setBio(e.target.value)}
+                  rows={3}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="description">Detailed Description</Label>
+                <Textarea
+                  id="description"
+                  placeholder="Elaborate on your past work, certifications, and approach to customer service."
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  rows={4}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Languages (select all that apply)</Label>
+                <div className="flex flex-wrap items-center gap-6 pt-1">
+                  {LANGUAGE_OPTIONS.map((lang) => (
+                    <label
+                      key={lang}
+                      className="flex items-center gap-2 cursor-pointer text-sm font-medium text-foreground select-none"
+                    >
+                      <input
+                        type="checkbox"
+                        aria-label={lang}
+                        checked={languages.includes(lang)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setLanguages((prev) => [...prev, lang]);
+                          } else {
+                            setLanguages((prev) => prev.filter((l) => l !== lang));
+                          }
+                        }}
+                        className="h-4 w-4 rounded border-input text-primary focus:ring-primary cursor-pointer accent-primary"
+                      />
+                      <span>{lang}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <h3 className="text-base font-semibold text-foreground pt-4 border-t border-border">Address</h3>
+              <div className="space-y-2">
+                <Label htmlFor="addressLine1">Address Line 1</Label>
+                <Input
+                  id="addressLine1"
+                  type="text"
+                  placeholder="Street address"
+                  value={addressLine1}
+                  onChange={(e) => setAddressLine1(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="addressLine2">Address Line 2</Label>
+                <Input
+                  id="addressLine2"
+                  type="text"
+                  placeholder="Apt, suite, unit, etc. (optional)"
+                  value={addressLine2}
+                  onChange={(e) => setAddressLine2(e.target.value)}
+                />
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="city">City</Label>
+                  <Input
                     id="city"
                     type="text"
                     value={city}
                     onChange={(e) => setCity(e.target.value)}
                   />
                 </div>
-              </div>
-              <div className="form-col" style={{ flex: 1 }}>
-                <div className="wizard-field">
-                  <label htmlFor="state">State / Province</label>
-                  <input
+                <div className="space-y-2">
+                  <Label htmlFor="state">State / Province</Label>
+                  <Input
                     id="state"
                     type="text"
                     value={addrState}
@@ -406,122 +414,111 @@ export default function ProviderOnboarding() {
                   />
                 </div>
               </div>
-            </div>
-            <div className="form-row">
-              <div className="form-col" style={{ flex: 1 }}>
-                <div className="wizard-field">
-                  <label htmlFor="postalCode">Postal Code</label>
-                  <input
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="postalCode">Postal Code</Label>
+                  <Input
                     id="postalCode"
                     type="text"
                     value={postalCode}
                     onChange={(e) => setPostalCode(e.target.value)}
                   />
                 </div>
-              </div>
-              <div className="form-col" style={{ flex: 1 }}>
-                <div className="wizard-field">
-                  <label htmlFor="country">Country</label>
-                  <input
+                <div className="space-y-2">
+                  <Label htmlFor="country">Country</Label>
+                  <Input
                     id="country"
                     type="text"
                     value={country}
                     disabled
                     readOnly
-                    style={{
-                      backgroundColor: "var(--bg-surface-elevated, #f1f5f9)",
-                      color: "var(--text-muted)",
-                      cursor: "not-allowed",
-                      opacity: 0.8,
-                    }}
+                    className="bg-muted text-muted-foreground cursor-not-allowed"
                   />
                 </div>
               </div>
-            </div>
-          </div>
+            </CardContent>
+          </>
         )}
 
         {/* ── STEP 1: Skills ── */}
         {currentStep === 1 && (
-          <div className="wizard-step">
-            <h2>Skills & Services</h2>
-            <p className="step-subtitle">
-              Select the broad categories you operate in, then list specific services.
-            </p>
-
-            <div className="wizard-field">
-              <label>Service Categories (required, select at least one)</label>
-              <div className="skill-grid">
-                {categories.map((cat) => (
-                  <ServiceCategoryTag
-                    key={cat.id}
-                    category={cat}
-                    selected={selectedSkillIds.has(cat.id)}
-                    onClick={() => toggleSkill(cat.id)}
-                  />
-                ))}
-              </div>
-            </div>
-
-            <div className="first-listing-section animate-fade-up" style={{ marginTop: "2rem" }}>
-              <div className="first-listing-header">
-                <Sparkles size={20} className="text-accent" />
-                <div>
-                  <h3 style={{ margin: 0, fontSize: "1.05rem", fontWeight: 700 }}>
-                    Create Your First Service Listing
-                  </h3>
-                  <p style={{ margin: "2px 0 0", fontSize: "0.85rem", color: "var(--text-muted)" }}>
-                    Set up a standardized, fixed-price service that customers can instantly book.
-                  </p>
+          <>
+            <CardHeader>
+              <CardTitle className="text-xl font-bold" role="heading" aria-level={2}>
+                Skills & Services
+              </CardTitle>
+              <CardDescription>
+                Select the broad categories you operate in, then list specific services.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-2">
+                <Label>Service Categories (required, select at least one)</Label>
+                <div className="flex flex-wrap gap-2 pt-1">
+                  {categories.map((cat) => (
+                    <ServiceCategoryTag
+                      key={cat.id}
+                      category={cat}
+                      selected={selectedSkillIds.has(cat.id)}
+                      onClick={() => toggleSkill(cat.id)}
+                    />
+                  ))}
                 </div>
               </div>
 
-              <div
-                className="first-listing-form"
-                style={{
-                  marginTop: "1.25rem",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "1rem",
-                }}
-              >
-                <div className="wizard-field" style={{ marginBottom: 0 }}>
-                  <label htmlFor="listingCategory">Category for this Service</label>
-                  <select
-                    id="listingCategory"
-                    value={listingCategoryId}
-                    onChange={(e) => setListingCategoryId(e.target.value)}
-                  >
-                    {categories
-                      .filter((c) => selectedSkillIds.has(c.id))
-                      .map((cat) => (
-                        <option key={cat.id} value={cat.id}>
-                          {cat.name}
-                        </option>
-                      ))}
-                    {selectedSkillIds.size === 0 && (
-                      <option value="">Please select a category above first</option>
-                    )}
-                  </select>
+              <div className="rounded-lg border border-border bg-muted/20 p-5 mt-6 space-y-4">
+                <div className="flex items-start gap-3">
+                  <div className="h-9 w-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0 mt-0.5">
+                    <Sparkles className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-foreground">
+                      Create Your First Service Listing
+                    </h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Set up a standardized, fixed-price service that customers can instantly book.
+                    </p>
+                  </div>
                 </div>
 
-                <div className="wizard-field" style={{ marginBottom: 0 }}>
-                  <label htmlFor="listingTitle">Service Title / Name (required)</label>
-                  <input
-                    id="listingTitle"
-                    type="text"
-                    placeholder="e.g. Standard Plumbing Inspection & Leak Repair"
-                    value={listingTitle}
-                    onChange={(e) => setListingTitle(e.target.value)}
-                    maxLength={100}
-                  />
-                </div>
+                <div className="space-y-4 pt-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="listingCategory">Category for this Service</Label>
+                    <select
+                      id="listingCategory"
+                      value={listingCategoryId}
+                      onChange={(e) => setListingCategoryId(e.target.value)}
+                      className="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-sm text-foreground shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    >
+                      {categories
+                        .filter((c) => selectedSkillIds.has(c.id))
+                        .map((cat) => (
+                          <option key={cat.id} value={cat.id}>
+                            {cat.name}
+                          </option>
+                        ))}
+                      {selectedSkillIds.size === 0 && (
+                        <option value="">Please select a category above first</option>
+                      )}
+                    </select>
+                  </div>
 
-                <div className="form-row">
-                  <div className="form-col" style={{ flex: 1 }}>
-                    <div className="wizard-field" style={{ marginBottom: 0 }}>
-                      <label htmlFor="listingPrice">Fixed Price in LKR (required)</label>
-                      <input
+                  <div className="space-y-2">
+                    <Label htmlFor="listingTitle">Service Title / Name (required)</Label>
+                    <Input
+                      id="listingTitle"
+                      type="text"
+                      placeholder="e.g. Standard Plumbing Inspection & Leak Repair"
+                      value={listingTitle}
+                      onChange={(e) => setListingTitle(e.target.value)}
+                      maxLength={100}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="listingPrice">Fixed Price in LKR (required)</Label>
+                      <Input
                         id="listingPrice"
                         type="number"
                         min="1"
@@ -531,11 +528,9 @@ export default function ProviderOnboarding() {
                         onChange={(e) => setListingFixedPrice(e.target.value)}
                       />
                     </div>
-                  </div>
-                  <div className="form-col" style={{ flex: 1 }}>
-                    <div className="wizard-field" style={{ marginBottom: 0 }}>
-                      <label htmlFor="listingDuration">Estimated Time (HH:MM:SS)</label>
-                      <input
+                    <div className="space-y-2">
+                      <Label htmlFor="listingDuration">Estimated Time (HH:MM:SS)</Label>
+                      <Input
                         id="listingDuration"
                         type="text"
                         placeholder="01:00:00"
@@ -545,147 +540,126 @@ export default function ProviderOnboarding() {
                       />
                     </div>
                   </div>
-                </div>
 
-                <div className="wizard-field" style={{ marginBottom: 0 }}>
-                  <label htmlFor="listingDescription">Description (required)</label>
-                  <textarea
-                    id="listingDescription"
-                    rows={3}
-                    placeholder="Describe what this service entails..."
-                    value={listingDescription}
-                    onChange={(e) => setListingDescription(e.target.value)}
-                    maxLength={1000}
-                    style={{ minHeight: "80px" }}
-                  />
-                </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="listingDescription">Description (required)</Label>
+                    <Textarea
+                      id="listingDescription"
+                      rows={3}
+                      placeholder="Describe what this service entails..."
+                      value={listingDescription}
+                      onChange={(e) => setListingDescription(e.target.value)}
+                      maxLength={1000}
+                    />
+                  </div>
 
-                <div className="wizard-field" style={{ marginBottom: 0 }}>
-                  <label htmlFor="listingScope">Scope of Work (required)</label>
-                  <textarea
-                    id="listingScope"
-                    rows={2}
-                    placeholder="Specify what is included and excluded (e.g., includes labor; replacement parts charged separately)..."
-                    value={listingScope}
-                    onChange={(e) => setListingScope(e.target.value)}
-                    maxLength={500}
-                    style={{ minHeight: "60px" }}
-                  />
+                  <div className="space-y-2">
+                    <Label htmlFor="listingScope">Scope of Work (required)</Label>
+                    <Textarea
+                      id="listingScope"
+                      rows={2}
+                      placeholder="Specify what is included and excluded (e.g., includes labor; replacement parts charged separately)..."
+                      value={listingScope}
+                      onChange={(e) => setListingScope(e.target.value)}
+                      maxLength={500}
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
-          </div>
+            </CardContent>
+          </>
         )}
 
         {/* ── STEP 2: Service Area ── */}
         {currentStep === 2 && (
-          <div className="wizard-step">
-            <h2>Service Area</h2>
-            <p className="step-subtitle">
-              Where are you based, and how far are you willing to travel?
-            </p>
-
-            <LocationPicker
-              lat={serviceAreaLatitude}
-              lng={serviceAreaLongitude}
-              address={serviceAreaAddress}
-              radiusKm={serviceRadiusKm}
-              isEditing={true}
-              onChange={(lat, lng, addr, rkm) => {
-                setServiceAreaLatitude(lat);
-                setServiceAreaLongitude(lng);
-                setServiceAreaAddress(addr);
-                setServiceRadiusKm(rkm);
-              }}
-            />
-          </div>
+          <>
+            <CardHeader>
+              <CardTitle className="text-xl font-bold" role="heading" aria-level={2}>
+                Service Area
+              </CardTitle>
+              <CardDescription>
+                Where are you based, and how far are you willing to travel?
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <LocationPicker
+                lat={serviceAreaLatitude}
+                lng={serviceAreaLongitude}
+                address={serviceAreaAddress}
+                radiusKm={serviceRadiusKm}
+                isEditing={true}
+                onChange={(lat, lng, addr, rkm) => {
+                  setServiceAreaLatitude(lat);
+                  setServiceAreaLongitude(lng);
+                  setServiceAreaAddress(addr);
+                  setServiceRadiusKm(rkm);
+                }}
+              />
+            </CardContent>
+          </>
         )}
 
         {/* ── STEP 3: Finish ── */}
         {currentStep === 3 && (
-          <div
-            className="wizard-step animate-fade-up"
-            style={{ textAlign: "center", padding: "2rem 1rem" }}
-          >
-            <div style={{ marginBottom: "1.5rem", color: "var(--accent)" }}>
-              <CheckCircle2 size={56} style={{ margin: "0 auto" }} />
+          <CardContent className="text-center py-10 px-4 space-y-6">
+            <div className="h-16 w-16 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto">
+              <CheckCircle2 className="h-10 w-10" />
             </div>
-            <h2>Profile Saved Successfully!</h2>
-            <p
-              style={{
-                color: "var(--text-muted)",
-                marginBottom: "3rem",
-                maxWidth: "400px",
-                margin: "0 auto 3rem",
-              }}
-            >
-              Your provider profile has been created. To unlock all features and start accepting
-              jobs, you must verify your identity.
-            </p>
+            <div className="space-y-2 max-w-md mx-auto">
+              <h2 className="text-2xl font-bold tracking-tight text-foreground">
+                Profile Saved Successfully!
+              </h2>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Your provider profile has been created. To unlock all features and start accepting
+                jobs, you must verify your identity.
+              </p>
+            </div>
 
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: "1rem",
-                alignItems: "center",
-              }}
-            >
-              <button
-                className="wizard-btn wizard-btn-primary"
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4 max-w-md mx-auto">
+              <Button
                 onClick={() => navigate("/provider/submit-verification")}
-                style={{
-                  width: "100%",
-                  maxWidth: "300px",
-                  display: "flex",
-                  justifyContent: "center",
-                }}
+                className="w-full gap-2"
               >
-                <ShieldCheck size={18} /> Verify Identity Now
-              </button>
-
-              <button
-                className="wizard-btn wizard-btn-secondary"
+                <ShieldCheck className="h-4 w-4" /> Verify Identity Now
+              </Button>
+              <Button
+                variant="outline"
                 onClick={() => navigate("/dashboard")}
-                style={{
-                  width: "100%",
-                  maxWidth: "300px",
-                  display: "flex",
-                  justifyContent: "center",
-                }}
+                className="w-full"
               >
                 Skip for now, go to Dashboard
-              </button>
+              </Button>
             </div>
-          </div>
+          </CardContent>
         )}
 
         {/* ── Navigation ── */}
         {currentStep < 3 && (
-          <div className="wizard-nav">
-            <button
-              className="wizard-btn wizard-btn-secondary"
+          <CardFooter className="flex items-center justify-between border-t border-border pt-6 mt-2">
+            <Button
+              variant="outline"
               onClick={prevStep}
               disabled={currentStep === 0 || saveProfileMutation.isPending}
+              className="gap-2"
             >
-              <ArrowLeft size={16} /> Back
-            </button>
+              <ArrowLeft className="h-4 w-4" /> Back
+            </Button>
 
-            <button
-              className="wizard-btn wizard-btn-primary"
+            <Button
               onClick={nextStep}
               disabled={saveProfileMutation.isPending || isSavingListing}
+              className="gap-2"
             >
               {isSavingListing && currentStep === 1
                 ? "Saving Listing..."
                 : saveProfileMutation.isPending && currentStep === 2
                   ? "Saving Profile..."
                   : "Next Step"}
-              {!saveProfileMutation.isPending && !isSavingListing && <ArrowRight size={16} />}
-            </button>
-          </div>
+              {!saveProfileMutation.isPending && !isSavingListing && <ArrowRight className="h-4 w-4" />}
+            </Button>
+          </CardFooter>
         )}
-      </div>
+      </Card>
     </div>
   );
 }
