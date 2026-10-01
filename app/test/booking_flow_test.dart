@@ -128,4 +128,32 @@ void main() {
     expect(find.text('Confirm & Book'), findsOneWidget);
     expect(find.byType(TextField), findsWidgets);
   });
+
+  testWidgets('ServiceListingDetailsScreen displays error when Confirm & Book tapped without selecting a slot', (tester) async {
+    final fakeRepo = FakeBookingRepository();
+    final bookingProvider = BookingProvider(repository: fakeRepo);
+
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider<BookingProvider>.value(value: bookingProvider),
+        ],
+        child: MaterialApp(
+          home: ServiceListingDetailsScreen(listing: sampleListing),
+        ),
+      ),
+    );
+
+    // Open booking sheet
+    await tester.tap(find.text('Book Service'));
+    await tester.pumpAndSettle();
+
+    // Tap Confirm & Book without selecting any slot
+    await tester.tap(find.text('Confirm & Book'));
+    await tester.pumpAndSettle();
+
+    // Validation error should appear
+    expect(find.text('Please select an available time slot.'), findsOneWidget);
+    expect(fakeRepo.lastCreatedBooking, isNull);
+  });
 }

@@ -1,21 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/constants/colors.dart';
+import '../../../data/models/provider_profile_model.dart';
 import '../../../providers/service_directory_provider.dart';
 import '../../../widgets/service_listing_card.dart';
-import 'create_job_screen.dart';
 import 'service_listing_details_screen.dart';
 
 class PublicProviderProfileScreen extends StatefulWidget {
   final String providerId;
+  final ProviderProfileModel? initialProfile;
 
-  const PublicProviderProfileScreen({super.key, required this.providerId});
+  const PublicProviderProfileScreen({
+    super.key,
+    required this.providerId,
+    this.initialProfile,
+  });
 
   @override
   State<PublicProviderProfileScreen> createState() => _PublicProviderProfileScreenState();
 }
 
 class _PublicProviderProfileScreenState extends State<PublicProviderProfileScreen> {
+  final ScrollController _scrollController = ScrollController();
+
   @override
   void initState() {
     super.initState();
@@ -25,24 +32,64 @@ class _PublicProviderProfileScreenState extends State<PublicProviderProfileScree
   }
 
   @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: Consumer<ServiceDirectoryProvider>(
         builder: (context, providerData, child) {
-          if (providerData.isLoading) {
+          if (providerData.isLoading && widget.initialProfile == null) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          final provider = providerData.selectedProvider;
+          final provider = providerData.selectedProvider ?? widget.initialProfile;
           if (provider == null) {
-            return const Center(child: Text("We couldn't find this provider's profile. They may have deactivated their account."));
+            return Scaffold(
+              backgroundColor: AppColors.background,
+              appBar: AppBar(
+                title: const Text('Provider Profile'),
+              ),
+              body: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.person_off_outlined, size: 56, color: AppColors.textMuted),
+                      const SizedBox(height: 14),
+                      const Text(
+                        "Provider Profile Unavailable",
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        "We couldn't find this provider's profile. They may have deactivated their account.",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 13, color: AppColors.textSecondary, height: 1.4),
+                      ),
+                      const SizedBox(height: 20),
+                      OutlinedButton.icon(
+                        onPressed: () => context.read<ServiceDirectoryProvider>().fetchProviderProfile(widget.providerId),
+                        icon: const Icon(Icons.refresh_rounded),
+                        label: const Text('Retry'),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
           }
 
           final services = providerData.selectedProviderServices;
           final bannerHeight = MediaQuery.sizeOf(context).width;
 
           return CustomScrollView(
+            controller: _scrollController,
             slivers: [
               SliverAppBar(
                 expandedHeight: bannerHeight,
@@ -332,16 +379,23 @@ class _PublicProviderProfileScreenState extends State<PublicProviderProfileScree
                   },
                   child: ElevatedButton(
                     onPressed: () {
-                      final initialCat = providerData.selectedProvider!.skillCategories.isNotEmpty 
-                          ? providerData.selectedProvider!.skillCategories.first 
-                          : null;
-                          
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => CreateJobScreen(initialCategory: initialCat),
-                        ),
-                      );
+                      final services = providerData.selectedProviderServices;
+                      if (services.isNotEmpty) {
+                        if (_scrollController.hasClients) {
+                          _scrollController.animateTo(
+                            _scrollController.position.maxScrollExtent,
+                            duration: const Duration(milliseconds: 600),
+                            curve: Curves.easeOutCubic,
+                          );
+                        }
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text("This provider doesn't have any active service listings at the moment."),
+                            backgroundColor: AppColors.textPrimary,
+                          ),
+                        );
+                      }
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary,
@@ -351,7 +405,17 @@ class _PublicProviderProfileScreenState extends State<PublicProviderProfileScree
                         borderRadius: BorderRadius.circular(16),
                       ),
                     ),
-                    child: const Text('Book this Pro', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, letterSpacing: -0.5)),
+                    child: const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.calendar_month, size: 20),
+                        SizedBox(width: 8),
+                        Text(
+                          'Browse & Book Services',
+                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, letterSpacing: -0.5),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),

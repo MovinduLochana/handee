@@ -11,6 +11,7 @@ import 'data/repositories/dispatch_repository.dart';
 import 'data/repositories/job_request_repository.dart';
 import 'data/repositories/invoice_repository.dart';
 import 'data/repositories/payment_repository.dart';
+import 'data/repositories/provider_availability_repository.dart';
 import 'data/repositories/provider_repository.dart';
 import 'data/repositories/service_category_repository.dart';
 import 'data/repositories/service_listing_repository.dart';
@@ -73,8 +74,15 @@ Widget buildHandeeApp({
     apiClient: client,
   );
 
+  final providerAvailabilityRepository = ProviderAvailabilityRepository(
+    apiClient: client,
+  );
+
   return MultiProvider(
     providers: [
+      Provider<ApiClient>.value(value: client),
+      Provider<ProviderAvailabilityRepository>.value(value: providerAvailabilityRepository),
+      Provider<BookingRepository>.value(value: bookingRepository),
       Provider<ServiceCategoryRepository>.value(value: serviceCategoryRepository),
       ChangeNotifierProvider<AuthProvider>(
         lazy: false,

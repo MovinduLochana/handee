@@ -58,15 +58,24 @@ class BookingProvider extends ChangeNotifier {
   }
 
   Future<void> selectBooking(String bookingId) async {
-    _selectedBooking = _bookings.firstWhere(
-      (b) => b.id == bookingId,
-      orElse: () => _bookings.first,
+    final existing = _bookings.cast<BookingModel?>().firstWhere(
+      (b) => b?.id == bookingId,
+      orElse: () => null,
     );
-    notifyListeners();
+    if (existing != null) {
+      _selectedBooking = existing;
+      notifyListeners();
+    }
 
     try {
       final fresh = await repository.getBookingById(bookingId);
       if (fresh != null) {
+        final idx = _bookings.indexWhere((b) => b.id == bookingId);
+        if (idx != -1) {
+          _bookings[idx] = fresh;
+        } else {
+          _bookings.add(fresh);
+        }
         _selectedBooking = fresh;
         notifyListeners();
       }
