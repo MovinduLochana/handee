@@ -332,12 +332,22 @@ public class BookingServiceTests
 
     // ── UpdateScheduleAsync ──────────────────────────────────────────────────
 
+    private static DateTimeOffset GetValidFutureWeekday(int hour = 10)
+    {
+        var dt = DateTime.UtcNow.Date.AddDays(1);
+        while (dt.DayOfWeek == DayOfWeek.Saturday || dt.DayOfWeek == DayOfWeek.Sunday)
+        {
+            dt = dt.AddDays(1);
+        }
+        return new DateTimeOffset(dt.Year, dt.Month, dt.Day, hour, 0, 0, TimeSpan.Zero);
+    }
+
     [Fact]
     public async Task UpdateScheduleAsync_Customer_Can_Reschedule_While_Requested()
     {
         var (db, booking, customerId, _) = await SeedBookingAsync(BookingStatus.Requested);
         var sut = new BookingService(db);
-        var scheduledAt = DateTimeOffset.UtcNow.AddDays(2);
+        var scheduledAt = GetValidFutureWeekday(10);
 
         var result = await sut.UpdateScheduleAsync(
             booking.Id, new UpdateBookingScheduleDto(scheduledAt), customerId, isRequesterAdmin: false);
@@ -351,7 +361,7 @@ public class BookingServiceTests
     {
         var (db, booking, _, providerId) = await SeedBookingAsync(BookingStatus.Accepted);
         var sut = new BookingService(db);
-        var scheduledAt = DateTimeOffset.UtcNow.AddDays(3);
+        var scheduledAt = GetValidFutureWeekday(14);
 
         var result = await sut.UpdateScheduleAsync(
             booking.Id, new UpdateBookingScheduleDto(scheduledAt), providerId, isRequesterAdmin: false);
@@ -370,7 +380,7 @@ public class BookingServiceTests
 
         await Assert.ThrowsAsync<ValidationException>(() =>
             sut.UpdateScheduleAsync(
-                booking.Id, new UpdateBookingScheduleDto(DateTimeOffset.UtcNow), customerId, isRequesterAdmin: false));
+                booking.Id, new UpdateBookingScheduleDto(GetValidFutureWeekday(11)), customerId, isRequesterAdmin: false));
     }
 
     [Fact]
@@ -378,7 +388,7 @@ public class BookingServiceTests
     {
         var (db, booking, _, _) = await SeedBookingAsync(BookingStatus.Completed);
         var sut = new BookingService(db);
-        var scheduledAt = DateTimeOffset.UtcNow.AddDays(1);
+        var scheduledAt = GetValidFutureWeekday(11);
 
         var result = await sut.UpdateScheduleAsync(
             booking.Id, new UpdateBookingScheduleDto(scheduledAt), Guid.NewGuid(), isRequesterAdmin: true);

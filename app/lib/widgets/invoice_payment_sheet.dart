@@ -38,7 +38,7 @@ class InvoicePaymentSheet extends StatefulWidget {
 }
 
 class _InvoicePaymentSheetState extends State<InvoicePaymentSheet> {
-  String _selectedGateway = 'Stripe Sandbox';
+  final String _selectedGateway = 'Stripe Sandbox';
   bool _isProcessing = false;
   bool _isSuccess = false;
   String? _transactionRef;

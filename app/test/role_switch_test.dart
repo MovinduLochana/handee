@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/testing.dart';
 import 'package:http/http.dart' as http;
 import 'package:app/core/network/api_client.dart';
 import 'package:app/core/services/storage_service.dart';
-import 'package:app/data/models/user_model.dart';
 import 'package:app/data/repositories/auth_repository.dart';
 import 'package:app/providers/auth_provider.dart';
 import 'package:app/main.dart';

@@ -233,6 +233,78 @@ void main() {
     expect(updated.status, 'InProgress');
   });
 
+  test('BookingRepository creates booking from listing via POST /bookings', () async {
+    const listingId = 'list-999';
+    final scheduledAt = DateTime.utc(2026, 10, 5, 10, 0);
+    Map<String, dynamic>? capturedBody;
+
+    final mockClient = MockClient((request) async {
+      if (request.url.path == '/bookings' && request.method == 'POST') {
+        capturedBody = jsonDecode(request.body) as Map<String, dynamic>;
+        return http.Response(
+          jsonEncode({
+            'id': 'book-777',
+            'serviceListingId': listingId,
+            'providerId': 'prov-456',
+            'customerId': 'cust-001',
+            'status': 'Requested',
+            'scheduledAt': scheduledAt.toIso8601String(),
+            'price': 6500.0,
+            'notes': 'Urgent repair required',
+            'createdAt': DateTime.now().toIso8601String(),
+          }),
+          201,
+        );
+      }
+      return http.Response('Not Found', 404);
+    });
+
+    final apiClient = ApiClient(storage: storage, httpClient: mockClient, baseUrl: 'http://test');
+    final repo = BookingRepository(apiClient: apiClient);
+
+    final booking = await repo.createBookingFromListing(
+      serviceListingId: listingId,
+      scheduledAt: scheduledAt,
+      notes: 'Urgent repair required',
+    );
+
+    expect(capturedBody, isNotNull);
+    expect(capturedBody!['serviceListingId'], listingId);
+    expect(capturedBody!['scheduledAt'], scheduledAt.toIso8601String());
+    expect(capturedBody!['notes'], 'Urgent repair required');
+
+    expect(booking.id, 'book-777');
+    expect(booking.serviceListingId, listingId);
+    expect(booking.status, 'Requested');
+    expect(booking.price, 6500.0);
+    expect(booking.notes, 'Urgent repair required');
+  });
+
+  test('BookingRepository surfaces ApiException on slot conflict or validation error', () async {
+    final mockClient = MockClient((request) async {
+      if (request.url.path == '/bookings' && request.method == 'POST') {
+        return http.Response(
+          jsonEncode({'error': 'Provider is not available at the requested time slot.'}),
+          400,
+        );
+      }
+      return http.Response('Not Found', 404);
+    });
+
+    final apiClient = ApiClient(storage: storage, httpClient: mockClient, baseUrl: 'http://test');
+    final repo = BookingRepository(apiClient: apiClient);
+
+    expect(
+      () => repo.createBookingFromListing(
+        serviceListingId: 'list-999',
+        scheduledAt: DateTime.utc(2026, 10, 5, 10, 0),
+      ),
+      throwsA(isA<ApiException>()
+          .having((e) => e.statusCode, 'statusCode', 400)
+          .having((e) => e.message, 'message', contains('Provider is not available'))),
+    );
+  });
+
   test('AssistantRepository queries backend AI assistant endpoint', () async {
     final mockClient = MockClient((request) async {
       if (request.url.path == '/assistant/query') {

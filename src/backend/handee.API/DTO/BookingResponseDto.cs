@@ -17,5 +17,6 @@ public record BookingResponseDto(
     decimal? Price = null,
     string? Category = null,
     string? Description = null,
-    string? Notes = null
+    string? Notes = null,
+    int DurationHours = 1
 );

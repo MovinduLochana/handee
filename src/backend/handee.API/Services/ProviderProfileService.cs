@@ -20,7 +20,8 @@ public class ProviderProfileService(
 
     public async Task<object?> GetProfileAsync(Guid id, string callerRole, CancellationToken ct = default)
     {
-        var profile = await profileRepo.GetByIdAsync(id, ct);
+        var profile = await profileRepo.GetByIdAsync(id, ct)
+                   ?? await profileRepo.GetByUserIdAsync(id, ct);
         if (profile is null)
         {
             // Return null so callers (controllers) can decide how to respond (404 Not Found)

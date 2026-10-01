@@ -16,81 +16,179 @@ public class ProviderAvailabilityService : IProviderAvailabilityService
         _db = db;
     }
 
-    public async Task<SlotResponseDto> CreateSlotAsync(Guid providerId, CreateSlotDto dto)
+    public async Task<ProviderOperatingScheduleDto> GetOperatingScheduleAsync(Guid providerId, CancellationToken ct = default)
     {
-        if (dto.EndTime <= dto.StartTime)
-            throw new ValidationException("EndTime must be after StartTime.");
-
-        // Checked against all of the provider's existing slots, booked or
-        // not — a booked slot still represents committed time and can't be
-        // double-offered.
-        var overlaps = await _db.ProviderAvailabilitySlots.AnyAsync(s =>
-            s.ProviderId == providerId &&
-            s.StartTime < dto.EndTime &&
-            dto.StartTime < s.EndTime);
-
-        if (overlaps)
-            throw new ValidationException("This slot overlaps with an existing availability slot.");
-
-        var slot = new ProviderAvailabilitySlot
-        {
-            ProviderId = providerId,
-            StartTime = dto.StartTime,
-            EndTime = dto.EndTime
-        };
-
-        _db.ProviderAvailabilitySlots.Add(slot);
-        await _db.SaveChangesAsync();
-
-        return ToDto(slot);
-    }
-
-    public async Task<List<SlotResponseDto>> GetForProviderAsync(Guid providerId)
-    {
-        var slots = await _db.ProviderAvailabilitySlots
-            .Where(s => s.ProviderId == providerId && !s.IsBooked)
-            .OrderBy(s => s.StartTime)
-            .ToListAsync();
-
-        return slots.Select(ToDto).ToList();
-    }
-
-    public async Task<List<SlotResponseDto>> GetOwnAsync(Guid providerId)
-    {
-        var slots = await _db.ProviderAvailabilitySlots
+        var existing = await _db.ProviderOperatingSchedules
             .Where(s => s.ProviderId == providerId)
-            .OrderBy(s => s.StartTime)
-            .ToListAsync();
+            .ToListAsync(ct);
 
-        return slots.Select(ToDto).ToList();
+        if (existing.Count == 0)
+        {
+            return new ProviderOperatingScheduleDto(providerId, GetDefaultWeeklySchedule());
+        }
+
+        var weekly = new List<DayOperatingScheduleDto>();
+        foreach (DayOfWeek day in Enum.GetValues<DayOfWeek>())
+        {
+            var match = existing.FirstOrDefault(s => s.DayOfWeek == day);
+            if (match != null)
+            {
+                weekly.Add(new DayOperatingScheduleDto(match.DayOfWeek, match.StartTime, match.EndTime, match.IsActive));
+            }
+            else
+            {
+                bool isWeekday = day >= DayOfWeek.Monday && day <= DayOfWeek.Friday;
+                weekly.Add(new DayOperatingScheduleDto(day, new TimeSpan(9, 0, 0), new TimeSpan(17, 0, 0), isWeekday));
+            }
+        }
+
+        return new ProviderOperatingScheduleDto(providerId, weekly);
     }
 
-    public async Task DeleteSlotAsync(Guid slotId, Guid requestingProviderId)
+    public async Task<ProviderOperatingScheduleDto> UpdateOperatingScheduleAsync(Guid providerId, UpdateOperatingScheduleDto dto, CancellationToken ct = default)
     {
-        var slot = await _db.ProviderAvailabilitySlots.FindAsync(slotId);
+        if (dto.WeeklySchedule == null || dto.WeeklySchedule.Count == 0)
+            throw new ValidationException("Weekly schedule cannot be empty.");
 
-        // Not found, or exists but belongs to someone else: same
-        // non-disclosure principle as BookingService's ownership checks —
-        // don't reveal that a slot exists to someone who doesn't own it.
-        if (slot is null || slot.ProviderId != requestingProviderId)
-            throw new NotFoundException("Availability slot not found.");
+        foreach (var day in dto.WeeklySchedule)
+        {
+            if (day.IsActive && day.EndTime <= day.StartTime)
+            {
+                throw new ValidationException($"EndTime must be after StartTime for {day.DayOfWeek}.");
+            }
+        }
 
-        // A real owner, just not allowed to do this right now — a state
-        // problem, not an identity problem, same reasoning as
-        // BookingService's reschedule-wrong-status rejection.
-        if (slot.IsBooked)
-            throw new ValidationException("Cannot delete a slot that has already been booked.");
+        var existing = await _db.ProviderOperatingSchedules
+            .Where(s => s.ProviderId == providerId)
+            .ToListAsync(ct);
 
-        _db.ProviderAvailabilitySlots.Remove(slot);
-        await _db.SaveChangesAsync();
+        foreach (var dayDto in dto.WeeklySchedule)
+        {
+            var match = existing.FirstOrDefault(s => s.DayOfWeek == dayDto.DayOfWeek);
+            if (match != null)
+            {
+                match.StartTime = dayDto.StartTime;
+                match.EndTime = dayDto.EndTime;
+                match.IsActive = dayDto.IsActive;
+                match.UpdatedAt = DateTimeOffset.UtcNow;
+            }
+            else
+            {
+                _db.ProviderOperatingSchedules.Add(new ProviderOperatingSchedule
+                {
+                    ProviderId = providerId,
+                    DayOfWeek = dayDto.DayOfWeek,
+                    StartTime = dayDto.StartTime,
+                    EndTime = dayDto.EndTime,
+                    IsActive = dayDto.IsActive
+                });
+            }
+        }
+
+        await _db.SaveChangesAsync(ct);
+        return await GetOperatingScheduleAsync(providerId, ct);
     }
 
-    private static SlotResponseDto ToDto(ProviderAvailabilitySlot s) => new(
-        s.Id,
-        s.ProviderId,
-        s.StartTime,
-        s.EndTime,
-        s.IsBooked,
-        s.CreatedAt,
-        s.UpdatedAt);
+    private static List<DayOperatingScheduleDto> GetDefaultWeeklySchedule()
+    {
+        var list = new List<DayOperatingScheduleDto>();
+        foreach (DayOfWeek day in Enum.GetValues<DayOfWeek>())
+        {
+            bool isWeekday = day >= DayOfWeek.Monday && day <= DayOfWeek.Friday;
+            list.Add(new DayOperatingScheduleDto(day, new TimeSpan(9, 0, 0), new TimeSpan(17, 0, 0), isWeekday));
+        }
+        return list;
+    }
+
+    public async Task<DailySlotsResponseDto> GetPredefinedSlotsForDateAsync(
+        Guid providerId,
+        DateOnly date,
+        int durationHours = 1,
+        CancellationToken ct = default)
+    {
+        if (durationHours < 1) durationHours = 1;
+
+        var dayOfWeek = date.DayOfWeek;
+
+        // Fetch provider's operating schedule for this DayOfWeek
+        var schedule = await _db.ProviderOperatingSchedules
+            .FirstOrDefaultAsync(s => s.ProviderId == providerId && s.DayOfWeek == dayOfWeek, ct);
+
+        int startHour;
+        int endHour;
+        bool isWorking;
+
+        if (schedule != null)
+        {
+            isWorking = schedule.IsActive;
+            startHour = schedule.StartTime.Hours;
+            endHour = schedule.EndTime.Hours;
+        }
+        else
+        {
+            // Fallback: Monday to Friday is 09:00 - 17:00
+            isWorking = dayOfWeek >= DayOfWeek.Monday && dayOfWeek <= DayOfWeek.Friday;
+            startHour = 9;
+            endHour = 17;
+        }
+
+        if (!isWorking || startHour >= endHour)
+        {
+            return new DailySlotsResponseDto(providerId, date, durationHours, false, new List<PredefinedSlotDto>());
+        }
+
+        var dayStartUtc = new DateTimeOffset(date.Year, date.Month, date.Day, 0, 0, 0, TimeSpan.Zero);
+        var dayEndUtc = dayStartUtc.AddDays(1);
+
+        var activeBookings = await _db.Bookings
+            .Include(b => b.ServiceListing)
+            .Where(b => b.ProviderId == providerId
+                        && b.ScheduledAt != null
+                        && b.ScheduledAt < dayEndUtc
+                        && b.ScheduledAt.Value.AddHours(b.ServiceListing != null ? (b.ServiceListing.DurationHours > 0 ? b.ServiceListing.DurationHours : 1) : 1) > dayStartUtc
+                        && (b.Status == BookingStatus.Requested || b.Status == BookingStatus.Accepted || b.Status == BookingStatus.InProgress))
+            .Select(b => new
+            {
+                Start = b.ScheduledAt!.Value,
+                End = b.ScheduledAt.Value.AddHours(b.ServiceListing != null ? (b.ServiceListing.DurationHours > 0 ? b.ServiceListing.DurationHours : 1) : 1)
+            })
+            .ToListAsync(ct);
+
+        var nowUtc = DateTimeOffset.UtcNow;
+        var slots = new List<PredefinedSlotDto>();
+
+        for (int h = startHour; h < endHour; h++)
+        {
+            var slotStart = new DateTimeOffset(date.Year, date.Month, date.Day, h, 0, 0, TimeSpan.Zero);
+            var slotEnd = slotStart.AddHours(durationHours);
+            var slotKey = $"{h:D2}:00";
+
+            var dummyStart = DateTime.Today.AddHours(h);
+            var dummyEnd = DateTime.Today.AddHours(h + durationHours);
+            var displayLabel = $"{dummyStart:hh:mm tt} - {dummyEnd:hh:mm tt}";
+
+            if (slotStart <= nowUtc)
+            {
+                slots.Add(new PredefinedSlotDto(slotKey, displayLabel, slotStart, slotEnd, false, "Past"));
+                continue;
+            }
+
+            if (h + durationHours > endHour)
+            {
+                slots.Add(new PredefinedSlotDto(slotKey, displayLabel, slotStart, slotEnd, false, "InsufficientTime"));
+                continue;
+            }
+
+            bool isBooked = activeBookings.Any(b => b.Start < slotEnd && slotStart < b.End);
+            if (isBooked)
+            {
+                slots.Add(new PredefinedSlotDto(slotKey, displayLabel, slotStart, slotEnd, false, "Booked"));
+                continue;
+            }
+
+            slots.Add(new PredefinedSlotDto(slotKey, displayLabel, slotStart, slotEnd, true, null));
+        }
+
+        return new DailySlotsResponseDto(providerId, date, durationHours, true, slots);
+    }
 }

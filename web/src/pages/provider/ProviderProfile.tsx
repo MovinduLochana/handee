@@ -1,21 +1,25 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { User, Eye, CheckCircle2, MapPin, Home } from "lucide-react";
+import { User, Eye, CheckCircle2, MapPin, Home, Briefcase, X } from "lucide-react";
 import { providerApi } from "../../api/providers";
 import { serviceCategoryApi } from "../../api/serviceCategories";
 import { serviceListingsApi } from "../../api/serviceListings";
 import ServiceCategoryTag from "../../components/provider/ServiceCategoryTag";
 import StatusBadge from "../../components/provider/StatusBadge";
-import { extractApiError, getFullMediaUrl } from "../../lib/api";
+import { extractApiError } from "../../lib/api";
 import LocationPicker from "../../components/provider/LocationPicker";
 import ServiceListingCard from "../../components/public/ServiceListingCard";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+
+const LANGUAGE_OPTIONS = ["Sinhala", "English", "Tamil"];
 
 export default function ProviderProfile() {
   const navigate = useNavigate();
@@ -25,6 +29,7 @@ export default function ProviderProfile() {
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "success" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState("");
 
+  // Fetch user basic profile (handled by layout, but we need own data to edit)
   const { data: myProfile, isLoading } = useQuery({
     queryKey: ["myProfile"],
     queryFn: providerApi.getMyProfile,
@@ -132,6 +137,7 @@ export default function ProviderProfile() {
     saveMutation.mutate();
   };
 
+  // Shared input handlers
   const handleAddLang = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter" || e.key === ",") {
       e.preventDefault();
@@ -160,161 +166,224 @@ export default function ProviderProfile() {
     });
   };
 
-  if (isLoading)
-    return <div className="p-16 text-center text-muted-foreground text-sm">Loading profile...</div>;
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-sm font-medium text-muted-foreground animate-pulse">
+          Loading profile...
+        </div>
+      </div>
+    );
+  }
 
   if (!myProfile) {
     return (
-      <div className="max-w-md mx-auto p-12 text-center space-y-4">
-        <h2 className="text-xl font-bold text-foreground">No Profile Found</h2>
-        <p className="text-muted-foreground text-sm">
-          You need to complete the verification wizard before managing your profile.
-        </p>
-        <Button onClick={() => navigate("/provider/verification")}>Start Setup Wizard</Button>
+      <div className="container max-w-lg mx-auto py-16 px-4">
+        <Card className="text-center p-8 border-dashed shadow-sm">
+          <CardContent className="space-y-4 pt-4">
+            <h2 className="text-2xl font-bold tracking-tight text-foreground">No Profile Found</h2>
+            <p className="text-sm text-muted-foreground">
+              You need to complete the verification wizard before managing your profile.
+            </p>
+            <Button onClick={() => navigate("/provider/verification")} className="mt-2">
+              Start Setup Wizard
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="max-w-5xl mx-auto p-6 space-y-6">
-      {/* Header */}
-      <Card>
-        <CardContent className="p-6 flex flex-col sm:flex-row items-center sm:items-start justify-between gap-6">
-          <div className="flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">
-            <Avatar className="h-20 w-20 border-2 border-border shadow-sm">
-              {myProfile.profilePictureUrl && (
-                <AvatarImage src={getFullMediaUrl(myProfile.profilePictureUrl)} alt="Profile" />
-              )}
-              <AvatarFallback className="text-2xl font-bold bg-primary text-primary-foreground">
-                {myProfile.fullName.charAt(0).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
+    <div className="container max-w-5xl mx-auto py-8 px-4 space-y-8 animate-fade-up pb-24">
+      {/* ── Header ── */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-border">
+        <div className="flex items-start gap-4">
+          <Avatar className="h-20 w-20 border-2 border-border shadow-xs shrink-0">
+            {myProfile.profilePictureUrl ? (
+              <AvatarImage
+                src={
+                  myProfile.profilePictureUrl.startsWith("http")
+                    ? myProfile.profilePictureUrl
+                    : `http://localhost:5057${myProfile.profilePictureUrl}`
+                }
+                alt={myProfile.fullName}
+              />
+            ) : null}
+            <AvatarFallback className="text-xl font-bold bg-primary/10 text-primary">
+              {myProfile.fullName.charAt(0).toUpperCase()}
+            </AvatarFallback>
+          </Avatar>
 
-            <div className="space-y-1">
-              <div className="flex items-center justify-center sm:justify-start gap-2.5 flex-wrap">
-                <h1 className="text-2xl font-bold text-foreground">{myProfile.fullName}</h1>
-                <StatusBadge status={myProfile.verificationStatus} size="sm" />
+          <div className="space-y-1">
+            <div className="flex items-center gap-3 flex-wrap">
+              <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">
+                {myProfile.fullName}
+              </h1>
+              <StatusBadge status={myProfile.verificationStatus} size="sm" />
+            </div>
+            <div className="text-sm font-medium text-foreground">
+              {myProfile.headline ?? "Complete your profile headline"}
+            </div>
+            {myProfile.serviceAreaDisplayName && (
+              <div className="text-xs text-muted-foreground flex items-center gap-1.5 font-medium">
+                <MapPin className="h-3.5 w-3.5 text-primary shrink-0" />
+                <span>{myProfile.serviceAreaDisplayName}</span>
               </div>
-              <div className="flex items-center justify-center sm:justify-start gap-3 text-xs text-muted-foreground flex-wrap">
-                <span>{myProfile.headline ?? "Complete your profile headline"}</span>
-                {myProfile.serviceAreaDisplayName && (
-                  <span className="flex items-center gap-1">
-                    <MapPin className="h-3.5 w-3.5" /> {myProfile.serviceAreaDisplayName}
-                  </span>
-                )}
-              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3 shrink-0 flex-wrap">
+          <Button
+            variant="outline"
+            onClick={() => navigate(`/providers/${myProfile.id}`)}
+            className="gap-2"
+          >
+            <Eye className="h-4 w-4" /> View Public Profile
+          </Button>
+          {!isEditing && <Button onClick={() => setIsEditing(true)}>Edit Profile</Button>}
+        </div>
+      </div>
+
+      {/* ── Info Card ── */}
+      <Card className="shadow-sm">
+        <CardHeader>
+          <CardTitle className="text-lg font-semibold flex items-center gap-2">
+            <User className="h-5 w-5 text-primary" /> Personal & Business Info
+          </CardTitle>
+          <CardDescription>Basic information visible on your professional profile.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-5">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="md:col-span-2 space-y-2">
+              <Label htmlFor="headline">Headline</Label>
+              <Input
+                id="headline"
+                type="text"
+                value={headline}
+                onChange={(e) => setHeadline(e.target.value)}
+                disabled={!isEditing}
+                placeholder="e.g. Master Electrician & Solar Specialist"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="yearsOfExperience">Years of Experience</Label>
+              <Input
+                id="yearsOfExperience"
+                type="number"
+                value={yearsOfExperience}
+                onChange={(e) => setYearsOfExperience(parseInt(e.target.value) || "")}
+                disabled={!isEditing}
+                placeholder="e.g. 8"
+              />
             </div>
           </div>
 
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => navigate(`/providers/${myProfile.id}`)}
-              className="gap-1.5 text-xs"
-            >
-              <Eye className="h-4 w-4" /> View Public Profile
-            </Button>
-            {!isEditing && (
-              <Button size="sm" onClick={() => setIsEditing(true)} className="text-xs">
-                Edit Profile
-              </Button>
+          <div className="space-y-2">
+            <Label htmlFor="bio">Bio (Short description)</Label>
+            <Textarea
+              id="bio"
+              value={bio}
+              onChange={(e) => setBio(e.target.value)}
+              disabled={!isEditing}
+              rows={3}
+              placeholder="Tell clients about your expertise and customer service..."
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Languages</Label>
+            {!isEditing ? (
+              <div className="flex flex-wrap gap-2 pt-1">
+                {languages.length > 0 ? (
+                  languages.map((lang) => (
+                    <Badge
+                      key={lang}
+                      variant="secondary"
+                      className="language-pill px-3 py-1 text-xs font-medium bg-muted text-muted-foreground border border-border"
+                    >
+                      {lang}
+                    </Badge>
+                  ))
+                ) : (
+                  <p className="text-xs text-muted-foreground italic">No languages specified</p>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-3 pt-1">
+                <div className="flex flex-wrap items-center gap-6">
+                  {LANGUAGE_OPTIONS.map((lang) => (
+                    <label
+                      key={lang}
+                      className="flex items-center gap-2 cursor-pointer text-sm font-medium text-foreground select-none"
+                    >
+                      <input
+                        type="checkbox"
+                        aria-label={lang}
+                        checked={languages.includes(lang)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setLanguages((prev) => [...prev, lang]);
+                          } else {
+                            setLanguages((prev) => prev.filter((l) => l !== lang));
+                          }
+                        }}
+                        className="h-4 w-4 rounded border-input text-primary focus:ring-primary cursor-pointer accent-primary"
+                      />
+                      <span>{lang}</span>
+                    </label>
+                  ))}
+                </div>
+
+                <div className="space-y-2 pt-2">
+                  <span className="text-xs font-medium text-muted-foreground block">
+                    Other languages (optional):
+                  </span>
+                  <div className="flex flex-wrap items-center gap-2 p-2 rounded-md border border-input bg-background min-h-[42px]">
+                    {languages
+                      .filter((lang) => !LANGUAGE_OPTIONS.includes(lang))
+                      .map((lang) => (
+                        <Badge
+                          key={lang}
+                          variant="secondary"
+                          className="gap-1 pl-2.5 pr-1 py-0.5 text-xs font-medium"
+                        >
+                          {lang}
+                          <button
+                            type="button"
+                            className="h-3.5 w-3.5 rounded-full hover:bg-muted-foreground/20 inline-flex items-center justify-center text-muted-foreground hover:text-foreground"
+                            onClick={() => setLanguages(languages.filter((l) => l !== lang))}
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </Badge>
+                      ))}
+                    <input
+                      type="text"
+                      className="flex-1 min-w-[140px] bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
+                      placeholder="Add another language (press Enter)..."
+                      value={langInput}
+                      onChange={(e) => setLangInput(e.target.value)}
+                      onKeyDown={handleAddLang}
+                    />
+                  </div>
+                </div>
+              </div>
             )}
           </div>
         </CardContent>
       </Card>
 
-      {/* Info Card */}
-      <Card>
-        <CardHeader className="pb-3 flex flex-row items-center gap-2">
-          <User className="h-5 w-5 text-primary" />
-          <CardTitle className="text-base font-bold">Personal & Business Info</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="sm:col-span-2 space-y-1.5">
-              <label className="text-xs font-semibold text-muted-foreground">Headline</label>
-              <Input
-                type="text"
-                value={headline}
-                onChange={(e) => setHeadline(e.target.value)}
-                disabled={!isEditing}
-                className="h-9 text-xs"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-muted-foreground">
-                Years of Experience
-              </label>
-              <Input
-                type="number"
-                value={yearsOfExperience}
-                onChange={(e) => setYearsOfExperience(parseInt(e.target.value) || "")}
-                disabled={!isEditing}
-                className="h-9 text-xs"
-              />
-            </div>
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-muted-foreground">
-              Bio (Short description)
-            </label>
-            <Textarea
-              value={bio}
-              onChange={(e) => setBio(e.target.value)}
-              disabled={!isEditing}
-              rows={3}
-              className="text-xs resize-none"
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-muted-foreground">Languages</label>
-            <div className="flex flex-wrap items-center gap-1.5 p-2 rounded border border-border bg-background min-h-10">
-              {languages.map((lang) => (
-                <span
-                  key={lang}
-                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs bg-muted text-foreground"
-                >
-                  {lang}
-                  {isEditing && (
-                    <button
-                      type="button"
-                      className="hover:text-destructive text-sm"
-                      onClick={() => setLanguages(languages.filter((l) => l !== lang))}
-                    >
-                      ×
-                    </button>
-                  )}
-                </span>
-              ))}
-              {isEditing && (
-                <input
-                  type="text"
-                  className="text-xs bg-transparent border-none outline-none flex-1 min-w-36 text-foreground placeholder:text-muted-foreground"
-                  placeholder="Add language (press Enter)..."
-                  value={langInput}
-                  onChange={(e) => setLangInput(e.target.value)}
-                  onKeyDown={handleAddLang}
-                />
-              )}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Availability Card */}
-      <Card>
-        <CardContent className="p-5 space-y-3">
-          <div className="flex items-center justify-between">
+      {/* ── Availability Card ── */}
+      <Card className="shadow-sm">
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between gap-4">
             <div className="space-y-0.5">
-              <strong className="text-sm font-semibold text-foreground block">
-                Available for Work
-              </strong>
-              <span className="text-xs text-muted-foreground">
+              <div className="text-sm font-semibold text-foreground">Available for Work</div>
+              <div className="text-xs text-muted-foreground">
                 Let customers know if you are currently taking on new jobs.
-              </span>
+              </div>
             </div>
             <Switch
               checked={isAvailableForWork}
@@ -324,149 +393,164 @@ export default function ProviderProfile() {
           </div>
 
           {isEditing && !isAvailableForWork && (
-            <div className="space-y-1.5 pt-2 border-t border-border">
-              <label className="text-xs font-semibold text-muted-foreground">
-                Availability Note (Optional)
-              </label>
+            <div className="mt-4 pt-4 border-t border-border space-y-1.5">
+              <Label htmlFor="availabilityNote">Availability Note (Optional)</Label>
               <Input
+                id="availabilityNote"
                 type="text"
                 placeholder="e.g. Fully booked until next month."
                 value={availabilityNote}
                 onChange={(e) => setAvailabilityNote(e.target.value)}
-                className="h-9 text-xs"
               />
             </div>
           )}
         </CardContent>
       </Card>
 
-      {/* Address Card */}
-      <Card>
-        <CardHeader className="pb-3 flex flex-row items-center gap-2">
-          <Home className="h-5 w-5 text-primary" />
-          <CardTitle className="text-base font-bold">Address</CardTitle>
+      {/* ── Address Card ── */}
+      <Card className="shadow-sm">
+        <CardHeader>
+          <CardTitle className="text-lg font-semibold flex items-center gap-2">
+            <Home className="h-5 w-5 text-primary" /> Address
+          </CardTitle>
+          <CardDescription>
+            Your registered physical business or home base location.
+          </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-muted-foreground">Address Line 1</label>
-              <Input
-                type="text"
-                placeholder="Street address"
-                value={addressLine1}
-                onChange={(e) => setAddressLine1(e.target.value)}
-                disabled={!isEditing}
-                className="h-9 text-xs"
-              />
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-muted-foreground">Address Line 2</label>
-              <Input
-                type="text"
-                placeholder="Apt, suite, unit, etc. (optional)"
-                value={addressLine2}
-                onChange={(e) => setAddressLine2(e.target.value)}
-                disabled={!isEditing}
-                className="h-9 text-xs"
-              />
-            </div>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="addressLine1">Address Line 1</Label>
+            <Input
+              id="addressLine1"
+              type="text"
+              placeholder="Street address"
+              value={addressLine1}
+              onChange={(e) => setAddressLine1(e.target.value)}
+              disabled={!isEditing}
+            />
           </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-muted-foreground">City</label>
+          <div className="space-y-2">
+            <Label htmlFor="addressLine2">Address Line 2</Label>
+            <Input
+              id="addressLine2"
+              type="text"
+              placeholder="Apt, suite, unit, etc. (optional)"
+              value={addressLine2}
+              onChange={(e) => setAddressLine2(e.target.value)}
+              disabled={!isEditing}
+            />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="city">City</Label>
               <Input
+                id="city"
                 type="text"
                 value={city}
                 onChange={(e) => setCity(e.target.value)}
                 disabled={!isEditing}
-                className="h-9 text-xs"
               />
             </div>
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-muted-foreground">
-                State / Province
-              </label>
+            <div className="space-y-2">
+              <Label htmlFor="addrState">State / Province</Label>
               <Input
+                id="addrState"
                 type="text"
                 value={addrState}
                 onChange={(e) => setAddrState(e.target.value)}
                 disabled={!isEditing}
-                className="h-9 text-xs"
               />
             </div>
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-muted-foreground">Postal Code</label>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="postalCode">Postal Code</Label>
               <Input
+                id="postalCode"
                 type="text"
                 value={postalCode}
                 onChange={(e) => setPostalCode(e.target.value)}
                 disabled={!isEditing}
-                className="h-9 text-xs font-mono"
               />
             </div>
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-muted-foreground">Country</label>
+            <div className="space-y-2">
+              <Label htmlFor="country">Country</Label>
               <Input
+                id="country"
                 type="text"
                 value={country}
                 onChange={(e) => setCountry(e.target.value)}
                 disabled={!isEditing}
-                className="h-9 text-xs"
               />
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Skills & Services Card */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base font-bold">Skills & Services</CardTitle>
+      {/* ── Skills & Services Card ── */}
+      <Card className="shadow-sm">
+        <CardHeader>
+          <CardTitle className="text-lg font-semibold flex items-center gap-2">
+            <Briefcase className="h-5 w-5 text-primary" /> Skills & Services
+          </CardTitle>
+          <CardDescription>
+            Select service categories and specific skills you offer to customers.
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="space-y-2">
-            <label className="text-xs font-semibold text-muted-foreground">
-              Service Categories
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {categories.map((cat) => (
-                <ServiceCategoryTag
-                  key={cat.id}
-                  category={cat}
-                  selected={selectedSkillIds.has(cat.id)}
-                  onClick={isEditing ? () => toggleSkill(cat.id) : undefined}
-                />
-              ))}
-            </div>
+          <div className="space-y-3">
+            <Label>Service Categories</Label>
+            {(!isEditing ? categories.filter((cat) => selectedSkillIds.has(cat.id)) : categories)
+              .length === 0 ? (
+              <p className="text-xs text-muted-foreground py-2 italic">
+                No service categories selected.
+              </p>
+            ) : (
+              <div className="flex flex-wrap gap-2 pt-1">
+                {(!isEditing
+                  ? categories.filter((cat) => selectedSkillIds.has(cat.id))
+                  : categories
+                ).map((cat) => (
+                  <ServiceCategoryTag
+                    key={cat.id}
+                    category={cat}
+                    selected={selectedSkillIds.has(cat.id)}
+                    onClick={isEditing ? () => toggleSkill(cat.id) : undefined}
+                  />
+                ))}
+              </div>
+            )}
           </div>
 
-          <div className="space-y-2">
-            <label className="text-xs font-semibold text-muted-foreground">
-              Specific Services Offered
-            </label>
-            <div className="flex flex-wrap items-center gap-1.5 p-2 rounded border border-border bg-background min-h-10">
+          <div className="space-y-3 pt-2">
+            <Label>Specific Services Offered</Label>
+            <div
+              className={`flex flex-wrap items-center gap-2 p-2.5 rounded-md min-h-[42px] border ${
+                isEditing ? "border-input bg-background" : "border-border bg-muted/30"
+              }`}
+            >
               {servicesOffered.map((srv) => (
-                <span
+                <Badge
                   key={srv}
-                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs bg-muted text-foreground"
+                  variant="secondary"
+                  className="gap-1 pl-2.5 pr-1.5 py-1 text-xs font-medium"
                 >
                   {srv}
                   {isEditing && (
                     <button
                       type="button"
-                      className="hover:text-destructive text-sm"
+                      className="h-3.5 w-3.5 rounded-full hover:bg-muted-foreground/20 inline-flex items-center justify-center text-muted-foreground hover:text-foreground"
                       onClick={() => setServicesOffered(servicesOffered.filter((s) => s !== srv))}
                     >
-                      ×
+                      <X className="h-3 w-3" />
                     </button>
                   )}
-                </span>
+                </Badge>
               ))}
               {isEditing && (
                 <input
                   type="text"
-                  className="text-xs bg-transparent border-none outline-none flex-1 min-w-36 text-foreground placeholder:text-muted-foreground"
+                  className="flex-1 min-w-[160px] bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
                   placeholder="Add service (press Enter)..."
                   value={serviceInput}
                   onChange={(e) => setServiceInput(e.target.value)}
@@ -476,22 +560,26 @@ export default function ProviderProfile() {
             </div>
           </div>
 
-          {/* Fixed-Price Services Section */}
-          <div className="pt-4 border-t border-border space-y-4">
-            <div className="flex justify-between items-center">
-              <label className="font-bold text-sm text-foreground">Fixed-Price Services</label>
+          {/* ── Fixed-Price Services Section (Inline) ── */}
+          <div className="pt-6 border-t border-border space-y-4">
+            <div className="flex items-center justify-between gap-4 flex-wrap">
+              <div>
+                <h4 className="text-base font-semibold text-foreground">Fixed-Price Services</h4>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Pre-configured services customers can book instantly.
+                </p>
+              </div>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => navigate("/provider/service-listings")}
-                className="h-8 text-xs"
               >
                 Manage Services
               </Button>
             </div>
 
             {myServiceListings && myServiceListings.filter((l) => l.isActive).length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
                 {myServiceListings
                   .filter((l) => l.isActive)
                   .map((listing) => (
@@ -499,19 +587,24 @@ export default function ProviderProfile() {
                   ))}
               </div>
             ) : (
-              <div className="p-8 text-center border border-dashed border-border rounded text-xs text-muted-foreground">
-                You haven't listed any fixed-price services yet. Click 'Manage Services' to create
-                one.
+              <div className="p-6 border border-dashed rounded-lg text-center bg-muted/20">
+                <p className="text-sm text-muted-foreground">
+                  You haven't listed any fixed-price services yet. Click 'Manage Services' to create
+                  one.
+                </p>
               </div>
             )}
           </div>
         </CardContent>
       </Card>
 
-      {/* Service Area Card */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base font-bold">Service Area</CardTitle>
+      {/* ── Service Area Card ── */}
+      <Card className="shadow-sm">
+        <CardHeader>
+          <CardTitle className="text-lg font-semibold">Service Area</CardTitle>
+          <CardDescription>
+            Define the geographical area and radius where you provide services.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <LocationPicker
@@ -530,41 +623,39 @@ export default function ProviderProfile() {
         </CardContent>
       </Card>
 
-      {/* Save Footer */}
+      {/* ── Sticky Save Footer ── */}
       {isEditing && (
-        <div className="sticky bottom-6 p-4 bg-card border border-border rounded-xl shadow-xl flex items-center justify-between gap-4 z-40">
-          <div className="flex-1 text-xs">
-            {saveStatus === "error" && (
-              <span className="text-destructive font-semibold">{errorMessage}</span>
-            )}
-            {saveStatus === "success" && (
-              <span className="text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1.5">
-                <CheckCircle2 className="h-4 w-4" /> Changes saved successfully
-              </span>
-            )}
-          </div>
+        <div className="fixed bottom-0 left-0 right-0 z-40 bg-background/95 backdrop-blur-sm border-t border-border p-4 shadow-lg animate-fade-up">
+          <div className="container max-w-5xl mx-auto flex items-center justify-between gap-4">
+            <div className="flex-1">
+              {saveStatus === "error" && (
+                <span className="text-sm font-medium text-destructive">{errorMessage}</span>
+              )}
+              {saveStatus === "success" && (
+                <span className="text-sm font-medium text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
+                  <CheckCircle2 className="h-4 w-4" /> Changes saved successfully
+                </span>
+              )}
+            </div>
 
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                setIsEditing(false);
-                setSaveStatus("idle");
-              }}
-              disabled={saveStatus === "saving"}
-              className="text-xs"
-            >
-              Cancel
-            </Button>
-            <Button
-              size="sm"
-              onClick={handleSave}
-              disabled={saveStatus === "saving" || saveStatus === "success"}
-              className="text-xs"
-            >
-              {saveStatus === "saving" ? "Saving..." : "Save Changes"}
-            </Button>
+            <div className="flex items-center gap-3">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setIsEditing(false);
+                  setSaveStatus("idle");
+                }}
+                disabled={saveStatus === "saving"}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleSave}
+                disabled={saveStatus === "saving" || saveStatus === "success"}
+              >
+                {saveStatus === "saving" ? "Saving..." : "Save Changes"}
+              </Button>
+            </div>
           </div>
         </div>
       )}

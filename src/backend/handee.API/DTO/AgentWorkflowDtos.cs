@@ -26,7 +26,8 @@ public record AgentWorkflowResponseDto(
     string? DecisionNote,
     DateTimeOffset? DecidedAt,
     DateTimeOffset CreatedAt,
-    List<AgentStepLogDto> StepLogs
+    List<AgentStepLogDto> StepLogs,
+    Guid? SelectedServiceListingId = null
 );
 
 public record AdminWorkflowDecisionDto(

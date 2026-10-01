@@ -67,6 +67,8 @@ class ApiEndpoints {
   static const String providerProfile = '/api/providers/me'; 
   static String providerById(String id) => '/api/providers/$id';
   static const String providersSearch = '/api/providers/search';
+  static const String predefinedSlots = '/api/provider-availability/slots';
+  static String providerSchedule(String providerId) => '/api/provider-availability/$providerId/schedule';
 
   // Service Listings (ServiceListingsController)
   static const String serviceListings = '/api/service-listings';

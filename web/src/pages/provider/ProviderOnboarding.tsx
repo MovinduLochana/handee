@@ -1,20 +1,29 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, ArrowRight, ShieldCheck, CheckCircle2, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, ShieldCheck, CheckCircle2, Sparkles } from "lucide-react";
 import { providerApi } from "../../api/providers";
 import { serviceCategoryApi } from "../../api/serviceCategories";
+import { serviceListingsApi } from "../../api/serviceListings";
 import StepIndicator from "../../components/provider/StepIndicator";
 import ServiceCategoryTag from "../../components/provider/ServiceCategoryTag";
 import { extractApiError } from "../../lib/api";
 import LocationPicker from "../../components/provider/LocationPicker";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  CardFooter,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+
+const LANGUAGE_OPTIONS = ["Sinhala", "English", "Tamil"];
 
 const STEPS = [
   { label: "Personal & Business" },
@@ -38,6 +47,12 @@ export default function ProviderOnboarding() {
     queryFn: serviceCategoryApi.getServiceCategories,
   });
 
+  const { data: existingListings = [] } = useQuery({
+    queryKey: ["myServiceListings"],
+    queryFn: serviceListingsApi.getMyServiceListings,
+    retry: false,
+  });
+
   // ── Wizard State ────────────────────────────────────────────────────────
   const [currentStep, setCurrentStep] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -48,12 +63,17 @@ export default function ProviderOnboarding() {
   const [description, setDescription] = useState("");
   const [yearsOfExperience, setYearsOfExperience] = useState<number | "">("");
   const [languages, setLanguages] = useState<string[]>([]);
-  const [langInput, setLangInput] = useState("");
 
-  // Step 2: Skills & Services
+  // Step 2: Skills & First Service Listing
   const [selectedSkillIds, setSelectedSkillIds] = useState<Set<string>>(new Set());
-  const [servicesOffered, setServicesOffered] = useState<string[]>([]);
-  const [serviceInput, setServiceInput] = useState("");
+  const [firstListingId, setFirstListingId] = useState<string | null>(null);
+  const [listingTitle, setListingTitle] = useState("");
+  const [listingCategoryId, setListingCategoryId] = useState("");
+  const [listingFixedPrice, setListingFixedPrice] = useState("");
+  const [listingEstimatedDuration, setListingEstimatedDuration] = useState("01:00:00");
+  const [listingDescription, setListingDescription] = useState("");
+  const [listingScope, setListingScope] = useState("");
+  const [isSavingListing, setIsSavingListing] = useState(false);
 
   // Step 3: Service Area
   const [serviceAreaAddress, setServiceAreaAddress] = useState("");
@@ -67,7 +87,7 @@ export default function ProviderOnboarding() {
   const [city, setCity] = useState("");
   const [addrState, setAddrState] = useState("");
   const [postalCode, setPostalCode] = useState("");
-  const [country, setCountry] = useState("");
+  const country = "Sri Lanka";
 
   useEffect(() => {
     if (profile) {
@@ -76,7 +96,6 @@ export default function ProviderOnboarding() {
       if (profile.description) setDescription(profile.description);
       if (profile.yearsOfExperience) setYearsOfExperience(profile.yearsOfExperience);
       if (profile.languages?.length > 0) setLanguages(profile.languages);
-      if (profile.servicesOffered?.length > 0) setServicesOffered(profile.servicesOffered);
       if (profile.serviceCategories?.length > 0) {
         setSelectedSkillIds(new Set(profile.serviceCategories.map((s) => s.id)));
       }
@@ -89,9 +108,30 @@ export default function ProviderOnboarding() {
       setCity(profile.city || "");
       setAddrState(profile.state || "");
       setPostalCode(profile.postalCode || "");
-      setCountry(profile.country || "");
     }
   }, [profile]);
+
+  useEffect(() => {
+    if (existingListings.length > 0 && !firstListingId) {
+      const first = existingListings[0];
+      setFirstListingId(first.id);
+      setListingTitle(first.title);
+      setListingCategoryId(first.serviceCategoryId);
+      setListingFixedPrice(first.fixedPrice.toString());
+      setListingEstimatedDuration(first.estimatedDuration || "01:00:00");
+      setListingDescription(first.description || "");
+      setListingScope(first.scope || "");
+    }
+  }, [existingListings, firstListingId]);
+
+  useEffect(() => {
+    if (
+      selectedSkillIds.size > 0 &&
+      (!listingCategoryId || !selectedSkillIds.has(listingCategoryId))
+    ) {
+      setListingCategoryId(Array.from(selectedSkillIds)[0]);
+    }
+  }, [selectedSkillIds, listingCategoryId]);
 
   // ── Mutations ───────────────────────────────────────────────────────────
   const saveProfileMutation = useMutation({
@@ -103,7 +143,7 @@ export default function ProviderOnboarding() {
         description,
         yearsOfExperience: typeof yearsOfExperience === "number" ? yearsOfExperience : undefined,
         languages,
-        servicesOffered,
+        servicesOffered: listingTitle.trim() ? [listingTitle.trim()] : [],
         serviceCategoryIds: Array.from(selectedSkillIds),
         serviceAreaLatitude: serviceAreaLatitude !== null ? serviceAreaLatitude : undefined,
         serviceAreaLongitude: serviceAreaLongitude !== null ? serviceAreaLongitude : undefined,
@@ -113,7 +153,7 @@ export default function ProviderOnboarding() {
         city: city || undefined,
         state: addrState || undefined,
         postalCode: postalCode || undefined,
-        country: country || undefined,
+        country: "Sri Lanka",
       });
     },
     onSuccess: () => {
@@ -135,8 +175,60 @@ export default function ProviderOnboarding() {
       }
     } else if (currentStep === 1) {
       if (selectedSkillIds.size === 0) {
-        setError("Please select at least one skill category.");
+        setError("Please select at least one service category.");
         return;
+      }
+      if (!listingTitle.trim()) {
+        setError("Please provide a title for your first service listing.");
+        return;
+      }
+      if (
+        !listingFixedPrice ||
+        isNaN(parseFloat(listingFixedPrice)) ||
+        parseFloat(listingFixedPrice) <= 0
+      ) {
+        setError("Please enter a valid fixed price in LKR for your first service listing.");
+        return;
+      }
+      if (!listingDescription.trim()) {
+        setError("Please enter a description for your first service listing.");
+        return;
+      }
+      if (!listingScope.trim()) {
+        setError("Please specify the scope of work for your first service listing.");
+        return;
+      }
+
+      try {
+        setIsSavingListing(true);
+        const targetCategory =
+          listingCategoryId && selectedSkillIds.has(listingCategoryId)
+            ? listingCategoryId
+            : Array.from(selectedSkillIds)[0];
+
+        const listingPayload = {
+          serviceCategoryId: targetCategory,
+          title: listingTitle.trim(),
+          description: listingDescription.trim(),
+          scope: listingScope.trim(),
+          availability: "Available",
+          fixedPrice: parseFloat(listingFixedPrice),
+          estimatedDuration: listingEstimatedDuration || "01:00:00",
+          isActive: true,
+        };
+
+        if (firstListingId) {
+          await serviceListingsApi.updateServiceListing(firstListingId, listingPayload);
+        } else {
+          const created = await serviceListingsApi.createServiceListing(listingPayload);
+          setFirstListingId(created.id);
+        }
+        await queryClient.invalidateQueries({ queryKey: ["myServiceListings"] });
+      } catch (err) {
+        setError(extractApiError(err, "Failed to save your first service listing."));
+        return;
+      } finally {
+        setIsSavingListing(false);
       }
     } else if (currentStep === 2) {
       if (!serviceAreaAddress) {
@@ -164,24 +256,6 @@ export default function ProviderOnboarding() {
     setCurrentStep((p) => Math.max(0, p - 1));
   };
 
-  const handleAddLang = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" || e.key === ",") {
-      e.preventDefault();
-      const val = langInput.trim();
-      if (val && !languages.includes(val)) setLanguages((prev) => [...prev, val]);
-      setLangInput("");
-    }
-  };
-
-  const handleAddService = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" || e.key === ",") {
-      e.preventDefault();
-      const val = serviceInput.trim();
-      if (val && !servicesOffered.includes(val)) setServicesOffered((prev) => [...prev, val]);
-      setServiceInput("");
-    }
-  };
-
   const toggleSkill = (id: string) => {
     setSelectedSkillIds((prev) => {
       const next = new Set(prev);
@@ -192,17 +266,25 @@ export default function ProviderOnboarding() {
   };
 
   if (isProfileLoading) {
-    return <div className="p-8 text-center text-muted-foreground">Loading onboarding...</div>;
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-sm font-medium text-muted-foreground animate-pulse">
+          Loading onboarding...
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-8 space-y-6">
+    <div className="container max-w-3xl mx-auto py-10 px-4 space-y-8 animate-fade-up">
       <header className="text-center space-y-2">
         <h1 className="text-3xl font-bold tracking-tight text-foreground">Provider Onboarding</h1>
-        <p className="text-muted-foreground">Welcome! Complete your profile to get started.</p>
+        <p className="text-sm text-muted-foreground">
+          Welcome! Complete your profile to get started.
+        </p>
       </header>
 
-      <div className="my-6">
+      <div>
         <StepIndicator steps={STEPS} currentStep={currentStep} />
       </div>
 
@@ -212,15 +294,17 @@ export default function ProviderOnboarding() {
         </Alert>
       )}
 
-      <Card key={`step-${currentStep}`} className="rounded-none border-border">
+      <Card className="shadow-sm border-border" key={`step-${currentStep}`}>
         {/* ── STEP 0: Info ── */}
         {currentStep === 0 && (
           <>
             <CardHeader>
-              <CardTitle>Personal & Business Information</CardTitle>
+              <CardTitle className="text-xl font-bold" role="heading" aria-level={2}>
+                Personal & Business Information
+              </CardTitle>
               <CardDescription>Tell customers who you are and what you do best.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className="space-y-5">
               <div className="space-y-2">
                 <Label htmlFor="headline">Headline (required)</Label>
                 <Input
@@ -251,7 +335,7 @@ export default function ProviderOnboarding() {
                   placeholder="A brief summary of your expertise."
                   value={bio}
                   onChange={(e) => setBio(e.target.value)}
-                  className="min-h-[80px]"
+                  rows={3}
                 />
               </div>
 
@@ -262,102 +346,100 @@ export default function ProviderOnboarding() {
                   placeholder="Elaborate on your past work, certifications, and approach to customer service."
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  className="min-h-[120px]"
+                  rows={4}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label>Languages (Press Enter to add)</Label>
-                <div className="flex flex-wrap items-center gap-2 p-2 border border-input rounded-none bg-background focus-within:ring-2 focus-within:ring-ring">
-                  {languages.map((lang) => (
-                    <Badge
+                <Label>Languages (select all that apply)</Label>
+                <div className="flex flex-wrap items-center gap-6 pt-1">
+                  {LANGUAGE_OPTIONS.map((lang) => (
+                    <label
                       key={lang}
-                      variant="secondary"
-                      className="flex items-center gap-1 rounded-none px-2 py-0.5"
+                      className="flex items-center gap-2 cursor-pointer text-sm font-medium text-foreground select-none"
                     >
-                      {lang}
-                      <button
-                        type="button"
-                        className="hover:text-destructive cursor-pointer"
-                        onClick={() => setLanguages(languages.filter((l) => l !== lang))}
-                        aria-label={`Remove ${lang}`}
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </Badge>
+                      <input
+                        type="checkbox"
+                        aria-label={lang}
+                        checked={languages.includes(lang)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setLanguages((prev) => [...prev, lang]);
+                          } else {
+                            setLanguages((prev) => prev.filter((l) => l !== lang));
+                          }
+                        }}
+                        className="h-4 w-4 rounded border-input text-primary focus:ring-primary cursor-pointer accent-primary"
+                      />
+                      <span>{lang}</span>
+                    </label>
                   ))}
-                  <input
-                    type="text"
-                    className="flex-1 bg-transparent border-none outline-none text-sm min-w-[120px] placeholder:text-muted-foreground focus:outline-none"
-                    placeholder="Add language..."
-                    value={langInput}
-                    onChange={(e) => setLangInput(e.target.value)}
-                    onKeyDown={handleAddLang}
-                  />
                 </div>
               </div>
 
-              <div className="pt-4 border-t border-border space-y-4">
-                <h3 className="text-lg font-semibold text-foreground">Address</h3>
+              <h3 className="text-base font-semibold text-foreground pt-4 border-t border-border">
+                Address
+              </h3>
+              <div className="space-y-2">
+                <Label htmlFor="addressLine1">Address Line 1</Label>
+                <Input
+                  id="addressLine1"
+                  type="text"
+                  placeholder="Street address"
+                  value={addressLine1}
+                  onChange={(e) => setAddressLine1(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="addressLine2">Address Line 2</Label>
+                <Input
+                  id="addressLine2"
+                  type="text"
+                  placeholder="Apt, suite, unit, etc. (optional)"
+                  value={addressLine2}
+                  onChange={(e) => setAddressLine2(e.target.value)}
+                />
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="addressLine1">Address Line 1</Label>
+                  <Label htmlFor="city">City</Label>
                   <Input
-                    id="addressLine1"
+                    id="city"
                     type="text"
-                    placeholder="Street address"
-                    value={addressLine1}
-                    onChange={(e) => setAddressLine1(e.target.value)}
+                    value={city}
+                    onChange={(e) => setCity(e.target.value)}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="addressLine2">Address Line 2</Label>
+                  <Label htmlFor="state">State / Province</Label>
                   <Input
-                    id="addressLine2"
+                    id="state"
                     type="text"
-                    placeholder="Apt, suite, unit, etc. (optional)"
-                    value={addressLine2}
-                    onChange={(e) => setAddressLine2(e.target.value)}
+                    value={addrState}
+                    onChange={(e) => setAddrState(e.target.value)}
                   />
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="city">City</Label>
-                    <Input
-                      id="city"
-                      type="text"
-                      value={city}
-                      onChange={(e) => setCity(e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="state">State / Province</Label>
-                    <Input
-                      id="state"
-                      type="text"
-                      value={addrState}
-                      onChange={(e) => setAddrState(e.target.value)}
-                    />
-                  </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="postalCode">Postal Code</Label>
+                  <Input
+                    id="postalCode"
+                    type="text"
+                    value={postalCode}
+                    onChange={(e) => setPostalCode(e.target.value)}
+                  />
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="postalCode">Postal Code</Label>
-                    <Input
-                      id="postalCode"
-                      type="text"
-                      value={postalCode}
-                      onChange={(e) => setPostalCode(e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="country">Country</Label>
-                    <Input
-                      id="country"
-                      type="text"
-                      value={country}
-                      onChange={(e) => setCountry(e.target.value)}
-                    />
-                  </div>
+                <div className="space-y-2">
+                  <Label htmlFor="country">Country</Label>
+                  <Input
+                    id="country"
+                    type="text"
+                    value={country}
+                    disabled
+                    readOnly
+                    className="bg-muted text-muted-foreground cursor-not-allowed"
+                  />
                 </div>
               </div>
             </CardContent>
@@ -368,15 +450,17 @@ export default function ProviderOnboarding() {
         {currentStep === 1 && (
           <>
             <CardHeader>
-              <CardTitle>Skills & Services</CardTitle>
+              <CardTitle className="text-xl font-bold" role="heading" aria-level={2}>
+                Skills & Services
+              </CardTitle>
               <CardDescription>
                 Select the broad categories you operate in, then list specific services.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="space-y-3">
+              <div className="space-y-2">
                 <Label>Service Categories (required, select at least one)</Label>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                <div className="flex flex-wrap gap-2 pt-1">
                   {categories.map((cat) => (
                     <ServiceCategoryTag
                       key={cat.id}
@@ -388,34 +472,104 @@ export default function ProviderOnboarding() {
                 </div>
               </div>
 
-              <div className="space-y-3 pt-4 border-t border-border">
-                <Label>Specific Services Offered (Press Enter to add)</Label>
-                <div className="flex flex-wrap items-center gap-2 p-2 border border-input rounded-none bg-background focus-within:ring-2 focus-within:ring-ring">
-                  {servicesOffered.map((srv) => (
-                    <Badge
-                      key={srv}
-                      variant="secondary"
-                      className="flex items-center gap-1 rounded-none px-2 py-0.5"
+              <div className="rounded-lg border border-border bg-muted/20 p-5 mt-6 space-y-4">
+                <div className="flex items-start gap-3">
+                  <div className="h-9 w-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0 mt-0.5">
+                    <Sparkles className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-foreground">
+                      Create Your First Service Listing
+                    </h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Set up a standardized, fixed-price service that customers can instantly book.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-4 pt-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="listingCategory">Category for this Service</Label>
+                    <select
+                      id="listingCategory"
+                      value={listingCategoryId}
+                      onChange={(e) => setListingCategoryId(e.target.value)}
+                      className="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-sm text-foreground shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                     >
-                      {srv}
-                      <button
-                        type="button"
-                        className="hover:text-destructive cursor-pointer"
-                        onClick={() => setServicesOffered(servicesOffered.filter((s) => s !== srv))}
-                        aria-label={`Remove ${srv}`}
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </Badge>
-                  ))}
-                  <input
-                    type="text"
-                    className="flex-1 bg-transparent border-none outline-none text-sm min-w-[120px] placeholder:text-muted-foreground focus:outline-none"
-                    placeholder="e.g. Toilet Repair, Pipe Fitting..."
-                    value={serviceInput}
-                    onChange={(e) => setServiceInput(e.target.value)}
-                    onKeyDown={handleAddService}
-                  />
+                      {categories
+                        .filter((c) => selectedSkillIds.has(c.id))
+                        .map((cat) => (
+                          <option key={cat.id} value={cat.id}>
+                            {cat.name}
+                          </option>
+                        ))}
+                      {selectedSkillIds.size === 0 && (
+                        <option value="">Please select a category above first</option>
+                      )}
+                    </select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="listingTitle">Service Title / Name (required)</Label>
+                    <Input
+                      id="listingTitle"
+                      type="text"
+                      placeholder="e.g. Standard Plumbing Inspection & Leak Repair"
+                      value={listingTitle}
+                      onChange={(e) => setListingTitle(e.target.value)}
+                      maxLength={100}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="listingPrice">Fixed Price in LKR (required)</Label>
+                      <Input
+                        id="listingPrice"
+                        type="number"
+                        min="1"
+                        step="0.01"
+                        placeholder="2500.00"
+                        value={listingFixedPrice}
+                        onChange={(e) => setListingFixedPrice(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="listingDuration">Estimated Time (HH:MM:SS)</Label>
+                      <Input
+                        id="listingDuration"
+                        type="text"
+                        placeholder="01:00:00"
+                        pattern="^\d{2}:\d{2}:\d{2}$"
+                        value={listingEstimatedDuration}
+                        onChange={(e) => setListingEstimatedDuration(e.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="listingDescription">Description (required)</Label>
+                    <Textarea
+                      id="listingDescription"
+                      rows={3}
+                      placeholder="Describe what this service entails..."
+                      value={listingDescription}
+                      onChange={(e) => setListingDescription(e.target.value)}
+                      maxLength={1000}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="listingScope">Scope of Work (required)</Label>
+                    <Textarea
+                      id="listingScope"
+                      rows={2}
+                      placeholder="Specify what is included and excluded (e.g., includes labor; replacement parts charged separately)..."
+                      value={listingScope}
+                      onChange={(e) => setListingScope(e.target.value)}
+                      maxLength={500}
+                    />
+                  </div>
                 </div>
               </div>
             </CardContent>
@@ -426,7 +580,9 @@ export default function ProviderOnboarding() {
         {currentStep === 2 && (
           <>
             <CardHeader>
-              <CardTitle>Service Area</CardTitle>
+              <CardTitle className="text-xl font-bold" role="heading" aria-level={2}>
+                Service Area
+              </CardTitle>
               <CardDescription>
                 Where are you based, and how far are you willing to travel?
               </CardDescription>
@@ -451,33 +607,28 @@ export default function ProviderOnboarding() {
 
         {/* ── STEP 3: Finish ── */}
         {currentStep === 3 && (
-          <CardContent className="text-center py-12 px-6 space-y-6">
-            <div className="flex justify-center text-primary">
-              <CheckCircle2 className="w-16 h-16 text-primary" />
+          <CardContent className="text-center py-10 px-4 space-y-6">
+            <div className="h-16 w-16 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto">
+              <CheckCircle2 className="h-10 w-10" />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-2 max-w-md mx-auto">
               <h2 className="text-2xl font-bold tracking-tight text-foreground">
                 Profile Saved Successfully!
               </h2>
-              <p className="text-muted-foreground max-w-md mx-auto text-sm">
+              <p className="text-sm text-muted-foreground leading-relaxed">
                 Your provider profile has been created. To unlock all features and start accepting
                 jobs, you must verify your identity.
               </p>
             </div>
 
-            <div className="flex flex-col gap-3 items-center max-w-xs mx-auto pt-4">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4 max-w-md mx-auto">
               <Button
-                className="w-full justify-center gap-2"
                 onClick={() => navigate("/provider/submit-verification")}
+                className="w-full gap-2"
               >
-                <ShieldCheck className="w-4 h-4" /> Verify Identity Now
+                <ShieldCheck className="h-4 w-4" /> Verify Identity Now
               </Button>
-
-              <Button
-                variant="outline"
-                className="w-full justify-center"
-                onClick={() => navigate("/dashboard")}
-              >
+              <Button variant="outline" onClick={() => navigate("/dashboard")} className="w-full">
                 Skip for now, go to Dashboard
               </Button>
             </div>
@@ -486,21 +637,31 @@ export default function ProviderOnboarding() {
 
         {/* ── Navigation ── */}
         {currentStep < 3 && (
-          <div className="flex items-center justify-between p-6 border-t border-border">
+          <CardFooter className="flex items-center justify-between border-t border-border pt-6 mt-2">
             <Button
               variant="outline"
               onClick={prevStep}
               disabled={currentStep === 0 || saveProfileMutation.isPending}
               className="gap-2"
             >
-              <ArrowLeft className="w-4 h-4" /> Back
+              <ArrowLeft className="h-4 w-4" /> Back
             </Button>
 
-            <Button onClick={nextStep} disabled={saveProfileMutation.isPending} className="gap-2">
-              {saveProfileMutation.isPending && currentStep === 2 ? "Saving..." : "Next Step"}
-              {!saveProfileMutation.isPending && <ArrowRight className="w-4 h-4" />}
+            <Button
+              onClick={nextStep}
+              disabled={saveProfileMutation.isPending || isSavingListing}
+              className="gap-2"
+            >
+              {isSavingListing && currentStep === 1
+                ? "Saving Listing..."
+                : saveProfileMutation.isPending && currentStep === 2
+                  ? "Saving Profile..."
+                  : "Next Step"}
+              {!saveProfileMutation.isPending && !isSavingListing && (
+                <ArrowRight className="h-4 w-4" />
+              )}
             </Button>
-          </div>
+          </CardFooter>
         )}
       </Card>
     </div>
