@@ -70,10 +70,12 @@ export default function VerificationStatusTracker() {
               <AlertOctagon className="h-8 w-8" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold tracking-tight text-foreground">Verification Not Started</h2>
+              <h2 className="text-2xl font-bold tracking-tight text-foreground">
+                Verification Not Started
+              </h2>
               <p className="text-muted-foreground text-sm max-w-md mt-2">
-                You haven't submitted your verification documents yet. Please complete the setup wizard to
-                verify your identity and start accepting jobs.
+                You haven't submitted your verification documents yet. Please complete the setup
+                wizard to verify your identity and start accepting jobs.
               </p>
             </div>
             <Button
@@ -118,7 +120,8 @@ export default function VerificationStatusTracker() {
           title: "You are verified!",
           desc: "Congratulations! Your profile is verified and visible to customers in our marketplace. You can now accept jobs.",
           badgeVariant: "secondary" as const,
-          containerClass: "bg-emerald-500/10 border-emerald-500/20 text-emerald-950 dark:text-emerald-200",
+          containerClass:
+            "bg-emerald-500/10 border-emerald-500/20 text-emerald-950 dark:text-emerald-200",
           iconContainerClass: "bg-emerald-500/20 text-emerald-700 dark:text-emerald-400",
         };
       case "Rejected":
@@ -147,13 +150,15 @@ export default function VerificationStatusTracker() {
   return (
     <div className="container max-w-6xl mx-auto py-8 px-4 space-y-8 animate-fade-up">
       {/* Hero Banner */}
-      <div className={`rounded-xl border p-6 md:p-8 flex flex-col md:flex-row items-start md:items-center gap-5 ${hero.containerClass}`}>
-        <div className={`p-3.5 rounded-xl shrink-0 ${hero.iconContainerClass}`}>
-          {hero.icon}
-        </div>
+      <div
+        className={`rounded-xl border p-6 md:p-8 flex flex-col md:flex-row items-start md:items-center gap-5 ${hero.containerClass}`}
+      >
+        <div className={`p-3.5 rounded-xl shrink-0 ${hero.iconContainerClass}`}>{hero.icon}</div>
         <div className="flex-1">
           <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">{hero.title}</h1>
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">
+              {hero.title}
+            </h1>
             <StatusBadge status={verificationStatus} size="md" />
           </div>
           <p className="text-muted-foreground text-sm md:text-base mt-2 max-w-3xl leading-relaxed">
@@ -168,8 +173,12 @@ export default function VerificationStatusTracker() {
         <div className="lg:col-span-7">
           <Card className="shadow-sm">
             <CardHeader>
-              <CardTitle className="text-lg font-semibold tracking-tight">Application Timeline</CardTitle>
-              <CardDescription>History of status reviews and updates for your provider account.</CardDescription>
+              <CardTitle className="text-lg font-semibold tracking-tight">
+                Application Timeline
+              </CardTitle>
+              <CardDescription>
+                History of status reviews and updates for your provider account.
+              </CardDescription>
             </CardHeader>
             <CardContent>
               {auditLogs.length === 0 ? (
@@ -179,7 +188,9 @@ export default function VerificationStatusTracker() {
               ) : (
                 <div className="relative pl-6 border-l-2 border-border space-y-6 my-2 ml-3">
                   {[...auditLogs]
-                    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+                    .sort(
+                      (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
+                    )
                     .map((log) => {
                       const isDocumentAudit = log.previousStatus === log.newStatus;
                       const docApproved =
@@ -232,7 +243,11 @@ export default function VerificationStatusTracker() {
                                           : "bg-muted text-foreground border-border"
                                     }
                                   >
-                                    {docApproved ? "Approved" : docRejected ? "Rejected" : "Audited"}
+                                    {docApproved
+                                      ? "Approved"
+                                      : docRejected
+                                        ? "Rejected"
+                                        : "Audited"}
                                   </Badge>
                                 )}
                               </div>
@@ -271,12 +286,18 @@ export default function VerificationStatusTracker() {
         <div className="lg:col-span-5 space-y-6">
           <Card className="shadow-sm">
             <CardHeader>
-              <CardTitle className="text-lg font-semibold tracking-tight">Submitted Documents</CardTitle>
-              <CardDescription>Verification documentation uploaded for your identity.</CardDescription>
+              <CardTitle className="text-lg font-semibold tracking-tight">
+                Submitted Documents
+              </CardTitle>
+              <CardDescription>
+                Verification documentation uploaded for your identity.
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {certifications.length === 0 ? (
-                <p className="text-sm text-muted-foreground py-4 text-center">No documents uploaded.</p>
+                <p className="text-sm text-muted-foreground py-4 text-center">
+                  No documents uploaded.
+                </p>
               ) : (
                 <div className="space-y-3">
                   {certifications.map((cert) => (

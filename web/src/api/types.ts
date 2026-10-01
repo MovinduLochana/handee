@@ -332,7 +332,6 @@ export interface PredefinedSlotDto {
   isAvailable: boolean;
 }
 
-
 /** DTO for GET /admin/users */
 export interface AdminUserResult {
   id: string;

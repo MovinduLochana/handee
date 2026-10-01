@@ -171,7 +171,9 @@ export default function VerificationDetail() {
                 <h1 className="text-xl font-bold text-foreground tracking-tight">
                   {profile.fullName}
                 </h1>
-                <p className="text-xs text-muted-foreground">{profile.headline || "No headline set"}</p>
+                <p className="text-xs text-muted-foreground">
+                  {profile.headline || "No headline set"}
+                </p>
               </div>
 
               <div className="pt-1 flex justify-center">
@@ -306,17 +308,20 @@ export default function VerificationDetail() {
                   <TableHeader>
                     <TableRow>
                       <TableHead className="text-xs uppercase whitespace-nowrap">Date</TableHead>
-                      <TableHead className="text-xs uppercase whitespace-nowrap">Status Change</TableHead>
+                      <TableHead className="text-xs uppercase whitespace-nowrap">
+                        Status Change
+                      </TableHead>
                       <TableHead className="text-xs uppercase">Note</TableHead>
                       <TableHead className="text-xs uppercase whitespace-nowrap">Admin</TableHead>
-                      <TableHead className="text-xs uppercase text-right whitespace-nowrap">Details</TableHead>
+                      <TableHead className="text-xs uppercase text-right whitespace-nowrap">
+                        Details
+                      </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {[...profile.auditLogs]
                       .sort(
-                        (a, b) =>
-                          new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
+                        (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
                       )
                       .map((log) => (
                         <TableRow key={log.id}>
@@ -440,7 +445,9 @@ export default function VerificationDetail() {
                 <div className="mt-1 flex items-center gap-2">
                   {viewingAuditLog.previousStatus !== viewingAuditLog.newStatus ? (
                     <div className="flex items-center gap-1.5">
-                      <span className="text-muted-foreground">{viewingAuditLog.previousStatus}</span>
+                      <span className="text-muted-foreground">
+                        {viewingAuditLog.previousStatus}
+                      </span>
                       <span className="text-muted-foreground">→</span>
                       <StatusBadge status={viewingAuditLog.newStatus} size="sm" />
                     </div>

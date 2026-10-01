@@ -268,7 +268,9 @@ export default function ProviderOnboarding() {
   if (isProfileLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-sm font-medium text-muted-foreground animate-pulse">Loading onboarding...</div>
+        <div className="text-sm font-medium text-muted-foreground animate-pulse">
+          Loading onboarding...
+        </div>
       </div>
     );
   }
@@ -277,7 +279,9 @@ export default function ProviderOnboarding() {
     <div className="container max-w-3xl mx-auto py-10 px-4 space-y-8 animate-fade-up">
       <header className="text-center space-y-2">
         <h1 className="text-3xl font-bold tracking-tight text-foreground">Provider Onboarding</h1>
-        <p className="text-sm text-muted-foreground">Welcome! Complete your profile to get started.</p>
+        <p className="text-sm text-muted-foreground">
+          Welcome! Complete your profile to get started.
+        </p>
       </header>
 
       <div>
@@ -373,7 +377,9 @@ export default function ProviderOnboarding() {
                 </div>
               </div>
 
-              <h3 className="text-base font-semibold text-foreground pt-4 border-t border-border">Address</h3>
+              <h3 className="text-base font-semibold text-foreground pt-4 border-t border-border">
+                Address
+              </h3>
               <div className="space-y-2">
                 <Label htmlFor="addressLine1">Address Line 1</Label>
                 <Input
@@ -622,11 +628,7 @@ export default function ProviderOnboarding() {
               >
                 <ShieldCheck className="h-4 w-4" /> Verify Identity Now
               </Button>
-              <Button
-                variant="outline"
-                onClick={() => navigate("/dashboard")}
-                className="w-full"
-              >
+              <Button variant="outline" onClick={() => navigate("/dashboard")} className="w-full">
                 Skip for now, go to Dashboard
               </Button>
             </div>
@@ -655,7 +657,9 @@ export default function ProviderOnboarding() {
                 : saveProfileMutation.isPending && currentStep === 2
                   ? "Saving Profile..."
                   : "Next Step"}
-              {!saveProfileMutation.isPending && !isSavingListing && <ArrowRight className="h-4 w-4" />}
+              {!saveProfileMutation.isPending && !isSavingListing && (
+                <ArrowRight className="h-4 w-4" />
+              )}
             </Button>
           </CardFooter>
         )}

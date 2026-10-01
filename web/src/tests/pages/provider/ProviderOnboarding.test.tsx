@@ -114,7 +114,9 @@ describe("ProviderOnboarding Component", () => {
     renderComponent();
 
     // Step 0 -> Step 1
-    expect(await screen.findByRole("heading", { name: "Personal & Business Information" })).toBeInTheDocument();
+    expect(
+      await screen.findByRole("heading", { name: "Personal & Business Information" }),
+    ).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /next step/i }));
 
     // Step 1: Fill listing form

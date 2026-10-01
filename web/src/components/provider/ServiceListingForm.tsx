@@ -188,7 +188,11 @@ export default function ServiceListingForm({ initialData, onClose }: ServiceList
                 className="w-full h-8 rounded-none border border-input bg-transparent px-2.5 py-1 text-xs text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
               >
                 {DURATION_OPTIONS.map((opt) => (
-                  <option key={opt.hours} value={opt.hours} className="bg-card text-card-foreground">
+                  <option
+                    key={opt.hours}
+                    value={opt.hours}
+                    className="bg-card text-card-foreground"
+                  >
                     {opt.label}
                   </option>
                 ))}
@@ -254,7 +258,8 @@ export default function ServiceListingForm({ initialData, onClose }: ServiceList
               Cancel
             </Button>
             <Button type="submit" size="sm" disabled={mutation.isPending}>
-              <Save className="h-4 w-4 mr-1.5" /> {mutation.isPending ? "Saving..." : "Save Listing"}
+              <Save className="h-4 w-4 mr-1.5" />{" "}
+              {mutation.isPending ? "Saving..." : "Save Listing"}
             </Button>
           </div>
         </form>

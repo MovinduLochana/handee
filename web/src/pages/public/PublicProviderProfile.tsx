@@ -56,7 +56,9 @@ export default function PublicProviderProfile() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-sm font-medium text-muted-foreground animate-pulse">Loading provider...</div>
+        <div className="text-sm font-medium text-muted-foreground animate-pulse">
+          Loading provider...
+        </div>
       </div>
     );
   }
@@ -237,9 +239,7 @@ export default function PublicProviderProfile() {
 
                 {/* Fixed-Price Services */}
                 <div id="fixed-price-services" className="pt-4 border-t border-border space-y-4">
-                  <h4 className="text-base font-semibold text-foreground">
-                    Fixed-Price Services
-                  </h4>
+                  <h4 className="text-base font-semibold text-foreground">Fixed-Price Services</h4>
                   {listingsLoading ? (
                     <div className="py-8 text-center text-sm text-muted-foreground">
                       Loading service catalogue...
@@ -277,7 +277,9 @@ export default function PublicProviderProfile() {
               </CardHeader>
               <CardContent>
                 {reviewsLoading ? (
-                  <div className="py-8 text-center text-sm text-muted-foreground">Loading reviews...</div>
+                  <div className="py-8 text-center text-sm text-muted-foreground">
+                    Loading reviews...
+                  </div>
                 ) : !reviewsData || reviewsData.items.length === 0 ? (
                   <EmptyState
                     icon={<Star className="h-8 w-8 text-amber-500" />}

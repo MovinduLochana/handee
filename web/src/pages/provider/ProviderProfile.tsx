@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { User, Eye, CheckCircle2, MapPin, Home, Briefcase, Plus, X } from "lucide-react";
+import { User, Eye, CheckCircle2, MapPin, Home, Briefcase, X } from "lucide-react";
 import { providerApi } from "../../api/providers";
 import { serviceCategoryApi } from "../../api/serviceCategories";
 import { serviceListingsApi } from "../../api/serviceListings";
@@ -169,7 +169,9 @@ export default function ProviderProfile() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-sm font-medium text-muted-foreground animate-pulse">Loading profile...</div>
+        <div className="text-sm font-medium text-muted-foreground animate-pulse">
+          Loading profile...
+        </div>
       </div>
     );
   }
@@ -240,11 +242,7 @@ export default function ProviderProfile() {
           >
             <Eye className="h-4 w-4" /> View Public Profile
           </Button>
-          {!isEditing && (
-            <Button onClick={() => setIsEditing(true)}>
-              Edit Profile
-            </Button>
-          )}
+          {!isEditing && <Button onClick={() => setIsEditing(true)}>Edit Profile</Button>}
         </div>
       </div>
 
@@ -415,7 +413,9 @@ export default function ProviderProfile() {
           <CardTitle className="text-lg font-semibold flex items-center gap-2">
             <Home className="h-5 w-5 text-primary" /> Address
           </CardTitle>
-          <CardDescription>Your registered physical business or home base location.</CardDescription>
+          <CardDescription>
+            Your registered physical business or home base location.
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
@@ -493,7 +493,9 @@ export default function ProviderProfile() {
           <CardTitle className="text-lg font-semibold flex items-center gap-2">
             <Briefcase className="h-5 w-5 text-primary" /> Skills & Services
           </CardTitle>
-          <CardDescription>Select service categories and specific skills you offer to customers.</CardDescription>
+          <CardDescription>
+            Select service categories and specific skills you offer to customers.
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="space-y-3">
@@ -587,7 +589,8 @@ export default function ProviderProfile() {
             ) : (
               <div className="p-6 border border-dashed rounded-lg text-center bg-muted/20">
                 <p className="text-sm text-muted-foreground">
-                  You haven't listed any fixed-price services yet. Click 'Manage Services' to create one.
+                  You haven't listed any fixed-price services yet. Click 'Manage Services' to create
+                  one.
                 </p>
               </div>
             )}
@@ -599,7 +602,9 @@ export default function ProviderProfile() {
       <Card className="shadow-sm">
         <CardHeader>
           <CardTitle className="text-lg font-semibold">Service Area</CardTitle>
-          <CardDescription>Define the geographical area and radius where you provide services.</CardDescription>
+          <CardDescription>
+            Define the geographical area and radius where you provide services.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <LocationPicker
@@ -624,9 +629,7 @@ export default function ProviderProfile() {
           <div className="container max-w-5xl mx-auto flex items-center justify-between gap-4">
             <div className="flex-1">
               {saveStatus === "error" && (
-                <span className="text-sm font-medium text-destructive">
-                  {errorMessage}
-                </span>
+                <span className="text-sm font-medium text-destructive">{errorMessage}</span>
               )}
               {saveStatus === "success" && (
                 <span className="text-sm font-medium text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
