@@ -4,7 +4,6 @@ import '../../core/constants/colors.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/booking_provider.dart';
 import '../../providers/dispatch_provider.dart';
-import '../../widgets/role_switch_sheet.dart';
 import '../../widgets/status_badge.dart';
 import 'dispatch_queue_screen.dart';
 import 'edit_provider_profile_screen.dart';
@@ -132,18 +131,6 @@ class _ProviderDashboardTab extends StatelessWidget {
             ),
           ],
         ),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 12),
-            child: ActionChip(
-              avatar: const Icon(Icons.swap_horiz, size: 16, color: AppColors.primary),
-              label: const Text('Role', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.primary)),
-              backgroundColor: AppColors.primaryUltraLight,
-              side: const BorderSide(color: AppColors.primaryLight, width: 0.5),
-              onPressed: () => RoleSwitchSheet.show(context),
-            ),
-          ),
-        ],
       ),
       body: RefreshIndicator(
         onRefresh: () async {

@@ -9,10 +9,7 @@ import 'package:app/core/services/storage_service.dart';
 import 'package:app/data/models/user_model.dart';
 import 'package:app/data/repositories/auth_repository.dart';
 import 'package:app/providers/auth_provider.dart';
-import 'package:app/widgets/role_switch_sheet.dart';
 import 'package:app/main.dart';
-import 'package:app/screens/auth/login_screen.dart';
-import 'package:app/screens/auth/splash_screen.dart';
 import 'package:app/screens/customer/customer_home_screen.dart';
 import 'package:app/screens/provider/provider_home_screen.dart';
 
@@ -62,7 +59,7 @@ void main() {
     expect(storage.getUserRole(), 'Customer');
   });
 
-  testWidgets('RoleSwitchSheet navigates from Customer to Provider home screen', (tester) async {
+  testWidgets('CustomerHomeScreen and ProviderHomeScreen do not display role swapping button', (tester) async {
     final client = ApiClient(
       storage: storage,
       httpClient: MockClient((req) async {
@@ -81,37 +78,8 @@ void main() {
     // Verify we are on Customer screen
     expect(find.byType(CustomerHomeScreen), findsOneWidget);
 
-    // Tap Role chip to open switch modal
+    // Verify Role swapping ActionChip is NOT present in the AppBar
     final roleChip = find.widgetWithText(ActionChip, 'Role');
-    expect(roleChip, findsOneWidget);
-    await tester.tap(roleChip);
-    await tester.pumpAndSettle();
-
-    // Verify RoleSwitchSheet modal is shown
-    expect(find.byType(RoleSwitchSheet), findsOneWidget);
-    expect(find.text('Service Provider Experience (Field App)'), findsOneWidget);
-
-    // Tap Provider option
-    await tester.tap(find.text('Service Provider Experience (Field App)'));
-    await tester.pumpAndSettle();
-
-    // Verify it navigated to ProviderHomeScreen
-    expect(find.byType(ProviderHomeScreen), findsOneWidget);
-    expect(find.byType(CustomerHomeScreen), findsNothing);
-
-    // Now tap Role chip on ProviderHomeScreen to switch back
-    final providerRoleChip = find.widgetWithText(ActionChip, 'Role');
-    expect(providerRoleChip, findsOneWidget);
-    await tester.tap(providerRoleChip);
-    await tester.pumpAndSettle();
-
-    // Verify modal is shown and tap Customer Experience
-    expect(find.byType(RoleSwitchSheet), findsOneWidget);
-    await tester.tap(find.text('Customer Experience'));
-    await tester.pumpAndSettle();
-
-    // Verify it navigated back to CustomerHomeScreen
-    expect(find.byType(CustomerHomeScreen), findsOneWidget);
-    expect(find.byType(ProviderHomeScreen), findsNothing);
+    expect(roleChip, findsNothing);
   });
 }
