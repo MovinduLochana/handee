@@ -382,4 +382,236 @@ def validate_payment_handoff_integrity(
     return rules, hard_failures, soft_signals, reasons
 
 
+# ══════════════════════════════════════════════════════════════════════════════
+# 3. PRICING & INVOICING AI AGENT CLASS
+# ══════════════════════════════════════════════════════════════════════════════
+
+class PricingAndInvoicingAgent:
+    """
+    Autonomous AI Agent for Payments & Invoicing.
+
+    Responsibilities:
+    1. Analyzes trade category and job scope to determine fair market pricing.
+    2. Executes allowed tools: `estimate_price_tool`, `generate_invoice_breakdown_tool`, `prepare_payment_handoff_tool`.
+    3. Evaluates deterministic validation guardrails (benchmark outliers, budget breaches, fee splits).
+    4. Classifies tiered risk:
+       - Low risk -> `approved_for_auto_dispatch` (Instant match & auto invoice)
+       - Medium risk -> `approved_with_audit` (Dispatched, queued for post-audit)
+       - High risk -> `requires_human_approval` (Pauses for Admin review in React)
+    5. Emits structured step execution logs and handoff payloads.
+    """
+
+    agent_name: str = "PricingAndInvoicingAgent"
+
+    def __init__(self):
+        self.allowed_tools = [
+            "estimate_price_tool",
+            "generate_invoice_breakdown_tool",
+            "prepare_payment_handoff_tool",
+        ]
+        self.validation_rules = [
+            "validate_category_price_band",
+            "validate_customer_budget_compliance",
+            "validate_fee_split_integrity",
+            "validate_payment_handoff_integrity",
+        ]
+
+    def run(self, input_data: PricingAgentInput) -> PricingAgentResult:
+        """
+        Executes the agent's multi-step reasoning, tool execution, and validation cycle.
+        """
+        step_logs: List[Dict[str, Any]] = []
+
+        # ── Step 1: Agent Reasoning & Planning ────────────────────────────────
+        t1 = time.time()
+        plan = [
+            f"1. Retrieve benchmark baseline for category '{input_data.category}'.",
+            "2. Execute estimate_price_tool with scope complexity and urgency multipliers.",
+            "3. Execute generate_invoice_breakdown_tool for 85/15 labor/fee itemization.",
+            "4. Execute deterministic pricing and budget validation guardrails.",
+            "5. Synthesize risk tier and execute prepare_payment_handoff_tool.",
+        ]
+        step_logs.append({
+            "step_number": 1,
+            "agent_name": self.agent_name,
+            "action": "plan_and_analyze",
+            "input_data": {"category": input_data.category, "urgency": input_data.urgency},
+            "output_data": {"plan": plan},
+            "duration_ms": int((time.time() - t1) * 1000),
+            "timestamp": t1,
+        })
+
+        # ── Step 2: Tool Execution (Price Estimation) ─────────────────────────
+        t2 = time.time()
+        price_input = PriceEstimationInput(
+            category=input_data.category,
+            scope=input_data.scope,
+            urgency=input_data.urgency,
+            budget_min=input_data.budget_min,
+            budget_max=input_data.budget_max,
+        )
+        pricing_output = estimate_price_tool(price_input)
+        step_logs.append({
+            "step_number": 2,
+            "agent_name": self.agent_name,
+            "action": "execute_tool_estimate_price",
+            "tool_used": "estimate_price_tool",
+            "input_data": price_input.model_dump(),
+            "output_data": pricing_output.model_dump(),
+            "duration_ms": int((time.time() - t2) * 1000),
+            "timestamp": t2,
+        })
+
+        # ── Step 3: Tool Execution (Invoice Breakdown) ────────────────────────
+        t3 = time.time()
+        line_items = generate_invoice_breakdown_tool(
+            estimated_price=pricing_output.estimated_price,
+            breakdown=pricing_output.breakdown,
+            currency=pricing_output.currency,
+            category=input_data.category,
+        )
+        step_logs.append({
+            "step_number": 3,
+            "agent_name": self.agent_name,
+            "action": "execute_tool_generate_invoice_breakdown",
+            "tool_used": "generate_invoice_breakdown_tool",
+            "input_data": {"price": pricing_output.estimated_price, "currency": pricing_output.currency},
+            "output_data": {"line_items": line_items},
+            "duration_ms": int((time.time() - t3) * 1000),
+            "timestamp": t3,
+        })
+
+        # ── Step 4: Deterministic Validation Rules ────────────────────────────
+        t4 = time.time()
+        all_rules: List[ValidationRuleCheck] = []
+        total_hard_failures = 0
+        total_soft_signals = 0
+        reasons: List[str] = []
+
+        # Rule 1: Benchmark band
+        r1, h1, s1, re1 = validate_category_price_band(
+            category=input_data.category,
+            estimated_price=pricing_output.estimated_price,
+        )
+        all_rules.extend(r1)
+        total_hard_failures += h1
+        total_soft_signals += s1
+        reasons.extend(re1)
+
+        # Rule 2: Budget compliance
+        r2, h2, s2, re2 = validate_customer_budget_compliance(
+            estimated_price=pricing_output.estimated_price,
+            budget_max=input_data.budget_max,
+        )
+        all_rules.extend(r2)
+        total_hard_failures += h2
+        total_soft_signals += s2
+        reasons.extend(re2)
+
+        # Rule 3: Fee split integrity
+        r3, h3, s3, re3 = validate_fee_split_integrity(
+            estimated_price=pricing_output.estimated_price,
+            breakdown=pricing_output.breakdown,
+        )
+        all_rules.extend(r3)
+        total_hard_failures += h3
+        total_soft_signals += s3
+        reasons.extend(re3)
+
+        # Rule 4: Payment handoff contract validity
+        r4, h4, s4, re4 = validate_payment_handoff_integrity(
+            job_id=input_data.job_id,
+            estimated_price=pricing_output.estimated_price,
+        )
+        all_rules.extend(r4)
+        total_hard_failures += h4
+        total_soft_signals += s4
+        reasons.extend(re4)
+
+        step_logs.append({
+            "step_number": 4,
+            "agent_name": self.agent_name,
+            "action": "evaluate_pricing_validation_rules",
+            "input_data": {
+                "estimated_price": pricing_output.estimated_price,
+                "category": input_data.category,
+                "budget_max": input_data.budget_max,
+            },
+            "output_data": {
+                "hard_failures": total_hard_failures,
+                "soft_signals": total_soft_signals,
+                "reasons": reasons,
+                "rules": [r.model_dump() for r in all_rules],
+            },
+            "duration_ms": int((time.time() - t4) * 1000),
+            "timestamp": t4,
+        })
+
+        # ── Step 5: Risk Tier Synthesis & Payment Handoff ─────────────────────
+        t5 = time.time()
+        if total_hard_failures > 0 or total_soft_signals >= 2:
+            risk_tier = ValidationRiskTier.REQUIRES_HUMAN_APPROVAL
+            approval_status = "pending_approval"
+        elif total_soft_signals == 1:
+            risk_tier = ValidationRiskTier.APPROVED_WITH_AUDIT
+            approval_status = "approved"
+        else:
+            risk_tier = ValidationRiskTier.APPROVED_FOR_AUTO_DISPATCH
+            approval_status = "approved"
+
+        handoff = prepare_payment_handoff_tool(
+            job_id=input_data.job_id,
+            estimated_price=pricing_output.estimated_price,
+            breakdown=pricing_output.breakdown,
+            risk_tier=risk_tier,
+            approval_status=approval_status,
+            line_items=line_items,
+            provider_id=input_data.provider_id,
+            customer_id=input_data.customer_id,
+            currency=pricing_output.currency,
+        )
+
+        step_logs.append({
+            "step_number": 5,
+            "agent_name": self.agent_name,
+            "action": "synthesize_risk_and_prepare_handoff",
+            "tool_used": "prepare_payment_handoff_tool",
+            "input_data": {"risk_tier": str(risk_tier), "approval_status": approval_status},
+            "output_data": handoff.model_dump(),
+            "duration_ms": int((time.time() - t5) * 1000),
+            "timestamp": t5,
+        })
+
+        reasoning = (
+            f"Pricing & Invoicing Agent quoted Rs. {pricing_output.estimated_price:,.2f} ({pricing_output.currency}) "
+            f"for category '{input_data.category}'. Risk classification: {risk_tier.value} "
+            f"(Hard breaches: {total_hard_failures}, Soft signals: {total_soft_signals})."
+        )
+        if reasons:
+            reasoning += " Flags: " + "; ".join(reasons)
+
+        return PricingAgentResult(
+            agent_name=self.agent_name,
+            job_id=input_data.job_id,
+            category=input_data.category,
+            estimated_price=pricing_output.estimated_price,
+            currency=pricing_output.currency,
+            breakdown=pricing_output.breakdown,
+            risk_tier=risk_tier,
+            approval_status=approval_status,
+            is_budget_constrained=pricing_output.is_budget_constrained,
+            confidence_score=pricing_output.confidence_score,
+            validation_rules=all_rules,
+            payment_handoff=handoff,
+            step_logs=step_logs,
+            reasoning_summary=reasoning,
+        )
+
+
+# Singleton agent instance and alias
+pricing_agent = PricingAndInvoicingAgent()
+PricingAgent = PricingAndInvoicingAgent
+
+
+
 
