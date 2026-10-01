@@ -181,29 +181,6 @@ namespace handee.API.Data.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "ProviderAvailabilitySlots",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    ProviderId = table.Column<Guid>(type: "uuid", nullable: false),
-                    StartTime = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    EndTime = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    IsBooked = table.Column<bool>(type: "boolean", nullable: false),
-                    CreatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    UpdatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_ProviderAvailabilitySlots", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_ProviderAvailabilitySlots_AspNetUsers_ProviderId",
-                        column: x => x.ProviderId,
-                        principalTable: "AspNetUsers",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "ProviderOperatingSchedules",
                 columns: table => new
                 {
@@ -846,14 +823,10 @@ namespace handee.API.Data.Migrations
                 column: "Status");
 
             migrationBuilder.CreateIndex(
-                name: "IX_ProviderAvailabilitySlots_ProviderId_StartTime",
-                table: "ProviderAvailabilitySlots",
-                columns: new[] { "ProviderId", "StartTime" });
-
-            migrationBuilder.CreateIndex(
-                name: "IX_ProviderOperatingSchedules_ProviderId",
+                name: "IX_ProviderOperatingSchedules_ProviderId_DayOfWeek",
                 table: "ProviderOperatingSchedules",
-                column: "ProviderId");
+                columns: new[] { "ProviderId", "DayOfWeek" },
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_ProviderProfiles_ServiceAreaLatitude_ServiceAreaLongitude",
@@ -954,9 +927,6 @@ namespace handee.API.Data.Migrations
 
             migrationBuilder.DropTable(
                 name: "Payouts");
-
-            migrationBuilder.DropTable(
-                name: "ProviderAvailabilitySlots");
 
             migrationBuilder.DropTable(
                 name: "ProviderOperatingSchedules");
