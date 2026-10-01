@@ -22,16 +22,32 @@ class _ProviderVerificationScreenState extends State<ProviderVerificationScreen>
   String? _errorMessage;
 
   Future<void> _pickNic() async {
-    final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
-    if (image != null) {
-      setState(() => _nicFilePath = image.path);
+    try {
+      final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+      if (!mounted) return;
+      if (image != null) {
+        setState(() => _nicFilePath = image.path);
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to pick document: $e'), backgroundColor: AppColors.error),
+      );
     }
   }
 
   Future<void> _pickCert() async {
-    final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
-    if (image != null) {
-      setState(() => _certFilePath = image.path);
+    try {
+      final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+      if (!mounted) return;
+      if (image != null) {
+        setState(() => _certFilePath = image.path);
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to pick document: $e'), backgroundColor: AppColors.error),
+      );
     }
   }
 

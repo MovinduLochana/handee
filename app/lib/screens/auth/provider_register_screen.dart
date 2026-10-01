@@ -9,7 +9,6 @@ import '../../providers/service_category_provider.dart';
 import '../../widgets/custom_button.dart';
 import '../provider/provider_home_screen.dart';
 import 'customer_register_screen.dart';
-import 'login_screen.dart';
 
 class ProviderRegisterScreen extends StatefulWidget {
   const ProviderRegisterScreen({super.key});
@@ -70,10 +69,12 @@ class _ProviderRegisterScreenState extends State<ProviderRegisterScreen> {
   Future<void> _pickNicDocument() async {
     try {
       final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+      if (!mounted) return;
       if (image != null) {
         setState(() => _nicFilePath = image.path);
       }
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to pick document: $e'), backgroundColor: AppColors.error),
       );
@@ -83,10 +84,12 @@ class _ProviderRegisterScreenState extends State<ProviderRegisterScreen> {
   Future<void> _pickCertDocument() async {
     try {
       final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+      if (!mounted) return;
       if (image != null) {
         setState(() => _certFilePath = image.path);
       }
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to pick document: $e'), backgroundColor: AppColors.error),
       );
