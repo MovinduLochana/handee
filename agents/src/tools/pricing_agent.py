@@ -125,3 +125,166 @@ def prepare_payment_handoff_tool(
         line_items=line_items,
     )
 
+
+# ══════════════════════════════════════════════════════════════════════════════
+# 2. VALIDATION RULES (PRICING & BUDGET GUARDRAILS)
+# ══════════════════════════════════════════════════════════════════════════════
+
+def validate_category_price_band(
+    category: str,
+    estimated_price: float,
+) -> Tuple[List[ValidationRuleCheck], int, int, List[str]]:
+    """
+    Rule 1: Evaluates quote against category baseline median.
+    - > 60% deviation: Hard failure (H4_PRICE_OUTLIER) -> Pauses dispatch.
+    - 40% - 60% deviation: 2 soft signals (S2_SIGNIFICANT_PRICE_VARIANCE).
+    - 25% - 40% deviation: 1 soft signal (S2_MODERATE_PRICE_VARIANCE).
+    - <= 25% deviation: Passed.
+    """
+    rules: List[ValidationRuleCheck] = []
+    hard_failures = 0
+    soft_signals = 0
+    reasons: List[str] = []
+
+    benchmark = CATEGORY_BENCHMARKS.get(category, 3500.0)
+    variance_ratio = abs(estimated_price - benchmark) / benchmark
+
+    if variance_ratio > 0.60:
+        hard_failures += 1
+        msg = f"Estimated price (Rs. {estimated_price:,.2f}) deviates severely ({variance_ratio*100:.1f}%) from category benchmark (Rs. {benchmark:,.2f})."
+        reasons.append(msg)
+        rules.append(
+            ValidationRuleCheck(
+                rule_id="H4_PRICE_OUTLIER",
+                rule_name="Category Price Median Band",
+                is_hard_rule=True,
+                passed=False,
+                actual_value=round(variance_ratio, 2),
+                threshold="<= 0.60",
+                message=msg,
+            )
+        )
+    elif variance_ratio > 0.40:
+        soft_signals += 2
+        msg = f"Estimated price (Rs. {estimated_price:,.2f}) deviates significantly ({variance_ratio*100:.1f}%) from category benchmark (Rs. {benchmark:,.2f})."
+        reasons.append(msg)
+        rules.append(
+            ValidationRuleCheck(
+                rule_id="S2_SIGNIFICANT_PRICE_VARIANCE",
+                rule_name="Significant Price Deviation",
+                is_hard_rule=False,
+                passed=False,
+                actual_value=round(variance_ratio, 2),
+                threshold="<= 0.40",
+                message=msg,
+            )
+        )
+    elif variance_ratio > 0.25:
+        soft_signals += 1
+        msg = f"Estimated price (Rs. {estimated_price:,.2f}) has moderate deviation ({variance_ratio*100:.1f}%) from category benchmark (Rs. {benchmark:,.2f})."
+        reasons.append(msg)
+        rules.append(
+            ValidationRuleCheck(
+                rule_id="S2_MODERATE_PRICE_VARIANCE",
+                rule_name="Moderate Price Deviation",
+                is_hard_rule=False,
+                passed=False,
+                actual_value=round(variance_ratio, 2),
+                threshold="<= 0.25",
+                message=msg,
+            )
+        )
+    else:
+        rules.append(
+            ValidationRuleCheck(
+                rule_id="S2_MODERATE_PRICE_VARIANCE",
+                rule_name="Moderate Price Deviation",
+                is_hard_rule=False,
+                passed=True,
+                actual_value=round(variance_ratio, 2),
+                threshold="<= 0.25",
+                message="Estimated price is within normal category median band.",
+            )
+        )
+
+    return rules, hard_failures, soft_signals, reasons
+
+
+def validate_customer_budget_compliance(
+    estimated_price: float,
+    budget_max: Optional[float],
+) -> Tuple[List[ValidationRuleCheck], int, int, List[str]]:
+    """
+    Rule 2: Evaluates quote against customer budget ceiling.
+    - > 30% above budget_max: Hard failure (H5_EXTREME_BUDGET_BREACH) -> Pauses dispatch.
+    - Exceeds budget_max up to 30%: 1 soft signal (S3_MILD_BUDGET_BREACH).
+    - Within budget: Passed.
+    """
+    rules: List[ValidationRuleCheck] = []
+    hard_failures = 0
+    soft_signals = 0
+    reasons: List[str] = []
+
+    if budget_max is None or budget_max <= 0:
+        rules.append(
+            ValidationRuleCheck(
+                rule_id="S3_BUDGET_CHECK",
+                rule_name="Customer Budget Ceiling",
+                is_hard_rule=False,
+                passed=True,
+                actual_value=estimated_price,
+                threshold="No budget ceiling specified",
+                message="No customer budget ceiling specified.",
+            )
+        )
+        return rules, hard_failures, soft_signals, reasons
+
+    extreme_breach = estimated_price > (budget_max * 1.30)
+    mild_breach = estimated_price > budget_max and not extreme_breach
+
+    if extreme_breach:
+        hard_failures += 1
+        msg = f"Estimated price (Rs. {estimated_price:,.2f}) exceeds customer budget ceiling (Rs. {budget_max:,.2f}) by >30%."
+        reasons.append(msg)
+        rules.append(
+            ValidationRuleCheck(
+                rule_id="H5_EXTREME_BUDGET_BREACH",
+                rule_name="Customer Budget Ceiling",
+                is_hard_rule=True,
+                passed=False,
+                actual_value=estimated_price,
+                threshold=round(budget_max * 1.30, 2),
+                message=msg,
+            )
+        )
+    elif mild_breach:
+        soft_signals += 1
+        msg = f"Estimated price (Rs. {estimated_price:,.2f}) exceeds customer maximum budget (Rs. {budget_max:,.2f})."
+        reasons.append(msg)
+        rules.append(
+            ValidationRuleCheck(
+                rule_id="S3_MILD_BUDGET_BREACH",
+                rule_name="Customer Budget Limit",
+                is_hard_rule=False,
+                passed=False,
+                actual_value=estimated_price,
+                threshold=budget_max,
+                message=msg,
+            )
+        )
+    else:
+        rules.append(
+            ValidationRuleCheck(
+                rule_id="S3_BUDGET_COMPLIANCE",
+                rule_name="Customer Budget Limit",
+                is_hard_rule=False,
+                passed=True,
+                actual_value=estimated_price,
+                threshold=budget_max,
+                message="Estimated price is within customer budget limit.",
+            )
+        )
+
+    return rules, hard_failures, soft_signals, reasons
+
+
