@@ -5,9 +5,17 @@ import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, Tar
 class ApiEndpoints {
   ApiEndpoints._();
 
-  // Base URL configuration (Supports localhost, Android Emulator 10.0.2.2, or live backend)
-  // Default to the Android Emulator (10.0.2.2) or localhost.
-  // Use --dart-define=DEVICE=true to target a Physical Device over Wi-Fi
+  /// Live deployed Azure backend URL
+  static const String liveBackendUrl =
+      'https://sefproject-g3cmczhth2cygqgh.southeastasia-01.azurewebsites.net';
+
+  // Base URL configuration:
+  // - Default: Deployed Azure App Service
+  // - Use --dart-define=API_URL=https://... to override with a custom URL
+  // - Use --dart-define=USE_LOCAL=true to point to local backend (emulator/localhost)
+  // - Use --dart-define=DEVICE=true to target a Physical Device over Wi-Fi
+  static const String customApiUrl = String.fromEnvironment('API_URL', defaultValue: '');
+  static const bool useLocal = bool.fromEnvironment('USE_LOCAL', defaultValue: false);
   static const bool usePhysicalDevice = bool.fromEnvironment('DEVICE', defaultValue: false);
   static const String physicalDeviceIp = '192.168.1.3';
 
@@ -19,7 +27,12 @@ class ApiEndpoints {
     return usePhysicalDevice ? physicalDeviceIp : 'localhost';
   }
   static const int defaultPort = 5057;
-  static String get baseUrl => 'http://$defaultHost:$defaultPort';
+
+  static String get baseUrl {
+    if (customApiUrl.isNotEmpty) return customApiUrl;
+    if (useLocal) return 'http://$defaultHost:$defaultPort';
+    return liveBackendUrl;
+  }
 
   // Auth endpoints (AuthController)
   static const String login = '/auth/login';
@@ -36,6 +49,7 @@ class ApiEndpoints {
   static const String jobRequests = '/job-requests';
   static const String myJobRequests = '/job-requests/mine';
   static String jobRequestById(String id) => '/job-requests/$id';
+  static String jobRequestWorkflow(String id) => '/job-requests/$id/workflow';
 
   // Bookings (BookingController)
   static const String bookings = '/bookings';

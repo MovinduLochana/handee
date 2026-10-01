@@ -1,5 +1,5 @@
-import React from "react";
 import { BellDot, Inbox } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 
 export default function Notifications() {
   const notifications: any[] = [
@@ -7,90 +7,45 @@ export default function Notifications() {
   ];
 
   return (
-    <div style={{ maxWidth: "800px" }} className="animate-fade-up">
-      <h1
-        style={{
-          fontFamily: "var(--font-sans)",
-          fontSize: "2.5rem",
-          fontWeight: 700,
-          marginBottom: "2.5rem",
-          color: "var(--text-h)",
-          letterSpacing: "-0.03em",
-        }}
-      >
-        Notifications
-      </h1>
+    <div className="max-w-4xl mx-auto space-y-6 animate-fade-up">
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight text-foreground mb-1">Notifications</h1>
+        <p className="text-muted-foreground text-sm">
+          Stay updated with your latest alerts and activities.
+        </p>
+      </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+      <div className="space-y-3">
         {notifications.map((n) => (
-          <div
+          <Card
             key={n.id}
-            style={{
-              display: "flex",
-              alignItems: "flex-start",
-              gap: "1rem",
-              backgroundColor: "var(--bg-surface)",
-              padding: "1.5rem",
-              borderRadius: "12px",
-              border: `1px solid ${n.unread ? "var(--accent-hover)" : "var(--border)"}`,
-              borderLeft: n.unread ? "4px solid var(--accent)" : undefined,
-              boxShadow: "var(--shadow-sm)",
-            }}
+            className={`border-border transition-shadow hover:shadow-xs ${
+              n.unread ? "border-l-4 border-l-primary bg-accent/20" : "bg-card"
+            }`}
           >
-            <BellDot size={24} style={{ color: n.unread ? "var(--accent)" : "var(--text)" }} />
-            <div>
-              <p
-                style={{
-                  margin: "0 0 0.5rem",
-                  fontWeight: n.unread ? 600 : 400,
-                  color: "var(--text-h)",
-                }}
-              >
-                {n.text}
-              </p>
-              <span style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>{n.time}</span>
-            </div>
-          </div>
+            <CardContent className="p-4 flex items-start gap-4">
+              <BellDot
+                className={`h-5 w-5 mt-0.5 shrink-0 ${n.unread ? "text-primary" : "text-muted-foreground"}`}
+              />
+              <div className="flex-1 min-w-0">
+                <p
+                  className={`text-sm text-foreground mb-1 ${n.unread ? "font-semibold" : "font-normal"}`}
+                >
+                  {n.text}
+                </p>
+                <span className="text-xs text-muted-foreground">{n.time}</span>
+              </div>
+            </CardContent>
+          </Card>
         ))}
 
         {notifications.length === 0 && (
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              padding: "4rem 2rem",
-              backgroundColor: "var(--bg-surface)",
-              borderRadius: "16px",
-              border: "1px dashed var(--border-strong)",
-              color: "var(--text-muted)",
-              textAlign: "center",
-              animation: "fadeUp 0.8s var(--ease-out-expo) 0.1s both",
-            }}
-          >
-            <div
-              style={{
-                backgroundColor: "var(--bg)",
-                padding: "1.5rem",
-                borderRadius: "50%",
-                marginBottom: "1.5rem",
-                color: "var(--border-strong)",
-              }}
-            >
-              <Inbox size={48} strokeWidth={1.5} />
+          <div className="flex flex-col items-center justify-center p-12 text-center border border-dashed border-border bg-card/40 animate-fade-up">
+            <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mb-4 text-muted-foreground">
+              <Inbox className="h-8 w-8" strokeWidth={1.5} />
             </div>
-            <h3
-              style={{
-                margin: "0 0 0.5rem",
-                color: "var(--text-h)",
-                fontSize: "1.25rem",
-                fontWeight: 600,
-              }}
-            >
-              All caught up!
-            </h3>
-            <p style={{ margin: 0, maxWidth: "300px", lineHeight: 1.5 }}>
+            <h3 className="text-base font-semibold text-foreground mb-1">All caught up!</h3>
+            <p className="text-xs text-muted-foreground max-w-xs leading-relaxed">
               Your dashboard is totally clear. When something needs your attention, it will appear
               right here.
             </p>

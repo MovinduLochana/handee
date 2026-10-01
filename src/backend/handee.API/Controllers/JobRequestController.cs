@@ -15,10 +15,28 @@ namespace handee.API.Controllers;
 public class JobRequestController : ControllerBase
 {
     private readonly IJobRequestService _jobRequestService;
+    private readonly IAgentWorkflowService _agentWorkflowService;
 
-    public JobRequestController(IJobRequestService jobRequestService)
+    public JobRequestController(
+        IJobRequestService jobRequestService,
+        IAgentWorkflowService agentWorkflowService)
     {
         _jobRequestService = jobRequestService;
+        _agentWorkflowService = agentWorkflowService;
+    }
+
+    // GET /job-requests/{id}/workflow
+    [HttpGet("{id:guid}/workflow")]
+    public async Task<IActionResult> GetWorkflow(Guid id, CancellationToken ct)
+    {
+        var userId = User.GetUserId();
+        if (userId is null) return Unauthorized();
+
+        var job = await _jobRequestService.GetByIdAsync(id, userId.Value, User.IsInRole("Admin"));
+        if (job is null) return NotFound();
+
+        var workflow = await _agentWorkflowService.GetByJobRequestIdAsync(id, ct);
+        return workflow is null ? NotFound() : Ok(workflow);
     }
 
     // POST /job-requests

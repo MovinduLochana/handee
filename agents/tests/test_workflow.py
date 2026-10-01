@@ -516,7 +516,7 @@ def test_assistant_non_tool_validation_error_stays_a_500(client, monkeypatch):
     assert response.status_code == 500
 
 
-@pytest.mark.anyio
+@pytest.mark.asyncio
 async def test_assistant_query():
     req = AssistantQueryRequest(
         customer_id="cust-123",

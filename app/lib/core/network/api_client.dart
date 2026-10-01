@@ -72,7 +72,7 @@ class ApiClient {
       final uri = _buildUri(path, queryParams);
       final response = await _httpClient
           .get(uri, headers: _buildHeaders())
-          .timeout(const Duration(seconds: 8));
+          .timeout(const Duration(seconds: 35));
       return _handleResponse(response);
     } catch (e) {
       debugPrint('ApiClient GET error on $path: $e');
@@ -89,7 +89,7 @@ class ApiClient {
             headers: _buildHeaders(),
             body: body != null ? jsonEncode(body) : null,
           )
-          .timeout(const Duration(seconds: 10));
+          .timeout(const Duration(seconds: 35));
       return _handleResponse(response);
     } catch (e) {
       debugPrint('ApiClient POST error on $path: $e');
@@ -106,10 +106,48 @@ class ApiClient {
             headers: _buildHeaders(),
             body: body != null ? jsonEncode(body) : null,
           )
-          .timeout(const Duration(seconds: 10));
+          .timeout(const Duration(seconds: 35));
       return _handleResponse(response);
     } catch (e) {
       debugPrint('ApiClient PUT error on $path: $e');
+      rethrow;
+    }
+  }
+
+  Future<dynamic> postMultipart(
+    String path, {
+    Map<String, String>? fields,
+    required String fileField,
+    required String filePath,
+    String? filename,
+  }) async {
+    try {
+      final uri = _buildUri(path);
+      final request = http.MultipartRequest('POST', uri);
+
+      final token = storage.getAccessToken();
+      if (token != null && token.isNotEmpty) {
+        request.headers['Authorization'] = 'Bearer $token';
+      }
+      request.headers['Accept'] = 'application/json';
+
+      if (fields != null) {
+        request.fields.addAll(fields);
+      }
+
+      request.files.add(
+        await http.MultipartFile.fromPath(
+          fileField,
+          filePath,
+          filename: filename,
+        ),
+      );
+
+      final streamedResponse = await _httpClient.send(request).timeout(const Duration(seconds: 45));
+      final response = await http.Response.fromStream(streamedResponse);
+      return _handleResponse(response);
+    } catch (e) {
+      debugPrint('ApiClient Multipart POST error on $path: $e');
       rethrow;
     }
   }

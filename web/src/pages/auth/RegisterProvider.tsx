@@ -4,7 +4,18 @@ import { useMutation } from "@tanstack/react-query";
 import { authApi } from "../../api/auth";
 import { extractApiError } from "../../lib/api";
 import { Loader2, AlertCircle } from "lucide-react";
-import "./Auth.css";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  CardFooter,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export default function RegisterProvider() {
   const navigate = useNavigate();
@@ -46,97 +57,87 @@ export default function RegisterProvider() {
   };
 
   return (
-    <div className="auth-container">
-      <div className="auth-card">
-        <div className="brand">Handee</div>
-        <h2>Join Handee as a Pro</h2>
-        <p className="subtitle">Grow your business with verified service leads.</p>
+    <div className="min-h-screen flex items-center justify-center bg-muted/40 p-4">
+      <Card className="w-full max-w-md bg-card text-card-foreground border-border shadow-lg">
+        <CardHeader className="text-center space-y-2">
+          <div className="text-3xl font-black tracking-tight text-foreground">Handee</div>
+          <CardTitle className="text-2xl font-bold tracking-tight">Join Handee as a Pro</CardTitle>
+          <CardDescription>Grow your business with verified service leads.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {authError && (
+            <Alert variant="destructive" className="mb-6">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{authError}</AlertDescription>
+            </Alert>
+          )}
 
-        {authError && (
-          <div
-            style={{
-              backgroundColor: "var(--bg-danger)",
-              color: "var(--text-danger)",
-              padding: "1rem",
-              borderRadius: "8px",
-              marginBottom: "1.5rem",
-              display: "flex",
-              alignItems: "center",
-              gap: "0.75rem",
-              fontSize: "0.9rem",
-              fontWeight: 500,
-            }}
-            className="animate-fade-up"
-          >
-            <AlertCircle size={20} />
-            <div>{authError}</div>
-          </div>
-        )}
-
-        <form onSubmit={handleRegister}>
-          <div className="form-group">
-            <label htmlFor="fullName">Full Name (or Business Name)</label>
-            <input
-              type="text"
-              id="fullName"
-              name="fullName"
-              placeholder="Acme Services"
-              required
-              disabled={registerMutation.isPending}
-            />
-          </div>
-          <div className="form-group">
-            <label htmlFor="email">Email address</label>
-            <input
-              type="email"
-              id="email"
-              name="email"
-              placeholder="contact@example.com"
-              required
-              disabled={registerMutation.isPending}
-            />
-          </div>
-          <div className="form-group">
-            <label htmlFor="password">Password</label>
-            <input
-              type="password"
-              id="password"
-              name="password"
-              placeholder="••••••••"
-              required
-              disabled={registerMutation.isPending}
-            />
-          </div>
-          <button
-            type="submit"
-            className="btn-primary"
-            disabled={registerMutation.isPending}
-            style={{
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              gap: "0.5rem",
-            }}
-          >
-            {registerMutation.isPending ? (
-              <>
-                <Loader2 size={20} className="animate-spin" /> Registering...
-              </>
-            ) : (
-              "Register & Verify"
-            )}
-          </button>
-        </form>
-
-        <div className="auth-links">
+          <form onSubmit={handleRegister} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="fullName">Full Name (or Business Name)</Label>
+              <Input
+                type="text"
+                id="fullName"
+                name="fullName"
+                placeholder="Acme Services"
+                required
+                disabled={registerMutation.isPending}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="email">Email address</Label>
+              <Input
+                type="email"
+                id="email"
+                name="email"
+                placeholder="contact@example.com"
+                required
+                disabled={registerMutation.isPending}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                type="password"
+                id="password"
+                name="password"
+                placeholder="••••••••"
+                required
+                disabled={registerMutation.isPending}
+              />
+            </div>
+            <Button type="submit" className="w-full mt-2" disabled={registerMutation.isPending}>
+              {registerMutation.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" /> Registering...
+                </>
+              ) : (
+                "Register & Verify"
+              )}
+            </Button>
+          </form>
+        </CardContent>
+        <CardFooter className="flex flex-col space-y-2 text-center text-sm text-muted-foreground">
           <div>
-            Already have an account? <Link to="/login">Sign in</Link>
+            Already have an account?{" "}
+            <Link
+              to="/login"
+              className="font-semibold text-primary underline-offset-4 hover:underline"
+            >
+              Sign in
+            </Link>
           </div>
-          <div style={{ marginTop: "0.5rem" }}>
-            Looking for a service? <Link to="/register/customer">Sign up as a Customer</Link>
+          <div>
+            Looking for a service?{" "}
+            <Link
+              to="/register/customer"
+              className="font-semibold text-primary underline-offset-4 hover:underline"
+            >
+              Sign up as a Customer
+            </Link>
           </div>
-        </div>
-      </div>
+        </CardFooter>
+      </Card>
     </div>
   );
 }

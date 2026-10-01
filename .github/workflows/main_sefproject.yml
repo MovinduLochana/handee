@@ -1,0 +1,38 @@
+name: Build and deploy ASP.Net Core app to Azure Web App - sefproject
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up .NET Core
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'   # Change to '9.0.x' or '8.0.x' if needed
+
+      - name: Restore dependencies
+        run: dotnet restore
+        working-directory: src/backend/Handee.Api
+
+      - name: Build
+        run: dotnet build --configuration Release --no-restore
+        working-directory: src/backend/Handee.Api
+
+      - name: Publish
+        run: dotnet publish -c Release -o ./publish --no-build
+        working-directory: src/backend/Handee.Api
+
+      - name: Deploy to Azure Web App
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: 'sefproject'
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          package: src/backend/Handee.Api/publish

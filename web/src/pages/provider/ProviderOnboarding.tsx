@@ -1,14 +1,20 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, ArrowRight, ShieldCheck, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, ShieldCheck, CheckCircle2, X } from "lucide-react";
 import { providerApi } from "../../api/providers";
 import { serviceCategoryApi } from "../../api/serviceCategories";
 import StepIndicator from "../../components/provider/StepIndicator";
 import ServiceCategoryTag from "../../components/provider/ServiceCategoryTag";
 import { extractApiError } from "../../lib/api";
 import LocationPicker from "../../components/provider/LocationPicker";
-import "./ProviderOnboarding.css";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const STEPS = [
   { label: "Personal & Business" },
@@ -185,324 +191,318 @@ export default function ProviderOnboarding() {
     });
   };
 
-  if (isProfileLoading)
-    return <div style={{ padding: "2rem", textAlign: "center" }}>Loading onboarding...</div>;
+  if (isProfileLoading) {
+    return <div className="p-8 text-center text-muted-foreground">Loading onboarding...</div>;
+  }
 
   return (
-    <div className="wizard-container">
-      <header className="wizard-header animate-fade-up">
-        <h1>Provider Onboarding</h1>
-        <p>Welcome! Complete your profile to get started.</p>
+    <div className="max-w-3xl mx-auto px-4 py-8 space-y-6">
+      <header className="text-center space-y-2">
+        <h1 className="text-3xl font-bold tracking-tight text-foreground">Provider Onboarding</h1>
+        <p className="text-muted-foreground">Welcome! Complete your profile to get started.</p>
       </header>
 
-      <div className="animate-fade-up animate-delay-200">
+      <div className="my-6">
         <StepIndicator steps={STEPS} currentStep={currentStep} />
       </div>
 
-      {error && <div className="wizard-error animate-fade-up">{error}</div>}
+      {error && (
+        <Alert variant="destructive">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
 
-      <div className="wizard-card" key={`step-${currentStep}`}>
+      <Card key={`step-${currentStep}`} className="rounded-none border-border">
         {/* ── STEP 0: Info ── */}
         {currentStep === 0 && (
-          <div className="wizard-step">
-            <h2>Personal & Business Information</h2>
-            <p className="step-subtitle">Tell customers who you are and what you do best.</p>
-
-            <div className="wizard-field">
-              <label htmlFor="headline">Headline (required)</label>
-              <input
-                id="headline"
-                type="text"
-                placeholder="e.g. Master Plumber with 10+ years experience"
-                value={headline}
-                onChange={(e) => setHeadline(e.target.value)}
-              />
-            </div>
-
-            <div className="wizard-field">
-              <label htmlFor="experience">Years of Experience (required)</label>
-              <input
-                id="experience"
-                type="number"
-                min="0"
-                placeholder="0"
-                value={yearsOfExperience}
-                onChange={(e) => setYearsOfExperience(parseInt(e.target.value) || "")}
-              />
-            </div>
-
-            <div className="wizard-field">
-              <label htmlFor="bio">Short Bio (required)</label>
-              <textarea
-                id="bio"
-                placeholder="A brief summary of your expertise."
-                value={bio}
-                onChange={(e) => setBio(e.target.value)}
-                style={{ minHeight: "80px" }}
-              />
-            </div>
-
-            <div className="wizard-field">
-              <label htmlFor="description">Detailed Description</label>
-              <textarea
-                id="description"
-                placeholder="Elaborate on your past work, certifications, and approach to customer service."
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-              />
-            </div>
-
-            <div className="wizard-field">
-              <label>Languages (Press Enter to add)</label>
-              <div className="tag-input-container">
-                {languages.map((lang) => (
-                  <span key={lang} className="tag-input-tag">
-                    {lang}
-                    <button
-                      className="tag-input-remove"
-                      onClick={() => setLanguages(languages.filter((l) => l !== lang))}
-                    >
-                      ×
-                    </button>
-                  </span>
-                ))}
-                <input
+          <>
+            <CardHeader>
+              <CardTitle>Personal & Business Information</CardTitle>
+              <CardDescription>Tell customers who you are and what you do best.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="headline">Headline (required)</Label>
+                <Input
+                  id="headline"
                   type="text"
-                  className="tag-input-field"
-                  placeholder="Add language..."
-                  value={langInput}
-                  onChange={(e) => setLangInput(e.target.value)}
-                  onKeyDown={handleAddLang}
+                  placeholder="e.g. Master Plumber with 10+ years experience"
+                  value={headline}
+                  onChange={(e) => setHeadline(e.target.value)}
                 />
               </div>
-            </div>
 
-            <h3 style={{ marginTop: "2rem", marginBottom: "0.5rem" }}>Address</h3>
-            <div className="wizard-field">
-              <label htmlFor="addressLine1">Address Line 1</label>
-              <input
-                id="addressLine1"
-                type="text"
-                placeholder="Street address"
-                value={addressLine1}
-                onChange={(e) => setAddressLine1(e.target.value)}
-              />
-            </div>
-            <div className="wizard-field">
-              <label htmlFor="addressLine2">Address Line 2</label>
-              <input
-                id="addressLine2"
-                type="text"
-                placeholder="Apt, suite, unit, etc. (optional)"
-                value={addressLine2}
-                onChange={(e) => setAddressLine2(e.target.value)}
-              />
-            </div>
-            <div className="form-row">
-              <div className="form-col" style={{ flex: 1 }}>
-                <div className="wizard-field">
-                  <label htmlFor="city">City</label>
+              <div className="space-y-2">
+                <Label htmlFor="experience">Years of Experience (required)</Label>
+                <Input
+                  id="experience"
+                  type="number"
+                  min="0"
+                  placeholder="0"
+                  value={yearsOfExperience}
+                  onChange={(e) => setYearsOfExperience(parseInt(e.target.value) || "")}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="bio">Short Bio (required)</Label>
+                <Textarea
+                  id="bio"
+                  placeholder="A brief summary of your expertise."
+                  value={bio}
+                  onChange={(e) => setBio(e.target.value)}
+                  className="min-h-[80px]"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="description">Detailed Description</Label>
+                <Textarea
+                  id="description"
+                  placeholder="Elaborate on your past work, certifications, and approach to customer service."
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  className="min-h-[120px]"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Languages (Press Enter to add)</Label>
+                <div className="flex flex-wrap items-center gap-2 p-2 border border-input rounded-none bg-background focus-within:ring-2 focus-within:ring-ring">
+                  {languages.map((lang) => (
+                    <Badge
+                      key={lang}
+                      variant="secondary"
+                      className="flex items-center gap-1 rounded-none px-2 py-0.5"
+                    >
+                      {lang}
+                      <button
+                        type="button"
+                        className="hover:text-destructive cursor-pointer"
+                        onClick={() => setLanguages(languages.filter((l) => l !== lang))}
+                        aria-label={`Remove ${lang}`}
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </Badge>
+                  ))}
                   <input
-                    id="city"
                     type="text"
-                    value={city}
-                    onChange={(e) => setCity(e.target.value)}
+                    className="flex-1 bg-transparent border-none outline-none text-sm min-w-[120px] placeholder:text-muted-foreground focus:outline-none"
+                    placeholder="Add language..."
+                    value={langInput}
+                    onChange={(e) => setLangInput(e.target.value)}
+                    onKeyDown={handleAddLang}
                   />
                 </div>
               </div>
-              <div className="form-col" style={{ flex: 1 }}>
-                <div className="wizard-field">
-                  <label htmlFor="state">State / Province</label>
-                  <input
-                    id="state"
+
+              <div className="pt-4 border-t border-border space-y-4">
+                <h3 className="text-lg font-semibold text-foreground">Address</h3>
+                <div className="space-y-2">
+                  <Label htmlFor="addressLine1">Address Line 1</Label>
+                  <Input
+                    id="addressLine1"
                     type="text"
-                    value={addrState}
-                    onChange={(e) => setAddrState(e.target.value)}
+                    placeholder="Street address"
+                    value={addressLine1}
+                    onChange={(e) => setAddressLine1(e.target.value)}
                   />
                 </div>
-              </div>
-            </div>
-            <div className="form-row">
-              <div className="form-col" style={{ flex: 1 }}>
-                <div className="wizard-field">
-                  <label htmlFor="postalCode">Postal Code</label>
-                  <input
-                    id="postalCode"
+                <div className="space-y-2">
+                  <Label htmlFor="addressLine2">Address Line 2</Label>
+                  <Input
+                    id="addressLine2"
                     type="text"
-                    value={postalCode}
-                    onChange={(e) => setPostalCode(e.target.value)}
+                    placeholder="Apt, suite, unit, etc. (optional)"
+                    value={addressLine2}
+                    onChange={(e) => setAddressLine2(e.target.value)}
                   />
                 </div>
-              </div>
-              <div className="form-col" style={{ flex: 1 }}>
-                <div className="wizard-field">
-                  <label htmlFor="country">Country</label>
-                  <input
-                    id="country"
-                    type="text"
-                    value={country}
-                    onChange={(e) => setCountry(e.target.value)}
-                  />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="city">City</Label>
+                    <Input
+                      id="city"
+                      type="text"
+                      value={city}
+                      onChange={(e) => setCity(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="state">State / Province</Label>
+                    <Input
+                      id="state"
+                      type="text"
+                      value={addrState}
+                      onChange={(e) => setAddrState(e.target.value)}
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="postalCode">Postal Code</Label>
+                    <Input
+                      id="postalCode"
+                      type="text"
+                      value={postalCode}
+                      onChange={(e) => setPostalCode(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="country">Country</Label>
+                    <Input
+                      id="country"
+                      type="text"
+                      value={country}
+                      onChange={(e) => setCountry(e.target.value)}
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
-          </div>
+            </CardContent>
+          </>
         )}
 
         {/* ── STEP 1: Skills ── */}
         {currentStep === 1 && (
-          <div className="wizard-step">
-            <h2>Skills & Services</h2>
-            <p className="step-subtitle">
-              Select the broad categories you operate in, then list specific services.
-            </p>
-
-            <div className="wizard-field">
-              <label>Service Categories (required, select at least one)</label>
-              <div className="skill-grid">
-                {categories.map((cat) => (
-                  <ServiceCategoryTag
-                    key={cat.id}
-                    category={cat}
-                    selected={selectedSkillIds.has(cat.id)}
-                    onClick={() => toggleSkill(cat.id)}
-                  />
-                ))}
+          <>
+            <CardHeader>
+              <CardTitle>Skills & Services</CardTitle>
+              <CardDescription>
+                Select the broad categories you operate in, then list specific services.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-3">
+                <Label>Service Categories (required, select at least one)</Label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                  {categories.map((cat) => (
+                    <ServiceCategoryTag
+                      key={cat.id}
+                      category={cat}
+                      selected={selectedSkillIds.has(cat.id)}
+                      onClick={() => toggleSkill(cat.id)}
+                    />
+                  ))}
+                </div>
               </div>
-            </div>
 
-            <div className="wizard-field" style={{ marginTop: "2rem" }}>
-              <label>Specific Services Offered (Press Enter to add)</label>
-              <div className="tag-input-container">
-                {servicesOffered.map((srv) => (
-                  <span key={srv} className="tag-input-tag">
-                    {srv}
-                    <button
-                      className="tag-input-remove"
-                      onClick={() => setServicesOffered(servicesOffered.filter((s) => s !== srv))}
+              <div className="space-y-3 pt-4 border-t border-border">
+                <Label>Specific Services Offered (Press Enter to add)</Label>
+                <div className="flex flex-wrap items-center gap-2 p-2 border border-input rounded-none bg-background focus-within:ring-2 focus-within:ring-ring">
+                  {servicesOffered.map((srv) => (
+                    <Badge
+                      key={srv}
+                      variant="secondary"
+                      className="flex items-center gap-1 rounded-none px-2 py-0.5"
                     >
-                      ×
-                    </button>
-                  </span>
-                ))}
-                <input
-                  type="text"
-                  className="tag-input-field"
-                  placeholder="e.g. Toilet Repair, Pipe Fitting..."
-                  value={serviceInput}
-                  onChange={(e) => setServiceInput(e.target.value)}
-                  onKeyDown={handleAddService}
-                />
+                      {srv}
+                      <button
+                        type="button"
+                        className="hover:text-destructive cursor-pointer"
+                        onClick={() => setServicesOffered(servicesOffered.filter((s) => s !== srv))}
+                        aria-label={`Remove ${srv}`}
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </Badge>
+                  ))}
+                  <input
+                    type="text"
+                    className="flex-1 bg-transparent border-none outline-none text-sm min-w-[120px] placeholder:text-muted-foreground focus:outline-none"
+                    placeholder="e.g. Toilet Repair, Pipe Fitting..."
+                    value={serviceInput}
+                    onChange={(e) => setServiceInput(e.target.value)}
+                    onKeyDown={handleAddService}
+                  />
+                </div>
               </div>
-            </div>
-          </div>
+            </CardContent>
+          </>
         )}
 
         {/* ── STEP 2: Service Area ── */}
         {currentStep === 2 && (
-          <div className="wizard-step">
-            <h2>Service Area</h2>
-            <p className="step-subtitle">
-              Where are you based, and how far are you willing to travel?
-            </p>
-
-            <LocationPicker
-              lat={serviceAreaLatitude}
-              lng={serviceAreaLongitude}
-              address={serviceAreaAddress}
-              radiusKm={serviceRadiusKm}
-              isEditing={true}
-              onChange={(lat, lng, addr, rkm) => {
-                setServiceAreaLatitude(lat);
-                setServiceAreaLongitude(lng);
-                setServiceAreaAddress(addr);
-                setServiceRadiusKm(rkm);
-              }}
-            />
-          </div>
+          <>
+            <CardHeader>
+              <CardTitle>Service Area</CardTitle>
+              <CardDescription>
+                Where are you based, and how far are you willing to travel?
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <LocationPicker
+                lat={serviceAreaLatitude}
+                lng={serviceAreaLongitude}
+                address={serviceAreaAddress}
+                radiusKm={serviceRadiusKm}
+                isEditing={true}
+                onChange={(lat, lng, addr, rkm) => {
+                  setServiceAreaLatitude(lat);
+                  setServiceAreaLongitude(lng);
+                  setServiceAreaAddress(addr);
+                  setServiceRadiusKm(rkm);
+                }}
+              />
+            </CardContent>
+          </>
         )}
 
         {/* ── STEP 3: Finish ── */}
         {currentStep === 3 && (
-          <div
-            className="wizard-step animate-fade-up"
-            style={{ textAlign: "center", padding: "2rem 1rem" }}
-          >
-            <div style={{ marginBottom: "1.5rem", color: "var(--accent)" }}>
-              <CheckCircle2 size={56} style={{ margin: "0 auto" }} />
+          <CardContent className="text-center py-12 px-6 space-y-6">
+            <div className="flex justify-center text-primary">
+              <CheckCircle2 className="w-16 h-16 text-primary" />
             </div>
-            <h2>Profile Saved Successfully!</h2>
-            <p
-              style={{
-                color: "var(--text-muted)",
-                marginBottom: "3rem",
-                maxWidth: "400px",
-                margin: "0 auto 3rem",
-              }}
-            >
-              Your provider profile has been created. To unlock all features and start accepting
-              jobs, you must verify your identity.
-            </p>
+            <div className="space-y-2">
+              <h2 className="text-2xl font-bold tracking-tight text-foreground">
+                Profile Saved Successfully!
+              </h2>
+              <p className="text-muted-foreground max-w-md mx-auto text-sm">
+                Your provider profile has been created. To unlock all features and start accepting
+                jobs, you must verify your identity.
+              </p>
+            </div>
 
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: "1rem",
-                alignItems: "center",
-              }}
-            >
-              <button
-                className="wizard-btn wizard-btn-primary"
+            <div className="flex flex-col gap-3 items-center max-w-xs mx-auto pt-4">
+              <Button
+                className="w-full justify-center gap-2"
                 onClick={() => navigate("/provider/submit-verification")}
-                style={{
-                  width: "100%",
-                  maxWidth: "300px",
-                  display: "flex",
-                  justifyContent: "center",
-                }}
               >
-                <ShieldCheck size={18} /> Verify Identity Now
-              </button>
+                <ShieldCheck className="w-4 h-4" /> Verify Identity Now
+              </Button>
 
-              <button
-                className="wizard-btn wizard-btn-secondary"
+              <Button
+                variant="outline"
+                className="w-full justify-center"
                 onClick={() => navigate("/dashboard")}
-                style={{
-                  width: "100%",
-                  maxWidth: "300px",
-                  display: "flex",
-                  justifyContent: "center",
-                }}
               >
                 Skip for now, go to Dashboard
-              </button>
+              </Button>
             </div>
-          </div>
+          </CardContent>
         )}
 
         {/* ── Navigation ── */}
         {currentStep < 3 && (
-          <div className="wizard-nav">
-            <button
-              className="wizard-btn wizard-btn-secondary"
+          <div className="flex items-center justify-between p-6 border-t border-border">
+            <Button
+              variant="outline"
               onClick={prevStep}
               disabled={currentStep === 0 || saveProfileMutation.isPending}
+              className="gap-2"
             >
-              <ArrowLeft size={16} /> Back
-            </button>
+              <ArrowLeft className="w-4 h-4" /> Back
+            </Button>
 
-            <button
-              className="wizard-btn wizard-btn-primary"
-              onClick={nextStep}
-              disabled={saveProfileMutation.isPending}
-            >
+            <Button onClick={nextStep} disabled={saveProfileMutation.isPending} className="gap-2">
               {saveProfileMutation.isPending && currentStep === 2 ? "Saving..." : "Next Step"}
-              {!saveProfileMutation.isPending && <ArrowRight size={16} />}
-            </button>
+              {!saveProfileMutation.isPending && <ArrowRight className="w-4 h-4" />}
+            </Button>
           </div>
         )}
-      </div>
+      </Card>
     </div>
   );
 }

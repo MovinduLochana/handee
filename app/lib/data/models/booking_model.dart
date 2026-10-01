@@ -15,6 +15,7 @@ class BookingModel {
   final ProviderProfileModel? provider;
   final String? customerName;
   final String? customerPhone;
+  final String? providerName;
   final String? serviceLocation;
   final double? price;
 
@@ -23,6 +24,7 @@ class BookingModel {
   /// so read category/description from these.
   final String? category;
   final String? description;
+  final String? notes;
 
   BookingModel({
     required this.id,
@@ -38,10 +40,12 @@ class BookingModel {
     this.provider,
     this.customerName,
     this.customerPhone,
+    this.providerName,
     this.serviceLocation,
     this.price,
     this.category,
     this.description,
+    this.notes,
   });
 
   bool get isRequested => status.toLowerCase() == 'requested';
@@ -93,10 +97,12 @@ class BookingModel {
           : null,
       customerName: json['customerName']?.toString(),
       customerPhone: json['customerPhone']?.toString(),
+      providerName: json['providerName']?.toString(),
       serviceLocation: json['serviceLocation']?.toString(),
       price: (json['price'] as num?)?.toDouble(),
       category: json['category']?.toString(),
       description: json['description']?.toString(),
+      notes: json['notes']?.toString(),
     );
   }
 
@@ -111,7 +117,14 @@ class BookingModel {
       'scheduledAt': scheduledAt?.toIso8601String(),
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt?.toIso8601String(),
+      'customerName': customerName,
+      'customerPhone': customerPhone,
+      'providerName': providerName,
+      'serviceLocation': serviceLocation,
       'price': price,
+      'category': category,
+      'description': description,
+      'notes': notes,
     };
   }
 
@@ -129,8 +142,12 @@ class BookingModel {
     ProviderProfileModel? provider,
     String? customerName,
     String? customerPhone,
+    String? providerName,
     String? serviceLocation,
     double? price,
+    String? category,
+    String? description,
+    String? notes,
   }) {
     return BookingModel(
       id: id ?? this.id,
@@ -146,8 +163,12 @@ class BookingModel {
       provider: provider ?? this.provider,
       customerName: customerName ?? this.customerName,
       customerPhone: customerPhone ?? this.customerPhone,
+      providerName: providerName ?? this.providerName,
       serviceLocation: serviceLocation ?? this.serviceLocation,
       price: price ?? this.price,
+      category: category ?? this.category,
+      description: description ?? this.description,
+      notes: notes ?? this.notes,
     );
   }
 }

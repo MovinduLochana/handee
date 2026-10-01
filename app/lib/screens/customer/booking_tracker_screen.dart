@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/colors.dart';
+import '../../data/models/agent_workflow_model.dart';
 import '../../data/models/invoice_model.dart';
 import '../../providers/job_request_provider.dart';
 import '../../providers/payment_provider.dart';
@@ -11,14 +13,60 @@ import '../../widgets/invoice_payment_sheet.dart';
 import '../../widgets/status_badge.dart';
 import '../../widgets/urgency_badge.dart';
 
-class BookingTrackerScreen extends StatelessWidget {
+class BookingTrackerScreen extends StatefulWidget {
   const BookingTrackerScreen({super.key});
+
+  @override
+  State<BookingTrackerScreen> createState() => _BookingTrackerScreenState();
+}
+
+class _BookingTrackerScreenState extends State<BookingTrackerScreen> {
+  Timer? _pollingTimer;
+  int _pollCount = 0;
+  bool _showAgentSteps = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final provider = context.read<JobRequestProvider>();
+      provider.refreshTrackedRequest();
+      _startPolling();
+    });
+  }
+
+  void _startPolling() {
+    _pollingTimer?.cancel();
+    _pollingTimer = Timer.periodic(const Duration(milliseconds: 2500), (timer) async {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      _pollCount++;
+      final provider = context.read<JobRequestProvider>();
+      final request = provider.currentTrackedRequest;
+
+      // Stop rapid polling once request is Open or Cancelled, or after 20 polls (~50s)
+      if (request != null && (request.isOpen || request.isCancelled || _pollCount >= 20)) {
+        timer.cancel();
+      }
+
+      await provider.refreshTrackedRequest();
+    });
+  }
+
+  @override
+  void dispose() {
+    _pollingTimer?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<JobRequestProvider>();
     final request = provider.currentTrackedRequest ??
         (provider.requests.isNotEmpty ? provider.requests.first : null);
+    final workflow = provider.currentWorkflow;
 
     if (request == null) {
       return Scaffold(
@@ -27,13 +75,11 @@ class BookingTrackerScreen extends StatelessWidget {
       );
     }
 
-    // JobRequestStatus has exactly three values: PendingAiReview, Open,
-    // Cancelled. There is no "dispatched" state on a JobRequest — once the
-    // agent workflow approves it, the request becomes Open and a separate
-    // Booking is created, which is tracked on the Bookings screen.
     final isPendingReview = request.isPendingAiReview;
     final isOpen = request.isOpen;
     final isCancelled = request.isCancelled;
+    final isAiComplete = workflow != null || isOpen;
+    final isHumanApprovalRequired = workflow?.isRequiresHumanApproval ?? false;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -112,9 +158,26 @@ class BookingTrackerScreen extends StatelessWidget {
             const SizedBox(height: 24),
 
             // Live Workflow Progress Timeline
-            const Text(
-              'Workflow Progress',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Workflow Progress',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                ),
+                if (!isAiComplete && isPendingReview)
+                  const Row(
+                    children: [
+                      SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+                      ),
+                      SizedBox(width: 6),
+                      Text('AI analyzing...', style: TextStyle(fontSize: 12, color: AppColors.primary, fontWeight: FontWeight.w600)),
+                    ],
+                  ),
+              ],
             ),
             const SizedBox(height: 12),
 
@@ -130,31 +193,42 @@ class BookingTrackerScreen extends StatelessWidget {
                   _buildTimelineStep(
                     icon: Icons.check_circle,
                     title: '1. Request Submitted',
-                    subtitle: 'Request persisted to PostgreSQL with pending status',
+                    subtitle: 'Request persisted to PostgreSQL database',
                     isDone: true,
                     isActive: false,
                   ),
-                  _buildTimelineLine(isDone: true),
+                  _buildTimelineLine(isDone: isAiComplete),
                   _buildTimelineStep(
-                    icon: isPendingReview ? Icons.hourglass_top : Icons.check_circle,
-                    title: '2. Multi-Agent AI Analysis',
-                    subtitle: 'Domain Analysis & Action agents validate scope and price bands',
-                    isDone: !isPendingReview,
-                    isActive: isPendingReview,
+                    icon: isAiComplete ? Icons.check_circle : Icons.hourglass_top,
+                    title: isAiComplete ? '2. Multi-Agent AI Analysis Complete' : '2. Multi-Agent AI Analysis',
+                    subtitle: isAiComplete
+                        ? 'Domain, Action, Price & Safety agents evaluated'
+                        : 'Domain Analysis & Action agents validating scope and price bands...',
+                    isDone: isAiComplete,
+                    isActive: !isAiComplete && isPendingReview,
                   ),
                   _buildTimelineLine(isDone: isOpen),
                   _buildTimelineStep(
                     icon: isCancelled
                         ? Icons.cancel_outlined
-                        : (isOpen ? Icons.check_circle : Icons.radio_button_unchecked),
-                    title: isCancelled ? '3. Request Cancelled' : '3. Open for Matching',
-                    subtitle: isCancelled
-                        ? 'This request was cancelled and will not be matched'
                         : (isOpen
-                            ? 'Approved and open — a booking is created once a provider is assigned'
-                            : 'Awaiting the outcome of AI review'),
+                            ? Icons.check_circle
+                            : (isHumanApprovalRequired ? Icons.shield_outlined : Icons.radio_button_unchecked)),
+                    title: isCancelled
+                        ? '3. Request Cancelled'
+                        : (isOpen
+                            ? '3. Dispatched & Ready'
+                            : (isHumanApprovalRequired ? '3. Queued for Admin Review' : '3. Open for Matching')),
+                    subtitle: isCancelled
+                        ? 'This request was cancelled'
+                        : (isOpen
+                            ? 'Approved and dispatched — provider ready for confirmation'
+                            : (isHumanApprovalRequired
+                                ? 'AI safety check flagged variance. Staff will verify shortly.'
+                                : 'Awaiting the outcome of AI review')),
                     isDone: isOpen,
-                    isActive: isCancelled,
+                    isActive: isHumanApprovalRequired && isPendingReview,
+                    iconColorOverride: isHumanApprovalRequired && isPendingReview ? Colors.amber.shade700 : null,
                   ),
                 ],
               ),
@@ -162,9 +236,134 @@ class BookingTrackerScreen extends StatelessWidget {
 
             const SizedBox(height: 24),
 
-            // A JobRequest carries no provider/ETA/contact data — that lives on
-            // the Booking created once a provider is assigned. Point the user
-            // there instead of inventing details here.
+            // AI Agent Analysis Details Card
+            if (workflow != null) ...[
+              Container(
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.primaryLight.withOpacity(0.5)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primary.withOpacity(0.04),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Row(
+                          children: [
+                            Icon(Icons.smart_toy_outlined, size: 20, color: AppColors.primary),
+                            SizedBox(width: 8),
+                            Text(
+                              'AI Analysis Result',
+                              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+                            ),
+                          ],
+                        ),
+                        _buildTierBadge(workflow),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('AI Estimated Price:', style: TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+                        Text(
+                          'Rs. ${(workflow.estimatedPrice ?? 3500.0).toStringAsFixed(2)}',
+                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.primary),
+                        ),
+                      ],
+                    ),
+                    if (workflow.selectedProviderName != null && workflow.selectedProviderName!.isNotEmpty) ...[
+                      const SizedBox(height: 6),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('Matched Provider:', style: TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+                          Text(
+                            workflow.selectedProviderName!,
+                            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+                          ),
+                        ],
+                      ),
+                    ],
+                    const SizedBox(height: 12),
+                    InkWell(
+                      onTap: () {
+                        setState(() {
+                          _showAgentSteps = !_showAgentSteps;
+                        });
+                      },
+                      child: Row(
+                        children: [
+                          Icon(
+                            _showAgentSteps ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                            size: 18,
+                            color: AppColors.primary,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            _showAgentSteps ? 'Hide 4-Agent Execution Logs' : 'View 4-Agent Execution Logs (${workflow.stepLogs.length} steps)',
+                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.primary),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (_showAgentSteps) ...[
+                      const SizedBox(height: 10),
+                      const Divider(height: 1),
+                      const SizedBox(height: 10),
+                      ...workflow.stepLogs.map((step) => Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Container(
+                                  width: 20,
+                                  height: 20,
+                                  alignment: Alignment.center,
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primaryUltraLight,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(color: AppColors.primaryLight),
+                                  ),
+                                  child: Text('${step.stepNumber}', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.primary)),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        step.agentName,
+                                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                                      ),
+                                      Text(
+                                        'Action: ${step.action} (${step.durationMs}ms)',
+                                        style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+            ],
+
+            // Dispatched & Booking Information
             if (isOpen) ...[
               Container(
                 padding: const EdgeInsets.all(16),
@@ -179,8 +378,7 @@ class BookingTrackerScreen extends StatelessWidget {
                     const SizedBox(width: 12),
                     const Expanded(
                       child: Text(
-                        'Your request is open. Once a provider is assigned, it appears '
-                        'under your Bookings with their details and schedule.',
+                        'Your request is open and dispatched! A booking has been created for your provider.',
                         style: TextStyle(fontSize: 12, color: AppColors.textSecondary, height: 1.4),
                       ),
                     ),
@@ -201,11 +399,11 @@ class BookingTrackerScreen extends StatelessWidget {
                         bookingId: request.id,
                         customerId: request.customerId,
                         customerName: 'Customer',
-                        providerId: 'prov-001',
-                        providerName: 'Nimal Jayawardena',
-                        baseAmount: 3825.00,
-                        platformFee: 675.00,
-                        totalAmount: 4500.00,
+                        providerId: workflow?.selectedProviderId ?? 'prov-001',
+                        providerName: workflow?.selectedProviderName ?? 'Sunil Perera',
+                        baseAmount: (workflow?.estimatedPrice ?? 4500.0) * 0.85,
+                        platformFee: (workflow?.estimatedPrice ?? 4500.0) * 0.15,
+                        totalAmount: workflow?.estimatedPrice ?? 4500.00,
                         status: 'Issued',
                         adminApprovalStatus: 'AutoApproved',
                         createdAt: DateTime.now(),
@@ -251,112 +449,70 @@ class BookingTrackerScreen extends StatelessWidget {
                                 ),
                               ],
                             ),
-                            StatusBadge(status: invoice.status),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: isPaid ? AppColors.successLight : AppColors.primaryUltraLight,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                isPaid ? 'PAID' : 'ISSUED',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w800,
+                                  color: isPaid ? AppColors.success : AppColors.primary,
+                                ),
+                              ),
+                            ),
                           ],
                         ),
                         const SizedBox(height: 14),
-
-                        // 85% / 15% breakdown
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: AppColors.background,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Column(
-                            children: [
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  const Text(
-                                    'Service Labor (85%)',
-                                    style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
-                                  ),
-                                  Text(
-                                    'Rs. ${currencyFmt.format(invoice.baseAmount)}',
-                                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 6),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  const Text(
-                                    'Platform Fee (15%)',
-                                    style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
-                                  ),
-                                  Text(
-                                    'Rs. ${currencyFmt.format(invoice.platformFee)}',
-                                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-                                  ),
-                                ],
-                              ),
-                              const Divider(color: AppColors.borderLight, height: 16),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  const Text(
-                                    'Total Amount',
-                                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800),
-                                  ),
-                                  Text(
-                                    'Rs. ${currencyFmt.format(invoice.totalAmount)}',
-                                    style: const TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w900,
-                                      color: AppColors.primary,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text('Service Base Rate:', style: TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+                            Text('Rs. ${currencyFmt.format(invoice.baseAmount)}', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                          ],
                         ),
-
-                        const SizedBox(height: 14),
-
-                        if (isPaid) ...[
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                            decoration: BoxDecoration(
-                              color: AppColors.successLight,
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(color: AppColors.success.withOpacity(0.3)),
-                            ),
-                            child: const Row(
-                              children: [
-                                Icon(Icons.verified, color: AppColors.success, size: 18),
-                                SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    'Invoice Paid in Full • Ledger Credited',
-                                    style: TextStyle(
-                                      color: AppColors.success,
-                                      fontWeight: FontWeight.w700,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ] else ...[
+                        const SizedBox(height: 6),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text('Platform & Booking Fee:', style: TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+                            Text('Rs. ${currencyFmt.format(invoice.platformFee)}', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        const Divider(height: 1),
+                        const SizedBox(height: 10),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text('Total Amount:', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
+                            Text('Rs. ${currencyFmt.format(invoice.totalAmount)}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.primary)),
+                          ],
+                        ),
+                        if (!isPaid) ...[
+                          const SizedBox(height: 16),
                           CustomButton(
-                            text: 'Review & Pay Invoice (Sandbox)',
-                            icon: Icons.credit_card,
+                            text: 'Pay Securely Now',
+                            icon: Icons.lock_outline,
                             onPressed: () {
-                              InvoicePaymentSheet.show(
-                                context,
-                                invoice: invoice,
-                                onPaymentSuccess: () {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Payment processed successfully via sandbox!'),
-                                      backgroundColor: AppColors.success,
-                                    ),
-                                  );
-                                },
+                              showModalBottomSheet(
+                                context: context,
+                                isScrollControlled: true,
+                                backgroundColor: Colors.transparent,
+                                builder: (_) => InvoicePaymentSheet(
+                                  invoice: invoice,
+                                  onPaymentSuccess: () {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('Payment processed successfully via sandbox!'),
+                                        backgroundColor: AppColors.success,
+                                      ),
+                                    );
+                                  },
+                                ),
                               );
                             },
                           ),
@@ -369,7 +525,7 @@ class BookingTrackerScreen extends StatelessWidget {
               const SizedBox(height: 24),
             ],
 
-            // Back to Home Button
+            // Back to Dashboard Button
             CustomButton(
               text: 'Return to Dashboard',
               isOutlined: true,
@@ -382,15 +538,40 @@ class BookingTrackerScreen extends StatelessWidget {
     );
   }
 
+  Widget _buildTierBadge(AgentWorkflowModel workflow) {
+    if (workflow.isAutoApproved) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        decoration: BoxDecoration(color: AppColors.successLight, borderRadius: BorderRadius.circular(6)),
+        child: const Text('Auto-Approved', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.success)),
+      );
+    } else if (workflow.isApprovedWithAudit) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        decoration: BoxDecoration(color: AppColors.primaryUltraLight, borderRadius: BorderRadius.circular(6)),
+        child: const Text('Approved w/ Audit', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primary)),
+      );
+    } else {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        decoration: BoxDecoration(color: Colors.amber.shade50, borderRadius: BorderRadius.circular(6), border: Border.all(color: Colors.amber.shade300)),
+        child: Text('Needs Admin Review', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.amber.shade900)),
+      );
+    }
+  }
+
   Widget _buildTimelineStep({
     required IconData icon,
     required String title,
     required String subtitle,
     required bool isDone,
     required bool isActive,
+    Color? iconColorOverride,
   }) {
     Color iconColor;
-    if (isDone) {
+    if (iconColorOverride != null) {
+      iconColor = iconColorOverride;
+    } else if (isDone) {
       iconColor = AppColors.success;
     } else if (isActive) {
       iconColor = AppColors.primary;

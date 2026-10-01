@@ -3,8 +3,19 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { serviceCategoryApi } from "../../api/serviceCategories";
 import { serviceListingsApi } from "../../api/serviceListings";
 
-import { X, Save, Clock, Banknote, Type, AlignLeft } from "lucide-react";
-import "./ServiceListingForm.css";
+import { Save, Clock, Banknote, Type, AlignLeft } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface ServiceListingFormProps {
   initialData?: any; // If null, means Create. If exists, means Update.
@@ -72,37 +83,37 @@ export default function ServiceListingForm({ initialData, onClose }: ServiceList
   };
 
   return (
-    <div className="modal-overlay">
-      <div className="modal-content">
-        <div className="modal-header">
-          <h2>{isEditing ? "Edit Service Listing" : "Create Service Listing"}</h2>
-          <button onClick={onClose} className="btn-close">
-            <X size={20} />
-          </button>
-        </div>
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto bg-card text-card-foreground border-border">
+        <DialogHeader>
+          <DialogTitle className="text-xl font-bold">
+            {isEditing ? "Edit Service Listing" : "Create Service Listing"}
+          </DialogTitle>
+        </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="listing-form">
-          <div className="form-grid">
-            <div className="form-group">
-              <label>Service Category</label>
+        <form onSubmit={handleSubmit} className="space-y-4 py-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Service Category</Label>
               <select
                 value={formData.serviceCategoryId}
                 onChange={(e) => setFormData({ ...formData, serviceCategoryId: e.target.value })}
                 required
+                className="w-full h-9 border border-input bg-background px-3 py-1 text-sm text-foreground shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
               >
                 {categories.map((c) => (
                   <option key={c.id} value={c.id}>
-                    {c.iconUrl} {c.name}
+                    {c.name}
                   </option>
                 ))}
               </select>
             </div>
 
-            <div className="form-group">
-              <label>
-                <Type size={16} /> Service Name
-              </label>
-              <input
+            <div className="space-y-2">
+              <Label className="flex items-center gap-1.5">
+                <Type className="h-4 w-4" /> Service Name
+              </Label>
+              <Input
                 type="text"
                 required
                 value={formData.title}
@@ -112,11 +123,11 @@ export default function ServiceListingForm({ initialData, onClose }: ServiceList
               />
             </div>
 
-            <div className="form-group">
-              <label>
-                <Banknote size={16} /> Fixed Price (LKR)
-              </label>
-              <input
+            <div className="space-y-2">
+              <Label className="flex items-center gap-1.5">
+                <Banknote className="h-4 w-4" /> Fixed Price (LKR)
+              </Label>
+              <Input
                 type="number"
                 step="0.01"
                 min="1"
@@ -127,11 +138,11 @@ export default function ServiceListingForm({ initialData, onClose }: ServiceList
               />
             </div>
 
-            <div className="form-group">
-              <label>
-                <Clock size={16} /> Time Required (HH:MM:SS)
-              </label>
-              <input
+            <div className="space-y-2">
+              <Label className="flex items-center gap-1.5">
+                <Clock className="h-4 w-4" /> Time Required (HH:MM:SS)
+              </Label>
+              <Input
                 type="text"
                 required
                 value={formData.estimatedDuration}
@@ -142,11 +153,11 @@ export default function ServiceListingForm({ initialData, onClose }: ServiceList
               />
             </div>
 
-            <div className="form-group col-span-2">
-              <label>
-                <Clock size={16} /> Availability Details
-              </label>
-              <input
+            <div className="space-y-2 sm:col-span-2">
+              <Label className="flex items-center gap-1.5">
+                <Clock className="h-4 w-4" /> Availability Details
+              </Label>
+              <Input
                 type="text"
                 required
                 value={formData.availability}
@@ -156,11 +167,11 @@ export default function ServiceListingForm({ initialData, onClose }: ServiceList
               />
             </div>
 
-            <div className="form-group col-span-2">
-              <label>
-                <AlignLeft size={16} /> Description
-              </label>
-              <textarea
+            <div className="space-y-2 sm:col-span-2">
+              <Label className="flex items-center gap-1.5">
+                <AlignLeft className="h-4 w-4" /> Description
+              </Label>
+              <Textarea
                 required
                 rows={4}
                 value={formData.description}
@@ -170,41 +181,42 @@ export default function ServiceListingForm({ initialData, onClose }: ServiceList
               />
             </div>
 
-            <div className="form-group col-span-2">
-              <label>
-                <AlignLeft size={16} /> Scope of Work
-              </label>
-              <textarea
+            <div className="space-y-2 sm:col-span-2">
+              <Label className="flex items-center gap-1.5">
+                <AlignLeft className="h-4 w-4" /> Scope of Work
+              </Label>
+              <Textarea
                 required
                 rows={2}
                 value={formData.scope}
                 onChange={(e) => setFormData({ ...formData, scope: e.target.value })}
-                placeholder="Specifically define what is included (e.g., 2 hours of deep cleaning) and what is excluded."
+                placeholder="Specifically define what is included and excluded."
                 maxLength={500}
               />
             </div>
           </div>
 
-          <div className="form-checkbox">
-            <input
-              type="checkbox"
+          <div className="flex items-center space-x-2 pt-2">
+            <Checkbox
               id="isActive"
               checked={formData.isActive}
-              onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
+              onCheckedChange={(checked) => setFormData({ ...formData, isActive: !!checked })}
             />
-            <label htmlFor="isActive">Visible to customers instantly</label>
+            <label htmlFor="isActive" className="text-sm font-medium leading-none cursor-pointer">
+              Visible to customers instantly
+            </label>
           </div>
 
-          <div className="modal-actions">
-            <button type="button" onClick={onClose} className="btn-cancel">
+          <DialogFooter className="gap-2 sm:gap-0 pt-4">
+            <Button type="button" variant="outline" onClick={onClose}>
               Cancel
-            </button>
-            <button type="submit" disabled={mutation.isPending} className="btn-save">
-              <Save size={18} /> {mutation.isPending ? "Saving..." : "Save Listing"}
-            </button>
-          </div>
+            </Button>
+            <Button type="submit" disabled={mutation.isPending} className="flex items-center gap-2">
+              <Save className="h-4 w-4" /> {mutation.isPending ? "Saving..." : "Save Listing"}
+            </Button>
+          </DialogFooter>
         </form>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

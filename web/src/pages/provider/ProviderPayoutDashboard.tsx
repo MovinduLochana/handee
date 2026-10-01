@@ -12,7 +12,17 @@ import {
   Receipt,
   FileSpreadsheet,
 } from "lucide-react";
-import "../payments/Payments.css";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { buttonVariants } from "@/components/ui/button";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 export default function ProviderPayoutDashboard() {
   const { data: userProfile } = useQuery({
@@ -20,7 +30,7 @@ export default function ProviderPayoutDashboard() {
     queryFn: usersApi.getProfile,
   });
 
-  const { data: summary, isLoading: _isSummaryLoading } = useQuery({
+  const { data: summary } = useQuery({
     queryKey: ["providerSummary", userProfile?.id],
     queryFn: () =>
       userProfile?.id
@@ -42,176 +52,185 @@ export default function ProviderPayoutDashboard() {
   const completedJobs = summary?.completedJobsCount ?? 0;
 
   return (
-    <div className="payments-page">
-      <div className="payments-header">
+    <div className="max-w-7xl mx-auto p-6 space-y-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="payments-title">Earnings & Payouts</h1>
-          <p className="payments-subtitle">
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">Earnings & Payouts</h1>
+          <p className="text-muted-foreground text-sm mt-0.5">
             Track your net earnings, escrow clearances, and automated bank deposits
           </p>
         </div>
-        <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
-          <Link to="/invoices" className="btn-secondary">
-            <Receipt size={16} /> Job Invoices & Receipts
+        <div className="flex gap-2.5 flex-wrap">
+          <Link to="/invoices" className={buttonVariants({ variant: "outline", size: "sm" })}>
+            <Receipt className="h-4 w-4 mr-1.5" /> Job Invoices & Receipts
           </Link>
-          <Link to="/provider/payouts/history" className="btn-secondary">
-            <FileSpreadsheet size={16} /> Full Payout History
+          <Link
+            to="/provider/payouts/history"
+            className={buttonVariants({ variant: "outline", size: "sm" })}
+          >
+            <FileSpreadsheet className="h-4 w-4 mr-1.5" /> Full Payout History
           </Link>
         </div>
       </div>
 
       {/* Financial Metrics Overview */}
-      <div className="stat-cards-grid">
-        <div className="stat-card">
-          <div className="stat-icon-wrapper green">
-            <DollarSign size={24} />
-          </div>
-          <div className="stat-content">
-            <span className="stat-label">Total Net Earnings</span>
-            <span className="stat-value">LKR {totalEarnings.toLocaleString()}</span>
-          </div>
-        </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card>
+          <CardHeader className="p-4 pb-2">
+            <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center justify-between">
+              Total Net Earnings
+              <DollarSign className="h-4 w-4 text-emerald-500" />
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-4 pt-0">
+            <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 font-mono">
+              LKR {totalEarnings.toLocaleString()}
+            </div>
+          </CardContent>
+        </Card>
 
-        <div className="stat-card">
-          <div className="stat-icon-wrapper blue">
-            <TrendingUp size={24} />
-          </div>
-          <div className="stat-content">
-            <span className="stat-label">Available for Payout</span>
-            <span className="stat-value">LKR {availableBalance.toLocaleString()}</span>
-          </div>
-        </div>
+        <Card>
+          <CardHeader className="p-4 pb-2">
+            <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center justify-between">
+              Available for Payout
+              <TrendingUp className="h-4 w-4 text-primary" />
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-4 pt-0">
+            <div className="text-2xl font-bold text-foreground font-mono">
+              LKR {availableBalance.toLocaleString()}
+            </div>
+          </CardContent>
+        </Card>
 
-        <div className="stat-card">
-          <div className="stat-icon-wrapper amber">
-            <Clock size={24} />
-          </div>
-          <div className="stat-content">
-            <span className="stat-label">Pending Escrow Settlement</span>
-            <span className="stat-value">LKR {pendingPayouts.toLocaleString()}</span>
-          </div>
-        </div>
+        <Card>
+          <CardHeader className="p-4 pb-2">
+            <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center justify-between">
+              Pending Escrow Settlement
+              <Clock className="h-4 w-4 text-amber-500" />
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-4 pt-0">
+            <div className="text-2xl font-bold text-amber-600 dark:text-amber-400 font-mono">
+              LKR {pendingPayouts.toLocaleString()}
+            </div>
+          </CardContent>
+        </Card>
 
-        <div className="stat-card">
-          <div className="stat-icon-wrapper purple">
-            <Briefcase size={24} />
-          </div>
-          <div className="stat-content">
-            <span className="stat-label">Paid Bookings</span>
-            <span className="stat-value">{completedJobs}</span>
-          </div>
-        </div>
+        <Card>
+          <CardHeader className="p-4 pb-2">
+            <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center justify-between">
+              Paid Bookings
+              <Briefcase className="h-4 w-4 text-purple-500" />
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-4 pt-0">
+            <div className="text-2xl font-bold text-foreground">{completedJobs}</div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Revenue Model Callout */}
-      <div
-        className="payments-card"
-        style={{
-          background: "linear-gradient(to right, var(--bg-surface), var(--bg-surface-elevated))",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          gap: "1.5rem",
-          flexWrap: "wrap",
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-          <ShieldCheck size={36} color="var(--accent)" />
-          <div>
-            <h3 style={{ margin: "0 0 0.25rem", color: "var(--text-h)" }}>
-              85% Net Provider Revenue Share
-            </h3>
-            <p style={{ margin: 0, fontSize: "0.88rem", color: "var(--text-muted)" }}>
-              Handee charges a transparent 15% platform commission on customer totals. Every
-              verified booking automatically deposits 85% directly to your payout ledger.
-            </p>
+      <Card className="bg-muted/40 border-border">
+        <CardContent className="p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3.5">
+            <ShieldCheck className="h-9 w-9 text-primary shrink-0" />
+            <div>
+              <h3 className="font-bold text-foreground text-sm">85% Net Provider Revenue Share</h3>
+              <p className="text-xs text-muted-foreground mt-0.5 max-w-xl">
+                Handee charges a transparent 15% platform commission on customer totals. Every
+                verified booking automatically deposits 85% directly to your payout ledger.
+              </p>
+            </div>
           </div>
-        </div>
-        <Link to="/provider/payouts/history" className="btn-primary">
-          View Ledger <ArrowRight size={16} />
-        </Link>
-      </div>
-
-      {/* Recent Payouts Table */}
-      <div className="payments-card">
-        <div className="payments-card-header">
-          <h2 className="payments-card-title">
-            <Receipt size={20} color="var(--accent)" />
-            Recent Payout Activity
-          </h2>
           <Link
             to="/provider/payouts/history"
-            style={{
-              fontSize: "0.85rem",
-              color: "var(--accent)",
-              textDecoration: "none",
-              fontWeight: 600,
-            }}
+            className={buttonVariants({ variant: "default", size: "sm" })}
+          >
+            View Ledger <ArrowRight className="h-4 w-4 ml-1.5" />
+          </Link>
+        </CardContent>
+      </Card>
+
+      {/* Recent Payouts Table */}
+      <Card className="overflow-hidden">
+        <CardHeader className="p-4 border-b border-border flex flex-row items-center justify-between">
+          <CardTitle className="text-base font-bold flex items-center gap-2">
+            <Receipt className="h-4 w-4 text-primary" />
+            Recent Payout Activity
+          </CardTitle>
+          <Link
+            to="/provider/payouts/history"
+            className="text-xs text-primary hover:underline font-semibold"
           >
             View All ({payouts.length})
           </Link>
-        </div>
+        </CardHeader>
 
         {isPayoutsLoading ? (
-          <p style={{ textAlign: "center", padding: "2rem" }}>Loading payouts...</p>
+          <CardContent className="p-12 text-center text-muted-foreground text-sm">
+            Loading payouts...
+          </CardContent>
         ) : payouts.length === 0 ? (
-          <div style={{ textAlign: "center", padding: "3rem 1rem", color: "var(--text-muted)" }}>
+          <CardContent className="p-12 text-center text-muted-foreground text-sm">
             No payout transactions recorded yet. Complete customer jobs to begin earning.
-          </div>
+          </CardContent>
         ) : (
-          <div className="payments-table-container">
-            <table className="payments-table">
-              <thead>
-                <tr>
-                  <th>Payout Ref</th>
-                  <th>Booking</th>
-                  <th>Created Date</th>
-                  <th>Gross Charged</th>
-                  <th>15% Platform Fee</th>
-                  <th>Net Earnings</th>
-                  <th>Status</th>
-                  <th style={{ textAlign: "right" }}>Invoice</th>
-                </tr>
-              </thead>
-              <tbody>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Payout Ref</TableHead>
+                  <TableHead>Booking</TableHead>
+                  <TableHead>Created Date</TableHead>
+                  <TableHead>Gross Charged</TableHead>
+                  <TableHead>15% Platform Fee</TableHead>
+                  <TableHead>Net Earnings</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Invoice</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {payouts.slice(0, 5).map((payout) => (
-                  <tr key={payout.id}>
-                    <td style={{ fontFamily: "monospace", fontWeight: 600 }}>
+                  <TableRow key={payout.id}>
+                    <TableCell className="font-mono font-semibold text-xs">
                       {payout.payoutReference || `PAY-${payout.id.slice(0, 8).toUpperCase()}`}
-                    </td>
-                    <td>#{payout.bookingId.slice(0, 8)}</td>
-                    <td>{new Date(payout.createdAt).toLocaleDateString()}</td>
-                    <td>LKR {payout.grossAmount.toLocaleString()}</td>
-                    <td style={{ color: "var(--text-muted)" }}>
+                    </TableCell>
+                    <TableCell className="font-mono text-xs">
+                      #{payout.bookingId.slice(0, 8)}
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground">
+                      {new Date(payout.createdAt).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell className="text-xs">
+                      LKR {payout.grossAmount.toLocaleString()}
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground">
                       -LKR {payout.platformFeeDeducted.toLocaleString()}
-                    </td>
-                    <td style={{ fontWeight: 700, color: "var(--success)" }}>
+                    </TableCell>
+                    <TableCell className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
                       LKR {payout.netAmount.toLocaleString()}
-                    </td>
-                    <td>
-                      <span className={`badge-status ${payout.status}`}>{payout.status}</span>
-                    </td>
-                    <td style={{ textAlign: "right" }}>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="text-xs">
+                        {payout.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
                       <Link
                         to="/invoices"
-                        className="btn-secondary btn-sm"
-                        style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: "0.25rem",
-                          padding: "0.3rem 0.6rem",
-                        }}
+                        className={buttonVariants({ variant: "outline", size: "xs" })}
                       >
-                        <Receipt size={13} /> View Invoice
+                        <Receipt className="h-3 w-3 mr-1" /> View Invoice
                       </Link>
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
         )}
-      </div>
+      </Card>
     </div>
   );
 }

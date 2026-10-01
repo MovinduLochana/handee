@@ -5,15 +5,25 @@ import { Search, MapPin, Star, Eye } from "lucide-react";
 import { providerApi } from "../../api/providers";
 import { serviceCategoryApi } from "../../api/serviceCategories";
 import StatusBadge from "../../components/provider/StatusBadge";
-import "./ProviderDirectory.css";
+import { getFullMediaUrl } from "../../lib/api";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 export default function ProviderDirectory() {
-  // Search State
   const [page, setPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
   const [skillFilter, setSkillFilter] = useState("");
 
-  // Values to trigger query refetch on Search click
   const [appliedFilters, setAppliedFilters] = useState({
     searchTerm: "",
     skill: "",
@@ -47,26 +57,22 @@ export default function ProviderDirectory() {
   const totalPages = Math.ceil(totalCount / pageSize);
 
   return (
-    <div className="directory-container animate-fade-up">
-      <header className="admin-header">
-        <div>
-          <h1 className="admin-title">Provider Directory</h1>
-          <p className="admin-subtitle">Search and manage all providers on the Handee platform.</p>
-        </div>
+    <div className="max-w-7xl mx-auto p-6 space-y-6">
+      <header className="space-y-1">
+        <h1 className="text-3xl font-bold tracking-tight text-foreground">Provider Directory</h1>
+        <p className="text-muted-foreground text-sm">
+          Search and manage all providers on the Handee platform.
+        </p>
       </header>
 
-      <div className="directory-toolbar animate-fade-up">
-        <div className="filter-group">
-          <label>Search Provider</label>
-          <div style={{ position: "relative" }}>
-            <Search
-              size={16}
-              style={{ position: "absolute", left: 12, top: 13, color: "var(--text-muted)" }}
-            />
-            <input
+      <div className="flex flex-col sm:flex-row gap-4 items-stretch sm:items-end">
+        <div className="flex-1 space-y-1.5">
+          <label className="text-xs font-semibold text-muted-foreground">Search Provider</label>
+          <div className="relative">
+            <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground pointer-events-none" />
+            <Input
               type="text"
-              className="filter-input"
-              style={{ paddingLeft: "2.5rem" }}
+              className="pl-9 h-9 text-xs"
               placeholder="Name, email, or keywords..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -75,10 +81,10 @@ export default function ProviderDirectory() {
           </div>
         </div>
 
-        <div className="filter-group">
-          <label>Service Category</label>
+        <div className="w-full sm:w-56 space-y-1.5">
+          <label className="text-xs font-semibold text-muted-foreground">Service Category</label>
           <select
-            className="filter-input"
+            className="w-full h-9 rounded border border-border bg-background px-3 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
             value={skillFilter}
             onChange={(e) => setSkillFilter(e.target.value)}
           >
@@ -91,151 +97,133 @@ export default function ProviderDirectory() {
           </select>
         </div>
 
-        <button className="filter-btn" onClick={handleSearch}>
-          <Search size={16} /> Search
-        </button>
+        <Button onClick={handleSearch} className="h-9 gap-1.5 text-xs">
+          <Search className="h-3.5 w-3.5" /> Search
+        </Button>
       </div>
 
-      <div className="directory-table-card animate-fade-up animate-delay-100">
-        <table className="directory-table">
-          <thead>
-            <tr>
-              <th>Provider</th>
-              <th>Contact / Location</th>
-              <th>Skills</th>
-              <th>Rating</th>
-              <th>Status</th>
-              <th style={{ textAlign: "right" }}>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {isLoading ? (
-              <tr>
-                <td colSpan={6} style={{ textAlign: "center", padding: "3rem" }}>
-                  Loading directory...
-                </td>
-              </tr>
-            ) : items.length === 0 ? (
-              <tr>
-                <td colSpan={6} style={{ textAlign: "center", padding: "3rem" }}>
-                  No providers found.
-                </td>
-              </tr>
-            ) : (
-              items.map((provider) => (
-                <tr key={provider.id}>
-                  <td>
-                    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                      {provider.profilePictureUrl ? (
-                        <img
-                          src={`http://localhost:5057${provider.profilePictureUrl}`}
-                          style={{ width: 40, height: 40, borderRadius: "50%", objectFit: "cover" }}
-                          alt={provider.fullName}
-                          loading="lazy"
-                        />
-                      ) : (
-                        <div
-                          style={{
-                            width: 40,
-                            height: 40,
-                            borderRadius: "50%",
-                            background: "var(--bg-surface-elevated)",
-                            border: "1px solid var(--border)",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            fontWeight: "bold",
-                          }}
-                        >
-                          {provider.fullName.charAt(0)}
-                        </div>
-                      )}
-                      <div>
-                        <div style={{ fontWeight: 600, color: "var(--text-h)" }}>
-                          {provider.fullName}
-                        </div>
-                        <div style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
-                          ID: {provider.id.split("-")[0]}
+      <Card className="overflow-hidden">
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Provider</TableHead>
+                <TableHead>Contact / Location</TableHead>
+                <TableHead>Skills</TableHead>
+                <TableHead>Rating</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center p-12 text-muted-foreground text-sm">
+                    Loading directory...
+                  </TableCell>
+                </TableRow>
+              ) : items.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center p-12 text-muted-foreground text-sm">
+                    No providers found.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                items.map((provider) => (
+                  <TableRow key={provider.id}>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-9 w-9">
+                          {provider.profilePictureUrl && (
+                            <AvatarImage
+                              src={getFullMediaUrl(provider.profilePictureUrl)}
+                              alt={provider.fullName}
+                            />
+                          )}
+                          <AvatarFallback className="text-xs font-bold">
+                            {provider.fullName.charAt(0)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <div className="font-semibold text-foreground text-sm">
+                            {provider.fullName}
+                          </div>
+                          <div className="text-xs text-muted-foreground font-mono">
+                            ID: {provider.id.split("-")[0]}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </td>
-                  <td>
-                    <div style={{ fontSize: "0.85rem" }}>
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "4px",
-                          marginBottom: "4px",
-                        }}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <MapPin className="h-3.5 w-3.5 shrink-0" />
+                        <span>{provider.serviceAreaDisplayName || "N/A"}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-xs text-muted-foreground max-w-xs truncate">
+                        {provider.serviceCategories.length > 0
+                          ? provider.serviceCategories.map((s) => s.name).join(", ")
+                          : "None"}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1 text-xs">
+                        <Star className="h-3.5 w-3.5 fill-amber-500 text-amber-500" />
+                        <span className="font-semibold">{provider.ratingAggregate.toFixed(1)}</span>
+                        <span className="text-muted-foreground">({provider.totalReviewCount})</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <StatusBadge status={provider.verificationStatus} size="sm" />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Link
+                        to={`/admin/verifications/${provider.id}`}
+                        className={buttonVariants({ variant: "outline", size: "sm" })}
                       >
-                        <MapPin size={12} color="var(--text-muted)" />{" "}
-                        {provider.serviceAreaDisplayName || "N/A"}
-                      </div>
-                    </div>
-                  </td>
-                  <td>
-                    <div style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>
-                      {provider.serviceCategories.length > 0
-                        ? provider.serviceCategories.map((s) => s.name).join(", ")
-                        : "None"}
-                    </div>
-                  </td>
-                  <td>
-                    <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                      <Star size={14} fill="#F59E0B" color="#F59E0B" />
-                      <span style={{ fontWeight: 600 }}>{provider.ratingAggregate.toFixed(1)}</span>
-                      <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
-                        ({provider.totalReviewCount})
-                      </span>
-                    </div>
-                  </td>
-                  <td>
-                    <StatusBadge status={provider.verificationStatus} size="sm" />
-                  </td>
-                  <td style={{ textAlign: "right" }}>
-                    <Link to={`/admin/verifications/${provider.id}`} className="table-action-btn">
-                      <Eye size={14} /> View
-                    </Link>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+                        <Eye className="h-3.5 w-3.5 mr-1" /> View
+                      </Link>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
 
         {!isLoading && totalPages > 1 && (
-          <div className="directory-pagination">
-            <div className="pagination-info">
+          <div className="flex items-center justify-between p-4 border-t border-border text-xs text-muted-foreground">
+            <div>
               Showing {(page - 1) * pageSize + 1} to {Math.min(page * pageSize, totalCount)} of{" "}
               {totalCount} providers
             </div>
-            <div className="pagination-controls">
-              <button className="page-btn" disabled={page === 1} onClick={() => setPage(page - 1)}>
-                Previous
-              </button>
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  padding: "0 0.5rem",
-                  fontWeight: 600,
-                }}
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page === 1}
+                onClick={() => setPage(page - 1)}
+                className="h-8 text-xs"
               >
+                Previous
+              </Button>
+              <div className="px-2 font-medium text-foreground">
                 {page} / {totalPages}
               </div>
-              <button
-                className="page-btn"
+              <Button
+                variant="outline"
+                size="sm"
                 disabled={page === totalPages}
                 onClick={() => setPage(page + 1)}
+                className="h-8 text-xs"
               >
                 Next
-              </button>
+              </Button>
             </div>
           </div>
         )}
-      </div>
+      </Card>
     </div>
   );
 }

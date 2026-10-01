@@ -34,6 +34,9 @@ class ServiceDirectoryProvider extends ChangeNotifier {
   ProviderProfileModel? _selectedProvider;
   ProviderProfileModel? get selectedProvider => _selectedProvider;
 
+  ProviderProfileModel? _myProfile;
+  ProviderProfileModel? get myProfile => _myProfile;
+
   List<ServiceListingModel> _selectedProviderServices = [];
   List<ServiceListingModel> get selectedProviderServices => _selectedProviderServices;
 
@@ -90,6 +93,63 @@ class ServiceDirectoryProvider extends ChangeNotifier {
       _errorMessage = e.toString();
     } finally {
       _setLoading(false);
+    }
+  }
+
+  Future<void> loadMyProviderProfile() async {
+    _setLoading(true);
+    try {
+      _myProfile = await providerRepo.getMyProfile();
+      _errorMessage = null;
+    } catch (e) {
+      _errorMessage = e.toString();
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  Future<bool> updateMyProviderProfile({
+    String? headline,
+    String? bio,
+    String? description,
+    int? yearsOfExperience,
+    List<String>? languages,
+    List<String>? servicesOffered,
+    bool? isAvailableForWork,
+    List<String>? serviceCategoryIds,
+    String? city,
+    String? addressLine1,
+    double? hourlyRate,
+  }) async {
+    final profileId = _myProfile?.id;
+    if (profileId == null) {
+      _errorMessage = 'No provider profile available to update.';
+      return false;
+    }
+
+    _setLoading(true);
+    try {
+      _myProfile = await providerRepo.updateMyProfile(
+        profileId: profileId,
+        headline: headline,
+        bio: bio,
+        description: description,
+        yearsOfExperience: yearsOfExperience,
+        languages: languages,
+        servicesOffered: servicesOffered,
+        isAvailableForWork: isAvailableForWork,
+        serviceCategoryIds: serviceCategoryIds,
+        city: city,
+        addressLine1: addressLine1,
+        hourlyRate: hourlyRate,
+      );
+      _errorMessage = null;
+      _setLoading(false);
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString();
+      _setLoading(false);
+      return false;
     }
   }
 

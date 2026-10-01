@@ -7,10 +7,15 @@ import { serviceCategoryApi } from "../../api/serviceCategories";
 import { serviceListingsApi } from "../../api/serviceListings";
 import ServiceCategoryTag from "../../components/provider/ServiceCategoryTag";
 import StatusBadge from "../../components/provider/StatusBadge";
-import { extractApiError } from "../../lib/api";
+import { extractApiError, getFullMediaUrl } from "../../lib/api";
 import LocationPicker from "../../components/provider/LocationPicker";
 import ServiceListingCard from "../../components/public/ServiceListingCard";
-import "./ProviderProfile.css";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export default function ProviderProfile() {
   const navigate = useNavigate();
@@ -20,7 +25,6 @@ export default function ProviderProfile() {
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "success" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState("");
 
-  // Fetch user basic profile (handled by layout, but we need own data to edit)
   const { data: myProfile, isLoading } = useQuery({
     queryKey: ["myProfile"],
     queryFn: providerApi.getMyProfile,
@@ -128,7 +132,6 @@ export default function ProviderProfile() {
     saveMutation.mutate();
   };
 
-  // Shared input handlers
   const handleAddLang = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter" || e.key === ",") {
       e.preventDefault();
@@ -158,148 +161,127 @@ export default function ProviderProfile() {
   };
 
   if (isLoading)
-    return <div style={{ padding: "2rem", textAlign: "center" }}>Loading profile...</div>;
+    return <div className="p-16 text-center text-muted-foreground text-sm">Loading profile...</div>;
 
   if (!myProfile) {
     return (
-      <div style={{ padding: "4rem 2rem", textAlign: "center" }} className="animate-fade-up">
-        <h2 style={{ fontSize: "1.5rem", marginBottom: "1rem" }}>No Profile Found</h2>
-        <p style={{ color: "var(--text-muted)" }}>
+      <div className="max-w-md mx-auto p-12 text-center space-y-4">
+        <h2 className="text-xl font-bold text-foreground">No Profile Found</h2>
+        <p className="text-muted-foreground text-sm">
           You need to complete the verification wizard before managing your profile.
         </p>
-        <button
-          className="wizard-btn wizard-btn-primary"
-          style={{ marginTop: "1.5rem" }}
-          onClick={() => navigate("/provider/verification")}
-        >
-          Start Setup Wizard
-        </button>
+        <Button onClick={() => navigate("/provider/verification")}>Start Setup Wizard</Button>
       </div>
     );
   }
 
   return (
-    <div className="profile-edit-container animate-fade-up">
-      {/* ── Header ── */}
-      <div className="profile-edit-header">
-        <div className="profile-avatar-wrapper">
-          {myProfile.profilePictureUrl ? (
-            <img
-              src={
-                myProfile.profilePictureUrl.startsWith("http")
-                  ? myProfile.profilePictureUrl
-                  : `http://localhost:5057${myProfile.profilePictureUrl}`
-              }
-              alt="Profile"
-              className="profile-avatar"
-            />
-          ) : (
-            <div className="profile-avatar-fallback">
-              {myProfile.fullName.charAt(0).toUpperCase()}
-            </div>
-          )}
-        </div>
+    <div className="max-w-5xl mx-auto p-6 space-y-6">
+      {/* Header */}
+      <Card>
+        <CardContent className="p-6 flex flex-col sm:flex-row items-center sm:items-start justify-between gap-6">
+          <div className="flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">
+            <Avatar className="h-20 w-20 border-2 border-border shadow-sm">
+              {myProfile.profilePictureUrl && (
+                <AvatarImage src={getFullMediaUrl(myProfile.profilePictureUrl)} alt="Profile" />
+              )}
+              <AvatarFallback className="text-2xl font-bold bg-primary text-primary-foreground">
+                {myProfile.fullName.charAt(0).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
 
-        <div className="profile-info">
-          <h1 className="profile-name">
-            {myProfile.fullName}
-            <StatusBadge status={myProfile.verificationStatus} size="sm" />
-          </h1>
-          <div
-            className="profile-roles"
-            style={{ display: "flex", alignItems: "center", gap: "10px" }}
-          >
-            <span>{myProfile.headline ?? "Complete your profile headline"}</span>
-            {myProfile.serviceAreaDisplayName && (
-              <span
-                style={{
-                  fontSize: "0.9em",
-                  color: "var(--text-muted)",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "4px",
-                }}
-              >
-                <MapPin size={14} /> {myProfile.serviceAreaDisplayName}
-              </span>
+            <div className="space-y-1">
+              <div className="flex items-center justify-center sm:justify-start gap-2.5 flex-wrap">
+                <h1 className="text-2xl font-bold text-foreground">{myProfile.fullName}</h1>
+                <StatusBadge status={myProfile.verificationStatus} size="sm" />
+              </div>
+              <div className="flex items-center justify-center sm:justify-start gap-3 text-xs text-muted-foreground flex-wrap">
+                <span>{myProfile.headline ?? "Complete your profile headline"}</span>
+                {myProfile.serviceAreaDisplayName && (
+                  <span className="flex items-center gap-1">
+                    <MapPin className="h-3.5 w-3.5" /> {myProfile.serviceAreaDisplayName}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate(`/providers/${myProfile.id}`)}
+              className="gap-1.5 text-xs"
+            >
+              <Eye className="h-4 w-4" /> View Public Profile
+            </Button>
+            {!isEditing && (
+              <Button size="sm" onClick={() => setIsEditing(true)} className="text-xs">
+                Edit Profile
+              </Button>
             )}
           </div>
-        </div>
+        </CardContent>
+      </Card>
 
-        <div className="profile-header-actions">
-          <button
-            className="wizard-btn wizard-btn-secondary"
-            onClick={() => navigate(`/providers/${myProfile.id}`)}
-          >
-            <Eye size={16} /> View Public Profile
-          </button>
-          {!isEditing && (
-            <button className="wizard-btn wizard-btn-primary" onClick={() => setIsEditing(true)}>
-              Edit Profile
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* ── Info Card ── */}
-      <div className="edit-card">
-        <div className="edit-card-header">
-          <h3 className="edit-card-title">
-            <User size={20} /> Personal & Business Info
-          </h3>
-        </div>
-        <div className="edit-card-body">
-          <div className="form-row">
-            <div className="form-col" style={{ flex: 2 }}>
-              <div className="wizard-field">
-                <label>Headline</label>
-                <input
-                  type="text"
-                  value={headline}
-                  onChange={(e) => setHeadline(e.target.value)}
-                  disabled={!isEditing}
-                />
-              </div>
+      {/* Info Card */}
+      <Card>
+        <CardHeader className="pb-3 flex flex-row items-center gap-2">
+          <User className="h-5 w-5 text-primary" />
+          <CardTitle className="text-base font-bold">Personal & Business Info</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="sm:col-span-2 space-y-1.5">
+              <label className="text-xs font-semibold text-muted-foreground">Headline</label>
+              <Input
+                type="text"
+                value={headline}
+                onChange={(e) => setHeadline(e.target.value)}
+                disabled={!isEditing}
+                className="h-9 text-xs"
+              />
             </div>
-            <div className="form-col" style={{ flex: 1 }}>
-              <div className="wizard-field">
-                <label>Years of Experience</label>
-                <input
-                  type="number"
-                  value={yearsOfExperience}
-                  onChange={(e) => setYearsOfExperience(parseInt(e.target.value) || "")}
-                  disabled={!isEditing}
-                />
-              </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-muted-foreground">
+                Years of Experience
+              </label>
+              <Input
+                type="number"
+                value={yearsOfExperience}
+                onChange={(e) => setYearsOfExperience(parseInt(e.target.value) || "")}
+                disabled={!isEditing}
+                className="h-9 text-xs"
+              />
             </div>
           </div>
 
-          <div className="wizard-field">
-            <label>Bio (Short description)</label>
-            <textarea
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-muted-foreground">
+              Bio (Short description)
+            </label>
+            <Textarea
               value={bio}
               onChange={(e) => setBio(e.target.value)}
               disabled={!isEditing}
-              style={{ minHeight: "80px" }}
+              rows={3}
+              className="text-xs resize-none"
             />
           </div>
 
-          <div className="wizard-field">
-            <label>Languages</label>
-            <div
-              className="tag-input-container"
-              style={
-                !isEditing
-                  ? { backgroundColor: "var(--bg-surface)", border: "1px solid transparent" }
-                  : {}
-              }
-            >
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-muted-foreground">Languages</label>
+            <div className="flex flex-wrap items-center gap-1.5 p-2 rounded border border-border bg-background min-h-10">
               {languages.map((lang) => (
-                <span key={lang} className="tag-input-tag">
+                <span
+                  key={lang}
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs bg-muted text-foreground"
+                >
                   {lang}
                   {isEditing && (
                     <button
-                      className="tag-input-remove"
+                      type="button"
+                      className="hover:text-destructive text-sm"
                       onClick={() => setLanguages(languages.filter((l) => l !== lang))}
                     >
                       ×
@@ -310,7 +292,7 @@ export default function ProviderProfile() {
               {isEditing && (
                 <input
                   type="text"
-                  className="tag-input-field"
+                  className="text-xs bg-transparent border-none outline-none flex-1 min-w-36 text-foreground placeholder:text-muted-foreground"
                   placeholder="Add language (press Enter)..."
                   value={langInput}
                   onChange={(e) => setLangInput(e.target.value)}
@@ -319,130 +301,135 @@ export default function ProviderProfile() {
               )}
             </div>
           </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
-      {/* ── Availability Card ── */}
-      <div className="edit-card">
-        <div className="edit-card-body" style={{ padding: "1rem 1.5rem" }}>
-          <div className="toggle-row">
-            <div className="toggle-info">
-              <strong>Available for Work</strong>
-              <span>Let customers know if you are currently taking on new jobs.</span>
+      {/* Availability Card */}
+      <Card>
+        <CardContent className="p-5 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <strong className="text-sm font-semibold text-foreground block">
+                Available for Work
+              </strong>
+              <span className="text-xs text-muted-foreground">
+                Let customers know if you are currently taking on new jobs.
+              </span>
             </div>
-            <label className="switch">
-              <input
-                type="checkbox"
-                checked={isAvailableForWork}
-                onChange={(e) => isEditing && setIsAvailableForWork(e.target.checked)}
-                disabled={!isEditing}
-              />
-              <span className="slider"></span>
-            </label>
+            <Switch
+              checked={isAvailableForWork}
+              onCheckedChange={(checked) => isEditing && setIsAvailableForWork(checked)}
+              disabled={!isEditing}
+            />
           </div>
 
           {isEditing && !isAvailableForWork && (
-            <div className="wizard-field" style={{ marginTop: "1rem", marginBottom: 0 }}>
-              <label>Availability Note (Optional)</label>
-              <input
+            <div className="space-y-1.5 pt-2 border-t border-border">
+              <label className="text-xs font-semibold text-muted-foreground">
+                Availability Note (Optional)
+              </label>
+              <Input
                 type="text"
                 placeholder="e.g. Fully booked until next month."
                 value={availabilityNote}
                 onChange={(e) => setAvailabilityNote(e.target.value)}
+                className="h-9 text-xs"
               />
             </div>
           )}
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
-      {/* ── Address Card ── */}
-      <div className="edit-card">
-        <div className="edit-card-header">
-          <h3 className="edit-card-title">
-            <Home size={20} /> Address
-          </h3>
-        </div>
-        <div className="edit-card-body">
-          <div className="wizard-field">
-            <label>Address Line 1</label>
-            <input
-              type="text"
-              placeholder="Street address"
-              value={addressLine1}
-              onChange={(e) => setAddressLine1(e.target.value)}
-              disabled={!isEditing}
-            />
-          </div>
-          <div className="wizard-field">
-            <label>Address Line 2</label>
-            <input
-              type="text"
-              placeholder="Apt, suite, unit, etc. (optional)"
-              value={addressLine2}
-              onChange={(e) => setAddressLine2(e.target.value)}
-              disabled={!isEditing}
-            />
-          </div>
-          <div className="form-row">
-            <div className="form-col" style={{ flex: 1 }}>
-              <div className="wizard-field">
-                <label>City</label>
-                <input
-                  type="text"
-                  value={city}
-                  onChange={(e) => setCity(e.target.value)}
-                  disabled={!isEditing}
-                />
-              </div>
+      {/* Address Card */}
+      <Card>
+        <CardHeader className="pb-3 flex flex-row items-center gap-2">
+          <Home className="h-5 w-5 text-primary" />
+          <CardTitle className="text-base font-bold">Address</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-muted-foreground">Address Line 1</label>
+              <Input
+                type="text"
+                placeholder="Street address"
+                value={addressLine1}
+                onChange={(e) => setAddressLine1(e.target.value)}
+                disabled={!isEditing}
+                className="h-9 text-xs"
+              />
             </div>
-            <div className="form-col" style={{ flex: 1 }}>
-              <div className="wizard-field">
-                <label>State / Province</label>
-                <input
-                  type="text"
-                  value={addrState}
-                  onChange={(e) => setAddrState(e.target.value)}
-                  disabled={!isEditing}
-                />
-              </div>
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-muted-foreground">Address Line 2</label>
+              <Input
+                type="text"
+                placeholder="Apt, suite, unit, etc. (optional)"
+                value={addressLine2}
+                onChange={(e) => setAddressLine2(e.target.value)}
+                disabled={!isEditing}
+                className="h-9 text-xs"
+              />
             </div>
           </div>
-          <div className="form-row">
-            <div className="form-col" style={{ flex: 1 }}>
-              <div className="wizard-field">
-                <label>Postal Code</label>
-                <input
-                  type="text"
-                  value={postalCode}
-                  onChange={(e) => setPostalCode(e.target.value)}
-                  disabled={!isEditing}
-                />
-              </div>
-            </div>
-            <div className="form-col" style={{ flex: 1 }}>
-              <div className="wizard-field">
-                <label>Country</label>
-                <input
-                  type="text"
-                  value={country}
-                  onChange={(e) => setCountry(e.target.value)}
-                  disabled={!isEditing}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
 
-      {/* ── Skills & Services Card ── */}
-      <div className="edit-card">
-        <div className="edit-card-header">
-          <h3 className="edit-card-title">Skills & Services</h3>
-        </div>
-        <div className="edit-card-body">
-          <div className="wizard-field">
-            <label>Service Categories</label>
-            <div className="skill-grid">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-muted-foreground">City</label>
+              <Input
+                type="text"
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
+                disabled={!isEditing}
+                className="h-9 text-xs"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-muted-foreground">
+                State / Province
+              </label>
+              <Input
+                type="text"
+                value={addrState}
+                onChange={(e) => setAddrState(e.target.value)}
+                disabled={!isEditing}
+                className="h-9 text-xs"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-muted-foreground">Postal Code</label>
+              <Input
+                type="text"
+                value={postalCode}
+                onChange={(e) => setPostalCode(e.target.value)}
+                disabled={!isEditing}
+                className="h-9 text-xs font-mono"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-muted-foreground">Country</label>
+              <Input
+                type="text"
+                value={country}
+                onChange={(e) => setCountry(e.target.value)}
+                disabled={!isEditing}
+                className="h-9 text-xs"
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Skills & Services Card */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base font-bold">Skills & Services</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="space-y-2">
+            <label className="text-xs font-semibold text-muted-foreground">
+              Service Categories
+            </label>
+            <div className="flex flex-wrap gap-2">
               {categories.map((cat) => (
                 <ServiceCategoryTag
                   key={cat.id}
@@ -454,22 +441,21 @@ export default function ProviderProfile() {
             </div>
           </div>
 
-          <div className="wizard-field" style={{ marginTop: "1.5rem" }}>
-            <label>Specific Services Offered</label>
-            <div
-              className="tag-input-container"
-              style={
-                !isEditing
-                  ? { backgroundColor: "var(--bg-surface)", border: "1px solid transparent" }
-                  : {}
-              }
-            >
+          <div className="space-y-2">
+            <label className="text-xs font-semibold text-muted-foreground">
+              Specific Services Offered
+            </label>
+            <div className="flex flex-wrap items-center gap-1.5 p-2 rounded border border-border bg-background min-h-10">
               {servicesOffered.map((srv) => (
-                <span key={srv} className="tag-input-tag">
+                <span
+                  key={srv}
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs bg-muted text-foreground"
+                >
                   {srv}
                   {isEditing && (
                     <button
-                      className="tag-input-remove"
+                      type="button"
+                      className="hover:text-destructive text-sm"
                       onClick={() => setServicesOffered(servicesOffered.filter((s) => s !== srv))}
                     >
                       ×
@@ -480,7 +466,7 @@ export default function ProviderProfile() {
               {isEditing && (
                 <input
                   type="text"
-                  className="tag-input-field"
+                  className="text-xs bg-transparent border-none outline-none flex-1 min-w-36 text-foreground placeholder:text-muted-foreground"
                   placeholder="Add service (press Enter)..."
                   value={serviceInput}
                   onChange={(e) => setServiceInput(e.target.value)}
@@ -490,80 +476,44 @@ export default function ProviderProfile() {
             </div>
           </div>
 
-          {/* ── Fixed-Price Services Section (Inline) ── */}
-          <div className="wizard-field" style={{ marginTop: "var(--space-10)" }}>
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginBottom: "var(--space-4)",
-              }}
-            >
-              <label
-                style={{ margin: 0, fontWeight: 700, fontSize: "1.125rem", color: "var(--text-h)" }}
-              >
-                Fixed-Price Services
-              </label>
-              <button
-                className="wizard-btn wizard-btn-secondary"
-                style={{
-                  padding: "0.4rem 0.75rem",
-                  fontSize: "0.85rem",
-                  transition: "background 0.2s",
-                }}
+          {/* Fixed-Price Services Section */}
+          <div className="pt-4 border-t border-border space-y-4">
+            <div className="flex justify-between items-center">
+              <label className="font-bold text-sm text-foreground">Fixed-Price Services</label>
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => navigate("/provider/service-listings")}
+                className="h-8 text-xs"
               >
                 Manage Services
-              </button>
+              </Button>
             </div>
 
             {myServiceListings && myServiceListings.filter((l) => l.isActive).length > 0 ? (
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
-                  gap: "var(--space-6)",
-                }}
-              >
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {myServiceListings
                   .filter((l) => l.isActive)
-                  .map((listing, idx) => (
-                    <div
-                      key={listing.id}
-                      className="animate-fade-up"
-                      style={{ animationDelay: `${(idx % 10) * 50}ms` }}
-                    >
-                      <ServiceListingCard listing={listing} />
-                    </div>
+                  .map((listing) => (
+                    <ServiceListingCard key={listing.id} listing={listing} />
                   ))}
               </div>
             ) : (
-              <div
-                className="empty-state"
-                style={{
-                  padding: "var(--space-8)",
-                  background: "var(--bg-surface)",
-                  border: "1px dashed var(--border-strong)",
-                  borderRadius: "12px",
-                }}
-              >
-                <p style={{ color: "var(--text-muted)", fontSize: "0.95rem", margin: 0 }}>
-                  You haven't listed any fixed-price services yet. Click 'Manage Services' to create
-                  one.
-                </p>
+              <div className="p-8 text-center border border-dashed border-border rounded text-xs text-muted-foreground">
+                You haven't listed any fixed-price services yet. Click 'Manage Services' to create
+                one.
               </div>
             )}
           </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
-      {/* ── Service Area Card ── */}
-      <div className="edit-card">
-        <div className="edit-card-header">
-          <h3 className="edit-card-title">Service Area</h3>
-        </div>
-        <div className="edit-card-body">
+      {/* Service Area Card */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base font-bold">Service Area</CardTitle>
+        </CardHeader>
+        <CardContent>
           <LocationPicker
             lat={serviceAreaLatitude}
             lng={serviceAreaLongitude}
@@ -577,52 +527,44 @@ export default function ProviderProfile() {
               setServiceRadiusKm(rkm);
             }}
           />
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
-      {/* ── Save Footer ── */}
+      {/* Save Footer */}
       {isEditing && (
-        <div className="profile-save-footer animate-fade-up">
-          <div style={{ flex: 1 }}>
+        <div className="sticky bottom-6 p-4 bg-card border border-border rounded-xl shadow-xl flex items-center justify-between gap-4 z-40">
+          <div className="flex-1 text-xs">
             {saveStatus === "error" && (
-              <span style={{ color: "var(--text-danger)", fontWeight: 600, fontSize: "0.85rem" }}>
-                {errorMessage}
-              </span>
+              <span className="text-destructive font-semibold">{errorMessage}</span>
             )}
             {saveStatus === "success" && (
-              <span
-                style={{
-                  color: "var(--success)",
-                  fontWeight: 600,
-                  fontSize: "0.9rem",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "6px",
-                }}
-              >
-                <CheckCircle2 size={18} /> Changes saved successfully
+              <span className="text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1.5">
+                <CheckCircle2 className="h-4 w-4" /> Changes saved successfully
               </span>
             )}
           </div>
 
-          <div style={{ display: "flex", gap: "1rem" }}>
-            <button
-              className="wizard-btn wizard-btn-secondary"
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => {
                 setIsEditing(false);
                 setSaveStatus("idle");
               }}
               disabled={saveStatus === "saving"}
+              className="text-xs"
             >
               Cancel
-            </button>
-            <button
-              className="wizard-btn wizard-btn-primary"
+            </Button>
+            <Button
+              size="sm"
               onClick={handleSave}
               disabled={saveStatus === "saving" || saveStatus === "success"}
+              className="text-xs"
             >
               {saveStatus === "saving" ? "Saving..." : "Save Changes"}
-            </button>
+            </Button>
           </div>
         </div>
       )}

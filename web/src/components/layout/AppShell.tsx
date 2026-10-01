@@ -17,14 +17,17 @@ import {
   Receipt,
   DollarSign,
   CreditCard,
+  Briefcase,
 } from "lucide-react";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { authApi } from "../../api/auth";
 import { usersApi } from "../../api/users";
 import { providerApi } from "../../api/providers";
 import { getRefreshToken } from "../../lib/tokenManager";
+import { getFullMediaUrl } from "../../lib/api";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import AiAssistantWidget from "../ai/AiAssistantWidget";
-import "./AppShell.css";
 
 export default function AppShell() {
   const navigate = useNavigate();
@@ -66,7 +69,8 @@ export default function AppShell() {
     // Admin
     { name: "Agent Workflow", to: "/admin/agent-workflow", icon: Activity, show: isAdmin },
     { name: "Verifications", to: "/admin/verifications", icon: CheckSquare, show: isAdmin },
-    { name: "Provider Directory", to: "/admin/providers", icon: Users, show: isAdmin },
+    { name: "Users Directory", to: "/admin/users", icon: Users, show: isAdmin },
+    { name: "Provider Directory", to: "/admin/providers", icon: Briefcase, show: isAdmin },
     {
       name: "Booking Overview",
       to: "/admin/booking-overview",
@@ -100,19 +104,27 @@ export default function AppShell() {
   });
 
   return (
-    <div className="shell-container">
-      <aside className="shell-sidebar">
-        <div className="brand">Handee</div>
-        <nav className="shell-nav">
+    <div className="shell-container flex h-screen w-screen max-w-full bg-background text-foreground">
+      <aside className="shell-sidebar w-62.5 bg-sidebar text-sidebar-foreground border-r border-sidebar-border flex flex-col p-6 max-md:w-screen max-md:h-auto max-md:flex-row max-md:fixed max-md:bottom-0 max-md:left-0 max-md:z-50 max-md:p-2 max-md:border-t">
+        <div className="brand text-2xl font-bold tracking-tight mb-8 pl-4 max-md:hidden">
+          Handee
+        </div>
+        <nav className="shell-nav flex flex-col gap-1 max-md:flex-row max-md:w-full max-md:justify-around">
           {navigation.map((item) => {
             const Icon = item.icon;
             return (
               <NavLink
                 key={item.name}
                 to={item.to}
-                className={({ isActive }) => `nav-link ${isActive ? "active" : ""}`}
+                className={({ isActive }) =>
+                  `nav-link flex items-center gap-3 px-3 py-2 text-sm font-medium transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground ${
+                    isActive
+                      ? "bg-sidebar-accent text-sidebar-accent-foreground font-semibold"
+                      : "text-sidebar-foreground/70"
+                  }`
+                }
               >
-                <Icon className="icon" />
+                <Icon className="h-4 w-4 shrink-0" />
                 <span className="nav-text">{item.name}</span>
               </NavLink>
             );
@@ -120,108 +132,45 @@ export default function AppShell() {
         </nav>
       </aside>
 
-      <div className="shell-main">
-        <header className="shell-header">
-          <div
-            style={{
-              flex: 1,
-              display: "flex",
-              justifyContent: "flex-end",
-              alignItems: "center",
-              marginRight: "1.5rem",
-              gap: "0.75rem",
-            }}
-          >
+      <div className="shell-main flex-1 flex flex-col overflow-hidden max-md:pb-20">
+        <header className="shell-header h-16 border-b border-border flex items-center justify-end px-6 bg-background">
+          <div className="flex-1 flex justify-end items-center mr-6 gap-3">
             {userProfile && (
-              <div
-                style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}
-                className="animate-fade-up"
-              >
-                <div
-                  style={{
-                    textAlign: "right",
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "2px",
-                    marginRight: "0.25rem",
-                  }}
-                >
-                  <div style={{ fontWeight: 600, fontSize: "0.95rem", color: "var(--text-h)" }}>
+              <div className="flex items-center gap-3 animate-fade-up">
+                <div className="text-right flex flex-col gap-0.5 mr-1">
+                  <div className="font-semibold text-sm text-foreground">
                     {userProfile.fullName}
                   </div>
-                  <div
-                    style={{
-                      fontSize: "0.65rem",
-                      color: "var(--text-muted)",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.05em",
-                      fontWeight: 700,
-                    }}
-                  >
+                  <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">
                     {userProfile.roles?.[0] || "Member"}
                   </div>
                 </div>
-                {userProfile.profilePictureUrl ? (
-                  <img
-                    src={
-                      userProfile.profilePictureUrl.startsWith("http")
-                        ? userProfile.profilePictureUrl
-                        : `http://localhost:5057${userProfile.profilePictureUrl}`
-                    }
-                    alt="Avatar"
-                    style={{
-                      width: 36,
-                      height: 36,
-                      borderRadius: "50%",
-                      objectFit: "cover",
-                      border: "1px solid var(--border)",
-                    }}
-                  />
-                ) : (
-                  <div
-                    style={{
-                      width: 36,
-                      height: 36,
-                      borderRadius: "50%",
-                      backgroundColor: "var(--accent)",
-                      color: "#fff",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontWeight: "bold",
-                    }}
-                  >
+                <Avatar className="h-9 w-9 border border-border">
+                  {userProfile.profilePictureUrl && (
+                    <AvatarImage
+                      src={getFullMediaUrl(userProfile.profilePictureUrl)}
+                      alt={userProfile.fullName}
+                    />
+                  )}
+                  <AvatarFallback className="bg-primary text-primary-foreground font-bold text-xs">
                     {userProfile.fullName.charAt(0).toUpperCase()}
-                  </div>
-                )}
+                  </AvatarFallback>
+                </Avatar>
               </div>
             )}
           </div>
-          <button
+          <Button
+            variant="outline"
+            size="sm"
             onClick={() => logoutMutation.mutate()}
             disabled={logoutMutation.isPending}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "0.5rem",
-              backgroundColor: "var(--bg-surface)",
-              border: "1px solid var(--border)",
-              color: "var(--text-h)",
-              padding: "0.5rem 1rem",
-              borderRadius: "8px",
-              cursor: logoutMutation.isPending ? "default" : "pointer",
-              fontSize: "0.9rem",
-              fontWeight: 600,
-              transition: "all 0.2s var(--ease-spring)",
-              opacity: logoutMutation.isPending ? 0.6 : 1,
-            }}
-            className="hover-lift"
+            className="flex items-center gap-2 text-sm"
           >
-            <LogOut size={16} />
+            <LogOut className="h-4 w-4" />
             {logoutMutation.isPending ? "Signing out..." : "Sign Out"}
-          </button>
+          </Button>
         </header>
-        <main className="shell-content">
+        <main className="shell-content flex-1 overflow-y-auto p-6 bg-muted/20">
           <Outlet />
         </main>
       </div>

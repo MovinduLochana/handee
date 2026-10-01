@@ -10,6 +10,7 @@ import {
   CheckCircle,
   User,
   Star,
+  Loader2,
 } from "lucide-react";
 import { providerApi } from "../../api/providers";
 import { serviceListingsApi } from "../../api/serviceListings";
@@ -19,7 +20,10 @@ import ServiceCategoryTag from "../../components/provider/ServiceCategoryTag";
 import ServiceListingCard from "../../components/public/ServiceListingCard";
 import BookingModal from "../../components/public/BookingModal";
 import EmptyState from "../../components/provider/EmptyState";
-import "./PublicProviderProfile.css";
+import { getFullMediaUrl } from "../../lib/api";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 
 export default function PublicProviderProfile() {
   const { providerId } = useParams<{ providerId: string }>();
@@ -51,18 +55,18 @@ export default function PublicProviderProfile() {
   });
 
   if (isLoading) {
-    return <div className="state-container">Loading provider...</div>;
+    return <div className="p-12 text-center text-muted-foreground">Loading provider...</div>;
   }
 
   if (isError || !profile) {
     return (
-      <div className="state-container">
+      <div className="p-12 text-center">
         <EmptyState
-          icon={<ShieldCheck size={32} />}
+          icon={<ShieldCheck className="w-8 h-8" />}
           title="Provider Not Found"
           description="This provider profile doesn't exist or is currently unavailable."
           action={
-            <Link to="/" className="wizard-btn wizard-btn-primary">
+            <Link to="/" className={buttonVariants()}>
               Return Home
             </Link>
           }
@@ -73,163 +77,150 @@ export default function PublicProviderProfile() {
 
   return (
     <>
-      <div className="public-profile-layout animate-fade-up">
+      <div className="max-w-6xl mx-auto px-4 py-8 space-y-6">
         {/* Nav */}
-        <nav className="public-nav">
-          <Link to="/" className="public-back-btn">
-            <ArrowLeft size={16} /> Back to Search
+        <nav>
+          <Link
+            to="/providers"
+            className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" /> Back to Search
           </Link>
         </nav>
 
         {/* Hero */}
-        <header className="public-hero">
-          <div className="public-avatar-wrapper animate-fade-up">
-            {profile.profilePictureUrl ? (
-              <img
-                src={
-                  profile.profilePictureUrl.startsWith("http")
-                    ? profile.profilePictureUrl
-                    : `http://localhost:5057${profile.profilePictureUrl}`
-                }
-                alt={profile.fullName}
-                className="public-avatar"
-              />
-            ) : (
-              <div className="public-avatar-fallback">
-                {profile.fullName.charAt(0).toUpperCase()}
-              </div>
-            )}
-
-            {profile.verificationStatus === "Verified" && (
-              <div className="public-verified-badge" title="Verified Provider">
-                <CheckCircle size={18} strokeWidth={3} />
-              </div>
-            )}
-          </div>
-
-          <div className="animate-fade-up animate-delay-100">
-            <h1 className="public-hero-title">{profile.fullName}</h1>
-            <p className="public-hero-headline">{profile.headline}</p>
-
-            <div className="public-hero-stats">
-              <StarRating
-                rating={profile.ratingAggregate}
-                count={profile.totalReviewCount}
-                showValue={true}
-              />
-
-              <div className="public-stat">
-                <MapPin size={16} color="var(--accent)" />
-                {profile.serviceAreaDisplayName || "Flexible Area"}
-              </div>
-            </div>
-          </div>
-        </header>
-
-        {/* Grid */}
-        <main className="public-main">
-          <div className="public-main-content">
-            <section className="public-section animate-fade-up animate-delay-200">
-              <h2>
-                <User size={20} color="var(--accent)" /> About
-              </h2>
-
-              <div className="public-info-grid">
-                <div className="public-info-item">
-                  <h4>Experience</h4>
-                  <p>{profile.yearsOfExperience} Years</p>
-                </div>
-                <div className="public-info-item">
-                  <h4>Languages</h4>
-                  <p>{profile.languages.length > 0 ? profile.languages.join(", ") : "English"}</p>
-                </div>
-              </div>
-
-              {profile.bio && <p className="public-bio">{profile.bio}</p>}
-              {profile.description && (
-                <div className="public-bio-divider">
-                  <p className="public-bio">{profile.description}</p>
+        <Card className="rounded-none border-border">
+          <CardContent className="p-6 sm:p-8 flex flex-col sm:flex-row items-center sm:items-start gap-6">
+            <div className="relative shrink-0">
+              {profile.profilePictureUrl ? (
+                <img
+                  src={getFullMediaUrl(profile.profilePictureUrl)}
+                  alt={profile.fullName}
+                  className="w-24 h-24 sm:w-28 sm:h-28 object-cover border border-border"
+                />
+              ) : (
+                <div className="w-24 h-24 sm:w-28 sm:h-28 bg-muted flex items-center justify-center text-3xl font-bold text-muted-foreground border border-border">
+                  {profile.fullName.charAt(0).toUpperCase()}
                 </div>
               )}
-            </section>
 
-            <section className="public-section animate-fade-up animate-delay-300">
-              <h2>
-                <Briefcase size={20} color="var(--accent-warm)" /> Skills & Services
-              </h2>
+              {profile.verificationStatus === "Verified" && (
+                <div
+                  className="absolute -bottom-1 -right-1 bg-background p-1 shadow-xs"
+                  title="Verified Provider"
+                >
+                  <CheckCircle className="w-5 h-5 text-emerald-600 fill-emerald-100" />
+                </div>
+              )}
+            </div>
 
-              {profile.serviceCategories.length > 0 && (
-                <div className="mb-6">
-                  <div className="skill-tags">
+            <div className="space-y-2 text-center sm:text-left flex-1">
+              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
+                {profile.fullName}
+              </h1>
+              <p className="text-base text-muted-foreground">{profile.headline}</p>
+
+              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-4 pt-2">
+                <StarRating
+                  rating={profile.ratingAggregate}
+                  count={profile.totalReviewCount}
+                  showValue={true}
+                />
+
+                <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                  <MapPin className="w-4 h-4 text-primary" />
+                  <span>{profile.serviceAreaDisplayName || "Flexible Area"}</span>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 space-y-6">
+            {/* About Section */}
+            <Card className="rounded-none border-border">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <User className="w-5 h-5 text-primary" /> About
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4 p-4 bg-muted/40 border border-border">
+                  <div>
+                    <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      Experience
+                    </h4>
+                    <p className="text-base font-semibold text-foreground mt-0.5">
+                      {profile.yearsOfExperience} Years
+                    </p>
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      Languages
+                    </h4>
+                    <p className="text-base font-semibold text-foreground mt-0.5">
+                      {profile.languages.length > 0 ? profile.languages.join(", ") : "English"}
+                    </p>
+                  </div>
+                </div>
+
+                {profile.bio && (
+                  <p className="text-sm text-muted-foreground leading-relaxed">{profile.bio}</p>
+                )}
+                {profile.description && (
+                  <div className="pt-3 border-t border-border">
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      {profile.description}
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Skills & Services Section */}
+            <Card className="rounded-none border-border">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Briefcase className="w-5 h-5 text-primary" /> Skills & Services
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {profile.serviceCategories.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
                     {profile.serviceCategories.map((cat) => (
                       <ServiceCategoryTag key={cat.id} category={cat} />
                     ))}
                   </div>
-                </div>
-              )}
+                )}
 
-              {profile.servicesOffered.length > 0 && (
-                <div style={{ marginTop: "1.5rem" }}>
-                  <h4
-                    className="services-heading"
-                    style={{ fontSize: "1rem", marginBottom: "0.5rem" }}
-                  >
-                    Specific Services Offered
-                  </h4>
-                  <ul className="services-list">
-                    {profile.servicesOffered.map((srv, i) => (
-                      <li key={i}>{srv}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {listingsLoading ? (
-                <div
-                  style={{
-                    marginTop: "var(--space-10)",
-                    display: "flex",
-                    justifyContent: "center",
-                  }}
-                >
-                  <div
-                    className="flex-center"
-                    style={{ padding: "var(--space-8)", gap: "var(--space-3)" }}
-                  >
-                    <p style={{ color: "var(--text-muted)", margin: 0 }}>
-                      Loading service catalogue...
-                    </p>
+                {profile.servicesOffered.length > 0 && (
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-semibold text-foreground">
+                      Specific Services Offered
+                    </h4>
+                    <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-muted-foreground list-disc list-inside">
+                      {profile.servicesOffered.map((srv, i) => (
+                        <li key={i}>{srv}</li>
+                      ))}
+                    </ul>
                   </div>
-                </div>
-              ) : (
-                <div style={{ marginTop: "var(--space-10)" }}>
-                  <h4
-                    className="services-heading"
-                    style={{
-                      fontSize: "1.125rem",
-                      fontWeight: 700,
-                      marginBottom: "var(--space-4)",
-                      color: "var(--text-h)",
-                    }}
-                  >
-                    Fixed-Price Services
-                  </h4>
-                  {listingsData && listingsData.filter((l) => l.isActive).length > 0 ? (
-                    <div
-                      style={{
-                        display: "grid",
-                        gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
-                        gap: "var(--space-6)",
-                      }}
-                    >
+                )}
+
+                <div className="pt-4 border-t border-border space-y-4">
+                  <h4 className="text-base font-semibold text-foreground">Fixed-Price Services</h4>
+                  {listingsLoading ? (
+                    <div className="flex items-center justify-center p-8 text-muted-foreground gap-2">
+                      <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                      <p className="text-sm">Loading service catalogue...</p>
+                    </div>
+                  ) : listingsData && listingsData.filter((l) => l.isActive).length > 0 ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       {listingsData
                         .filter((l) => l.isActive)
-                        .map((listing, idx) => (
-                          <div
-                            key={listing.id}
-                            className="animate-fade-up"
-                            style={{ animationDelay: `${(idx % 10) * 50}ms` }}
-                          >
+                        .map((listing) => (
+                          <div key={listing.id}>
                             <ServiceListingCard
                               listing={listing}
                               onBookClick={(lst) => setSelectedBookingListing(lst)}
@@ -238,86 +229,95 @@ export default function PublicProviderProfile() {
                         ))}
                     </div>
                   ) : (
-                    <div
-                      className="empty-state"
-                      style={{
-                        padding: "var(--space-8)",
-                        background: "var(--bg-surface)",
-                        border: "1px dashed var(--border-strong)",
-                        borderRadius: "12px",
-                      }}
-                    >
-                      <p style={{ color: "var(--text-muted)", fontSize: "0.95rem", margin: 0 }}>
-                        This provider hasn't listed any fixed-price services yet.
-                      </p>
+                    <div className="p-8 border border-dashed border-border text-center text-sm text-muted-foreground">
+                      This provider hasn't listed any fixed-price services yet.
                     </div>
                   )}
                 </div>
-              )}
-            </section>
+              </CardContent>
+            </Card>
 
-            <section className="public-section animate-fade-up animate-delay-400">
-              <h2>Customer Reviews</h2>
-
-              {reviewsLoading ? (
-                <div>Loading reviews...</div>
-              ) : !reviewsData || reviewsData.items.length === 0 ? (
-                <EmptyState
-                  icon={<Star size={24} />}
-                  title="No Reviews Yet"
-                  description={`${profile.fullName} is new or hasn't received any reviews yet.`}
-                />
-              ) : (
-                <div>
-                  {reviewsData.items.map((review) => (
-                    <div key={review.id} className="review-card">
-                      <div className="review-header">
-                        <div className="review-author">
-                          <div className="review-avatar">
-                            {review.customerProfilePictureUrl ? (
-                              <img
-                                src={`http://localhost:5057${review.customerProfilePictureUrl}`}
-                                alt={review.customerName}
-                                loading="lazy"
-                              />
-                            ) : (
-                              review.customerName.charAt(0)
-                            )}
+            {/* Reviews Section */}
+            <Card className="rounded-none border-border">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Star className="w-5 h-5 text-amber-500" /> Customer Reviews
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {reviewsLoading ? (
+                  <div className="flex items-center justify-center p-8 text-muted-foreground gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                    <p className="text-sm">Loading reviews...</p>
+                  </div>
+                ) : !reviewsData || reviewsData.items.length === 0 ? (
+                  <EmptyState
+                    icon={<Star className="w-6 h-6" />}
+                    title="No Reviews Yet"
+                    description={`${profile.fullName} is new or hasn't received any reviews yet.`}
+                  />
+                ) : (
+                  <div className="space-y-4 divide-y divide-border">
+                    {reviewsData.items.map((review) => (
+                      <div key={review.id} className="pt-4 first:pt-0 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 bg-muted flex items-center justify-center font-semibold text-xs border border-border">
+                              {review.customerProfilePictureUrl ? (
+                                <img
+                                  src={getFullMediaUrl(review.customerProfilePictureUrl)}
+                                  alt={review.customerName}
+                                  loading="lazy"
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                review.customerName.charAt(0)
+                              )}
+                            </div>
+                            <div>
+                              <p className="text-sm font-semibold text-foreground">
+                                {review.customerName}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {new Date(review.createdAt).toLocaleDateString()}
+                              </p>
+                            </div>
                           </div>
-                          <div>
-                            <p className="review-name">{review.customerName}</p>
-                            <p className="review-date">
-                              {new Date(review.createdAt).toLocaleDateString()}
-                            </p>
-                          </div>
+                          <StarRating rating={review.rating} size={14} />
                         </div>
-                        <StarRating rating={review.rating} size={14} />
+                        {review.comment && (
+                          <p className="text-sm text-muted-foreground leading-relaxed">
+                            {review.comment}
+                          </p>
+                        )}
                       </div>
-                      {review.comment && <p className="review-body">{review.comment}</p>}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </section>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
 
-          <div className="public-sidebar animate-fade-up animate-delay-300">
-            <div className="public-sidebar-card">
-              <button
-                className="public-book-btn"
-                disabled={!profile.isAvailableForWork}
-                onClick={() => alert("Booking flow not implemented.")}
-              >
-                <Calendar size={18} />
-                {profile.isAvailableForWork ? "Request Service" : "Currently Unavailable"}
-              </button>
+          {/* Sidebar */}
+          <div className="space-y-6">
+            <Card className="rounded-none border-border sticky top-6">
+              <CardContent className="p-6 space-y-4">
+                <Button
+                  className="w-full gap-2 justify-center py-6 text-base"
+                  disabled={!profile.isAvailableForWork}
+                  onClick={() => alert("Booking flow not implemented.")}
+                >
+                  <Calendar className="w-5 h-5" />
+                  {profile.isAvailableForWork ? "Request Service" : "Currently Unavailable"}
+                </Button>
 
-              {!profile.isAvailableForWork && profile.availabilityNote && (
-                <p className="availability-note">{profile.availabilityNote}</p>
-              )}
-            </div>
+                {!profile.isAvailableForWork && profile.availabilityNote && (
+                  <p className="text-xs text-destructive text-center">{profile.availabilityNote}</p>
+                )}
+              </CardContent>
+            </Card>
           </div>
-        </main>
+        </div>
       </div>
 
       {selectedBookingListing && (

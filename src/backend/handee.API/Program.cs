@@ -95,9 +95,9 @@ builder.Services.AddStackExchangeRedisCache(options =>
 builder.Services.AddHttpClient("GoogleMaps");
 builder.Services.AddHttpClient("AgentService", client =>
 {
-    var baseUrl = builder.Configuration["AgentService:BaseUrl"] ?? "http://localhost:8000";
+    var baseUrl = builder.Configuration["AgentService:BaseUrl"] ?? "https://handee-production.up.railway.app";
     client.BaseAddress = new Uri(baseUrl);
-    client.Timeout = TimeSpan.FromSeconds(15);
+    client.Timeout = TimeSpan.FromSeconds(30);
 });
 
 // ── OpenTelemetry ─────────────────────────────────────────────────────────────
@@ -151,6 +151,7 @@ builder.Services.AddControllers()
     .AddJsonOptions(opts =>
         opts.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter()));
 builder.Services.AddAuthorization();
+builder.Services.AddHealthChecks();
 
 var app = builder.Build();
 
@@ -165,13 +166,11 @@ if (!app.Environment.IsDevelopment())
 // CORS must be called before UseStaticFiles so that CORS headers apply to the images
 app.UseCors();
 
-var uploadsDir = Path.Combine(builder.Environment.ContentRootPath, "uploads");
-Directory.CreateDirectory(uploadsDir); // Prevent errors if folder doesn't exist yet
-
 app.UseStaticFiles(new StaticFileOptions
 {
-    FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(uploadsDir),
-    RequestPath = "/uploads"
+    FileProvider = StoragePathResolver.CreateUploadsFileProvider(builder.Environment, builder.Configuration),
+    RequestPath = "/uploads",
+    ContentTypeProvider = StoragePathResolver.GetContentTypeProvider()
 });
 
 // Auto-apply pending migrations
@@ -226,5 +225,7 @@ app.UseAuthorization();
 
 app.MapControllers();
 app.MapHub<handee.API.Hubs.BookingHub>("/hubs/booking");
+app.MapHealthChecks("/health");
+app.MapGet("/", () => Results.Ok(new { status = "Healthy", service = "Handee.Api" }));
 
 app.Run();

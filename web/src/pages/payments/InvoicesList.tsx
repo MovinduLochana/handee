@@ -4,7 +4,17 @@ import { useQuery } from "@tanstack/react-query";
 import { paymentsApi } from "../../api/payments";
 import { usersApi } from "../../api/users";
 import { FileText, CreditCard, Eye, Receipt, CheckCircle2, Clock, ArrowRight } from "lucide-react";
-import "./Payments.css";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 export default function InvoicesList() {
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
@@ -33,177 +43,208 @@ export default function InvoicesList() {
     return inv.status === statusFilter;
   });
 
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "Paid":
+        return (
+          <Badge
+            variant="outline"
+            className="border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 gap-1 font-semibold"
+          >
+            <CheckCircle2 className="h-3 w-3" />
+            Paid
+          </Badge>
+        );
+      case "Issued":
+        return (
+          <Badge
+            variant="outline"
+            className="border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 gap-1 font-semibold"
+          >
+            <Clock className="h-3 w-3" />
+            Issued
+          </Badge>
+        );
+      case "Cancelled":
+        return (
+          <Badge
+            variant="outline"
+            className="border-destructive/30 bg-destructive/10 text-destructive gap-1 font-semibold"
+          >
+            Cancelled
+          </Badge>
+        );
+      case "Refunded":
+        return (
+          <Badge
+            variant="outline"
+            className="border-purple-500/30 bg-purple-500/10 text-purple-600 dark:text-purple-400 gap-1 font-semibold"
+          >
+            Refunded
+          </Badge>
+        );
+      default:
+        return (
+          <Badge variant="outline" className="font-semibold">
+            {status}
+          </Badge>
+        );
+    }
+  };
+
   return (
-    <div className="payments-page">
-      <div className="payments-header">
+    <div className="max-w-7xl mx-auto p-6 space-y-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="payments-title">
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">
             {isProvider ? "Job Invoices & Billings" : "My Invoices"}
           </h1>
-          <p className="payments-subtitle">
+          <p className="text-muted-foreground mt-1 text-sm">
             {isProvider
               ? "Track customer invoices, payment settlements, and itemized receipts for your services"
               : "Manage your service receipts, payment records, and outstanding bills"}
           </p>
         </div>
-        <div style={{ display: "flex", gap: "0.75rem", alignItems: "center" }}>
+        <div className="flex gap-3 items-center">
           {isProvider ? (
-            <Link to="/provider/payouts" className="btn-secondary">
-              <Receipt size={16} /> Payouts & Earnings Dashboard <ArrowRight size={14} />
+            <Link to="/provider/payouts" className={buttonVariants({ variant: "outline" })}>
+              <Receipt className="h-4 w-4" /> Payouts & Earnings Dashboard{" "}
+              <ArrowRight className="h-3.5 w-3.5" />
             </Link>
           ) : (
-            <Link to="/account/payment-methods" className="btn-secondary">
-              <CreditCard size={16} /> Saved Payment Methods
+            <Link to="/account/payment-methods" className={buttonVariants({ variant: "outline" })}>
+              <CreditCard className="h-4 w-4" /> Saved Payment Methods
             </Link>
           )}
         </div>
       </div>
 
       {/* Filter Tabs */}
-      <div
-        style={{
-          display: "flex",
-          gap: "0.5rem",
-          marginBottom: "1.5rem",
-          borderBottom: "1px solid var(--border)",
-          paddingBottom: "0.75rem",
-          flexWrap: "wrap",
-        }}
-      >
+      <div className="flex gap-2 border-b border-border pb-3 flex-wrap">
         {["ALL", "Issued", "Paid", "Cancelled", "Refunded"].map((status) => (
-          <button
+          <Button
             key={status}
+            variant={statusFilter === status ? "default" : "outline"}
+            size="sm"
             onClick={() => setStatusFilter(status)}
-            className="btn-secondary btn-sm"
-            style={{
-              backgroundColor: statusFilter === status ? "var(--accent)" : "transparent",
-              color: statusFilter === status ? "#fff" : "var(--text)",
-              borderColor: statusFilter === status ? "var(--accent)" : "var(--border)",
-              fontWeight: 600,
-            }}
+            className="text-xs font-semibold"
           >
             {status === "ALL" ? "All Invoices" : status}
-          </button>
+          </Button>
         ))}
       </div>
 
       {isLoading ? (
-        <div className="payments-card" style={{ textAlign: "center", padding: "3rem" }}>
-          <p>Loading invoices...</p>
-        </div>
+        <Card>
+          <CardContent className="text-center p-12 text-muted-foreground">
+            <p>Loading invoices...</p>
+          </CardContent>
+        </Card>
       ) : filteredInvoices.length === 0 ? (
-        <div
-          className="payments-card"
-          style={{
-            textAlign: "center",
-            padding: "4rem 2rem",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            gap: "1rem",
-          }}
-        >
-          <div className="stat-icon-wrapper blue" style={{ width: 64, height: 64 }}>
-            <Receipt size={32} />
-          </div>
-          <h3 style={{ margin: 0, color: "var(--text-h)" }}>No invoices found</h3>
-          <p style={{ margin: 0, color: "var(--text-muted)", maxWidth: 440 }}>
-            {statusFilter === "ALL"
-              ? isProvider
-                ? "Invoices generated for your completed or in-progress jobs will be listed here automatically."
-                : "When you complete or accept quotes for bookings, your itemised invoices will appear here."
-              : `No invoices currently marked as "${statusFilter}".`}
-          </p>
-          <Link to={isProvider ? "/provider/payouts" : "/dashboard"} className="btn-primary">
-            {isProvider ? "View Payouts & Earnings" : "Explore Services"}
-          </Link>
-        </div>
+        <Card>
+          <CardContent className="text-center py-16 px-6 flex flex-col items-center gap-4">
+            <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+              <Receipt className="h-8 w-8" />
+            </div>
+            <h3 className="text-lg font-bold text-foreground">No invoices found</h3>
+            <p className="text-muted-foreground max-w-md text-sm">
+              {statusFilter === "ALL"
+                ? isProvider
+                  ? "Invoices generated for your completed or in-progress jobs will be listed here automatically."
+                  : "When you complete or accept quotes for bookings, your itemised invoices will appear here."
+                : `No invoices currently marked as "${statusFilter}".`}
+            </p>
+            <Link
+              to={isProvider ? "/provider/payouts" : "/dashboard"}
+              className={buttonVariants({ variant: "default" })}
+            >
+              {isProvider ? "View Payouts & Earnings" : "Explore Services"}
+            </Link>
+          </CardContent>
+        </Card>
       ) : (
-        <div className="payments-card">
-          <div className="payments-table-container">
-            <table className="payments-table">
-              <thead>
-                <tr>
-                  <th>Invoice ID</th>
-                  <th>{isProvider ? "Customer" : "Booking"}</th>
-                  <th>Issued Date</th>
-                  <th>{isProvider ? "Trade Amount (85%)" : "Base Rate"}</th>
-                  <th>Platform Fee (15%)</th>
-                  <th>Total Amount</th>
-                  <th>Status</th>
-                  <th style={{ textAlign: "right" }}>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
+        <Card className="overflow-hidden">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Invoice ID</TableHead>
+                  <TableHead>{isProvider ? "Customer" : "Booking"}</TableHead>
+                  <TableHead>Issued Date</TableHead>
+                  <TableHead>{isProvider ? "Trade Amount (85%)" : "Base Rate"}</TableHead>
+                  <TableHead>Platform Fee (15%)</TableHead>
+                  <TableHead>Total Amount</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {filteredInvoices.map((inv) => (
-                  <tr key={inv.id}>
-                    <td>
-                      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                        <FileText size={16} color="var(--accent)" />
-                        <span
-                          style={{
-                            fontWeight: 700,
-                            fontFamily: "monospace",
-                            color: "var(--text-h)",
-                          }}
-                        >
+                  <TableRow key={inv.id}>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <FileText className="h-4 w-4 text-primary" />
+                        <span className="font-bold font-mono text-foreground text-xs">
                           INV-{inv.id.slice(0, 8).toUpperCase()}
                         </span>
                       </div>
-                    </td>
-                    <td>
+                    </TableCell>
+                    <TableCell>
                       <div>
                         {isProvider ? (
                           <>
-                            <div style={{ fontWeight: 600, color: "var(--text-h)" }}>
+                            <div className="font-semibold text-foreground text-sm">
                               {inv.customerName || "Customer"}
                             </div>
-                            <span style={{ color: "var(--text-muted)", fontSize: "0.8rem" }}>
+                            <span className="text-muted-foreground text-xs">
                               Booking #{inv.bookingId.slice(0, 8)}
                             </span>
                           </>
                         ) : (
-                          <span style={{ color: "var(--text-muted)", fontSize: "0.85rem" }}>
+                          <span className="text-muted-foreground text-xs font-mono">
                             #{inv.bookingId.slice(0, 8)}
                           </span>
                         )}
                       </div>
-                    </td>
-                    <td>{new Date(inv.issuedAt).toLocaleDateString()}</td>
-                    <td>
-                      <strong>LKR {inv.baseAmount.toLocaleString()}</strong>
-                    </td>
-                    <td style={{ color: "var(--text-muted)" }}>
+                    </TableCell>
+                    <TableCell className="text-xs">
+                      {new Date(inv.issuedAt).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell className="font-medium text-xs">
+                      LKR {inv.baseAmount.toLocaleString()}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground text-xs">
                       LKR {inv.platformFee.toLocaleString()}
-                    </td>
-                    <td style={{ fontWeight: 700, color: "var(--text-h)" }}>
+                    </TableCell>
+                    <TableCell className="font-bold text-foreground text-sm">
                       LKR {inv.totalAmount.toLocaleString()}
-                    </td>
-                    <td>
-                      <span className={`badge-status ${inv.status}`}>
-                        {inv.status === "Paid" && <CheckCircle2 size={12} />}
-                        {inv.status === "Issued" && <Clock size={12} />}
-                        {inv.status}
-                      </span>
-                    </td>
-                    <td style={{ textAlign: "right" }}>
-                      <div style={{ display: "flex", gap: "0.5rem", justifyContent: "flex-end" }}>
-                        <Link to={`/invoices/${inv.id}`} className="btn-secondary btn-sm">
-                          <Eye size={14} /> {inv.status === "Paid" ? "View Receipt" : "View"}
+                    </TableCell>
+                    <TableCell>{getStatusBadge(inv.status)}</TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex gap-2 justify-end">
+                        <Link
+                          to={`/invoices/${inv.id}`}
+                          className={buttonVariants({ variant: "outline", size: "sm" })}
+                        >
+                          <Eye className="h-3.5 w-3.5 mr-1" />{" "}
+                          {inv.status === "Paid" ? "View Receipt" : "View"}
                         </Link>
                         {!isProvider && inv.status === "Issued" && (
-                          <Link to={`/invoices/${inv.id}/pay`} className="btn-primary btn-sm">
-                            <CreditCard size={14} /> Pay Now
+                          <Link
+                            to={`/invoices/${inv.id}/pay`}
+                            className={buttonVariants({ variant: "default", size: "sm" })}
+                          >
+                            <CreditCard className="h-3.5 w-3.5 mr-1" /> Pay Now
                           </Link>
                         )}
                       </div>
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
-        </div>
+        </Card>
       )}
     </div>
   );
