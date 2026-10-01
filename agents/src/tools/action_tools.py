@@ -1,3 +1,16 @@
+"""
+Action tools module for Handee Marketplace AI subsystem.
+
+Contains:
+- Provider Search Tool (`search_providers`)
+- Service Listings Search Tool (`search_service_listings`)
+- Price Estimation Tool (`estimate_price`, `estimate_price_detailed`)
+
+For the dedicated Payments & Invoicing AI Agent with integrated tools,
+deterministic pricing validation rules, and payment handoff logic,
+see `src.tools.pricing_agent.PricingAndInvoicingAgent`.
+"""
+
 import logging
 from typing import Any, Dict, List, Optional
 import httpx
@@ -8,6 +21,7 @@ logger = logging.getLogger(__name__)
 
 # Baseline hourly and fixed service price averages (LKR)
 CATEGORY_BENCHMARKS: Dict[str, float] = {
+
     "Plumbing": 3500.0,
     "Electrical": 4000.0,
     "AC Repair": 5000.0,
