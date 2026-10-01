@@ -65,4 +65,26 @@ class BookingRepository {
 
     throw ApiException(statusCode: 500, message: 'Failed to update booking status');
   }
+
+  /// POST /bookings — creates a direct booking for a fixed-price service listing.
+  Future<BookingModel> createBookingFromListing({
+    required String serviceListingId,
+    required DateTime scheduledAt,
+    String? notes,
+  }) async {
+    final response = await apiClient.post(
+      ApiEndpoints.bookings,
+      body: {
+        'serviceListingId': serviceListingId,
+        'scheduledAt': scheduledAt.toUtc().toIso8601String(),
+        if (notes != null && notes.isNotEmpty) 'notes': notes,
+      },
+    );
+
+    if (response is Map<String, dynamic>) {
+      return BookingModel.fromJson(response);
+    }
+
+    throw ApiException(statusCode: 500, message: 'Failed to create booking from listing');
+  }
 }

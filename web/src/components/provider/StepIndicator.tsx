@@ -28,7 +28,7 @@ export default function StepIndicator({ steps, currentStep }: StepIndicatorProps
             } ${isCurrent ? "step-current text-primary font-bold" : "text-muted-foreground"}`}
           >
             <div
-              className={`step-circle h-9 w-9 flex items-center justify-center text-xs font-bold transition-all z-10 ${
+              className={`step-circle h-9 w-9 rounded-full flex items-center justify-center text-xs font-bold transition-all z-10 ${
                 isComplete
                   ? "bg-primary text-primary-foreground"
                   : isCurrent

@@ -16,32 +16,26 @@ For help getting started with Flutter development, view the
 [online documentation](https://docs.flutter.dev/), which offers tutorials,
 samples, guidance on mobile development, and a full API reference.
 
-## Backend Configuration
- 
-By default, the app connects directly to the live deployed Azure App Service:
-`https://sefproject-g3cmczhth2cygqgh.southeastasia-01.azurewebsites.net`
- 
+## Connecting to the Local Backend
+
+When running the App locally against the `.NET` backend, the API endpoint needs to know whether you are running on an emulator or a physical device.
+
+**1. Running on an Android Emulator (Default)**
+By default, the app connects to `10.0.2.2`, which is the emulator's bridge to your PC's localhost:
 ```bash
 flutter run
 ```
- 
-### Connecting to a Local Backend (Optional)
- 
-To point the app to your local `.NET` backend instead:
- 
-**1. Running on an Android Emulator**
-```bash
-flutter run --dart-define=USE_LOCAL=true
-```
-This connects to `http://10.0.2.2:5057`.
- 
+
 **2. Running on a Physical Device**
+If you are testing on a real device, pass the `DEVICE` flag. By default, it connects to your LAN IP (`192.168.1.2` or overridden via `DEVICE_IP`):
 ```bash
-flutter run --dart-define=USE_LOCAL=true --dart-define=DEVICE=true
+# Using default local Wi-Fi IP:
+flutter run --dart-define=DEVICE=true
+
+# Or explicitly specifying your PC's IP address:
+flutter run --dart-define=DEVICE=true --dart-define=DEVICE_IP=192.168.1.2
 ```
-This connects to your LAN IP (`http://192.168.1.3:5057`).
- 
-**3. Custom API URL**
-```bash
-flutter run --dart-define=API_URL=https://custom-domain.com
-```
+
+> **Tip**: If connected via USB debugging, you can also run:
+> `adb reverse tcp:5057 tcp:5057`
+> The script `run-services.ps1` sets this up and automatically detects your LAN IP.

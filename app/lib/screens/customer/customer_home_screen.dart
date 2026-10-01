@@ -530,7 +530,7 @@ class _CustomerHomeTab extends StatelessWidget {
                       clipBehavior: Clip.none,
                       scrollDirection: Axis.horizontal,
                       itemCount: dirProvider.topProviders.length > 5 ? 5 : dirProvider.topProviders.length,
-                      separatorBuilder: (_, __) => const SizedBox(width: 16),
+                      separatorBuilder: (_, _) => const SizedBox(width: 16),
                       itemBuilder: (context, index) {
                          final provider = dirProvider.topProviders[index];
                          return SizedBox(
@@ -605,7 +605,7 @@ class _CustomerHomeTab extends StatelessWidget {
                     child: ListView.separated(
                       scrollDirection: Axis.horizontal,
                       itemCount: dirProvider.popularServices.length > 5 ? 5 : dirProvider.popularServices.length,
-                      separatorBuilder: (_, __) => const SizedBox(width: 16),
+                      separatorBuilder: (_, _) => const SizedBox(width: 16),
                       itemBuilder: (context, index) {
                          final listing = dirProvider.popularServices[index];
                          return SizedBox(

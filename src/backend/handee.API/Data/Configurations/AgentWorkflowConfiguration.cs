@@ -41,6 +41,11 @@ public class AgentWorkflowConfiguration : IEntityTypeConfiguration<AgentWorkflow
             .HasForeignKey(w => w.SelectedProviderId)
             .OnDelete(DeleteBehavior.SetNull);
 
+        builder.HasOne(w => w.SelectedServiceListing)
+            .WithMany()
+            .HasForeignKey(w => w.SelectedServiceListingId)
+            .OnDelete(DeleteBehavior.SetNull);
+
         builder.HasMany(w => w.StepLogs)
             .WithOne(s => s.AgentWorkflow)
             .HasForeignKey(s => s.AgentWorkflowId)

@@ -5,12 +5,11 @@ import {
   ArrowLeft,
   MapPin,
   Briefcase,
-  Calendar,
   ShieldCheck,
   CheckCircle,
   User,
   Star,
-  Loader2,
+  Smartphone,
 } from "lucide-react";
 import { providerApi } from "../../api/providers";
 import { serviceListingsApi } from "../../api/serviceListings";
@@ -20,10 +19,10 @@ import ServiceCategoryTag from "../../components/provider/ServiceCategoryTag";
 import ServiceListingCard from "../../components/public/ServiceListingCard";
 import BookingModal from "../../components/public/BookingModal";
 import EmptyState from "../../components/provider/EmptyState";
-import { getFullMediaUrl } from "../../lib/api";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { buttonVariants } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 export default function PublicProviderProfile() {
   const { providerId } = useParams<{ providerId: string }>();
@@ -55,20 +54,26 @@ export default function PublicProviderProfile() {
   });
 
   if (isLoading) {
-    return <div className="p-12 text-center text-muted-foreground">Loading provider...</div>;
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-sm font-medium text-muted-foreground animate-pulse">
+          Loading provider...
+        </div>
+      </div>
+    );
   }
 
   if (isError || !profile) {
     return (
-      <div className="p-12 text-center">
+      <div className="container max-w-lg mx-auto py-16 px-4">
         <EmptyState
-          icon={<ShieldCheck className="w-8 h-8" />}
+          icon={<ShieldCheck className="h-10 w-10 text-muted-foreground" />}
           title="Provider Not Found"
           description="This provider profile doesn't exist or is currently unavailable."
           action={
-            <Link to="/" className={buttonVariants()}>
-              Return Home
-            </Link>
+            <Button asChild className="mt-4">
+              <Link to="/">Return Home</Link>
+            </Button>
           }
         />
       </div>
@@ -77,101 +82,118 @@ export default function PublicProviderProfile() {
 
   return (
     <>
-      <div className="max-w-6xl mx-auto px-4 py-8 space-y-6">
+      <div className="container max-w-6xl mx-auto py-8 px-4 space-y-8 animate-fade-up">
         {/* Nav */}
         <nav>
           <Link
-            to="/providers"
+            to="/"
             className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
           >
-            <ArrowLeft className="w-4 h-4" /> Back to Search
+            <ArrowLeft className="h-4 w-4" /> Back to Search
           </Link>
         </nav>
 
         {/* Hero */}
-        <Card className="rounded-none border-border">
-          <CardContent className="p-6 sm:p-8 flex flex-col sm:flex-row items-center sm:items-start gap-6">
+        <div className="rounded-xl border border-border bg-card p-6 md:p-8 shadow-sm">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
             <div className="relative shrink-0">
-              {profile.profilePictureUrl ? (
-                <img
-                  src={getFullMediaUrl(profile.profilePictureUrl)}
-                  alt={profile.fullName}
-                  className="w-24 h-24 sm:w-28 sm:h-28 object-cover border border-border"
-                />
-              ) : (
-                <div className="w-24 h-24 sm:w-28 sm:h-28 bg-muted flex items-center justify-center text-3xl font-bold text-muted-foreground border border-border">
+              <Avatar className="h-24 w-24 border-2 border-border shadow-xs">
+                {profile.profilePictureUrl ? (
+                  <AvatarImage
+                    src={
+                      profile.profilePictureUrl.startsWith("http")
+                        ? profile.profilePictureUrl
+                        : `http://localhost:5057${profile.profilePictureUrl}`
+                    }
+                    alt={profile.fullName}
+                  />
+                ) : null}
+                <AvatarFallback className="text-2xl font-bold bg-primary/10 text-primary">
                   {profile.fullName.charAt(0).toUpperCase()}
-                </div>
-              )}
+                </AvatarFallback>
+              </Avatar>
 
               {profile.verificationStatus === "Verified" && (
                 <div
-                  className="absolute -bottom-1 -right-1 bg-background p-1 shadow-xs"
+                  className="absolute -bottom-1 -right-1 bg-emerald-500 text-white rounded-full p-1 shadow-sm ring-2 ring-background"
                   title="Verified Provider"
                 >
-                  <CheckCircle className="w-5 h-5 text-emerald-600 fill-emerald-100" />
+                  <CheckCircle className="h-4 w-4" />
                 </div>
               )}
             </div>
 
-            <div className="space-y-2 text-center sm:text-left flex-1">
-              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
-                {profile.fullName}
-              </h1>
-              <p className="text-base text-muted-foreground">{profile.headline}</p>
-
-              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-4 pt-2">
+            <div className="space-y-2 flex-1">
+              <div className="flex items-center gap-3 flex-wrap">
+                <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">
+                  {profile.fullName}
+                </h1>
+                {profile.verificationStatus === "Verified" && (
+                  <Badge
+                    variant="secondary"
+                    className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30 font-medium"
+                  >
+                    Verified Pro
+                  </Badge>
+                )}
+              </div>
+              {profile.headline && (
+                <p className="text-base text-muted-foreground font-medium">{profile.headline}</p>
+              )}
+              <div className="flex flex-wrap items-center gap-4 pt-1">
                 <StarRating
                   rating={profile.ratingAggregate}
                   count={profile.totalReviewCount}
                   showValue={true}
                 />
-
-                <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                  <MapPin className="w-4 h-4 text-primary" />
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
+                  <MapPin className="h-3.5 w-3.5 text-primary shrink-0" />
                   <span>{profile.serviceAreaDisplayName || "Flexible Area"}</span>
                 </div>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        {/* Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-6">
+        {/* Main Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          {/* Main Column */}
+          <div className="lg:col-span-8 space-y-8">
             {/* About Section */}
-            <Card className="rounded-none border-border">
+            <Card className="shadow-sm">
               <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <User className="w-5 h-5 text-primary" /> About
+                <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                  <User className="h-5 w-5 text-primary" /> About
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4 p-4 bg-muted/40 border border-border">
-                  <div>
-                    <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="rounded-lg bg-muted/40 p-4 border border-border/50 space-y-1">
+                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                       Experience
-                    </h4>
-                    <p className="text-base font-semibold text-foreground mt-0.5">
+                    </span>
+                    <p className="text-lg font-semibold text-foreground">
                       {profile.yearsOfExperience} Years
                     </p>
                   </div>
-                  <div>
-                    <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  <div className="rounded-lg bg-muted/40 p-4 border border-border/50 space-y-1">
+                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                       Languages
-                    </h4>
-                    <p className="text-base font-semibold text-foreground mt-0.5">
+                    </span>
+                    <p className="text-lg font-semibold text-foreground">
                       {profile.languages.length > 0 ? profile.languages.join(", ") : "English"}
                     </p>
                   </div>
                 </div>
 
                 {profile.bio && (
-                  <p className="text-sm text-muted-foreground leading-relaxed">{profile.bio}</p>
+                  <p className="text-sm md:text-base text-foreground leading-relaxed">
+                    {profile.bio}
+                  </p>
                 )}
                 {profile.description && (
-                  <div className="pt-3 border-t border-border">
-                    <p className="text-sm text-muted-foreground leading-relaxed">
+                  <div className="pt-4 border-t border-border">
+                    <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
                       {profile.description}
                     </p>
                   </div>
@@ -180,100 +202,107 @@ export default function PublicProviderProfile() {
             </Card>
 
             {/* Skills & Services Section */}
-            <Card className="rounded-none border-border">
+            <Card className="shadow-sm">
               <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Briefcase className="w-5 h-5 text-primary" /> Skills & Services
+                <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                  <Briefcase className="h-5 w-5 text-primary" /> Skills & Services
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
                 {profile.serviceCategories.length > 0 && (
-                  <div className="flex flex-wrap gap-2">
-                    {profile.serviceCategories.map((cat) => (
-                      <ServiceCategoryTag key={cat.id} category={cat} />
-                    ))}
+                  <div className="space-y-2">
+                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider block">
+                      Categories
+                    </span>
+                    <div className="flex flex-wrap gap-2">
+                      {profile.serviceCategories.map((cat) => (
+                        <ServiceCategoryTag key={cat.id} category={cat} />
+                      ))}
+                    </div>
                   </div>
                 )}
 
                 {profile.servicesOffered.length > 0 && (
-                  <div className="space-y-2">
+                  <div className="space-y-2 pt-2 border-t border-border">
                     <h4 className="text-sm font-semibold text-foreground">
                       Specific Services Offered
                     </h4>
-                    <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-muted-foreground list-disc list-inside">
+                    <div className="flex flex-wrap gap-2">
                       {profile.servicesOffered.map((srv, i) => (
-                        <li key={i}>{srv}</li>
+                        <Badge key={i} variant="secondary" className="px-2.5 py-1 text-xs">
+                          {srv}
+                        </Badge>
                       ))}
-                    </ul>
+                    </div>
                   </div>
                 )}
 
-                <div className="pt-4 border-t border-border space-y-4">
+                {/* Fixed-Price Services */}
+                <div id="fixed-price-services" className="pt-4 border-t border-border space-y-4">
                   <h4 className="text-base font-semibold text-foreground">Fixed-Price Services</h4>
                   {listingsLoading ? (
-                    <div className="flex items-center justify-center p-8 text-muted-foreground gap-2">
-                      <Loader2 className="w-4 h-4 animate-spin text-primary" />
-                      <p className="text-sm">Loading service catalogue...</p>
+                    <div className="py-8 text-center text-sm text-muted-foreground">
+                      Loading service catalogue...
                     </div>
                   ) : listingsData && listingsData.filter((l) => l.isActive).length > 0 ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {listingsData
                         .filter((l) => l.isActive)
                         .map((listing) => (
-                          <div key={listing.id}>
-                            <ServiceListingCard
-                              listing={listing}
-                              onBookClick={(lst) => setSelectedBookingListing(lst)}
-                            />
-                          </div>
+                          <ServiceListingCard
+                            key={listing.id}
+                            listing={listing}
+                            onBookClick={(lst) => setSelectedBookingListing(lst)}
+                          />
                         ))}
                     </div>
                   ) : (
-                    <div className="p-8 border border-dashed border-border text-center text-sm text-muted-foreground">
-                      This provider hasn't listed any fixed-price services yet.
+                    <div className="p-6 border border-dashed rounded-lg text-center bg-muted/20">
+                      <p className="text-sm text-muted-foreground">
+                        This provider hasn't listed any fixed-price services yet.
+                      </p>
                     </div>
                   )}
                 </div>
               </CardContent>
             </Card>
 
-            {/* Reviews Section */}
-            <Card className="rounded-none border-border">
+            {/* Customer Reviews Section */}
+            <Card className="shadow-sm">
               <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Star className="w-5 h-5 text-amber-500" /> Customer Reviews
+                <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                  <Star className="h-5 w-5 text-amber-500 fill-amber-500" /> Customer Reviews
                 </CardTitle>
+                <CardDescription>Verified feedback from clients on completed jobs.</CardDescription>
               </CardHeader>
               <CardContent>
                 {reviewsLoading ? (
-                  <div className="flex items-center justify-center p-8 text-muted-foreground gap-2">
-                    <Loader2 className="w-4 h-4 animate-spin text-primary" />
-                    <p className="text-sm">Loading reviews...</p>
+                  <div className="py-8 text-center text-sm text-muted-foreground">
+                    Loading reviews...
                   </div>
                 ) : !reviewsData || reviewsData.items.length === 0 ? (
                   <EmptyState
-                    icon={<Star className="w-6 h-6" />}
+                    icon={<Star className="h-8 w-8 text-amber-500" />}
                     title="No Reviews Yet"
                     description={`${profile.fullName} is new or hasn't received any reviews yet.`}
                   />
                 ) : (
-                  <div className="space-y-4 divide-y divide-border">
+                  <div className="divide-y divide-border">
                     {reviewsData.items.map((review) => (
-                      <div key={review.id} className="pt-4 first:pt-0 space-y-2">
-                        <div className="flex items-center justify-between">
+                      <div key={review.id} className="py-4 first:pt-0 last:pb-0 space-y-2">
+                        <div className="flex items-center justify-between gap-4">
                           <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 bg-muted flex items-center justify-center font-semibold text-xs border border-border">
+                            <Avatar className="h-9 w-9 border border-border">
                               {review.customerProfilePictureUrl ? (
-                                <img
-                                  src={getFullMediaUrl(review.customerProfilePictureUrl)}
+                                <AvatarImage
+                                  src={`http://localhost:5057${review.customerProfilePictureUrl}`}
                                   alt={review.customerName}
-                                  loading="lazy"
-                                  className="w-full h-full object-cover"
                                 />
-                              ) : (
-                                review.customerName.charAt(0)
-                              )}
-                            </div>
+                              ) : null}
+                              <AvatarFallback className="text-xs font-semibold bg-muted text-foreground">
+                                {review.customerName.charAt(0)}
+                              </AvatarFallback>
+                            </Avatar>
                             <div>
                               <p className="text-sm font-semibold text-foreground">
                                 {review.customerName}
@@ -286,7 +315,7 @@ export default function PublicProviderProfile() {
                           <StarRating rating={review.rating} size={14} />
                         </div>
                         {review.comment && (
-                          <p className="text-sm text-muted-foreground leading-relaxed">
+                          <p className="text-sm text-muted-foreground leading-relaxed pt-1">
                             {review.comment}
                           </p>
                         )}
@@ -299,20 +328,35 @@ export default function PublicProviderProfile() {
           </div>
 
           {/* Sidebar */}
-          <div className="space-y-6">
-            <Card className="rounded-none border-border sticky top-6">
-              <CardContent className="p-6 space-y-4">
+          <div className="lg:col-span-4 space-y-6 lg:sticky lg:top-24">
+            <Card className="shadow-sm border-primary/20 bg-card">
+              <CardContent className="p-6 text-center space-y-4">
+                <div className="h-12 w-12 rounded-full bg-primary/10 text-primary flex items-center justify-center mx-auto">
+                  <Smartphone className="h-6 w-6" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-foreground">Book on Mobile App</h3>
+                  <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
+                    Customer bookings and predefined 1-hour time slots are scheduled exclusively on
+                    the Handee Mobile App.
+                  </p>
+                </div>
                 <Button
-                  className="w-full gap-2 justify-center py-6 text-base"
-                  disabled={!profile.isAvailableForWork}
-                  onClick={() => alert("Booking flow not implemented.")}
+                  className="w-full"
+                  onClick={() => {
+                    document
+                      .getElementById("fixed-price-services")
+                      ?.scrollIntoView({ behavior: "smooth" });
+                  }}
                 >
-                  <Calendar className="w-5 h-5" />
-                  {profile.isAvailableForWork ? "Request Service" : "Currently Unavailable"}
+                  Browse Fixed Services
                 </Button>
 
                 {!profile.isAvailableForWork && profile.availabilityNote && (
-                  <p className="text-xs text-destructive text-center">{profile.availabilityNote}</p>
+                  <div className="p-3 rounded-md bg-amber-500/10 text-amber-700 dark:text-amber-400 text-xs text-left border border-amber-500/20">
+                    <strong className="font-semibold block mb-0.5">Availability Note:</strong>
+                    {profile.availabilityNote}
+                  </div>
                 )}
               </CardContent>
             </Card>

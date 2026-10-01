@@ -15,13 +15,14 @@ public class AgentWorkflowService : IAgentWorkflowService
     private readonly IInvoiceService _invoiceService;
     private readonly ILogger<AgentWorkflowService> _logger;
     private readonly IBookingNotificationService? _notificationService;
+    private readonly IProviderAvailabilityService? _availabilityService;
 
     public AgentWorkflowService(
         AppDbContext db,
         IHttpClientFactory httpClientFactory,
         IInvoiceService invoiceService,
         ILogger<AgentWorkflowService> logger)
-        : this(db, httpClientFactory, invoiceService, logger, null)
+        : this(db, httpClientFactory, invoiceService, logger, null, null)
     {
     }
 
@@ -31,12 +32,24 @@ public class AgentWorkflowService : IAgentWorkflowService
         IInvoiceService invoiceService,
         ILogger<AgentWorkflowService> logger,
         IBookingNotificationService? notificationService)
+        : this(db, httpClientFactory, invoiceService, logger, notificationService, null)
+    {
+    }
+
+    public AgentWorkflowService(
+        AppDbContext db,
+        IHttpClientFactory httpClientFactory,
+        IInvoiceService invoiceService,
+        ILogger<AgentWorkflowService> logger,
+        IBookingNotificationService? notificationService,
+        IProviderAvailabilityService? availabilityService)
     {
         _db = db;
         _httpClientFactory = httpClientFactory;
         _invoiceService = invoiceService;
         _logger = logger;
         _notificationService = notificationService;
+        _availabilityService = availabilityService;
     }
 
 
@@ -77,25 +90,67 @@ public class AgentWorkflowService : IAgentWorkflowService
             workflow = CreateFallbackWorkflow(jobRequest);
         }
 
+        ServiceListing? serviceListing = null;
+        if (workflow.SelectedServiceListingId.HasValue)
+        {
+            serviceListing = await _db.ServiceListings.FirstOrDefaultAsync(l => l.Id == workflow.SelectedServiceListingId.Value, ct);
+            if (serviceListing != null)
+            {
+                workflow.SelectedProviderId = serviceListing.ProviderId;
+                workflow.EstimatedPrice = serviceListing.FixedPrice;
+            }
+        }
+
         // Try to link SelectedProvider to an existing provider in database
         if (workflow.SelectedProviderId == null || !await _db.Users.AnyAsync(u => u.Id == workflow.SelectedProviderId, ct))
         {
-            // Find a verified provider in the system
-            var existingProvider = await _db.ProviderProfiles
-                .Include(p => p.User)
-                .Where(p => p.VerificationStatus == VerificationStatus.Verified)
-                .Select(p => p.UserId)
+            // Find an active service listing in system matching category or any
+            var listing = await _db.ServiceListings
+                .Include(l => l.Provider)
+                .Where(l => l.IsActive && (jobRequest.ServiceCategoryId == Guid.Empty || l.ServiceCategoryId == jobRequest.ServiceCategoryId))
                 .FirstOrDefaultAsync(ct);
 
-            if (existingProvider != Guid.Empty)
+            if (listing != null)
             {
-                workflow.SelectedProviderId = existingProvider;
+                workflow.SelectedProviderId = listing.ProviderId;
+                workflow.SelectedServiceListingId = listing.Id;
+                workflow.EstimatedPrice = listing.FixedPrice;
+                serviceListing = listing;
             }
             else
             {
-                // Fallback to any user with Provider role or customer
-                var anyProvider = await _db.Users.Select(u => u.Id).FirstOrDefaultAsync(ct);
-                if (anyProvider != Guid.Empty) workflow.SelectedProviderId = anyProvider;
+                // Find a verified provider in the system
+                var existingProvider = await _db.ProviderProfiles
+                    .Include(p => p.User)
+                    .Where(p => p.VerificationStatus == VerificationStatus.Verified)
+                    .Select(p => p.UserId)
+                    .FirstOrDefaultAsync(ct);
+
+                if (existingProvider != Guid.Empty)
+                {
+                    workflow.SelectedProviderId = existingProvider;
+                }
+                else
+                {
+                    // Fallback to any user with Provider role or customer
+                    var anyProvider = await _db.Users.Select(u => u.Id).FirstOrDefaultAsync(ct);
+                    if (anyProvider != Guid.Empty) workflow.SelectedProviderId = anyProvider;
+                }
+            }
+        }
+
+        // If provider is set but no listing is selected yet, find provider's active listing
+        if (!workflow.SelectedServiceListingId.HasValue && workflow.SelectedProviderId.HasValue)
+        {
+            serviceListing = await _db.ServiceListings
+                .Where(l => l.ProviderId == workflow.SelectedProviderId.Value && l.IsActive)
+                .OrderByDescending(l => jobRequest.ServiceCategoryId != Guid.Empty && l.ServiceCategoryId == jobRequest.ServiceCategoryId)
+                .FirstOrDefaultAsync(ct);
+
+            if (serviceListing != null)
+            {
+                workflow.SelectedServiceListingId = serviceListing.Id;
+                workflow.EstimatedPrice = serviceListing.FixedPrice;
             }
         }
 
@@ -109,13 +164,17 @@ public class AgentWorkflowService : IAgentWorkflowService
             // Automatically create Booking offer for the selected provider
             if (workflow.SelectedProviderId.HasValue)
             {
+                var durationHours = serviceListing?.DurationHours ?? 1;
+                var scheduledAt = await FindNextAvailableSlotAsync(workflow.SelectedProviderId.Value, durationHours, ct);
+
                 var booking = new Booking
                 {
                     JobRequestId = jobRequest.Id,
+                    ServiceListingId = workflow.SelectedServiceListingId,
                     CustomerId = jobRequest.CustomerId,
                     ProviderId = workflow.SelectedProviderId.Value,
                     Status = BookingStatus.Requested,
-                    ScheduledAt = DateTimeOffset.UtcNow.AddDays(1)
+                    ScheduledAt = scheduledAt
                 };
                 _db.Bookings.Add(booking);
                 await _db.SaveChangesAsync(ct);
@@ -211,6 +270,7 @@ public class AgentWorkflowService : IAgentWorkflowService
     {
         var workflow = await _db.AgentWorkflows
             .Include(w => w.SelectedProvider)
+            .Include(w => w.SelectedServiceListing)
             .Include(w => w.StepLogs.OrderBy(s => s.StepNumber))
             .FirstOrDefaultAsync(w => w.Id == workflowId, ct);
 
@@ -221,6 +281,7 @@ public class AgentWorkflowService : IAgentWorkflowService
     {
         var workflow = await _db.AgentWorkflows
             .Include(w => w.SelectedProvider)
+            .Include(w => w.SelectedServiceListing)
             .Include(w => w.StepLogs.OrderBy(s => s.StepNumber))
             .FirstOrDefaultAsync(w => w.JobRequestId == jobRequestId, ct);
 
@@ -231,6 +292,7 @@ public class AgentWorkflowService : IAgentWorkflowService
     {
         var query = _db.AgentWorkflows
             .Include(w => w.SelectedProvider)
+            .Include(w => w.SelectedServiceListing)
             .Include(w => w.StepLogs.OrderBy(s => s.StepNumber))
             .AsQueryable();
 
@@ -259,6 +321,7 @@ public class AgentWorkflowService : IAgentWorkflowService
         var workflow = await _db.AgentWorkflows
             .Include(w => w.JobRequest)
             .Include(w => w.SelectedProvider)
+            .Include(w => w.SelectedServiceListing)
             .Include(w => w.StepLogs.OrderBy(s => s.StepNumber))
             .FirstOrDefaultAsync(w => w.Id == workflowId, ct);
 
@@ -281,16 +344,47 @@ public class AgentWorkflowService : IAgentWorkflowService
             var isNewDispatch = !wasAlreadyApproved && booking == null;
             if (booking == null && workflow.SelectedProviderId.HasValue)
             {
+                int durationHours = 1;
+                if (workflow.SelectedServiceListingId.HasValue)
+                {
+                    var listing = await _db.ServiceListings.FirstOrDefaultAsync(l => l.Id == workflow.SelectedServiceListingId.Value, ct);
+                    if (listing != null)
+                    {
+                        durationHours = listing.DurationHours;
+                        workflow.EstimatedPrice = listing.FixedPrice;
+                    }
+                }
+                else
+                {
+                    var fallbackListing = await _db.ServiceListings
+                        .Where(l => l.ProviderId == workflow.SelectedProviderId.Value && l.IsActive)
+                        .OrderByDescending(l => workflow.JobRequest != null && workflow.JobRequest.ServiceCategoryId != Guid.Empty && l.ServiceCategoryId == workflow.JobRequest.ServiceCategoryId)
+                        .FirstOrDefaultAsync(ct);
+                    if (fallbackListing != null)
+                    {
+                        workflow.SelectedServiceListingId = fallbackListing.Id;
+                        workflow.EstimatedPrice = fallbackListing.FixedPrice;
+                        durationHours = fallbackListing.DurationHours;
+                    }
+                }
+
+                var scheduledAt = await FindNextAvailableSlotAsync(workflow.SelectedProviderId.Value, durationHours, ct);
+
                 booking = new Booking
                 {
                     JobRequestId = workflow.JobRequestId,
+                    ServiceListingId = workflow.SelectedServiceListingId,
                     CustomerId = workflow.JobRequest.CustomerId,
                     ProviderId = workflow.SelectedProviderId.Value,
                     Status = BookingStatus.Requested,
-                    ScheduledAt = DateTimeOffset.UtcNow.AddDays(1)
+                    ScheduledAt = scheduledAt
                 };
                 _db.Bookings.Add(booking);
                 await _db.SaveChangesAsync(ct);
+            }
+            else if (booking != null && !booking.ServiceListingId.HasValue && workflow.SelectedServiceListingId.HasValue)
+            {
+                booking.ServiceListingId = workflow.SelectedServiceListingId.Value;
             }
 
             // Approval-to-Payment Handoff: Generate or update Quote/Invoice for Admin-approved booking
@@ -359,6 +453,31 @@ public class AgentWorkflowService : IAgentWorkflowService
                 selectedProviderId = parsedId;
         }
 
+        Guid? selectedServiceListingId = null;
+        if (json.TryGetProperty("selected_service_listing_id", out var sslId) && sslId.ValueKind == JsonValueKind.String)
+        {
+            if (Guid.TryParse(sslId.GetString(), out var parsedSslId))
+                selectedServiceListingId = parsedSslId;
+        }
+
+        if (!selectedServiceListingId.HasValue && json.TryGetProperty("selected_service_listing", out var slObj) && slObj.ValueKind == JsonValueKind.Object)
+        {
+            if (slObj.TryGetProperty("id", out var slId) && slId.ValueKind == JsonValueKind.String)
+            {
+                if (Guid.TryParse(slId.GetString(), out var parsedSlId))
+                    selectedServiceListingId = parsedSlId;
+            }
+        }
+
+        if (!selectedServiceListingId.HasValue && json.TryGetProperty("final_result", out var frElem) && frElem.ValueKind == JsonValueKind.Object)
+        {
+            if (frElem.TryGetProperty("selected_service_listing_id", out var frSslId) && frSslId.ValueKind == JsonValueKind.String)
+            {
+                if (Guid.TryParse(frSslId.GetString(), out var parsedFrSslId))
+                    selectedServiceListingId = parsedFrSslId;
+            }
+        }
+
         var planList = new List<string>();
         if (json.TryGetProperty("plan", out var planElem) && planElem.ValueKind == JsonValueKind.Array)
         {
@@ -376,6 +495,7 @@ public class AgentWorkflowService : IAgentWorkflowService
             ApprovalStatus = AgentWorkflow.ParseApprovalStatus(approvalStatus),
             EstimatedPrice = price,
             SelectedProviderId = selectedProviderId,
+            SelectedServiceListingId = selectedServiceListingId,
             FinalResultJson = json.ToString()
         };
 
@@ -481,6 +601,38 @@ public class AgentWorkflowService : IAgentWorkflowService
             s.OutputData,
             s.DurationMs,
             s.Timestamp
-        )).ToList()
+        )).ToList(),
+        w.SelectedServiceListingId
     );
+
+    private async Task<DateTimeOffset> FindNextAvailableSlotAsync(Guid providerId, int durationHours, CancellationToken ct)
+    {
+        if (_availabilityService != null)
+        {
+            try
+            {
+                for (int dayOffset = 1; dayOffset <= 7; dayOffset++)
+                {
+                    var targetDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(dayOffset));
+                    var slots = await _availabilityService.GetPredefinedSlotsForDateAsync(providerId, targetDate, durationHours, ct);
+                    var firstAvailable = slots.Slots.FirstOrDefault(s => s.IsAvailable);
+                    if (firstAvailable != null)
+                    {
+                        return firstAvailable.StartTime;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to query predefined slots for provider {ProviderId}. Falling back to operating schedule.", providerId);
+            }
+        }
+
+        // Fallback: tomorrow at provider's operating schedule start time (or 09:00 UTC), top-of-hour
+        var tomorrow = DateTime.UtcNow.Date.AddDays(1);
+        var sched = await _db.ProviderOperatingSchedules
+            .FirstOrDefaultAsync(s => s.ProviderId == providerId && s.DayOfWeek == tomorrow.DayOfWeek && s.IsActive, ct);
+        var hour = sched != null ? sched.StartTime.Hours : 9;
+        return new DateTimeOffset(tomorrow.Year, tomorrow.Month, tomorrow.Day, hour, 0, 0, TimeSpan.Zero);
+    }
 }

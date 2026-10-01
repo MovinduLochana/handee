@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/colors.dart';
 import '../../data/models/booking_model.dart';
 import '../../providers/booking_provider.dart';
-import '../../widgets/status_badge.dart';
+import '../../widgets/booking_card.dart';
 import '../shared/booking_detail_screen.dart';
 
 class CustomerBookingsScreen extends StatefulWidget {
@@ -81,17 +80,14 @@ class _CustomerBookingsScreenState extends State<CustomerBookingsScreen> with Si
       );
     }
 
-    final currencyFormat = NumberFormat('#,##0', 'en_US');
-
     return ListView.separated(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       itemCount: items.length,
       separatorBuilder: (context, index) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
         final booking = items[index];
-        final formattedDate = DateFormat('dd MMM yyyy, hh:mm a').format(booking.createdAt);
-
-        return InkWell(
+        return BookingCard(
+          booking: booking,
           onTap: () {
             context.read<BookingProvider>().selectBooking(booking.id);
             Navigator.push(
@@ -101,76 +97,6 @@ class _CustomerBookingsScreenState extends State<CustomerBookingsScreen> with Si
               ),
             );
           },
-          borderRadius: BorderRadius.circular(16),
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.borderLight),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.02),
-                  blurRadius: 6,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      booking.category ?? booking.jobRequest?.categoryName ?? 'General Service',
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-                    ),
-                    StatusBadge(status: booking.status),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  booking.description ?? booking.jobRequest?.description ?? 'Routine service booking',
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
-                ),
-                const SizedBox(height: 12),
-                const Divider(height: 1, color: AppColors.borderLight),
-                const SizedBox(height: 10),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        const Icon(Icons.person_pin, size: 16, color: AppColors.primary),
-                        const SizedBox(width: 4),
-                        Text(
-                          booking.providerName ?? booking.provider?.fullName ?? 'Assigned Tradesperson',
-                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-                        ),
-                      ],
-                    ),
-                    if (booking.price != null)
-                      Text(
-                        'Rs. ${currencyFormat.format(booking.price)}',
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.primary,
-                        ),
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  formattedDate,
-                  style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
-                ),
-              ],
-            ),
-          ),
         );
       },
     );
