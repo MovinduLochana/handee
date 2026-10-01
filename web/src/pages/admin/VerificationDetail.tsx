@@ -24,7 +24,21 @@ import type {
 } from "../../api/types";
 import StatusBadge from "../../components/provider/StatusBadge";
 import DocumentCard from "../../components/provider/DocumentCard";
-import { extractApiError } from "../../lib/api";
+import { extractApiError, getFullMediaUrl } from "../../lib/api";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 export default function VerificationDetail() {
   const { id } = useParams<{ id: string }>();
@@ -128,138 +142,137 @@ export default function VerificationDetail() {
   const isInReview = profile.verificationStatus === "InReview";
 
   return (
-    <div className="admin-page-container animate-fade-up">
+    <div className="max-w-7xl mx-auto p-6 space-y-6">
       <Link
         to="/admin/verifications"
-        className="public-back-btn"
-        style={{ marginBottom: "1.5rem" }}
+        className="inline-flex items-center gap-2 text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors"
       >
-        <ArrowLeft size={16} /> Back to Queue
+        <ArrowLeft className="h-4 w-4" /> Back to Queue
       </Link>
 
-      <div className="admin-detail-layout">
-        {/* ── Left Sidebar ── */}
-        <aside className="detail-sidebar">
-          <div className="provider-summary-card">
-            {profile.profilePictureUrl ? (
-              <img
-                src={`http://localhost:5057${profile.profilePictureUrl}`}
-                alt={profile.fullName}
-                className="provider-summary-avatar"
-              />
-            ) : (
-              <div
-                className="provider-summary-avatar"
-                style={{
-                  background: "var(--accent)",
-                  color: "#fff",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: "2.5rem",
-                  fontWeight: 700,
-                }}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        {/* ── Left Sidebar: Profile Summary & Actions ── */}
+        <aside className="lg:col-span-4 space-y-6 lg:sticky lg:top-6">
+          <Card className="text-center">
+            <CardContent className="p-6 space-y-4">
+              {profile.profilePictureUrl ? (
+                <img
+                  src={getFullMediaUrl(profile.profilePictureUrl)}
+                  alt={profile.fullName}
+                  className="w-24 h-24 rounded-full object-cover mx-auto ring-2 ring-border shadow-sm"
+                />
+              ) : (
+                <div className="w-24 h-24 rounded-full bg-primary/10 text-primary border border-primary/20 flex items-center justify-center text-3xl font-bold mx-auto ring-2 ring-border shadow-sm">
+                  {profile.fullName.charAt(0)}
+                </div>
+              )}
+
+              <div className="space-y-1">
+                <h1 className="text-xl font-bold text-foreground tracking-tight">
+                  {profile.fullName}
+                </h1>
+                <p className="text-xs text-muted-foreground">{profile.headline || "No headline set"}</p>
+              </div>
+
+              <div className="pt-1 flex justify-center">
+                <StatusBadge status={profile.verificationStatus} size="lg" />
+              </div>
+
+              <div className="border-t border-border pt-4 text-left space-y-3 text-xs">
+                <div className="flex items-start gap-3">
+                  <Briefcase className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+                  <div>
+                    <h5 className="font-semibold text-muted-foreground uppercase text-[10px] tracking-wider">
+                      Experience
+                    </h5>
+                    <p className="font-medium text-foreground">{profile.yearsOfExperience} Years</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <MapPin className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+                  <div>
+                    <h5 className="font-semibold text-muted-foreground uppercase text-[10px] tracking-wider">
+                      Location
+                    </h5>
+                    <p className="font-medium text-foreground">
+                      {profile.serviceAreaDisplayName || "Unknown"}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <User className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+                  <div>
+                    <h5 className="font-semibold text-muted-foreground uppercase text-[10px] tracking-wider">
+                      Member Since
+                    </h5>
+                    <p className="font-medium text-foreground">
+                      {new Date(profile.createdAt).toLocaleDateString()}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-3 border-b border-border">
+              <CardTitle className="text-base font-bold text-foreground">
+                Verification Actions
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6 space-y-3">
+              {errorMessage && (
+                <Alert variant="destructive">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription>{errorMessage}</AlertDescription>
+                </Alert>
+              )}
+
+              <Button
+                variant="outline"
+                className="w-full justify-center gap-2 font-semibold"
+                disabled={!isPending || statusMutation.isPending}
+                onClick={() => statusMutation.mutate({ newStatus: "InReview" })}
               >
-                {profile.fullName.charAt(0)}
-              </div>
-            )}
+                <Search className="h-4 w-4" />
+                {statusMutation.isPending ? "Processing..." : "Start Review"}
+              </Button>
 
-            <h1 className="provider-summary-name">{profile.fullName}</h1>
-            <p className="provider-summary-headline">{profile.headline || "No headline set"}</p>
-
-            <StatusBadge status={profile.verificationStatus} size="lg" />
-
-            <div className="provider-mini-stats">
-              <div className="mini-stat">
-                <Briefcase size={18} className="mini-stat-icon" />
-                <div className="mini-stat-content">
-                  <h5>Experience</h5>
-                  <p>{profile.yearsOfExperience} Years</p>
-                </div>
-              </div>
-              <div className="mini-stat">
-                <MapPin size={18} className="mini-stat-icon" />
-                <div className="mini-stat-content">
-                  <h5>Location</h5>
-                  <p>{profile.serviceAreaDisplayName || "Unknown"}</p>
-                </div>
-              </div>
-              <div className="mini-stat">
-                <User size={18} className="mini-stat-icon" />
-                <div className="mini-stat-content">
-                  <h5>Member Since</h5>
-                  <p>{new Date(profile.createdAt).toLocaleDateString()}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="admin-action-panel">
-            <h3>Verification Actions</h3>
-
-            {errorMessage && (
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "0.5rem",
-                  padding: "0.75rem",
-                  marginBottom: "1rem",
-                  borderRadius: "8px",
-                  backgroundColor: "var(--bg-danger, #fee2e2)",
-                  color: "var(--text-danger, #b91c1c)",
-                  fontSize: "0.85rem",
-                }}
+              <Button
+                className="w-full justify-center gap-2 font-semibold bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-emerald-600 dark:hover:bg-emerald-700"
+                disabled={(!isPending && !isInReview) || statusMutation.isPending}
+                onClick={() => statusMutation.mutate({ newStatus: "Verified" })}
               >
-                <AlertTriangle size={16} />
-                <span>{errorMessage}</span>
-              </div>
-            )}
+                <CheckCircle className="h-4 w-4" />
+                {statusMutation.isPending ? "Processing..." : "Approve & Verify"}
+              </Button>
 
-            {/* Legal Admin Transitions:
-                Pending -> InReview, Verified, Rejected
-                InReview -> Verified, Rejected
-            */}
-            <button
-              className="panel-btn btn-start-review"
-              disabled={!isPending || statusMutation.isPending}
-              onClick={() => statusMutation.mutate({ newStatus: "InReview" })}
-            >
-              <Search size={18} />
-              {statusMutation.isPending ? "Processing..." : "Start Review"}
-            </button>
-
-            <button
-              className="panel-btn btn-approve"
-              disabled={(!isPending && !isInReview) || statusMutation.isPending}
-              onClick={() => statusMutation.mutate({ newStatus: "Verified" })}
-            >
-              <CheckCircle size={18} />
-              {statusMutation.isPending ? "Processing..." : "Approve & Verify"}
-            </button>
-
-            <button
-              className="panel-btn btn-reject"
-              disabled={(!isPending && !isInReview) || statusMutation.isPending}
-              onClick={() => setIsRejectModalOpen(true)}
-            >
-              <XCircle size={18} /> Reject Application
-            </button>
-          </div>
+              <Button
+                variant="destructive"
+                className="w-full justify-center gap-2 font-semibold"
+                disabled={(!isPending && !isInReview) || statusMutation.isPending}
+                onClick={() => setIsRejectModalOpen(true)}
+              >
+                <XCircle className="h-4 w-4" /> Reject Application
+              </Button>
+            </CardContent>
+          </Card>
         </aside>
 
-        {/* ── Main Content ── */}
-        <main className="detail-main">
-          <div className="workspace-card">
-            <div className="workspace-header">
-              <FileText size={20} />
-              <h2>Submitted Documents</h2>
-            </div>
-            <div className="workspace-body">
+        {/* ── Main Content: Documents & Audit Trail ── */}
+        <main className="lg:col-span-8 space-y-6">
+          <Card>
+            <CardHeader className="border-b border-border pb-3 flex flex-row items-center gap-2">
+              <FileText className="h-5 w-5 text-muted-foreground" />
+              <CardTitle className="text-base font-bold text-foreground">
+                Submitted Documents
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
               {profile.certifications.length === 0 ? (
-                <p style={{ color: "var(--text-muted)" }}>No documents uploaded.</p>
+                <p className="text-xs text-muted-foreground">No documents uploaded.</p>
               ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                <div className="space-y-3">
                   {profile.certifications.map((cert) => (
                     <DocumentCard
                       key={cert.id}
@@ -277,206 +290,142 @@ export default function VerificationDetail() {
                   ))}
                 </div>
               )}
-            </div>
-          </div>
+            </CardContent>
+          </Card>
 
-          <div className="workspace-card">
-            <div className="workspace-header">
-              <Clock size={20} />
-              <h2>Audit Trail</h2>
-            </div>
-            <div className="workspace-body">
+          <Card>
+            <CardHeader className="border-b border-border pb-3 flex flex-row items-center gap-2">
+              <Clock className="h-5 w-5 text-muted-foreground" />
+              <CardTitle className="text-base font-bold text-foreground">Audit Trail</CardTitle>
+            </CardHeader>
+            <CardContent className="p-0 overflow-x-auto">
               {profile.auditLogs.length === 0 ? (
-                <p style={{ color: "var(--text-muted)" }}>No audit history available.</p>
+                <p className="p-6 text-xs text-muted-foreground">No audit history available.</p>
               ) : (
-                <div className="audit-table-container">
-                  <table className="data-table audit-table">
-                    <thead>
-                      <tr>
-                        <th>Date</th>
-                        <th>Status Change</th>
-                        <th>Note</th>
-                        <th>Admin</th>
-                        <th style={{ textAlign: "right" }}>Details</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {[...profile.auditLogs]
-                        .sort(
-                          (a, b) =>
-                            new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
-                        )
-                        .map((log) => (
-                          <tr key={log.id}>
-                            <td style={{ whiteSpace: "nowrap" }}>
-                              {new Date(log.timestamp).toLocaleString("en-LK", {
-                                dateStyle: "short",
-                                timeStyle: "short",
-                              })}
-                            </td>
-                            <td style={{ whiteSpace: "nowrap" }}>
-                              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                                {log.previousStatus !== log.newStatus ? (
-                                  <>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="text-xs uppercase whitespace-nowrap">Date</TableHead>
+                      <TableHead className="text-xs uppercase whitespace-nowrap">Status Change</TableHead>
+                      <TableHead className="text-xs uppercase">Note</TableHead>
+                      <TableHead className="text-xs uppercase whitespace-nowrap">Admin</TableHead>
+                      <TableHead className="text-xs uppercase text-right whitespace-nowrap">Details</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {[...profile.auditLogs]
+                      .sort(
+                        (a, b) =>
+                          new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
+                      )
+                      .map((log) => (
+                        <TableRow key={log.id}>
+                          <TableCell className="text-xs whitespace-nowrap">
+                            {new Date(log.timestamp).toLocaleString("en-LK", {
+                              dateStyle: "short",
+                              timeStyle: "short",
+                            })}
+                          </TableCell>
+                          <TableCell className="whitespace-nowrap">
+                            <div className="flex items-center gap-2">
+                              {log.previousStatus !== log.newStatus ? (
+                                <>
+                                  <span className="text-xs text-muted-foreground">
+                                    {log.previousStatus}
+                                  </span>
+                                  <span className="text-xs text-muted-foreground">→</span>
+                                  <StatusBadge status={log.newStatus} size="sm" />
+                                </>
+                              ) : (
+                                (() => {
+                                  const docApproved = log.note?.includes("status set to Approved");
+                                  const docRejected = log.note?.includes("status set to Rejected");
+                                  return (
                                     <span
-                                      style={{ color: "var(--text-muted)", fontSize: "0.8rem" }}
-                                    >
-                                      {log.previousStatus}
-                                    </span>
-                                    <span style={{ color: "var(--text-muted)" }}>→</span>
-                                    <StatusBadge status={log.newStatus} size="sm" />
-                                  </>
-                                ) : (
-                                  (() => {
-                                    const docApproved =
-                                      log.note?.includes("status set to Approved");
-                                    const docRejected =
-                                      log.note?.includes("status set to Rejected");
-                                    return (
-                                      <span
-                                        style={{
-                                          fontWeight: 600,
-                                          padding: "4px 10px",
-                                          borderRadius: "99px",
-                                          fontSize: "0.75rem",
-                                          backgroundColor: docApproved
-                                            ? "var(--bg-success)"
-                                            : docRejected
-                                              ? "var(--bg-danger)"
-                                              : "var(--bg-card)",
-                                          color: docApproved
-                                            ? "var(--text-success)"
-                                            : docRejected
-                                              ? "var(--text-danger)"
-                                              : "var(--text-h)",
-                                        }}
-                                      >
-                                        {docApproved
-                                          ? "Approved"
+                                      className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border ${
+                                        docApproved
+                                          ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:text-emerald-400"
                                           : docRejected
-                                            ? "Rejected"
-                                            : "Audit"}
-                                      </span>
-                                    );
-                                  })()
-                                )}
-                              </div>
-                            </td>
-                            <td
-                              className="audit-note-cell"
-                              style={{
-                                whiteSpace: "nowrap",
-                                overflow: "hidden",
-                                textOverflow: "ellipsis",
-                                maxWidth: "160px",
-                                cursor: "pointer",
-                              }}
-                              title={log.note || ""}
+                                            ? "bg-destructive/10 text-destructive border-destructive/20"
+                                            : "bg-muted text-muted-foreground border-border"
+                                      }`}
+                                    >
+                                      {docApproved
+                                        ? "Approved"
+                                        : docRejected
+                                          ? "Rejected"
+                                          : "Audit"}
+                                    </span>
+                                  );
+                                })()
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell
+                            className="audit-note-cell max-w-[160px] truncate text-xs text-muted-foreground hover:text-primary cursor-pointer transition-colors"
+                            style={{ whiteSpace: "nowrap" }}
+                            title={log.note || ""}
+                            onClick={() => setViewingAuditLog(log)}
+                          >
+                            {log.note || "-"}
+                          </TableCell>
+                          <TableCell className="text-xs font-mono text-muted-foreground whitespace-nowrap">
+                            {log.adminUserId.split("-")[0]}
+                          </TableCell>
+                          <TableCell className="text-right whitespace-nowrap">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="xs"
+                              className="h-7 text-xs gap-1"
                               onClick={() => setViewingAuditLog(log)}
+                              title="View audit details"
                             >
-                              {log.note || "-"}
-                            </td>
-                            <td
-                              style={{
-                                fontSize: "0.75rem",
-                                fontFamily: "monospace",
-                                whiteSpace: "nowrap",
-                              }}
-                            >
-                              {log.adminUserId.split("-")[0]}
-                            </td>
-                            <td style={{ whiteSpace: "nowrap", textAlign: "right" }}>
-                              <button
-                                type="button"
-                                className="audit-view-btn"
-                                onClick={() => setViewingAuditLog(log)}
-                                title="View audit details"
-                              >
-                                <Eye size={13} /> Details
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                    </tbody>
-                  </table>
-                </div>
+                              <Eye className="h-3 w-3" /> Details
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                  </TableBody>
+                </Table>
               )}
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         </main>
       </div>
 
       {/* Audit Log Detail Modal */}
       {viewingAuditLog && (
-        <div className="rejection-modal-backdrop" onClick={() => setViewingAuditLog(null)}>
+        <div
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in"
+          onClick={() => setViewingAuditLog(null)}
+        >
           <div
-            className="rejection-modal"
-            style={{ maxWidth: "560px" }}
+            className="bg-card text-card-foreground border border-border shadow-2xl w-full max-w-lg p-6 space-y-5 animate-in zoom-in-95"
             onClick={(e) => e.stopPropagation()}
           >
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginBottom: "1.25rem",
-              }}
-            >
-              <h3
-                style={{
-                  margin: 0,
-                  fontSize: "1.2rem",
-                  color: "var(--text-h)",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "0.5rem",
-                }}
-              >
-                <Clock size={18} style={{ color: "var(--accent)" }} /> Audit Log Entry
+            <div className="flex items-center justify-between border-b border-border pb-3">
+              <h3 className="text-base font-bold text-foreground flex items-center gap-2">
+                <Clock className="h-4 w-4 text-primary" /> Audit Log Entry
               </h3>
-              <button
+              <Button
                 type="button"
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 rounded-none hover:bg-muted text-muted-foreground hover:text-foreground"
                 onClick={() => setViewingAuditLog(null)}
-                style={{
-                  background: "none",
-                  border: "none",
-                  cursor: "pointer",
-                  color: "var(--text-muted)",
-                  padding: "4px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
                 aria-label="Close"
               >
-                <X size={20} />
-              </button>
+                <X className="h-4 w-4" />
+              </Button>
             </div>
 
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: "1rem",
-                marginBottom: "1.25rem",
-                padding: "1rem",
-                background: "var(--bg-card, rgba(0,0,0,0.02))",
-                borderRadius: "8px",
-                border: "1px solid var(--border)",
-              }}
-            >
+            <div className="grid grid-cols-2 gap-4 p-4 rounded-none bg-muted/30 border border-border text-xs">
               <div>
-                <span
-                  style={{
-                    fontSize: "0.75rem",
-                    color: "var(--text-muted)",
-                    textTransform: "uppercase",
-                    fontWeight: 600,
-                  }}
-                >
+                <span className="font-semibold text-muted-foreground uppercase text-[10px] tracking-wider">
                   Timestamp
                 </span>
-                <p style={{ margin: "4px 0 0", fontSize: "0.875rem", fontWeight: 500 }}>
+                <p className="mt-1 font-medium text-foreground">
                   {new Date(viewingAuditLog.timestamp).toLocaleString("en-LK", {
                     dateStyle: "medium",
                     timeStyle: "medium",
@@ -485,23 +434,14 @@ export default function VerificationDetail() {
               </div>
 
               <div>
-                <span
-                  style={{
-                    fontSize: "0.75rem",
-                    color: "var(--text-muted)",
-                    textTransform: "uppercase",
-                    fontWeight: 600,
-                  }}
-                >
+                <span className="font-semibold text-muted-foreground uppercase text-[10px] tracking-wider">
                   Status Transition
                 </span>
-                <div style={{ marginTop: "4px" }}>
+                <div className="mt-1 flex items-center gap-2">
                   {viewingAuditLog.previousStatus !== viewingAuditLog.newStatus ? (
-                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                      <span style={{ color: "var(--text-muted)", fontSize: "0.8rem" }}>
-                        {viewingAuditLog.previousStatus}
-                      </span>
-                      <span style={{ color: "var(--text-muted)" }}>→</span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-muted-foreground">{viewingAuditLog.previousStatus}</span>
+                      <span className="text-muted-foreground">→</span>
                       <StatusBadge status={viewingAuditLog.newStatus} size="sm" />
                     </div>
                   ) : (
@@ -510,22 +450,13 @@ export default function VerificationDetail() {
                       const docRejected = viewingAuditLog.note?.includes("status set to Rejected");
                       return (
                         <span
-                          style={{
-                            fontWeight: 600,
-                            padding: "3px 8px",
-                            borderRadius: "99px",
-                            fontSize: "0.75rem",
-                            backgroundColor: docApproved
-                              ? "var(--bg-success)"
+                          className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border ${
+                            docApproved
+                              ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:text-emerald-400"
                               : docRejected
-                                ? "var(--bg-danger)"
-                                : "var(--bg-card)",
-                            color: docApproved
-                              ? "var(--text-success)"
-                              : docRejected
-                                ? "var(--text-danger)"
-                                : "var(--text-h)",
-                          }}
+                                ? "bg-destructive/10 text-destructive border-destructive/20"
+                                : "bg-muted text-muted-foreground border-border"
+                          }`}
                         >
                           {docApproved ? "Approved" : docRejected ? "Rejected" : "Document Audit"}
                         </span>
@@ -535,65 +466,35 @@ export default function VerificationDetail() {
                 </div>
               </div>
 
-              <div style={{ gridColumn: "span 2" }}>
-                <span
-                  style={{
-                    fontSize: "0.75rem",
-                    color: "var(--text-muted)",
-                    textTransform: "uppercase",
-                    fontWeight: 600,
-                  }}
-                >
+              <div className="col-span-2">
+                <span className="font-semibold text-muted-foreground uppercase text-[10px] tracking-wider">
                   Admin User ID
                 </span>
-                <p
-                  style={{
-                    margin: "4px 0 0",
-                    fontSize: "0.85rem",
-                    fontFamily: "monospace",
-                    wordBreak: "break-all",
-                    color: "var(--text-h)",
-                  }}
-                >
+                <p className="mt-1 font-mono text-xs text-foreground break-all">
                   {viewingAuditLog.adminUserId}
                 </p>
               </div>
             </div>
 
-            <div className="wizard-field" style={{ marginBottom: "1.5rem" }}>
-              <label style={{ fontWeight: 600, marginBottom: "0.35rem" }}>Audit Note</label>
-              <div
-                style={{
-                  padding: "0.85rem 1rem",
-                  background: "var(--bg, #f8fafc)",
-                  border: "1px solid var(--border-strong, #cbd5e1)",
-                  borderRadius: "8px",
-                  fontSize: "0.9rem",
-                  lineHeight: 1.6,
-                  color: "var(--text-h)",
-                  whiteSpace: "pre-wrap",
-                  wordBreak: "break-word",
-                  maxHeight: "220px",
-                  overflowY: "auto",
-                }}
-              >
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold">Audit Note</Label>
+              <div className="p-3 bg-muted/40 border border-border text-xs text-foreground leading-relaxed whitespace-pre-wrap break-words max-h-56 overflow-y-auto">
                 {viewingAuditLog.note || (
-                  <span style={{ color: "var(--text-muted)", fontStyle: "italic" }}>
-                    No note provided.
-                  </span>
+                  <span className="text-muted-foreground italic">No note provided.</span>
                 )}
               </div>
             </div>
 
-            <div style={{ display: "flex", justifyContent: "flex-end" }}>
-              <button
+            <div className="flex justify-end pt-2 border-t border-border">
+              <Button
                 type="button"
-                className="wizard-btn wizard-btn-secondary"
-                style={{ minWidth: "100px" }}
+                variant="outline"
+                size="sm"
+                className="min-w-24"
                 onClick={() => setViewingAuditLog(null)}
               >
                 Close
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -601,93 +502,89 @@ export default function VerificationDetail() {
 
       {/* Rejection Modal */}
       {isRejectModalOpen && (
-        <div className="rejection-modal-backdrop">
-          <div className="rejection-modal">
-            <h3>Reject Application</h3>
-            <p style={{ color: "var(--text-muted)", fontSize: "0.9rem", marginBottom: "1.5rem" }}>
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in">
+          <div className="bg-card text-card-foreground border border-border shadow-2xl w-full max-w-md p-6 space-y-4 animate-in zoom-in-95">
+            <h3 className="text-base font-bold text-destructive flex items-center gap-2">
+              <XCircle className="h-5 w-5" /> Reject Application
+            </h3>
+            <p className="text-xs text-muted-foreground leading-relaxed">
               Please provide a reason for the rejection. This note will be visible to the provider
               so they can correct the issue and resubmit.
             </p>
 
-            <div className="wizard-field">
-              <label>Rejection Reason</label>
-              <textarea
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold">Rejection Reason</Label>
+              <Textarea
                 value={rejectNote}
                 onChange={(e) => setRejectNote(e.target.value)}
                 placeholder="e.g. The uploaded NIC is blurry and unreadable. Please upload a clearer copy."
+                rows={3}
+                className="text-xs resize-none"
               />
             </div>
 
-            <div style={{ display: "flex", gap: "1rem", marginTop: "2rem" }}>
-              <button
-                className="wizard-btn wizard-btn-secondary"
-                style={{ flex: 1 }}
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-border">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
                 onClick={() => setIsRejectModalOpen(false)}
               >
                 Cancel
-              </button>
-              <button
-                className="wizard-btn"
-                style={{
-                  flex: 1,
-                  background: "var(--bg-danger)",
-                  color: "var(--text-danger)",
-                  border: "1px solid var(--text-danger)",
-                }}
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                size="sm"
                 onClick={() => statusMutation.mutate({ newStatus: "Rejected", note: rejectNote })}
                 disabled={!rejectNote.trim() || statusMutation.isPending}
               >
                 {statusMutation.isPending ? "Processing..." : "Confirm Rejection"}
-              </button>
+              </Button>
             </div>
           </div>
         </div>
       )}
+
       {/* Document Approval Modal with Note */}
       {approvingCert && (
-        <div className="rejection-modal-backdrop">
-          <div className="rejection-modal">
-            <h3 style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-              <CheckCircle size={20} style={{ color: "var(--success, #10b981)" }} /> Approve
-              Submitted Document
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in">
+          <div className="bg-card text-card-foreground border border-border shadow-2xl w-full max-w-md p-6 space-y-4 animate-in zoom-in-95">
+            <h3 className="text-base font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-2">
+              <CheckCircle className="h-5 w-5" /> Approve Submitted Document
             </h3>
-            <p style={{ color: "var(--text-muted)", fontSize: "0.9rem", marginBottom: "1.25rem" }}>
+            <p className="text-xs text-muted-foreground leading-relaxed">
               Approving <strong>{approvingCert.originalFileName || approvingCert.type}</strong> (
               {approvingCert.type}). You can optionally attach an approval note to this record.
             </p>
 
-            <div className="wizard-field">
-              <label>Approval Note (Optional)</label>
-              <textarea
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold">Approval Note (Optional)</Label>
+              <Input
+                type="text"
                 value={approveNote}
                 onChange={(e) => setApproveNote(e.target.value)}
                 placeholder="e.g. Verified with national registry, document is valid and legible."
-                rows={3}
+                className="h-8 text-xs"
               />
             </div>
 
-            <div style={{ display: "flex", gap: "1rem", marginTop: "1.5rem" }}>
-              <button
-                className="wizard-btn wizard-btn-secondary"
-                style={{ flex: 1 }}
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-border">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
                 onClick={() => {
                   setApprovingCert(null);
                   setApproveNote("");
                 }}
               >
                 Cancel
-              </button>
-              <button
-                className="wizard-btn btn-approve"
-                style={{
-                  flex: 1,
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: "0.5rem",
-                  background: "var(--success, #10b981)",
-                  color: "#fff",
-                }}
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white"
                 onClick={() => {
                   documentReviewMutation.mutate(
                     {
@@ -705,9 +602,9 @@ export default function VerificationDetail() {
                 }}
                 disabled={documentReviewMutation.isPending}
               >
-                <CheckCircle size={16} />
+                <CheckCircle className="h-4 w-4 mr-1.5" />
                 {documentReviewMutation.isPending ? "Approving..." : "Confirm Approval"}
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -715,50 +612,43 @@ export default function VerificationDetail() {
 
       {/* Document Rejection Modal with Note */}
       {rejectingCert && (
-        <div className="rejection-modal-backdrop">
-          <div className="rejection-modal">
-            <h3 style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-              <XCircle size={20} style={{ color: "var(--text-danger, #ef4444)" }} /> Reject
-              Submitted Document
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in">
+          <div className="bg-card text-card-foreground border border-border shadow-2xl w-full max-w-md p-6 space-y-4 animate-in zoom-in-95">
+            <h3 className="text-base font-bold text-destructive flex items-center gap-2">
+              <XCircle className="h-5 w-5" /> Reject Submitted Document
             </h3>
-            <p style={{ color: "var(--text-muted)", fontSize: "0.9rem", marginBottom: "1.25rem" }}>
+            <p className="text-xs text-muted-foreground leading-relaxed">
               Rejecting <strong>{rejectingCert.originalFileName || rejectingCert.type}</strong> (
               {rejectingCert.type}). Please provide a reason for rejecting this document.
             </p>
 
-            <div className="wizard-field">
-              <label>Rejection Reason (Optional)</label>
-              <textarea
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold">Rejection Reason (Optional)</Label>
+              <Textarea
                 value={rejectDocNote}
                 onChange={(e) => setRejectDocNote(e.target.value)}
                 placeholder="e.g. Document is expired, unreadable, or missing required details."
                 rows={3}
+                className="text-xs resize-none"
               />
             </div>
 
-            <div style={{ display: "flex", gap: "1rem", marginTop: "1.5rem" }}>
-              <button
-                className="wizard-btn wizard-btn-secondary"
-                style={{ flex: 1 }}
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-border">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
                 onClick={() => {
                   setRejectingCert(null);
                   setRejectDocNote("");
                 }}
               >
                 Cancel
-              </button>
-              <button
-                className="wizard-btn"
-                style={{
-                  flex: 1,
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: "0.5rem",
-                  background: "var(--bg-danger)",
-                  color: "var(--text-danger)",
-                  border: "1px solid var(--text-danger)",
-                }}
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                size="sm"
                 onClick={() => {
                   documentReviewMutation.mutate(
                     {
@@ -776,9 +666,9 @@ export default function VerificationDetail() {
                 }}
                 disabled={documentReviewMutation.isPending}
               >
-                <XCircle size={16} />
+                <XCircle className="h-4 w-4 mr-1.5" />
                 {documentReviewMutation.isPending ? "Rejecting..." : "Confirm Rejection"}
-              </button>
+              </Button>
             </div>
           </div>
         </div>

@@ -9,6 +9,8 @@ import {
   ExternalLink,
 } from "lucide-react";
 import type { ServiceListingDto } from "../../api/types";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 interface BookingModalProps {
   listing: ServiceListingDto;
@@ -22,174 +24,122 @@ export default function BookingModal({ listing, onClose }: BookingModalProps) {
 
   return (
     <div
-      className="booking-modal-overlay"
+      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in"
       role="dialog"
       aria-modal="true"
       aria-labelledby="modal-title"
     >
-      <div className="booking-modal-content">
-        <div className="booking-modal-header">
-          <h2 id="modal-title">Service Details</h2>
-          <button onClick={onClose} className="btn-close" aria-label="Close modal">
-            <X size={20} />
-          </button>
+      <div className="bg-card text-card-foreground border border-border shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+          <h2 id="modal-title" className="text-lg font-bold text-foreground tracking-tight">
+            Service Details
+          </h2>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onClose}
+            className="h-8 w-8 rounded-none hover:bg-muted text-muted-foreground hover:text-foreground"
+            aria-label="Close modal"
+          >
+            <X className="h-4 w-4" />
+          </Button>
         </div>
 
-        <div className="booking-modal-body">
-          <div className="service-highlight">
+        {/* Body */}
+        <div className="p-6 space-y-6 overflow-y-auto">
+          {/* Service Highlight */}
+          <div className="space-y-2">
             {listing.serviceCategoryName && (
-              <span className="service-badge">{listing.serviceCategoryName}</span>
+              <Badge variant="secondary" className="text-xs font-medium">
+                {listing.serviceCategoryName}
+              </Badge>
             )}
-            <h3 className="service-title">{listing.title}</h3>
-            <p className="service-description">{listing.description}</p>
+            <h3 className="text-xl font-bold text-foreground tracking-tight">{listing.title}</h3>
+            <p className="text-sm text-muted-foreground leading-relaxed">{listing.description}</p>
           </div>
 
-          <div className="service-details-grid">
-            <div className="detail-item full-width">
-              <span className="detail-label">
-                <AlignLeft size={16} /> Scope of Work
+          {/* Details Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-none bg-muted/30 border border-border">
+            <div className="sm:col-span-2 space-y-1">
+              <span className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                <AlignLeft className="h-3.5 w-3.5 text-primary" /> Scope of Work
               </span>
-              <p className="detail-value">{listing.scope || "As generally described."}</p>
+              <p className="text-xs font-medium text-foreground">
+                {listing.scope || "As generally described."}
+              </p>
             </div>
-            <div className="detail-item">
-              <span className="detail-label">
-                <Banknote size={16} /> Fixed Price
+            <div className="space-y-1">
+              <span className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                <Banknote className="h-3.5 w-3.5 text-primary" /> Fixed Price
               </span>
-              <p className="detail-value price-text">LKR {listing.fixedPrice.toFixed(2)}</p>
+              <p className="text-base font-bold text-foreground">
+                LKR {listing.fixedPrice.toFixed(2)}
+              </p>
             </div>
-            <div className="detail-item">
-              <span className="detail-label">
-                <Clock size={16} /> Time Required
+            <div className="space-y-1">
+              <span className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                <Clock className="h-3.5 w-3.5 text-primary" /> Time Required
               </span>
-              <p className="detail-value">{durationText}</p>
+              <p className="text-sm font-semibold text-foreground">{durationText}</p>
             </div>
           </div>
 
-          {/* ── Book on Mobile App Section ── */}
-          <div
-            className="book-on-mobile-card"
-            style={{
-              padding: "var(--space-6)",
-              background: "var(--bg, #f8fafc)",
-              border: "1px solid var(--border-strong, #cbd5e1)",
-              borderRadius: "12px",
-              display: "flex",
-              flexDirection: "column",
-              gap: "var(--space-4)",
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "flex-start", gap: "14px" }}>
-              <div
-                style={{
-                  width: "44px",
-                  height: "44px",
-                  borderRadius: "10px",
-                  background: "var(--primary-ultra-light, #e0f2fe)",
-                  color: "var(--primary, #0284c7)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flexShrink: 0,
-                }}
-              >
-                <Smartphone size={24} />
+          {/* Book on Mobile App Section */}
+          <div className="p-5 bg-primary/5 dark:bg-primary/10 border border-primary/20 space-y-4">
+            <div className="flex items-start gap-3.5">
+              <div className="h-10 w-10 shrink-0 rounded-none bg-primary/15 text-primary flex items-center justify-center">
+                <Smartphone className="h-5 w-5" />
               </div>
-              <div style={{ flex: 1 }}>
-                <h4
-                  style={{
-                    margin: "0 0 4px",
-                    fontSize: "1.05rem",
-                    fontWeight: 700,
-                    color: "var(--text-h)",
-                  }}
-                >
-                  Book on Handee Mobile App
-                </h4>
-                <p
-                  style={{
-                    margin: 0,
-                    fontSize: "0.875rem",
-                    color: "var(--text-muted)",
-                    lineHeight: 1.5,
-                  }}
-                >
+              <div className="space-y-1 flex-1">
+                <h4 className="text-sm font-bold text-foreground">Book on Handee Mobile App</h4>
+                <p className="text-xs text-muted-foreground leading-relaxed">
                   Customer bookings are handled exclusively through our mobile application to
                   provide real-time 1-hour predefined slot selection.
                 </p>
               </div>
             </div>
 
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: "10px",
-                fontSize: "0.825rem",
-                color: "var(--text-secondary)",
-                padding: "10px 12px",
-                background: "var(--bg-surface)",
-                borderRadius: "8px",
-                border: "1px solid var(--border)",
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                <Calendar size={14} color="var(--primary)" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs bg-card p-3 border border-border text-muted-foreground">
+              <div className="flex items-center gap-2">
+                <Calendar className="h-3.5 w-3.5 text-primary shrink-0" />
                 <span>14-day dynamic date strip</span>
               </div>
-              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                <Clock size={14} color="var(--primary)" />
+              <div className="flex items-center gap-2">
+                <Clock className="h-3.5 w-3.5 text-primary shrink-0" />
                 <span>Predefined 1-hour slot picker</span>
               </div>
-              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                <ShieldCheck size={14} color="var(--primary)" />
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="h-3.5 w-3.5 text-primary shrink-0" />
                 <span>Guaranteed fixed price</span>
               </div>
-              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                <ExternalLink size={14} color="var(--primary)" />
+              <div className="flex items-center gap-2">
+                <ExternalLink className="h-3.5 w-3.5 text-primary shrink-0" />
                 <span>Instant in-app confirmation</span>
               </div>
             </div>
 
-            <div style={{ display: "flex", gap: "10px", marginTop: "4px" }}>
-              <a
-                href={`handee://listings/${listing.id}`}
-                className="wizard-btn wizard-btn-primary"
-                style={{
-                  flex: 1,
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: "8px",
-                  textDecoration: "none",
-                  padding: "0.75rem 1rem",
-                  fontSize: "0.95rem",
-                  fontWeight: 700,
-                  borderRadius: "8px",
-                }}
-                onClick={() => {
-                  // Fallback if deep link is not registered on desktop
-                  setTimeout(() => {
-                    alert(
-                      "Please open or download the Handee Flutter App on your mobile device to book this service listing.",
-                    );
-                  }, 500);
-                }}
-              >
-                <Smartphone size={18} /> Open in Handee App
-              </a>
-            </div>
+            <a
+              href={`handee://listings/${listing.id}`}
+              className="w-full inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground font-semibold px-4 py-2.5 text-sm transition-colors hover:bg-primary/90"
+              onClick={() => {
+                setTimeout(() => {
+                  alert(
+                    "Please open or download the Handee Flutter App on your mobile device to book this service listing.",
+                  );
+                }, 500);
+              }}
+            >
+              <Smartphone className="h-4 w-4" /> Open in Handee App
+            </a>
           </div>
         </div>
 
-        <div className="booking-modal-footer" style={{ justifyContent: "flex-end" }}>
-          <button
-            type="button"
-            onClick={onClose}
-            className="btn-cancel"
-            style={{ width: "auto", minWidth: "120px" }}
-          >
+        {/* Footer */}
+        <div className="flex justify-end p-4 border-t border-border bg-muted/20">
+          <Button type="button" variant="outline" size="sm" onClick={onClose} className="min-w-24">
             Close
-          </button>
+          </Button>
         </div>
       </div>
     </div>

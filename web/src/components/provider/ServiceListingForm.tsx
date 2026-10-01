@@ -4,6 +4,11 @@ import { serviceCategoryApi } from "../../api/serviceCategories";
 import { serviceListingsApi } from "../../api/serviceListings";
 import { X, Save, Clock, Banknote, Type, AlignLeft, Info } from "lucide-react";
 import type { ServiceListingDto } from "../../api/types";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface ServiceListingFormProps {
   initialData?: ServiceListingDto | null;
@@ -99,51 +104,66 @@ export default function ServiceListingForm({ initialData, onClose }: ServiceList
   };
 
   return (
-    <div className="modal-overlay">
-      <div className="modal-content">
-        <div className="modal-header">
-          <h2>{isEditing ? "Edit Service Listing" : "Create Service Listing"}</h2>
-          <button onClick={onClose} className="btn-close">
-            <X size={20} />
-          </button>
+    <div
+      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in"
+      role="dialog"
+      aria-modal="true"
+    >
+      <div className="bg-card text-card-foreground border border-border shadow-2xl w-full max-w-xl max-h-[90vh] overflow-hidden flex flex-col">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+          <h2 className="text-lg font-bold text-foreground tracking-tight">
+            {isEditing ? "Edit Service Listing" : "Create Service Listing"}
+          </h2>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onClose}
+            className="h-8 w-8 rounded-none hover:bg-muted text-muted-foreground hover:text-foreground"
+          >
+            <X className="h-4 w-4" />
+          </Button>
         </div>
 
-        <form onSubmit={handleSubmit} className="listing-form">
-          <div className="form-grid">
-            <div className="form-group">
-              <label>Service Category</label>
+        {/* Form Body */}
+        <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold">Service Category</Label>
               <select
                 value={formData.serviceCategoryId}
                 onChange={(e) => setFormData({ ...formData, serviceCategoryId: e.target.value })}
                 required
+                className="w-full h-8 rounded-none border border-input bg-transparent px-2.5 py-1 text-xs text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
               >
                 {categories.map((c) => (
-                  <option key={c.id} value={c.id}>
+                  <option key={c.id} value={c.id} className="bg-card text-card-foreground">
                     {c.iconUrl} {c.name}
                   </option>
                 ))}
               </select>
             </div>
 
-            <div className="form-group">
-              <label>
-                <Type size={16} /> Service Name
-              </label>
-              <input
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold flex items-center gap-1.5">
+                <Type className="h-3.5 w-3.5 text-muted-foreground" /> Service Name
+              </Label>
+              <Input
                 type="text"
                 required
                 value={formData.title}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                 placeholder="e.g. Deep Home Cleaning"
                 maxLength={100}
+                className="h-8 text-xs"
               />
             </div>
 
-            <div className="form-group">
-              <label>
-                <Banknote size={16} /> Fixed Price (LKR)
-              </label>
-              <input
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold flex items-center gap-1.5">
+                <Banknote className="h-3.5 w-3.5 text-muted-foreground" /> Fixed Price (LKR)
+              </Label>
+              <Input
                 type="number"
                 step="0.01"
                 min="1"
@@ -151,98 +171,91 @@ export default function ServiceListingForm({ initialData, onClose }: ServiceList
                 value={formData.fixedPrice}
                 onChange={(e) => setFormData({ ...formData, fixedPrice: e.target.value })}
                 placeholder="0.00"
+                className="h-8 text-xs"
               />
             </div>
 
-            <div className="form-group">
-              <label>
-                <Clock size={16} /> Time Required (Integer Hours, 1–8)
-              </label>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold flex items-center gap-1.5">
+                <Clock className="h-3.5 w-3.5 text-muted-foreground" /> Time Required (1–8 Hours)
+              </Label>
               <select
                 value={formData.durationHours}
                 onChange={(e) =>
                   setFormData({ ...formData, durationHours: parseInt(e.target.value, 10) })
                 }
                 required
+                className="w-full h-8 rounded-none border border-input bg-transparent px-2.5 py-1 text-xs text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
               >
                 {DURATION_OPTIONS.map((opt) => (
-                  <option key={opt.hours} value={opt.hours}>
+                  <option key={opt.hours} value={opt.hours} className="bg-card text-card-foreground">
                     {opt.label}
                   </option>
                 ))}
               </select>
-              <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginTop: "2px" }}>
-                Each service reserves {formData.durationHours} consecutive 1-hour slot(s) from your
-                schedule.
-              </span>
+              <p className="text-[11px] text-muted-foreground">
+                Reserves {formData.durationHours} consecutive 1-hour slot(s) from your schedule.
+              </p>
             </div>
 
-            <div className="form-group col-span-2">
-              <label>
-                <AlignLeft size={16} /> Description
-              </label>
-              <textarea
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label className="text-xs font-semibold flex items-center gap-1.5">
+                <AlignLeft className="h-3.5 w-3.5 text-muted-foreground" /> Description
+              </Label>
+              <Textarea
                 required
                 rows={3}
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 placeholder="Clearly describe what this service includes generally..."
                 maxLength={1000}
+                className="text-xs resize-none"
               />
             </div>
 
-            <div className="form-group col-span-2">
-              <label>
-                <AlignLeft size={16} /> Scope of Work
-              </label>
-              <textarea
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label className="text-xs font-semibold flex items-center gap-1.5">
+                <AlignLeft className="h-3.5 w-3.5 text-muted-foreground" /> Scope of Work
+              </Label>
+              <Textarea
                 required
                 rows={2}
                 value={formData.scope}
                 onChange={(e) => setFormData({ ...formData, scope: e.target.value })}
                 placeholder={`Specifically define what is included (e.g., ${formData.durationHours} hour(s) of labor, basic tools) and what is excluded.`}
                 maxLength={500}
+                className="text-xs resize-none"
               />
             </div>
           </div>
 
-          <div
-            style={{
-              padding: "10px 14px",
-              background: "var(--bg, #f8fafc)",
-              border: "1px solid var(--border)",
-              borderRadius: "8px",
-              display: "flex",
-              alignItems: "center",
-              gap: "10px",
-              fontSize: "0.825rem",
-              color: "var(--text-muted)",
-            }}
-          >
-            <Info size={16} color="var(--accent, #0284c7)" style={{ flexShrink: 0 }} />
+          <div className="p-3 bg-muted/40 border border-border flex items-start gap-2.5 text-xs text-muted-foreground">
+            <Info className="h-4 w-4 text-primary shrink-0 mt-0.5" />
             <span>
               Bookings for this service are partitioned into 1-hour slots matching your active
               operating schedule. Customer bookings take place exclusively in the Handee Mobile App.
             </span>
           </div>
 
-          <div className="form-checkbox">
-            <input
-              type="checkbox"
+          <div className="flex items-center space-x-2 pt-1">
+            <Checkbox
               id="isActive"
               checked={formData.isActive}
-              onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
+              onCheckedChange={(checked) => setFormData({ ...formData, isActive: !!checked })}
             />
-            <label htmlFor="isActive">Visible to customers instantly</label>
+            <Label htmlFor="isActive" className="text-xs cursor-pointer">
+              Visible to customers instantly
+            </Label>
           </div>
 
-          <div className="modal-actions">
-            <button type="button" onClick={onClose} className="btn-cancel">
+          {/* Footer Actions */}
+          <div className="flex items-center justify-end gap-2 pt-4 border-t border-border">
+            <Button type="button" variant="outline" size="sm" onClick={onClose}>
               Cancel
-            </button>
-            <button type="submit" disabled={mutation.isPending} className="btn-save">
-              <Save size={18} /> {mutation.isPending ? "Saving..." : "Save Listing"}
-            </button>
+            </Button>
+            <Button type="submit" size="sm" disabled={mutation.isPending}>
+              <Save className="h-4 w-4 mr-1.5" /> {mutation.isPending ? "Saving..." : "Save Listing"}
+            </Button>
           </div>
         </form>
       </div>
