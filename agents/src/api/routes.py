@@ -7,6 +7,8 @@ from src.schemas.contracts import (
     AssistantQueryResponse,
     ClassifyJobCategoryInput,
     EstimateScopeInput,
+    PricingAgentInput,
+    PricingAgentResult,
 )
 from src.workflows.dispatch_workflow import run_dispatch_workflow
 from src.workflows.assistant_workflow import process_assistant_query
@@ -52,3 +54,20 @@ async def assistant_query(request: AssistantQueryRequest):
             ) from e
         logger.exception("Error executing assistant query: %s", e)
         raise HTTPException(status_code=500, detail=f"Assistant query failed: {str(e)}")
+
+
+@router.post("/pricing/agent", response_model=PricingAgentResult)
+async def run_pricing_agent_endpoint(request: PricingAgentInput):
+    """
+    Dedicated Pricing & Invoicing AI Agent endpoint.
+    Executes price estimation tools, line-item breakdown compiler,
+    deterministic validation guardrails, and prepares the approval-to-payment handoff payload.
+    """
+    try:
+        from src.tools.pricing_agent import pricing_agent
+        result = pricing_agent.run(request)
+        return result
+    except Exception as e:
+        logger.exception("Error executing pricing agent: %s", e)
+        raise HTTPException(status_code=500, detail=f"Pricing agent execution failed: {str(e)}")
+
