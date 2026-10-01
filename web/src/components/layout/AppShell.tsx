@@ -103,7 +103,7 @@ export default function AppShell() {
 
   return (
     <div className="shell-container flex h-screen w-screen max-w-full bg-background text-foreground">
-      <aside className="shell-sidebar w-[250px] bg-sidebar text-sidebar-foreground border-r border-sidebar-border flex flex-col p-6 max-md:w-screen max-md:h-auto max-md:flex-row max-md:fixed max-md:bottom-0 max-md:left-0 max-md:z-50 max-md:p-2 max-md:border-t">
+      <aside className="shell-sidebar w-62.5 bg-sidebar text-sidebar-foreground border-r border-sidebar-border flex flex-col p-6 max-md:w-screen max-md:h-auto max-md:flex-row max-md:fixed max-md:bottom-0 max-md:left-0 max-md:z-50 max-md:p-2 max-md:border-t">
         <div className="brand text-2xl font-bold tracking-tight mb-8 pl-4 max-md:hidden">
           Handee
         </div>

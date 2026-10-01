@@ -5,7 +5,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getRefreshToken } from "../../lib/tokenManager";
 import { usersApi } from "../../api/users";
 import { authApi } from "../../api/auth";
-import { Button } from "@/components/ui/button";
+import { getFullMediaUrl } from "../../lib/api";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export default function PublicNavbar() {
@@ -75,11 +76,16 @@ export default function PublicNavbar() {
               </div>
             )}
 
-            <Button asChild variant="default" size="sm">
-              <Link to="/dashboard" className="flex items-center gap-2">
-                <LayoutDashboard className="h-4 w-4" /> Dashboard
-              </Link>
-            </Button>
+            <Link
+              to="/dashboard"
+              className={buttonVariants({
+                variant: "default",
+                size: "sm",
+                className: "flex items-center gap-2",
+              })}
+            >
+              <LayoutDashboard className="h-4 w-4" /> Dashboard
+            </Link>
 
             <Button
               variant="outline"
@@ -93,14 +99,22 @@ export default function PublicNavbar() {
           </div>
         ) : (
           <div className="flex items-center gap-3">
-            <Button asChild variant="ghost" size="sm">
-              <Link to="/register/provider">Join as a Pro</Link>
-            </Button>
-            <Button asChild variant="default" size="sm">
-              <Link to="/login" className="login-link">
-                Sign In
-              </Link>
-            </Button>
+            <Link
+              to="/register/provider"
+              className={buttonVariants({ variant: "ghost", size: "sm" })}
+            >
+              Join as a Pro
+            </Link>
+            <Link
+              to="/login"
+              className={buttonVariants({
+                variant: "default",
+                size: "sm",
+                className: "login-link",
+              })}
+            >
+              Sign In
+            </Link>
           </div>
         )}
       </div>

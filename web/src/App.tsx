@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 const queryClient = new QueryClient();
 
 import AppShell from "./components/layout/AppShell";
+import ProtectedRoute from "./components/auth/ProtectedRoute";
 import NotFound from "./pages/error/NotFound";
 import Unauthorized from "./pages/error/Unauthorized";
 import ServerError from "./pages/error/ServerError";
@@ -65,47 +66,58 @@ function App() {
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/providers" element={<ProviderSearch />} />
           <Route path="/providers/:providerId" element={<PublicProviderProfile />} />
-          <Route path="/provider/onboarding" element={<ProviderOnboarding />} />
 
           {/* ERROR ROUTES */}
           <Route path="/403" element={<Unauthorized />} />
           <Route path="/500" element={<ServerError />} />
 
-          {/* PROTECTED ROUTES (wrapped in AppShell) */}
-          <Route element={<AppShell />}>
-            {/* Dashboard acting as the post-login shell home */}
-            <Route path="/dashboard" element={<DashboardHome />} />
-            <Route path="/account" element={<AccountSettings />} />
-            <Route path="/notifications" element={<Notifications />} />
+          {/* AUTHENTICATED ROUTES */}
+          <Route element={<ProtectedRoute />}>
+            {/* Provider Onboarding */}
+            <Route element={<ProtectedRoute allowedRoles={["Provider"]} />}>
+              <Route path="/provider/onboarding" element={<ProviderOnboarding />} />
+            </Route>
 
-            {/* Payments & Invoicing */}
-            <Route path="/bookings/:id/quote" element={<QuoteReview />} />
-            <Route path="/invoices" element={<InvoicesList />} />
-            <Route path="/invoices/:id" element={<InvoiceDetail />} />
-            <Route path="/invoices/:id/pay" element={<CheckoutPayment />} />
-            <Route path="/account/payment-methods" element={<PaymentMethods />} />
-            <Route path="/payment-methods" element={<PaymentMethods />} />
+            {/* Application Shell */}
+            <Route element={<AppShell />}>
+              {/* Common Authenticated Routes */}
+              <Route path="/dashboard" element={<DashboardHome />} />
+              <Route path="/account" element={<AccountSettings />} />
+              <Route path="/notifications" element={<Notifications />} />
 
-            {/* Provider specific dashboard routes */}
-            <Route path="/provider/submit-verification" element={<SubmitVerification />} />
-            <Route path="/provider/status" element={<VerificationStatusTracker />} />
-            <Route path="/provider/profile" element={<ProviderProfile />} />
-            <Route path="/provider/service-listings" element={<ProviderServiceListings />} />
-            <Route path="/provider/reviews" element={<ProviderReviews />} />
-            <Route path="/provider/payouts" element={<ProviderPayoutDashboard />} />
-            <Route path="/provider/payouts/history" element={<ProviderPayoutHistory />} />
+              {/* Payments & Invoicing */}
+              <Route path="/bookings/:id/quote" element={<QuoteReview />} />
+              <Route path="/invoices" element={<InvoicesList />} />
+              <Route path="/invoices/:id" element={<InvoiceDetail />} />
+              <Route path="/invoices/:id/pay" element={<CheckoutPayment />} />
+              <Route path="/account/payment-methods" element={<PaymentMethods />} />
+              <Route path="/payment-methods" element={<PaymentMethods />} />
 
-            {/* Admin specific */}
-            <Route path="/admin/agent-workflow" element={<AgentWorkflow />} />
-            <Route path="/admin/verifications" element={<VerificationQueue />} />
-            <Route path="/admin/verifications/:id" element={<VerificationDetail />} />
-            <Route path="/admin/providers" element={<ProviderDirectory />} />
-            <Route path="/admin/booking-overview" element={<BookingOverview />} />
-            <Route path="/admin/job-requests" element={<JobRequestsManagement />} />
-            <Route path="/admin/job-requests/:id" element={<JobRequestDetail />} />
-            <Route path="/admin/bookings" element={<BookingsManagement />} />
-            <Route path="/admin/bookings/:id" element={<BookingDetail />} />
-            <Route path="/admin/payments" element={<AdminPaymentsOverview />} />
+              {/* Provider Only Routes */}
+              <Route element={<ProtectedRoute allowedRoles={["Provider"]} />}>
+                <Route path="/provider/submit-verification" element={<SubmitVerification />} />
+                <Route path="/provider/status" element={<VerificationStatusTracker />} />
+                <Route path="/provider/profile" element={<ProviderProfile />} />
+                <Route path="/provider/service-listings" element={<ProviderServiceListings />} />
+                <Route path="/provider/reviews" element={<ProviderReviews />} />
+                <Route path="/provider/payouts" element={<ProviderPayoutDashboard />} />
+                <Route path="/provider/payouts/history" element={<ProviderPayoutHistory />} />
+              </Route>
+
+              {/* Admin Only Routes */}
+              <Route element={<ProtectedRoute allowedRoles={["Admin"]} />}>
+                <Route path="/admin/agent-workflow" element={<AgentWorkflow />} />
+                <Route path="/admin/verifications" element={<VerificationQueue />} />
+                <Route path="/admin/verifications/:id" element={<VerificationDetail />} />
+                <Route path="/admin/providers" element={<ProviderDirectory />} />
+                <Route path="/admin/booking-overview" element={<BookingOverview />} />
+                <Route path="/admin/job-requests" element={<JobRequestsManagement />} />
+                <Route path="/admin/job-requests/:id" element={<JobRequestDetail />} />
+                <Route path="/admin/bookings" element={<BookingsManagement />} />
+                <Route path="/admin/bookings/:id" element={<BookingDetail />} />
+                <Route path="/admin/payments" element={<AdminPaymentsOverview />} />
+              </Route>
+            </Route>
           </Route>
 
           {/* CATCH ALL (404) */}
