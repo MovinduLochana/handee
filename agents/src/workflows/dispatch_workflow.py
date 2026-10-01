@@ -139,10 +139,20 @@ async def action_tool_node(state: AgentWorkflowState) -> Dict[str, Any]:
         "output_data": {
             "candidates_found": len(candidates),
             "selected_provider": selected_provider.get("fullName") if selected_provider else None,
+            "pricing_tool": "estimate_price_detailed",
+            "base_benchmark": detailed_price.base_benchmark,
+            "complexity_multiplier": detailed_price.complexity_multiplier,
+            "urgency_multiplier": detailed_price.urgency_multiplier,
             "estimated_price": price,
             "price_breakdown": detailed_price.breakdown.model_dump(),
             "confidence_score": detailed_price.confidence_score,
             "is_budget_constrained": detailed_price.is_budget_constrained,
+            "approval_to_payment_handoff": {
+                "labor_amount": detailed_price.breakdown.service_labor,
+                "platform_fee": detailed_price.breakdown.platform_fee,
+                "fee_split": "85% Provider Labor / 15% Platform Commission",
+                "ready_for_invoice_generation": True,
+            },
         },
         "duration_ms": duration_ms,
         "timestamp": time.time()
