@@ -10,17 +10,12 @@ import 'package:app/core/services/storage_service.dart';
 import 'package:app/data/models/user_model.dart';
 import 'package:app/data/repositories/auth_repository.dart';
 import 'package:app/data/repositories/provider_repository.dart';
-import 'package:app/data/repositories/service_category_repository.dart';
 import 'package:app/data/repositories/service_listing_repository.dart';
 import 'package:app/providers/auth_provider.dart';
-import 'package:app/providers/service_category_provider.dart';
 import 'package:app/providers/service_directory_provider.dart';
 import 'package:app/screens/auth/customer_register_screen.dart';
 import 'package:app/screens/auth/login_screen.dart';
-import 'package:app/screens/auth/provider_register_screen.dart';
 import 'package:app/screens/auth/register_screen.dart';
-import 'package:app/screens/customer/customer_home_screen.dart';
-import 'package:app/screens/provider/provider_home_screen.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -153,6 +148,28 @@ void main() {
     };
     final verifiedUser = UserModel.fromJson(verifiedJson);
     expect(verifiedUser.isVerifiedProvider, isTrue);
+  });
+
+  test('ServiceDirectoryProvider.loadMyProviderProfile retains null _myProfile on failure without fabricating Verified profile', () async {
+    final client = ApiClient(
+      storage: storage,
+      httpClient: MockClient((req) async {
+        return http.Response('Internal Server Error', 500);
+      }),
+      baseUrl: 'http://localhost',
+    );
+
+    final providerRepo = ProviderRepository(apiClient: client);
+    final listingRepo = ServiceListingRepository(apiClient: client);
+    final dirProvider = ServiceDirectoryProvider(
+      providerRepo: providerRepo,
+      serviceListingRepo: listingRepo,
+    );
+
+    expect(dirProvider.myProfile, isNull);
+    await dirProvider.loadMyProviderProfile();
+    expect(dirProvider.myProfile, isNull);
+    expect(dirProvider.errorMessage, isNotNull);
   });
 
   testWidgets('RegisterScreen presents Customer and Provider choice options', (tester) async {

@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/colors.dart';
 import '../../data/repositories/provider_repository.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/service_directory_provider.dart';
 import '../../widgets/custom_button.dart';
 
@@ -71,7 +72,7 @@ class _ProviderVerificationScreenState extends State<ProviderVerificationScreen>
     if (profile == null) {
       setState(() {
         _isUploading = false;
-        _errorMessage = 'Profile not loaded. Please try again.';
+        _errorMessage = dir.errorMessage ?? 'Provider profile is not loaded yet. Please pull to refresh on home.';
       });
       return;
     }
@@ -122,8 +123,9 @@ class _ProviderVerificationScreenState extends State<ProviderVerificationScreen>
   @override
   Widget build(BuildContext context) {
     final dir = context.watch<ServiceDirectoryProvider>();
+    final auth = context.watch<AuthProvider>();
     final profile = dir.myProfile;
-    final status = profile?.verificationStatus ?? 'Pending';
+    final status = profile?.verificationStatus ?? auth.currentUser?.providerVerificationStatus ?? 'Pending';
     final isVerified = status.toLowerCase() == 'verified';
 
     return Scaffold(
