@@ -6,6 +6,7 @@ class UserModel {
   final String? phoneNumber;
   final String? avatarUrl;
   final String? address;
+  final String? providerVerificationStatus;
 
   UserModel({
     required this.id,
@@ -15,10 +16,12 @@ class UserModel {
     this.phoneNumber,
     this.avatarUrl,
     this.address,
+    this.providerVerificationStatus,
   });
 
   bool get isProvider => role.toLowerCase() == 'provider';
   bool get isCustomer => role.toLowerCase() == 'customer';
+  bool get isVerifiedProvider => isProvider && (providerVerificationStatus?.toLowerCase() == 'verified');
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
     final rolesList = json['roles'] as List<dynamic>?;
@@ -34,6 +37,7 @@ class UserModel {
       phoneNumber: json['phoneNumber']?.toString(),
       avatarUrl: json['avatarUrl']?.toString() ?? json['profilePictureUrl']?.toString(),
       address: json['address']?.toString(),
+      providerVerificationStatus: json['providerVerificationStatus']?.toString(),
     );
   }
 
@@ -46,6 +50,7 @@ class UserModel {
       'phoneNumber': phoneNumber,
       'avatarUrl': avatarUrl,
       'address': address,
+      'providerVerificationStatus': providerVerificationStatus,
     };
   }
 
@@ -57,6 +62,7 @@ class UserModel {
     String? phoneNumber,
     String? avatarUrl,
     String? address,
+    String? providerVerificationStatus,
   }) {
     return UserModel(
       id: id ?? this.id,
@@ -66,6 +72,7 @@ class UserModel {
       phoneNumber: phoneNumber ?? this.phoneNumber,
       avatarUrl: avatarUrl ?? this.avatarUrl,
       address: address ?? this.address,
+      providerVerificationStatus: providerVerificationStatus ?? this.providerVerificationStatus,
     );
   }
 }

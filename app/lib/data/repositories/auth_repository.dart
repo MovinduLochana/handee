@@ -53,6 +53,8 @@ class AuthRepository {
     required String email,
     required String password,
     required String role, // "Customer" or "Provider"
+    String? phoneNumber,
+    String? address,
   }) async {
     final response = await apiClient.post(
       ApiEndpoints.register,
@@ -64,25 +66,38 @@ class AuthRepository {
       },
     );
 
-    final user = UserModel(
-      id: response is Map ? (response['id']?.toString() ?? '') : '',
-      email: email,
-      fullName: fullName,
-      role: role,
-    );
-    await storage.saveUser(
-      id: user.id,
-      email: user.email,
-      fullName: user.fullName,
-      role: user.role,
-    );
-
     // Automatically log in after registration
+    UserModel loggedInUser;
     try {
-      return await login(email: email, password: password);
+      loggedInUser = await login(email: email, password: password);
     } catch (_) {
-      return user;
+      loggedInUser = UserModel(
+        id: response is Map ? (response['id']?.toString() ?? '') : '',
+        email: email,
+        fullName: fullName,
+        role: role,
+        phoneNumber: phoneNumber,
+        address: address,
+      );
+      await storage.saveUser(
+        id: loggedInUser.id,
+        email: loggedInUser.email,
+        fullName: loggedInUser.fullName,
+        role: loggedInUser.role,
+      );
+      return loggedInUser;
     }
+
+    if (phoneNumber != null || address != null) {
+      try {
+        loggedInUser = await updateProfile(
+          phoneNumber: phoneNumber,
+          address: address,
+        );
+      } catch (_) {}
+    }
+
+    return loggedInUser;
   }
 
   Future<UserModel?> getCurrentUser() async {

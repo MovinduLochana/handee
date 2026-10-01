@@ -114,6 +114,44 @@ class ApiClient {
     }
   }
 
+  Future<dynamic> postMultipart(
+    String path, {
+    Map<String, String>? fields,
+    required String fileField,
+    required String filePath,
+    String? filename,
+  }) async {
+    try {
+      final uri = _buildUri(path);
+      final request = http.MultipartRequest('POST', uri);
+
+      final token = storage.getAccessToken();
+      if (token != null && token.isNotEmpty) {
+        request.headers['Authorization'] = 'Bearer $token';
+      }
+      request.headers['Accept'] = 'application/json';
+
+      if (fields != null) {
+        request.fields.addAll(fields);
+      }
+
+      request.files.add(
+        await http.MultipartFile.fromPath(
+          fileField,
+          filePath,
+          filename: filename,
+        ),
+      );
+
+      final streamedResponse = await _httpClient.send(request).timeout(const Duration(seconds: 45));
+      final response = await http.Response.fromStream(streamedResponse);
+      return _handleResponse(response);
+    } catch (e) {
+      debugPrint('ApiClient Multipart POST error on $path: $e');
+      rethrow;
+    }
+  }
+
   dynamic _handleResponse(http.Response response) {
     final statusCode = response.statusCode;
     if (statusCode >= 200 && statusCode < 300) {
