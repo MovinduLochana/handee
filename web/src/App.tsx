@@ -40,6 +40,7 @@ import JobRequestsManagement from "./pages/admin/JobRequestsManagement";
 import JobRequestDetail from "./pages/admin/JobRequestDetail";
 import BookingsManagement from "./pages/admin/BookingsManagement";
 import BookingDetail from "./pages/admin/BookingDetail";
+import UsersManagement from "./pages/admin/UsersManagement";
 
 // Payments & Invoicing Pages
 import QuoteReview from "./pages/payments/QuoteReview";
@@ -110,6 +111,7 @@ function App() {
                 <Route path="/admin/verifications" element={<VerificationQueue />} />
                 <Route path="/admin/verifications/:id" element={<VerificationDetail />} />
                 <Route path="/admin/providers" element={<ProviderDirectory />} />
+                <Route path="/admin/users" element={<UsersManagement />} />
                 <Route path="/admin/booking-overview" element={<BookingOverview />} />
                 <Route path="/admin/job-requests" element={<JobRequestsManagement />} />
                 <Route path="/admin/job-requests/:id" element={<JobRequestDetail />} />

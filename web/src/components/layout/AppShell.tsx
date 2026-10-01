@@ -17,6 +17,7 @@ import {
   Receipt,
   DollarSign,
   CreditCard,
+  Briefcase,
 } from "lucide-react";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { authApi } from "../../api/auth";
@@ -68,7 +69,8 @@ export default function AppShell() {
     // Admin
     { name: "Agent Workflow", to: "/admin/agent-workflow", icon: Activity, show: isAdmin },
     { name: "Verifications", to: "/admin/verifications", icon: CheckSquare, show: isAdmin },
-    { name: "Provider Directory", to: "/admin/providers", icon: Users, show: isAdmin },
+    { name: "Users Directory", to: "/admin/users", icon: Users, show: isAdmin },
+    { name: "Provider Directory", to: "/admin/providers", icon: Briefcase, show: isAdmin },
     {
       name: "Booking Overview",
       to: "/admin/booking-overview",

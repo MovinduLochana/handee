@@ -1,5 +1,10 @@
 import { api } from "../lib/api";
-import type { ProviderProfileAdminDto, PagedResult, VerificationStatus } from "./types";
+import type {
+  ProviderProfileAdminDto,
+  PagedResult,
+  VerificationStatus,
+  AdminUserResult,
+} from "./types";
 
 export const adminApi = {
   /**
@@ -26,5 +31,22 @@ export const adminApi = {
   async getVerificationSummary(): Promise<Record<string, number>> {
     const response = await api.get<Record<string, number>>("/admin/verifications/summary");
     return response.data;
+  },
+
+  /**
+   * Admin: Retrieves all registered users across all roles (Customers, Providers, Admins).
+   * Expected: 200 OK — AdminUserResult[]
+   */
+  async getUsers(): Promise<AdminUserResult[]> {
+    const response = await api.get<AdminUserResult[]>("/admin/users");
+    return response.data;
+  },
+
+  /**
+   * Admin: Sets active status of a user (activate or suspend).
+   * Expected: 204 No Content
+   */
+  async setUserStatus(id: string, isActive: boolean): Promise<void> {
+    await api.put(`/admin/users/${id}/status`, { isActive });
   },
 };
