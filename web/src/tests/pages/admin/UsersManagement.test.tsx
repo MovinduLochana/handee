@@ -34,6 +34,7 @@ const mockUsers: AdminUserResult[] = [
     providerVerificationStatus: "Verified",
     createdAt: new Date("2026-02-10").toISOString(),
     roles: ["Provider"],
+    providerProfileId: "profile-2",
   },
   {
     id: "user-3",
@@ -54,6 +55,7 @@ const mockUsers: AdminUserResult[] = [
     providerVerificationStatus: "Pending",
     createdAt: new Date("2026-03-01").toISOString(),
     roles: ["Provider"],
+    providerProfileId: "profile-4",
   },
 ];
 
@@ -94,6 +96,11 @@ describe("UsersManagement Page", () => {
     expect(screen.getByText("4")).toBeInTheDocument(); // Total Users
     expect(screen.getByText("Kasun Jayawardena")).toBeInTheDocument();
     expect(screen.getByText("sunil@provider.lk")).toBeInTheDocument();
+
+    // Check verification detail links point to providerProfileId
+    const verificationLinks = screen.getAllByTitle("View Verification Details");
+    expect(verificationLinks[0]).toHaveAttribute("href", "/admin/verifications/profile-2");
+    expect(verificationLinks[1]).toHaveAttribute("href", "/admin/verifications/profile-4");
   });
 
   it("filters users by role tab", async () => {
@@ -167,5 +174,41 @@ describe("UsersManagement Page", () => {
     await waitFor(() => {
       expect(adminApi.setUserStatus).toHaveBeenCalledWith("user-1", false);
     });
+  });
+
+  it("displays error inside dialog when setUserStatus fails and resets error when opening another confirmation", async () => {
+    vi.mocked(adminApi.getUsers).mockResolvedValue(mockUsers);
+    vi.mocked(adminApi.setUserStatus).mockRejectedValue(new Error("Database connection timed out"));
+
+    renderComponent();
+
+    await waitFor(() => {
+      expect(screen.getByText("Kasun Jayawardena")).toBeInTheDocument();
+    });
+
+    // Click Suspend on Kasun
+    const suspendButtons = screen.getAllByRole("button", { name: /^Suspend$/i });
+    fireEvent.click(suspendButtons[0]);
+
+    // Confirm suspension
+    const confirmBtn = screen.getByRole("button", { name: /^Confirm Suspension$/i });
+    fireEvent.click(confirmBtn);
+
+    // Verify error is displayed in the dialog
+    await waitFor(() => {
+      expect(screen.getByText("Database connection timed out")).toBeInTheDocument();
+    });
+
+    // Cancel dialog
+    const cancelBtn = screen.getByRole("button", { name: /^Cancel$/i });
+    fireEvent.click(cancelBtn);
+
+    // Reopen confirmation on another user (Nuwan - Activate)
+    const activateBtn = screen.getByRole("button", { name: /^Activate$/i });
+    fireEvent.click(activateBtn);
+
+    // Verify previous error is cleared and not shown
+    expect(screen.getByText("Activate User Account")).toBeInTheDocument();
+    expect(screen.queryByText("Database connection timed out")).not.toBeInTheDocument();
   });
 });

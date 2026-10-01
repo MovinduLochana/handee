@@ -297,4 +297,5 @@ export interface AdminUserResult {
   providerVerificationStatus: string;
   createdAt: string;
   roles: string[];
+  providerProfileId?: string | null;
 }

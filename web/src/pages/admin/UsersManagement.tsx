@@ -15,11 +15,13 @@ import {
 } from "lucide-react";
 import { adminApi } from "../../api/admin";
 import type { AdminUserResult } from "../../api/types";
+import { extractApiError } from "../../lib/api";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Table,
   TableBody,
@@ -433,7 +435,7 @@ export default function UsersManagement() {
                         <div className="flex items-center gap-2">
                           {getVerificationBadge(user.providerVerificationStatus, user.roles)}
                           <Link
-                            to={`/admin/verifications/${user.id}`}
+                            to={`/admin/verifications/${user.providerProfileId || user.id}`}
                             className={buttonVariants({
                               variant: "ghost",
                               size: "icon",
@@ -462,7 +464,10 @@ export default function UsersManagement() {
                         variant={user.isActive ? "outline" : "default"}
                         size="sm"
                         className="text-xs h-7 rounded-none"
-                        onClick={() => setStatusConfirmUser(user)}
+                        onClick={() => {
+                          toggleStatusMutation.reset();
+                          setStatusConfirmUser(user);
+                        }}
                       >
                         {user.isActive ? "Suspend" : "Activate"}
                       </Button>
@@ -478,7 +483,12 @@ export default function UsersManagement() {
       {/* Confirmation Dialog for Status Change */}
       <Dialog
         open={!!statusConfirmUser}
-        onOpenChange={(open) => !open && setStatusConfirmUser(null)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setStatusConfirmUser(null);
+            toggleStatusMutation.reset();
+          }
+        }}
       >
         <DialogContent className="rounded-none border-border">
           <DialogHeader>
@@ -491,11 +501,27 @@ export default function UsersManagement() {
                 : `Are you sure you want to reactivate access for ${statusConfirmUser?.fullName}? They will regain full access to their account.`}
             </DialogDescription>
           </DialogHeader>
+
+          {toggleStatusMutation.isError && (
+            <Alert variant="destructive" className="rounded-none">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>
+                {extractApiError(
+                  toggleStatusMutation.error,
+                  "Failed to update user status. Please try again.",
+                )}
+              </AlertDescription>
+            </Alert>
+          )}
+
           <DialogFooter className="gap-2 sm:gap-0">
             <Button
               variant="outline"
               className="rounded-none"
-              onClick={() => setStatusConfirmUser(null)}
+              onClick={() => {
+                setStatusConfirmUser(null);
+                toggleStatusMutation.reset();
+              }}
               disabled={toggleStatusMutation.isPending}
             >
               Cancel
