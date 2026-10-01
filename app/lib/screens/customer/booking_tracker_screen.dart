@@ -5,7 +5,9 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/colors.dart';
 import '../../data/models/agent_workflow_model.dart';
+import '../../data/models/booking_model.dart';
 import '../../data/models/invoice_model.dart';
+import '../../providers/booking_provider.dart';
 import '../../providers/job_request_provider.dart';
 import '../../providers/payment_provider.dart';
 import '../../widgets/custom_button.dart';
@@ -31,6 +33,8 @@ class _BookingTrackerScreenState extends State<BookingTrackerScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final provider = context.read<JobRequestProvider>();
       provider.refreshTrackedRequest();
+      context.read<PaymentProvider>().fetchMyInvoices();
+      context.read<BookingProvider>().fetchCustomerBookings();
       _startPolling();
     });
   }
@@ -393,10 +397,20 @@ class _BookingTrackerScreenState extends State<BookingTrackerScreen> {
                   final paymentProvider = context.watch<PaymentProvider>();
                   final currencyFmt = NumberFormat('#,##0.00', 'en_US');
 
-                  final invoice = paymentProvider.getInvoiceForBooking(request.id) ??
+                  final bookingProvider = context.watch<BookingProvider>();
+                  BookingModel? linkedBooking;
+                  for (final b in bookingProvider.bookings) {
+                    if (b.jobRequestId == request.id) {
+                      linkedBooking = b;
+                      break;
+                    }
+                  }
+                  final targetBookingId = linkedBooking?.id ?? request.id;
+                  final invoice = paymentProvider.getInvoiceForBooking(targetBookingId) ??
+                      paymentProvider.getInvoiceForBooking(request.id) ??
                       InvoiceModel(
                         id: 'inv-${request.id.substring(0, min(8, request.id.length))}',
-                        bookingId: request.id,
+                        bookingId: targetBookingId,
                         customerId: request.customerId,
                         customerName: 'Customer',
                         providerId: workflow?.selectedProviderId ?? 'prov-001',
