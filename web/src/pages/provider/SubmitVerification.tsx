@@ -1,11 +1,13 @@
 import React, { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Upload, ArrowRight, ShieldCheck, AlertCircle } from "lucide-react";
+import { Upload, ArrowRight, ShieldCheck, AlertCircle, X, FileText } from "lucide-react";
 import { providerApi } from "../../api/providers";
 import { extractApiError } from "../../lib/api";
-import "./SubmitVerification.css";
-import "../provider/ProviderOnboarding.css"; // Reuse base wizard styles like dropzones
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Label } from "@/components/ui/label";
 
 export default function SubmitVerification() {
   const navigate = useNavigate();
@@ -27,8 +29,6 @@ export default function SubmitVerification() {
       if (!profile) throw new Error("No profile loaded");
 
       if (!nicFile) {
-        // Wait, if they already have an NIC, they don't NEED to upload a new one,
-        // but this standalone router is specifically for uploading missing docs.
         if (profile.certifications?.every((c) => c.type !== "NIC")) {
           throw new Error("NIC document is required for verification.");
         }
@@ -65,7 +65,7 @@ export default function SubmitVerification() {
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  if (isLoading) return <div className="state-container">Loading...</div>;
+  if (isLoading) return <div className="p-8 text-center text-muted-foreground">Loading...</div>;
 
   if (
     profile &&
@@ -76,54 +76,100 @@ export default function SubmitVerification() {
   }
 
   return (
-    <div className="verification-submit-container animate-fade-up">
-      <header className="verification-submit-header">
-        <ShieldCheck size={48} className="shield-icon" />
-        <h1>Identity Verification</h1>
-        <p>Upload your documents to confirm your identity and unlock your profile.</p>
+    <div className="max-w-2xl mx-auto px-4 py-8 space-y-6">
+      <header className="text-center space-y-3">
+        <div className="flex justify-center">
+          <ShieldCheck className="w-12 h-12 text-primary" />
+        </div>
+        <h1 className="text-3xl font-bold tracking-tight text-foreground">Identity Verification</h1>
+        <p className="text-muted-foreground text-sm">
+          Upload your documents to confirm your identity and unlock your profile.
+        </p>
       </header>
 
-      <div className="verification-form-card">
-        {profile?.verificationStatus === "Rejected" && (
-          <div className="wizard-status-banner status-rejected mb-8">
-            <AlertCircle size={20} />
-            <span>
-              Your previous application was rejected. Please review your information and upload
-              clearer documents.
-            </span>
-          </div>
-        )}
+      <Card className="rounded-none border-border">
+        <CardContent className="pt-6 space-y-6">
+          {profile?.verificationStatus === "Rejected" && (
+            <Alert variant="destructive">
+              <AlertCircle className="w-4 h-4" />
+              <AlertDescription>
+                Your previous application was rejected. Please review your information and upload
+                clearer documents.
+              </AlertDescription>
+            </Alert>
+          )}
 
-        {error && <div className="wizard-error mb-8">{error}</div>}
+          {error && (
+            <Alert variant="destructive">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
 
-        <input
-          type="file"
-          hidden
-          ref={fileInputRef}
-          multiple
-          accept="image/*,application/pdf"
-          onChange={handleFileSelect}
-        />
+          <input
+            type="file"
+            hidden
+            ref={fileInputRef}
+            multiple
+            accept="image/*,application/pdf"
+            onChange={handleFileSelect}
+          />
 
-        <div className="wizard-field">
-          <label className="field-label">National Identity Card (NIC) — Required</label>
-          <p className="field-desc">
-            Please provide a clear scan or photo of your government-issued ID.
-          </p>
-          {nicFile || profile?.certifications?.some((c) => c.type === "NIC") ? (
-            <div className="upload-file-item file-uploaded">
-              <div className="upload-file-name text-accent-bold">
-                {nicFile ? nicFile.name : "NIC Document (Already Uploaded)"}
+          <div className="space-y-2">
+            <Label className="text-sm font-semibold">National Identity Card (NIC) — Required</Label>
+            <p className="text-xs text-muted-foreground">
+              Please provide a clear scan or photo of your government-issued ID.
+            </p>
+
+            {nicFile || profile?.certifications?.some((c) => c.type === "NIC") ? (
+              <div className="flex items-center justify-between p-3 border border-border bg-muted/40 text-sm">
+                <div className="flex items-center gap-2 truncate">
+                  <FileText className="w-4 h-4 text-primary shrink-0" />
+                  <span className="font-medium truncate">
+                    {nicFile ? nicFile.name : "NIC Document (Already Uploaded)"}
+                  </span>
+                </div>
+                {nicFile && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 w-7 p-0 cursor-pointer"
+                    onClick={() => setNicFile(null)}
+                    aria-label="Remove NIC"
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                )}
               </div>
-              {nicFile && (
-                <button className="upload-file-remove" onClick={() => setNicFile(null)}>
-                  ✕
-                </button>
-              )}
-            </div>
-          ) : (
+            ) : (
+              <div
+                className="border-2 border-dashed border-border hover:border-primary p-6 text-center cursor-pointer transition-colors space-y-2"
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    fileInputRef.current?.click();
+                  }
+                }}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Upload className="mx-auto w-8 h-8 text-muted-foreground" />
+                <div className="text-sm font-medium text-foreground">Click to upload your NIC</div>
+                <div className="text-xs text-muted-foreground">Clear photo or PDF, max 5MB</div>
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-2 pt-4 border-t border-border">
+            <Label className="text-sm font-semibold">
+              Additional Trade Certifications (Optional)
+            </Label>
+            <p className="text-xs text-muted-foreground">
+              Upload any diplomas, certificates, or trade licenses to establish credibility.
+            </p>
+
             <div
-              className="upload-zone mb-6 cursor-pointer"
+              className="border-2 border-dashed border-border hover:border-primary p-6 text-center cursor-pointer transition-colors space-y-2"
               role="button"
               tabIndex={0}
               onKeyDown={(e) => {
@@ -134,74 +180,68 @@ export default function SubmitVerification() {
               }}
               onClick={() => fileInputRef.current?.click()}
             >
-              <Upload className="upload-zone-icon" size={32} />
-              <div className="upload-zone-text">Click to upload your NIC</div>
-              <div className="upload-zone-hint">Clear photo or PDF, max 5MB</div>
+              <Upload className="mx-auto w-8 h-8 text-muted-foreground" />
+              <div className="text-sm font-medium text-foreground">
+                Click to upload additional documents
+              </div>
+              <div className="text-xs text-muted-foreground">
+                Photos or PDFs showcasing your trades
+              </div>
             </div>
-          )}
-        </div>
 
-        <div className="wizard-field mt-10">
-          <label className="field-label">Additional Trade Certifications (Optional)</label>
-          <p className="field-desc">
-            Upload any diplomas, certificates, or trade licenses to establish credibility.
-          </p>
-          <div
-            className="upload-zone cursor-pointer"
-            role="button"
-            tabIndex={0}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                fileInputRef.current?.click();
-              }
-            }}
-            onClick={() => fileInputRef.current?.click()}
-          >
-            <Upload className="upload-zone-icon" size={32} />
-            <div className="upload-zone-text">Click to upload additional documents</div>
-            <div className="upload-zone-hint">Photos or PDFs showcasing your trades</div>
+            {certFiles.length > 0 && (
+              <div className="space-y-2 pt-2">
+                {certFiles.map((file, i) => (
+                  <div
+                    key={i}
+                    className="flex items-center justify-between p-3 border border-border bg-muted/30 text-sm"
+                  >
+                    <div className="flex items-center gap-2 truncate">
+                      <FileText className="w-4 h-4 text-muted-foreground shrink-0" />
+                      <span className="truncate font-medium">{file.name}</span>
+                    </div>
+                    <div className="flex items-center gap-3 shrink-0">
+                      <span className="text-xs text-muted-foreground">
+                        {(file.size / 1024 / 1024).toFixed(2)} MB
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 w-7 p-0 cursor-pointer"
+                        onClick={() => setCertFiles((prev) => prev.filter((_, idx) => idx !== i))}
+                        aria-label={`Remove ${file.name}`}
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
-          {certFiles.length > 0 && (
-            <div className="upload-file-list">
-              {certFiles.map((file, i) => (
-                <div key={i} className="upload-file-item">
-                  <div className="upload-file-name truncate">{file.name}</div>
-                  <div className="upload-file-size">{(file.size / 1024 / 1024).toFixed(2)} MB</div>
-                  <button
-                    className="upload-file-remove"
-                    onClick={() => setCertFiles((prev) => prev.filter((_, idx) => idx !== i))}
-                  >
-                    ✕
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className="form-actions">
-          <button
-            className="wizard-btn wizard-btn-secondary"
-            onClick={() => navigate("/dashboard")}
-            disabled={submitVerificationMutation.isPending}
-          >
-            Back
-          </button>
-          <button
-            className="wizard-btn wizard-btn-primary"
-            onClick={() => submitVerificationMutation.mutate()}
-            disabled={
-              submitVerificationMutation.isPending ||
-              (!nicFile && !profile?.certifications?.some((c) => c.type === "NIC"))
-            }
-          >
-            {submitVerificationMutation.isPending ? "Submitting..." : "Submit Documents"}{" "}
-            <ArrowRight size={16} />
-          </button>
-        </div>
-      </div>
+          <div className="flex items-center justify-between pt-6 border-t border-border">
+            <Button
+              variant="outline"
+              onClick={() => navigate("/dashboard")}
+              disabled={submitVerificationMutation.isPending}
+            >
+              Back
+            </Button>
+            <Button
+              onClick={() => submitVerificationMutation.mutate()}
+              disabled={
+                submitVerificationMutation.isPending ||
+                (!nicFile && !profile?.certifications?.some((c) => c.type === "NIC"))
+              }
+              className="gap-2"
+            >
+              {submitVerificationMutation.isPending ? "Submitting..." : "Submit Documents"}
+              <ArrowRight className="w-4 h-4" />
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

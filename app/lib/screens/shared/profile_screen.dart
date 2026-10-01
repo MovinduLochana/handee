@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/colors.dart';
 import '../../providers/auth_provider.dart';
-import '../../widgets/role_switch_sheet.dart';
 import '../auth/login_screen.dart';
 import '../customer/edit_customer_profile_screen.dart';
 import '../provider/edit_provider_profile_screen.dart';
@@ -22,7 +21,7 @@ class ProfileScreen extends StatelessWidget {
         title: const Text('Account & Settings'),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         child: Column(
           children: [
             // User Header Card
@@ -85,7 +84,7 @@ class ProfileScreen extends StatelessWidget {
               ),
             ),
 
-            const SizedBox(height: 12),
+            const SizedBox(height: 20),
 
             // Profile Fulfillment / Edit Card
             Container(
@@ -132,31 +131,7 @@ class ProfileScreen extends StatelessWidget {
             ),
 
             const SizedBox(height: 16),
-
-            // Presentation Mode: Role Switcher
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.borderLight),
-              ),
-              child: ListTile(
-                leading: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: const BoxDecoration(
-                    color: AppColors.primaryUltraLight,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.swap_horiz, color: AppColors.primary, size: 20),
-                ),
-                title: const Text('Switch Role (Demo Mode)', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-                subtitle: Text('Currently active: ${user?.role ?? "Customer"}', style: const TextStyle(fontSize: 12)),
-                trailing: const Icon(Icons.arrow_forward_ios, size: 14),
-                onTap: () => RoleSwitchSheet.show(context),
-              ),
-            ),
-
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
 
             // Backend & API Configuration
             Container(

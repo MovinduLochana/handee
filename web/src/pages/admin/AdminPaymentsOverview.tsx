@@ -2,7 +2,17 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { paymentsApi } from "../../api/payments";
 import { DollarSign, TrendingUp, CreditCard, Clock, RefreshCw, ShieldCheck } from "lucide-react";
-import "../payments/Payments.css";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 export default function AdminPaymentsOverview() {
   const queryClient = useQueryClient();
@@ -30,172 +40,220 @@ export default function AdminPaymentsOverview() {
     return p.status === filter;
   });
 
-  return (
-    <div className="payments-page">
-      <div className="payments-header">
-        <div>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "0.5rem",
-              marginBottom: "0.25rem",
-            }}
+  const getPayoutStatusBadge = (status: string) => {
+    switch (status) {
+      case "Completed":
+        return (
+          <Badge
+            variant="outline"
+            className="border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold text-xs"
           >
-            <span className="sandbox-badge">
-              <ShieldCheck size={14} /> Financial Audit & Reconciliation
-            </span>
+            Completed
+          </Badge>
+        );
+      case "Pending":
+        return (
+          <Badge
+            variant="outline"
+            className="border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 font-semibold text-xs"
+          >
+            Pending
+          </Badge>
+        );
+      case "Processing":
+        return (
+          <Badge
+            variant="outline"
+            className="border-blue-500/30 bg-blue-500/10 text-blue-600 dark:text-blue-400 font-semibold text-xs"
+          >
+            Processing
+          </Badge>
+        );
+      default:
+        return (
+          <Badge variant="outline" className="font-semibold text-xs">
+            {status}
+          </Badge>
+        );
+    }
+  };
+
+  return (
+    <div className="max-w-7xl mx-auto p-6 space-y-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <Badge
+              variant="outline"
+              className="border-primary/30 bg-primary/10 text-primary gap-1 text-xs"
+            >
+              <ShieldCheck className="h-3.5 w-3.5" /> Financial Audit & Reconciliation
+            </Badge>
           </div>
-          <h1 className="payments-title">Platform Payments & Disbursements</h1>
-          <p className="payments-subtitle">
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">
+            Platform Payments & Disbursements
+          </h1>
+          <p className="text-muted-foreground text-sm mt-0.5">
             Admin oversight for payment processing, platform commissions (15%), and provider payouts
           </p>
         </div>
-        <button onClick={() => refetch()} className="btn-secondary">
-          <RefreshCw size={16} /> Refresh Metrics
-        </button>
+        <Button variant="outline" onClick={() => refetch()} className="gap-2 shrink-0">
+          <RefreshCw className="h-4 w-4" /> Refresh Metrics
+        </Button>
       </div>
 
       {/* Platform Level Metrics */}
-      <div className="stat-cards-grid">
-        <div className="stat-card">
-          <div className="stat-icon-wrapper blue">
-            <DollarSign size={24} />
-          </div>
-          <div className="stat-content">
-            <span className="stat-label">Gross Transaction Volume</span>
-            <span className="stat-value">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card>
+          <CardHeader className="p-4 pb-2">
+            <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center justify-between">
+              Gross Volume
+              <DollarSign className="h-4 w-4 text-primary" />
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-4 pt-0">
+            <div className="text-2xl font-bold text-foreground font-mono">
               LKR {(overview?.totalGrossVolume ?? 0).toLocaleString()}
-            </span>
-          </div>
-        </div>
+            </div>
+          </CardContent>
+        </Card>
 
-        <div className="stat-card">
-          <div className="stat-icon-wrapper green">
-            <TrendingUp size={24} />
-          </div>
-          <div className="stat-content">
-            <span className="stat-label">Platform Fees Revenue (15%)</span>
-            <span className="stat-value">
+        <Card>
+          <CardHeader className="p-4 pb-2">
+            <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center justify-between">
+              Platform Fees (15%)
+              <TrendingUp className="h-4 w-4 text-emerald-500" />
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-4 pt-0">
+            <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 font-mono">
               LKR {(overview?.totalPlatformFees ?? 0).toLocaleString()}
-            </span>
-          </div>
-        </div>
+            </div>
+          </CardContent>
+        </Card>
 
-        <div className="stat-card">
-          <div className="stat-icon-wrapper purple">
-            <CreditCard size={24} />
-          </div>
-          <div className="stat-content">
-            <span className="stat-label">Disbursed to Providers (85%)</span>
-            <span className="stat-value">LKR {(overview?.totalPaidOut ?? 0).toLocaleString()}</span>
-          </div>
-        </div>
+        <Card>
+          <CardHeader className="p-4 pb-2">
+            <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center justify-between">
+              Disbursed (85%)
+              <CreditCard className="h-4 w-4 text-purple-500" />
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-4 pt-0">
+            <div className="text-2xl font-bold text-purple-600 dark:text-purple-400 font-mono">
+              LKR {(overview?.totalPaidOut ?? 0).toLocaleString()}
+            </div>
+          </CardContent>
+        </Card>
 
-        <div className="stat-card">
-          <div className="stat-icon-wrapper amber">
-            <Clock size={24} />
-          </div>
-          <div className="stat-content">
-            <span className="stat-label">Pending Payout Queue</span>
-            <span className="stat-value">{overview?.pendingPayoutCount ?? 0}</span>
-          </div>
-        </div>
+        <Card>
+          <CardHeader className="p-4 pb-2">
+            <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center justify-between">
+              Pending Payouts
+              <Clock className="h-4 w-4 text-amber-500" />
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-4 pt-0">
+            <div className="text-2xl font-bold text-foreground">
+              {overview?.pendingPayoutCount ?? 0}
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Payout Processing Queue */}
-      <div className="payments-card">
-        <div className="payments-card-header">
-          <h2 className="payments-card-title">
-            <CreditCard size={20} color="var(--accent)" />
+      <Card className="overflow-hidden">
+        <CardHeader className="p-4 border-b border-border flex flex-row items-center justify-between gap-4">
+          <CardTitle className="text-base font-bold flex items-center gap-2">
+            <CreditCard className="h-4 w-4 text-primary" />
             Disbursement Queue & Settlement
-          </h2>
-          <div style={{ display: "flex", gap: "0.5rem" }}>
+          </CardTitle>
+          <div className="flex gap-1.5 flex-wrap">
             {["ALL", "Pending", "Processing", "Completed"].map((st) => (
-              <button
+              <Button
                 key={st}
+                variant={filter === st ? "default" : "outline"}
+                size="sm"
                 onClick={() => setFilter(st)}
-                className="btn-secondary btn-sm"
-                style={{
-                  backgroundColor: filter === st ? "var(--accent)" : "transparent",
-                  color: filter === st ? "#fff" : "var(--text)",
-                  borderColor: filter === st ? "var(--accent)" : "var(--border)",
-                }}
+                className="text-xs h-7"
               >
                 {st}
-              </button>
+              </Button>
             ))}
           </div>
-        </div>
+        </CardHeader>
 
         {isLoading ? (
-          <p style={{ textAlign: "center", padding: "2rem" }}>Loading settlement data...</p>
+          <CardContent className="p-12 text-center text-muted-foreground text-sm">
+            Loading settlement data...
+          </CardContent>
         ) : filteredPayouts.length === 0 ? (
-          <div style={{ textAlign: "center", padding: "3rem 1rem", color: "var(--text-muted)" }}>
+          <CardContent className="p-12 text-center text-muted-foreground text-sm">
             No disbursements recorded in the platform ledger.
-          </div>
+          </CardContent>
         ) : (
-          <div className="payments-table-container">
-            <table className="payments-table">
-              <thead>
-                <tr>
-                  <th>Payout ID</th>
-                  <th>Provider</th>
-                  <th>Booking ID</th>
-                  <th>Gross Charged</th>
-                  <th>15% Platform Commission</th>
-                  <th>Net Payout</th>
-                  <th>Status</th>
-                  <th style={{ textAlign: "right" }}>Action</th>
-                </tr>
-              </thead>
-              <tbody>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Payout ID</TableHead>
+                  <TableHead>Provider</TableHead>
+                  <TableHead>Booking ID</TableHead>
+                  <TableHead>Gross Charged</TableHead>
+                  <TableHead>15% Platform Commission</TableHead>
+                  <TableHead>Net Payout</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Action</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {filteredPayouts.map((payout) => (
-                  <tr key={payout.id}>
-                    <td style={{ fontFamily: "monospace", fontWeight: 600 }}>
+                  <TableRow key={payout.id}>
+                    <TableCell className="font-mono font-semibold text-xs">
                       {payout.payoutReference || `PAY-${payout.id.slice(0, 8).toUpperCase()}`}
-                    </td>
-                    <td>
-                      <div style={{ fontWeight: 600, color: "var(--text-h)" }}>
+                    </TableCell>
+                    <TableCell>
+                      <div className="font-semibold text-foreground text-sm">
                         {payout.providerName || "Service Provider"}
                       </div>
-                      <div style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
+                      <div className="text-xs text-muted-foreground font-mono">
                         ID: {payout.providerId.slice(0, 8)}...
                       </div>
-                    </td>
-                    <td>#{payout.bookingId.slice(0, 8)}</td>
-                    <td>LKR {payout.grossAmount.toLocaleString()}</td>
-                    <td style={{ color: "var(--accent)", fontWeight: 600 }}>
+                    </TableCell>
+                    <TableCell className="font-mono text-xs">
+                      #{payout.bookingId.slice(0, 8)}
+                    </TableCell>
+                    <TableCell className="text-xs">
+                      LKR {payout.grossAmount.toLocaleString()}
+                    </TableCell>
+                    <TableCell className="text-xs font-semibold text-primary">
                       +LKR {payout.platformFeeDeducted.toLocaleString()}
-                    </td>
-                    <td style={{ fontWeight: 700, color: "var(--success)" }}>
+                    </TableCell>
+                    <TableCell className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
                       LKR {payout.netAmount.toLocaleString()}
-                    </td>
-                    <td>
-                      <span className={`badge-status ${payout.status}`}>{payout.status}</span>
-                    </td>
-                    <td style={{ textAlign: "right" }}>
+                    </TableCell>
+                    <TableCell>{getPayoutStatusBadge(payout.status)}</TableCell>
+                    <TableCell className="text-right">
                       {payout.status === "Pending" ? (
-                        <button
+                        <Button
+                          size="sm"
                           onClick={() => processMutation.mutate(payout.id)}
                           disabled={processMutation.isPending}
-                          className="btn-primary btn-sm"
+                          className="h-7 text-xs"
                         >
                           {processMutation.isPending ? "Disbursing..." : "Approve & Settle"}
-                        </button>
+                        </Button>
                       ) : (
-                        <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>
-                          Settled
-                        </span>
+                        <span className="text-xs text-muted-foreground">Settled</span>
                       )}
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
         )}
-      </div>
+      </Card>
     </div>
   );
 }

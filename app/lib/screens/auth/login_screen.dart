@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/colors.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/service_directory_provider.dart';
 import '../../widgets/custom_button.dart';
 import '../customer/customer_home_screen.dart';
 import '../provider/provider_home_screen.dart';
+import 'customer_register_screen.dart';
+import 'provider_register_screen.dart';
 import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -48,6 +51,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (success && mounted) {
       if (auth.isProvider) {
+        context.read<ServiceDirectoryProvider>().loadMyProviderProfile();
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => const ProviderHomeScreen()),
@@ -82,7 +86,7 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const SizedBox(height: 20),
+                const SizedBox(height: 16),
                 Center(
                   child: Container(
                     padding: const EdgeInsets.all(16),
@@ -97,7 +101,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 20),
                 const Center(
                   child: Text(
                     'Welcome back',
@@ -110,16 +114,16 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
                 const SizedBox(height: 6),
-                Center(
+                const Center(
                   child: Text(
-                    'Sign in to access your bookings & requests',
+                    'Unified sign-in for Customers and Tradespeople',
                     style: TextStyle(
                       fontSize: 14,
                       color: AppColors.textSecondary,
                     ),
                   ),
                 ),
-                const SizedBox(height: 32),
+                const SizedBox(height: 24),
 
                 // Demo Credentials Quick Buttons
                 Container(
@@ -196,7 +200,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     return null;
                   },
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 18),
                 const Text(
                   'Password',
                   style: TextStyle(
@@ -225,38 +229,67 @@ class _LoginScreenState extends State<LoginScreen> {
                     return null;
                   },
                 ),
-                const SizedBox(height: 28),
+                const SizedBox(height: 24),
                 CustomButton(
                   text: 'Sign In',
                   isLoading: auth.isLoading,
                   onPressed: _handleLogin,
                 ),
                 const SizedBox(height: 24),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Text(
-                      "Don't have an account? ",
-                      style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
-                    ),
-                    GestureDetector(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => const RegisterScreen()),
-                        );
-                      },
-                      child: const Text(
-                        'Create Account',
-                        style: TextStyle(
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 14,
-                        ),
+
+                // Registration Options
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceElevated,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: AppColors.borderLight),
+                  ),
+                  child: Column(
+                    children: [
+                      const Text(
+                        "Don't have an account?",
+                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textSecondary),
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (_) => const CustomerRegisterScreen()),
+                                );
+                              },
+                              style: OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(vertical: 10),
+                                side: const BorderSide(color: AppColors.primary),
+                              ),
+                              child: const Text('Customer Sign Up', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.primary)),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: ElevatedButton(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (_) => const ProviderRegisterScreen()),
+                                );
+                              },
+                              style: ElevatedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(vertical: 10),
+                              ),
+                              child: const Text('Join as a Pro', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
+                const SizedBox(height: 16),
               ],
             ),
           ),

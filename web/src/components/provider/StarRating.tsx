@@ -1,5 +1,4 @@
 import { Star } from "lucide-react";
-import "./StarRating.css";
 
 interface StarRatingProps {
   rating: number;
@@ -17,28 +16,46 @@ export default function StarRating({
   count,
 }: StarRatingProps) {
   return (
-    <div className="star-rating">
-      <div className="star-rating-stars">
+    <div className="star-rating inline-flex items-center gap-1.5 text-xs text-foreground">
+      <div className="star-rating-stars inline-flex items-center gap-0.5">
         {Array.from({ length: maxStars }, (_, i) => {
           const filled = rating >= i + 1;
           const half = !filled && rating > i && rating < i + 1;
 
           return (
-            <span key={i} className="star-wrapper" style={{ width: size, height: size }}>
+            <span
+              key={i}
+              className="star-wrapper relative inline-flex items-center justify-center text-muted-foreground/30"
+              style={{ width: size, height: size }}
+            >
               {/* Background (empty) star */}
-              <Star size={size} className="star-empty" strokeWidth={1.5} />
+              <Star size={size} className="star-empty text-muted-foreground/30" strokeWidth={1.5} />
               {/* Filled overlay */}
               {(filled || half) && (
-                <span className="star-fill-clip" style={{ width: filled ? "100%" : "50%" }}>
-                  <Star size={size} className="star-filled" strokeWidth={1.5} fill="currentColor" />
+                <span
+                  className={`star-fill-clip absolute inset-0 overflow-hidden text-amber-500 ${
+                    filled ? "w-full" : "w-1/2"
+                  }`}
+                >
+                  <Star
+                    size={size}
+                    className="star-filled text-amber-500 fill-amber-500"
+                    strokeWidth={1.5}
+                  />
                 </span>
               )}
             </span>
           );
         })}
       </div>
-      {showValue && <span className="star-rating-value">{rating.toFixed(1)}</span>}
-      {count !== undefined && <span className="star-rating-count">({count})</span>}
+      {showValue && (
+        <span className="star-rating-value font-semibold text-foreground ml-1">
+          {rating.toFixed(1)}
+        </span>
+      )}
+      {count !== undefined && (
+        <span className="star-rating-count text-muted-foreground">({count})</span>
+      )}
     </div>
   );
 }

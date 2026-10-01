@@ -12,7 +12,11 @@ import {
 } from "lucide-react";
 import { usersApi } from "../../api/users";
 import { usePaymentMethods } from "../../lib/paymentMethodsStore";
-import "./Payments.css";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 
 export default function PaymentMethods() {
   const { data: userProfile } = useQuery({
@@ -52,22 +56,23 @@ export default function PaymentMethods() {
   };
 
   return (
-    <div className="payments-page">
-      <div className="payments-header">
-        <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-          <Link to="/invoices" className="btn-secondary btn-sm">
-            <ArrowLeft size={16} /> Invoices
+    <div className="max-w-5xl mx-auto p-6 space-y-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="flex items-center gap-4">
+          <Link to="/invoices" className={buttonVariants({ variant: "outline", size: "sm" })}>
+            <ArrowLeft className="h-4 w-4 mr-1" /> Invoices
           </Link>
           <div>
-            <h1 className="payments-title">Saved Payment Methods</h1>
-            <p className="payments-subtitle">
+            <h1 className="text-3xl font-bold tracking-tight text-foreground">
+              Saved Payment Methods
+            </h1>
+            <p className="text-muted-foreground text-sm mt-0.5">
               Manage your sandbox payment cards and digital wallets — seamlessly synced with
               checkout
             </p>
           </div>
         </div>
-        <button
-          className="btn-primary"
+        <Button
           onClick={() => {
             setNewCard((prev) => ({
               ...prev,
@@ -75,383 +80,247 @@ export default function PaymentMethods() {
             }));
             setShowAddForm(true);
           }}
+          className="gap-2"
         >
-          <Plus size={16} /> Add Payment Method
-        </button>
+          <Plus className="h-4 w-4" /> Add Payment Method
+        </Button>
       </div>
 
       {/* Sync Status Banner */}
-      <div
-        className="payments-card"
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "1rem",
-          padding: "1rem 1.25rem",
-          marginBottom: "1.5rem",
-          background: "oklch(45% 0.2 260 / 0.05)",
-          border: "1px solid var(--accent)",
-        }}
-      >
-        <Sparkles size={22} color="var(--accent)" />
-        <div style={{ fontSize: "0.88rem", color: "var(--text)" }}>
-          <strong style={{ color: "var(--text-h)" }}>Live Checkout Sync:</strong> All cards in this
-          vault automatically appear on the Secure Checkout screen for instant settlement.
-          {userProfile && (
-            <span style={{ marginLeft: "0.5rem", color: "var(--text-muted)" }}>
-              Vault attached to <strong>{userProfile.fullName || userProfile.email}</strong>
-            </span>
-          )}
-        </div>
-      </div>
+      <Card className="bg-primary/5 border-primary/20">
+        <CardContent className="p-4 flex items-center gap-3 text-sm">
+          <Sparkles className="h-5 w-5 text-primary shrink-0" />
+          <div className="text-foreground">
+            <strong className="text-foreground">Live Checkout Sync:</strong> All cards in this vault
+            automatically appear on the Secure Checkout screen for instant settlement.
+            {userProfile && (
+              <span className="ml-2 text-muted-foreground">
+                Vault attached to{" "}
+                <strong className="text-foreground">
+                  {userProfile.fullName || userProfile.email}
+                </strong>
+              </span>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
       {showAddForm && (
-        <div className="payments-card" style={{ maxWidth: 580, margin: "0 0 2rem" }}>
-          <div className="payments-card-header">
-            <h3 className="payments-card-title">
-              <CreditCard size={18} /> Add Sandbox Card
-            </h3>
-            <button onClick={() => setShowAddForm(false)} className="btn-secondary btn-sm">
-              Cancel
-            </button>
-          </div>
-
-          <form
-            onSubmit={handleAddCard}
-            style={{ display: "flex", flexDirection: "column", gap: "1rem" }}
-          >
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
-              <div>
-                <label
-                  style={{
-                    display: "block",
-                    fontSize: "0.8rem",
-                    fontWeight: 600,
-                    marginBottom: "0.3rem",
-                    color: "var(--text-muted)",
-                  }}
-                >
-                  Cardholder Name
-                </label>
-                <input
-                  type="text"
-                  value={newCard.holderName}
-                  onChange={(e) => setNewCard({ ...newCard, holderName: e.target.value })}
-                  placeholder="Cardholder Name"
-                  required
-                  style={{
-                    width: "100%",
-                    padding: "0.6rem",
-                    borderRadius: "8px",
-                    border: "1px solid var(--border)",
-                    background: "var(--bg-surface)",
-                    color: "var(--text-h)",
-                  }}
-                />
-              </div>
-
-              <div>
-                <label
-                  style={{
-                    display: "block",
-                    fontSize: "0.8rem",
-                    fontWeight: 600,
-                    marginBottom: "0.3rem",
-                    color: "var(--text-muted)",
-                  }}
-                >
-                  Card Label / Nickname
-                </label>
-                <input
-                  type="text"
-                  value={newCard.name}
-                  onChange={(e) => setNewCard({ ...newCard, name: e.target.value })}
-                  placeholder="e.g. Primary Visa"
-                  style={{
-                    width: "100%",
-                    padding: "0.6rem",
-                    borderRadius: "8px",
-                    border: "1px solid var(--border)",
-                    background: "var(--bg-surface)",
-                    color: "var(--text-h)",
-                  }}
-                />
-              </div>
-            </div>
-
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
-              <div>
-                <label
-                  style={{
-                    display: "block",
-                    fontSize: "0.8rem",
-                    fontWeight: 600,
-                    marginBottom: "0.3rem",
-                    color: "var(--text-muted)",
-                  }}
-                >
-                  Card Brand
-                </label>
-                <select
-                  value={newCard.brand}
-                  onChange={(e) => setNewCard({ ...newCard, brand: e.target.value })}
-                  style={{
-                    width: "100%",
-                    padding: "0.6rem",
-                    borderRadius: "8px",
-                    border: "1px solid var(--border)",
-                    background: "var(--bg-surface)",
-                    color: "var(--text-h)",
-                  }}
-                >
-                  <option value="Visa">Visa</option>
-                  <option value="Mastercard">Mastercard</option>
-                  <option value="Amex">American Express</option>
-                  <option value="PayHere">PayHere Demo</option>
-                </select>
-              </div>
-              <div>
-                <label
-                  style={{
-                    display: "block",
-                    fontSize: "0.8rem",
-                    fontWeight: 600,
-                    marginBottom: "0.3rem",
-                    color: "var(--text-muted)",
-                  }}
-                >
-                  Last 4 Digits
-                </label>
-                <input
-                  type="text"
-                  maxLength={4}
-                  value={newCard.last4}
-                  onChange={(e) => setNewCard({ ...newCard, last4: e.target.value })}
-                  placeholder="4242"
-                  required
-                  style={{
-                    width: "100%",
-                    padding: "0.6rem",
-                    borderRadius: "8px",
-                    border: "1px solid var(--border)",
-                    background: "var(--bg-surface)",
-                    color: "var(--text-h)",
-                  }}
-                />
-              </div>
-            </div>
-
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
-              <div>
-                <label
-                  style={{
-                    display: "block",
-                    fontSize: "0.8rem",
-                    fontWeight: 600,
-                    marginBottom: "0.3rem",
-                    color: "var(--text-muted)",
-                  }}
-                >
-                  Expiry Month
-                </label>
-                <input
-                  type="number"
-                  min={1}
-                  max={12}
-                  value={newCard.expiryMonth}
-                  onChange={(e) => setNewCard({ ...newCard, expiryMonth: Number(e.target.value) })}
-                  style={{
-                    width: "100%",
-                    padding: "0.6rem",
-                    borderRadius: "8px",
-                    border: "1px solid var(--border)",
-                    background: "var(--bg-surface)",
-                    color: "var(--text-h)",
-                  }}
-                />
-              </div>
-              <div>
-                <label
-                  style={{
-                    display: "block",
-                    fontSize: "0.8rem",
-                    fontWeight: 600,
-                    marginBottom: "0.3rem",
-                    color: "var(--text-muted)",
-                  }}
-                >
-                  Expiry Year
-                </label>
-                <input
-                  type="number"
-                  min={2026}
-                  max={2035}
-                  value={newCard.expiryYear}
-                  onChange={(e) => setNewCard({ ...newCard, expiryYear: Number(e.target.value) })}
-                  style={{
-                    width: "100%",
-                    padding: "0.6rem",
-                    borderRadius: "8px",
-                    border: "1px solid var(--border)",
-                    background: "var(--bg-surface)",
-                    color: "var(--text-h)",
-                  }}
-                />
-              </div>
-            </div>
-
-            <div
-              style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginTop: "0.25rem" }}
+        <Card className="max-w-xl">
+          <CardHeader className="pb-3 flex flex-row items-center justify-between">
+            <CardTitle className="text-base font-bold flex items-center gap-2">
+              <CreditCard className="h-4 w-4" /> Add Sandbox Card
+            </CardTitle>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowAddForm(false)}
+              className="text-xs"
             >
-              <input
-                type="checkbox"
-                id="isDefaultCheckbox"
-                checked={newCard.isDefault}
-                onChange={(e) => setNewCard({ ...newCard, isDefault: e.target.checked })}
-              />
-              <label
-                htmlFor="isDefaultCheckbox"
-                style={{ fontSize: "0.85rem", cursor: "pointer", color: "var(--text)" }}
-              >
-                Set as default payment card for checkout
-              </label>
-            </div>
+              Cancel
+            </Button>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleAddCard} className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-muted-foreground">
+                    Cardholder Name
+                  </label>
+                  <Input
+                    type="text"
+                    value={newCard.holderName}
+                    onChange={(e) => setNewCard({ ...newCard, holderName: e.target.value })}
+                    placeholder="Cardholder Name"
+                    required
+                    className="h-9 text-sm"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-muted-foreground">
+                    Card Label / Nickname
+                  </label>
+                  <Input
+                    type="text"
+                    value={newCard.name}
+                    onChange={(e) => setNewCard({ ...newCard, name: e.target.value })}
+                    placeholder="e.g. Primary Visa"
+                    className="h-9 text-sm"
+                  />
+                </div>
+              </div>
 
-            <button type="submit" className="btn-primary" style={{ marginTop: "0.5rem" }}>
-              Save Sandbox Method
-            </button>
-          </form>
-        </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-muted-foreground">Card Brand</label>
+                  <select
+                    value={newCard.brand}
+                    onChange={(e) => setNewCard({ ...newCard, brand: e.target.value })}
+                    className="w-full text-sm p-2 rounded border border-border bg-background text-foreground h-9"
+                  >
+                    <option value="Visa">Visa</option>
+                    <option value="Mastercard">Mastercard</option>
+                    <option value="Amex">American Express</option>
+                    <option value="PayHere">PayHere Demo</option>
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-muted-foreground">
+                    Last 4 Digits
+                  </label>
+                  <Input
+                    type="text"
+                    maxLength={4}
+                    value={newCard.last4}
+                    onChange={(e) => setNewCard({ ...newCard, last4: e.target.value })}
+                    placeholder="4242"
+                    required
+                    className="h-9 text-sm font-mono"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-muted-foreground">
+                    Expiry Month
+                  </label>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={12}
+                    value={newCard.expiryMonth}
+                    onChange={(e) =>
+                      setNewCard({ ...newCard, expiryMonth: Number(e.target.value) })
+                    }
+                    className="h-9 text-sm"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-muted-foreground">Expiry Year</label>
+                  <Input
+                    type="number"
+                    min={2026}
+                    max={2035}
+                    value={newCard.expiryYear}
+                    onChange={(e) => setNewCard({ ...newCard, expiryYear: Number(e.target.value) })}
+                    className="h-9 text-sm"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 pt-1">
+                <Checkbox
+                  id="isDefaultCheckbox"
+                  checked={newCard.isDefault}
+                  onCheckedChange={(checked) => setNewCard({ ...newCard, isDefault: !!checked })}
+                />
+                <label
+                  htmlFor="isDefaultCheckbox"
+                  className="text-xs cursor-pointer text-foreground"
+                >
+                  Set as default payment card for checkout
+                </label>
+              </div>
+
+              <Button type="submit" className="w-full">
+                Save Sandbox Method
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
       )}
 
       {methods.length === 0 ? (
-        <div className="payments-card" style={{ textAlign: "center", padding: "3rem" }}>
-          <CreditCard size={48} color="var(--text-muted)" style={{ margin: "0 auto 1rem" }} />
-          <h3>No Payment Methods Saved</h3>
-          <p style={{ color: "var(--text-muted)", marginBottom: "1.5rem" }}>
-            Add a sandbox test card to complete settlements quickly.
-          </p>
-          <button className="btn-primary" onClick={() => setShowAddForm(true)}>
-            <Plus size={16} /> Add Test Card
-          </button>
-        </div>
+        <Card>
+          <CardContent className="text-center py-12 px-6 space-y-4">
+            <CreditCard className="h-12 w-12 text-muted-foreground mx-auto" />
+            <h3 className="text-lg font-bold text-foreground">No Payment Methods Saved</h3>
+            <p className="text-muted-foreground text-sm">
+              Add a sandbox test card to complete settlements quickly.
+            </p>
+            <Button onClick={() => setShowAddForm(true)} className="gap-2">
+              <Plus className="h-4 w-4" /> Add Test Card
+            </Button>
+          </CardContent>
+        </Card>
       ) : (
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
-            gap: "1.25rem",
-            marginBottom: "2rem",
-          }}
-        >
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {methods.map((method) => (
-            <div
+            <Card
               key={method.id}
-              className="payments-card"
-              style={{
-                position: "relative",
-                border: method.isDefault ? "2px solid var(--accent)" : "1px solid var(--border)",
-                marginBottom: 0,
-              }}
+              className={`relative transition-all ${
+                method.isDefault ? "border-primary ring-1 ring-primary" : "border-border"
+              }`}
             >
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "flex-start",
-                  marginBottom: "0.75rem",
-                }}
-              >
-                <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-                  <div className="stat-icon-wrapper blue" style={{ width: 44, height: 44 }}>
-                    <CreditCard size={22} />
-                  </div>
-                  <div>
-                    <div style={{ fontWeight: 700, color: "var(--text-h)" }}>
-                      {method.name || `${method.brand} Card`}
+              <CardContent className="p-5 space-y-4">
+                <div className="flex justify-between items-start">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded bg-primary/10 flex items-center justify-center text-primary">
+                      <CreditCard className="h-5 w-5" />
                     </div>
-                    <div style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>
-                      •••• •••• •••• {method.last4}
+                    <div>
+                      <div className="font-bold text-foreground text-sm">
+                        {method.name || `${method.brand} Card`}
+                      </div>
+                      <div className="text-xs text-muted-foreground font-mono">
+                        •••• •••• •••• {method.last4}
+                      </div>
                     </div>
                   </div>
+                  {method.isDefault ? (
+                    <Badge
+                      variant="outline"
+                      className="border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 gap-1 text-[11px]"
+                    >
+                      <CheckCircle2 className="h-3 w-3" /> Default
+                    </Badge>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCardDefault(method.id)}
+                      className="h-7 text-xs px-2"
+                    >
+                      Make Default
+                    </Button>
+                  )}
                 </div>
-                {method.isDefault ? (
-                  <span
-                    className="badge-status Succeeded"
-                    style={{ display: "inline-flex", alignItems: "center", gap: "0.25rem" }}
-                  >
-                    <CheckCircle2 size={12} /> Default
+
+                <div className="text-xs text-muted-foreground">
+                  <span>Holder: </span>
+                  <strong className="text-foreground">
+                    {method.holderName || "TEST CUSTOMER"}
+                  </strong>
+                </div>
+
+                <div className="flex justify-between items-center text-xs text-muted-foreground pt-3 border-t border-border">
+                  <span>
+                    Expires {String(method.expiryMonth).padStart(2, "0")}/{method.expiryYear}
                   </span>
-                ) : (
                   <button
-                    onClick={() => setCardDefault(method.id)}
-                    className="btn-secondary btn-sm"
+                    onClick={() => removeCard(method.id)}
+                    className="text-destructive hover:underline inline-flex items-center gap-1 text-xs"
                   >
-                    Make Default
+                    <Trash2 className="h-3 w-3" /> Remove
                   </button>
-                )}
-              </div>
-
-              <div
-                style={{ fontSize: "0.82rem", color: "var(--text-muted)", marginBottom: "0.75rem" }}
-              >
-                <span>Holder: </span>
-                <strong style={{ color: "var(--text)" }}>
-                  {method.holderName || "TEST CUSTOMER"}
-                </strong>
-              </div>
-
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  fontSize: "0.85rem",
-                  color: "var(--text-muted)",
-                  paddingTop: "0.75rem",
-                  borderTop: "1px solid var(--border)",
-                }}
-              >
-                <span>
-                  Expires {String(method.expiryMonth).padStart(2, "0")}/{method.expiryYear}
-                </span>
-                <button
-                  onClick={() => removeCard(method.id)}
-                  style={{
-                    background: "none",
-                    border: "none",
-                    color: "var(--text-danger)",
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "0.25rem",
-                    fontSize: "0.8rem",
-                  }}
-                >
-                  <Trash2 size={14} /> Remove
-                </button>
-              </div>
-            </div>
+                </div>
+              </CardContent>
+            </Card>
           ))}
         </div>
       )}
 
-      <div
-        className="payments-card"
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "1rem",
-          backgroundColor: "var(--bg-surface-elevated)",
-        }}
-      >
-        <ShieldCheck size={28} color="var(--accent)" />
-        <div style={{ fontSize: "0.88rem", color: "var(--text-muted)" }}>
-          <strong style={{ color: "var(--text-h)" }}>Sandbox Security Vault:</strong> All card
-          details are stored in simulated vault storage for grading and testing. No actual financial
-          charges are incurred.
-        </div>
-      </div>
+      <Card className="bg-muted/50 border-border">
+        <CardContent className="p-4 flex items-center gap-3 text-xs text-muted-foreground">
+          <ShieldCheck className="h-6 w-6 text-primary shrink-0" />
+          <div>
+            <strong className="text-foreground">Sandbox Security Vault:</strong> All card details
+            are stored in simulated vault storage for grading and testing. No actual financial
+            charges are incurred.
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

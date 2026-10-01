@@ -68,6 +68,9 @@ class ProviderRepository {
     String? city,
     String? addressLine1,
     double? hourlyRate,
+    double? serviceRadiusKm,
+    double? serviceAreaLatitude,
+    double? serviceAreaLongitude,
   }) async {
     final body = <String, dynamic>{};
     if (headline != null) body['headline'] = headline;
@@ -80,6 +83,10 @@ class ProviderRepository {
     if (serviceCategoryIds != null) body['serviceCategoryIds'] = serviceCategoryIds;
     if (city != null) body['city'] = city;
     if (addressLine1 != null) body['addressLine1'] = addressLine1;
+    if (hourlyRate != null) body['hourlyRate'] = hourlyRate;
+    if (serviceRadiusKm != null) body['serviceRadiusKm'] = serviceRadiusKm;
+    if (serviceAreaLatitude != null) body['serviceAreaLatitude'] = serviceAreaLatitude;
+    if (serviceAreaLongitude != null) body['serviceAreaLongitude'] = serviceAreaLongitude;
 
     await apiClient.put(ApiEndpoints.providerById(profileId), body: body);
     try {
@@ -87,6 +94,24 @@ class ProviderRepository {
     } catch (_) {
       return await getProviderProfile(profileId);
     }
+  }
+
+  /// POST /api/providers/{id}/documents — uploads an identity or trade document
+  Future<Map<String, dynamic>> uploadDocument({
+    required String profileId,
+    required String filePath,
+    required String documentType, // "NIC", "TradeCertification", "Other"
+  }) async {
+    final response = await apiClient.postMultipart(
+      '/api/providers/$profileId/documents',
+      fileField: 'File',
+      filePath: filePath,
+      fields: {'Type': documentType},
+    );
+    if (response is Map<String, dynamic>) {
+      return response;
+    }
+    return {'status': 'uploaded'};
   }
 }
 

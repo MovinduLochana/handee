@@ -4,7 +4,17 @@ import { useQuery } from "@tanstack/react-query";
 import { paymentsApi } from "../../api/payments";
 import { usersApi } from "../../api/users";
 import { Download, ArrowLeft } from "lucide-react";
-import "../payments/Payments.css";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 export default function ProviderPayoutHistory() {
   const [filter, setFilter] = useState<string>("ALL");
@@ -46,107 +56,103 @@ export default function ProviderPayoutHistory() {
   };
 
   return (
-    <div className="payments-page">
-      <div className="payments-header">
-        <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-          <Link to="/provider/payouts" className="btn-secondary btn-sm">
-            <ArrowLeft size={16} /> Dashboard
+    <div className="max-w-7xl mx-auto p-6 space-y-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="flex items-center gap-4">
+          <Link
+            to="/provider/payouts"
+            className={buttonVariants({ variant: "outline", size: "sm" })}
+          >
+            <ArrowLeft className="h-4 w-4 mr-1.5" /> Dashboard
           </Link>
           <div>
-            <h1 className="payments-title">Payout Ledger & History</h1>
-            <p className="payments-subtitle">
+            <h1 className="text-3xl font-bold tracking-tight text-foreground">
+              Payout Ledger & History
+            </h1>
+            <p className="text-muted-foreground text-sm mt-0.5">
               Comprehensive itemised record of all disbursements and platform fees
             </p>
           </div>
         </div>
-        <button
+        <Button
           onClick={handleExportCsv}
-          className="btn-secondary"
+          variant="outline"
           disabled={filteredPayouts.length === 0}
+          className="gap-2 shrink-0"
         >
-          <Download size={16} /> Export CSV
-        </button>
+          <Download className="h-4 w-4" /> Export CSV
+        </Button>
       </div>
 
       {/* Filter Tabs */}
-      <div
-        style={{
-          display: "flex",
-          gap: "0.5rem",
-          marginBottom: "1.5rem",
-          borderBottom: "1px solid var(--border)",
-          paddingBottom: "0.75rem",
-        }}
-      >
+      <div className="flex gap-2 border-b border-border pb-3 flex-wrap">
         {["ALL", "Pending", "Processing", "Completed", "Failed"].map((status) => (
-          <button
+          <Button
             key={status}
+            variant={filter === status ? "default" : "outline"}
+            size="sm"
             onClick={() => setFilter(status)}
-            className="btn-secondary btn-sm"
-            style={{
-              backgroundColor: filter === status ? "var(--accent)" : "transparent",
-              color: filter === status ? "#fff" : "var(--text)",
-              borderColor: filter === status ? "var(--accent)" : "var(--border)",
-              fontWeight: 600,
-            }}
+            className="text-xs"
           >
             {status === "ALL" ? "All Payouts" : status}
-          </button>
+          </Button>
         ))}
       </div>
 
-      <div className="payments-card">
+      <Card className="overflow-hidden">
         {isLoading ? (
-          <p style={{ textAlign: "center", padding: "2rem" }}>Loading ledger...</p>
+          <CardContent className="p-12 text-center text-muted-foreground text-sm">
+            Loading ledger...
+          </CardContent>
         ) : filteredPayouts.length === 0 ? (
-          <div style={{ textAlign: "center", padding: "3rem 1rem", color: "var(--text-muted)" }}>
+          <CardContent className="p-12 text-center text-muted-foreground text-sm">
             No payouts matching current filter.
-          </div>
+          </CardContent>
         ) : (
-          <div className="payments-table-container">
-            <table className="payments-table">
-              <thead>
-                <tr>
-                  <th>Payout Ref</th>
-                  <th>Booking ID</th>
-                  <th>Date Initiated</th>
-                  <th>Customer Gross</th>
-                  <th>15% Handee Fee</th>
-                  <th>Net Deposited</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Payout Ref</TableHead>
+                  <TableHead>Booking ID</TableHead>
+                  <TableHead>Date Initiated</TableHead>
+                  <TableHead>Customer Gross</TableHead>
+                  <TableHead>15% Handee Fee</TableHead>
+                  <TableHead>Net Deposited</TableHead>
+                  <TableHead>Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {filteredPayouts.map((p) => (
-                  <tr key={p.id}>
-                    <td
-                      style={{ fontFamily: "monospace", fontWeight: 700, color: "var(--text-h)" }}
-                    >
+                  <TableRow key={p.id}>
+                    <TableCell className="font-mono font-bold text-foreground text-xs">
                       {p.payoutReference || `PAY-${p.id.slice(0, 8).toUpperCase()}`}
-                    </td>
-                    <td>
-                      <span style={{ color: "var(--text-muted)", fontSize: "0.85rem" }}>
-                        #{p.bookingId.slice(0, 8)}
-                      </span>
-                    </td>
-                    <td>{new Date(p.createdAt).toLocaleDateString()}</td>
-                    <td>LKR {p.grossAmount.toLocaleString()}</td>
-                    <td style={{ color: "var(--text-muted)" }}>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground text-xs font-mono">
+                      #{p.bookingId.slice(0, 8)}
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground">
+                      {new Date(p.createdAt).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell className="text-xs">LKR {p.grossAmount.toLocaleString()}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">
                       -LKR {p.platformFeeDeducted.toLocaleString()}
-                    </td>
-                    <td style={{ fontWeight: 800, color: "var(--success)" }}>
+                    </TableCell>
+                    <TableCell className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
                       LKR {p.netAmount.toLocaleString()}
-                    </td>
-                    <td>
-                      <span className={`badge-status ${p.status}`}>{p.status}</span>
-                    </td>
-                  </tr>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="text-xs">
+                        {p.status}
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
         )}
-      </div>
+      </Card>
     </div>
   );
 }

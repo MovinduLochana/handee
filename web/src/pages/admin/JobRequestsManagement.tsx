@@ -15,9 +15,18 @@ import SortableHeader from "../../components/booking/SortableHeader";
 import { nextSort, sortRows, type SortState } from "../../components/booking/tableSort";
 import { shortId } from "../../components/booking/format";
 import EmptyState from "../../components/provider/EmptyState";
-import "./ProviderDirectory.css";
-import "./VerificationQueue.css";
-import "./BookingAdmin.css";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 type SortKey = "categoryName" | "location" | "urgency" | "status" | "customerId" | "createdAt";
 type ClientSortKey = Exclude<SortKey, "createdAt">;
@@ -25,7 +34,6 @@ type ClientSortKey = Exclude<SortKey, "createdAt">;
 const PAGE_SIZE = 20;
 
 function sortValue(job: JobRequestResponseDto, key: ClientSortKey): string | number {
-  // Enum columns sort by enum order (e.g. Low → Emergency), not alphabetically.
   if (key === "urgency") return JOB_URGENCIES.indexOf(job.urgency);
   if (key === "status") return JOB_REQUEST_STATUSES.indexOf(job.status);
   return job[key];
@@ -33,6 +41,41 @@ function sortValue(job: JobRequestResponseDto, key: ClientSortKey): string | num
 
 function parseStatus(value: string | null): JobRequestStatus | "" {
   return JOB_REQUEST_STATUSES.find((s) => s === value) ?? "";
+}
+
+function getUrgencyBadge(urgency: JobUrgency) {
+  switch (urgency) {
+    case "Emergency":
+      return (
+        <Badge variant="destructive" className="text-xs">
+          {urgency}
+        </Badge>
+      );
+    case "High":
+      return (
+        <Badge
+          variant="outline"
+          className="border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 text-xs"
+        >
+          {urgency}
+        </Badge>
+      );
+    case "Medium":
+      return (
+        <Badge
+          variant="outline"
+          className="border-blue-500/30 bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs"
+        >
+          {urgency}
+        </Badge>
+      );
+    default:
+      return (
+        <Badge variant="secondary" className="text-xs">
+          {urgency}
+        </Badge>
+      );
+  }
 }
 
 export default function JobRequestsManagement() {
@@ -43,8 +86,6 @@ export default function JobRequestsManagement() {
   );
   const [urgency, setUrgency] = useState<JobUrgency | "">("");
   const [search, setSearch] = useState("");
-  // createdAt is the only ordering the API supports, so it's applied
-  // server-side across all pages; other columns sort the loaded page.
   const [serverDescending, setServerDescending] = useState(true);
   const [sort, setSort] = useState<SortState<SortKey>>({ key: "createdAt", direction: "desc" });
 
@@ -92,27 +133,23 @@ export default function JobRequestsManagement() {
   const isFiltered = status !== "" || urgency !== "";
 
   return (
-    <div className="directory-container animate-fade-up">
-      <header className="admin-header">
-        <div>
-          <h1 className="admin-title">Job Requests</h1>
-          <p className="admin-subtitle">Every customer job request on the platform.</p>
-        </div>
+    <div className="max-w-7xl mx-auto p-6 space-y-6">
+      <header className="space-y-1">
+        <h1 className="text-3xl font-bold tracking-tight text-foreground">Job Requests</h1>
+        <p className="text-muted-foreground text-sm">Every customer job request on the platform.</p>
       </header>
 
-      <div className="directory-toolbar">
-        <div className="filter-group">
-          <label htmlFor="job-search">Search this page</label>
-          <div style={{ position: "relative" }}>
-            <Search
-              size={16}
-              style={{ position: "absolute", left: 12, top: 13, color: "var(--text-muted)" }}
-            />
-            <input
+      <div className="flex flex-col sm:flex-row gap-4 items-stretch sm:items-end">
+        <div className="flex-1 space-y-1.5">
+          <label htmlFor="job-search" className="text-xs font-semibold text-muted-foreground">
+            Search this page
+          </label>
+          <div className="relative">
+            <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground pointer-events-none" />
+            <Input
               id="job-search"
               type="text"
-              className="filter-input"
-              style={{ paddingLeft: "2.5rem" }}
+              className="pl-9 h-9 text-xs"
               placeholder="Category, location or ID..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -120,11 +157,13 @@ export default function JobRequestsManagement() {
           </div>
         </div>
 
-        <div className="filter-group">
-          <label htmlFor="job-status">Status</label>
+        <div className="w-full sm:w-48 space-y-1.5">
+          <label htmlFor="job-status" className="text-xs font-semibold text-muted-foreground">
+            Status
+          </label>
           <select
             id="job-status"
-            className="filter-input"
+            className="w-full h-9 rounded border border-border bg-background px-3 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
             value={status}
             onChange={(e) => {
               setStatus(e.target.value as JobRequestStatus | "");
@@ -140,11 +179,13 @@ export default function JobRequestsManagement() {
           </select>
         </div>
 
-        <div className="filter-group">
-          <label htmlFor="job-urgency">Urgency</label>
+        <div className="w-full sm:w-44 space-y-1.5">
+          <label htmlFor="job-urgency" className="text-xs font-semibold text-muted-foreground">
+            Urgency
+          </label>
           <select
             id="job-urgency"
-            className="filter-input"
+            className="w-full h-9 rounded border border-border bg-background px-3 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
             value={urgency}
             onChange={(e) => {
               setUrgency(e.target.value as JobUrgency | "");
@@ -161,7 +202,7 @@ export default function JobRequestsManagement() {
         </div>
       </div>
 
-      <p className="booking-scope-note">
+      <p className="text-xs text-muted-foreground">
         Status and urgency filter all job requests. Search, and sorting by any column except
         Submitted, apply to the current page only.
       </p>
@@ -169,9 +210,11 @@ export default function JobRequestsManagement() {
       {isError ? (
         <LoadError title="Couldn't load job requests" error={error} onRetry={() => refetch()} />
       ) : isLoading ? (
-        <div className="directory-table-card">
-          <div className="booking-state">Loading job requests...</div>
-        </div>
+        <Card>
+          <CardContent className="p-12 text-center text-muted-foreground text-sm">
+            Loading job requests...
+          </CardContent>
+        </Card>
       ) : totalCount === 0 ? (
         <EmptyState
           icon={<ClipboardList size={28} />}
@@ -183,11 +226,11 @@ export default function JobRequestsManagement() {
           }
         />
       ) : (
-        <div className="directory-table-card">
-          <div className="booking-table-scroll">
-            <table className="directory-table">
-              <thead>
-                <tr>
+        <Card className="overflow-hidden">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
                   <SortableHeader
                     label="Category"
                     sortKey="categoryName"
@@ -219,84 +262,88 @@ export default function JobRequestsManagement() {
                     sort={sort}
                     onSort={handleSort}
                   />
-                  <th style={{ textAlign: "right" }}>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {rows.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="booking-state">
+                  <TableRow>
+                    <TableCell
+                      colSpan={7}
+                      className="text-center p-8 text-muted-foreground text-sm"
+                    >
                       No job requests on this page match "{search.trim()}".
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ) : (
                   rows.map((job) => (
-                    <tr key={job.id}>
-                      <td style={{ fontWeight: 600, color: "var(--text-h)" }}>
+                    <TableRow key={job.id}>
+                      <TableCell className="font-semibold text-foreground text-sm">
                         {job.categoryName}
-                      </td>
-                      <td>{job.location}</td>
-                      <td>
-                        <span className={`booking-urgency-${job.urgency.toLowerCase()}`}>
-                          {job.urgency}
-                        </span>
-                      </td>
-                      <td>
+                      </TableCell>
+                      <TableCell className="text-xs">{job.location}</TableCell>
+                      <TableCell>{getUrgencyBadge(job.urgency)}</TableCell>
+                      <TableCell>
                         <BookingStatusBadge status={job.status} size="sm" />
-                      </td>
-                      <td>
-                        <span className="booking-mono" title={job.customerId}>
+                      </TableCell>
+                      <TableCell>
+                        <span
+                          className="font-mono text-xs text-muted-foreground"
+                          title={job.customerId}
+                        >
                           {shortId(job.customerId)}
                         </span>
-                      </td>
-                      <td>{new Date(job.createdAt).toLocaleDateString()}</td>
-                      <td style={{ textAlign: "right" }}>
-                        <Link to={`/admin/job-requests/${job.id}`} className="table-action-btn">
-                          <Eye size={14} /> View
+                      </TableCell>
+                      <TableCell className="text-xs text-muted-foreground">
+                        {new Date(job.createdAt).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Link
+                          to={`/admin/job-requests/${job.id}`}
+                          className={buttonVariants({ variant: "outline", size: "sm" })}
+                        >
+                          <Eye className="h-3.5 w-3.5 mr-1" /> View
                         </Link>
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ))
                 )}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
 
           {totalPages > 1 && (
-            <div className="directory-pagination">
-              <div className="pagination-info">
+            <div className="flex items-center justify-between p-4 border-t border-border text-xs text-muted-foreground">
+              <div>
                 Showing {(page - 1) * PAGE_SIZE + 1} to {Math.min(page * PAGE_SIZE, totalCount)} of{" "}
                 {totalCount} job requests
               </div>
-              <div className="pagination-controls">
-                <button
-                  className="page-btn"
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
                   disabled={page === 1}
                   onClick={() => setPage(page - 1)}
+                  className="h-8 text-xs"
                 >
                   Previous
-                </button>
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    padding: "0 0.5rem",
-                    fontWeight: 600,
-                  }}
-                >
+                </Button>
+                <div className="px-2 font-medium text-foreground">
                   {page} / {totalPages}
                 </div>
-                <button
-                  className="page-btn"
+                <Button
+                  variant="outline"
+                  size="sm"
                   disabled={page === totalPages}
                   onClick={() => setPage(page + 1)}
+                  className="h-8 text-xs"
                 >
                   Next
-                </button>
+                </Button>
               </div>
             </div>
           )}
-        </div>
+        </Card>
       )}
     </div>
   );

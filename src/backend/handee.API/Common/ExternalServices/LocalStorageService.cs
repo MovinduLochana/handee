@@ -5,12 +5,15 @@ namespace handee.API.Common.ExternalServices;
 /// <summary>
 /// Development-only local disk storage. Swap for Azure Blob / S3 by implementing IStorageService.
 /// </summary>
-public class LocalStorageService(IWebHostEnvironment env, ILogger<LocalStorageService> logger)
+public class LocalStorageService(
+    IWebHostEnvironment env,
+    IConfiguration config,
+    ILogger<LocalStorageService> logger)
     : IStorageService
 {
     public async Task<string> UploadAsync(IFormFile file, string folder, CancellationToken ct = default)
     {
-        var uploadRoot = Path.Combine(env.WebRootPath ?? env.ContentRootPath, "uploads", folder);
+        var uploadRoot = Path.Combine(StoragePathResolver.GetUploadRootDirectory(env, config), folder);
         Directory.CreateDirectory(uploadRoot);
 
         var ext = Path.GetExtension(file.FileName);

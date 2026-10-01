@@ -2,7 +2,17 @@ import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { paymentsApi } from "../../api/payments";
 import { Printer, CreditCard, ArrowLeft, ShieldCheck, CheckCircle } from "lucide-react";
-import "./Payments.css";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 export default function InvoiceDetail() {
   const { id } = useParams<{ id: string }>();
@@ -29,26 +39,30 @@ export default function InvoiceDetail() {
 
   if (isLoading) {
     return (
-      <div className="payments-page">
-        <div className="payments-card" style={{ textAlign: "center", padding: "3rem" }}>
-          <p>Loading invoice details...</p>
-        </div>
+      <div className="max-w-5xl mx-auto p-6">
+        <Card>
+          <CardContent className="text-center p-12 text-muted-foreground">
+            <p>Loading invoice details...</p>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   if (error || !invoice) {
     return (
-      <div className="payments-page">
-        <div className="payments-card" style={{ textAlign: "center", padding: "3rem" }}>
-          <h2>Invoice Not Found</h2>
-          <p style={{ color: "var(--text-muted)" }}>
-            The requested invoice could not be located or you may not have access to view it.
-          </p>
-          <Link to="/invoices" className="btn-secondary" style={{ marginTop: "1rem" }}>
-            Return to Invoices
-          </Link>
-        </div>
+      <div className="max-w-5xl mx-auto p-6">
+        <Card>
+          <CardContent className="text-center p-12 space-y-4">
+            <h2 className="text-xl font-bold text-foreground">Invoice Not Found</h2>
+            <p className="text-muted-foreground text-sm">
+              The requested invoice could not be located or you may not have access to view it.
+            </p>
+            <Link to="/invoices" className={buttonVariants({ variant: "outline" })}>
+              Return to Invoices
+            </Link>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -75,224 +89,197 @@ export default function InvoiceDetail() {
         },
       ];
 
+  const getStatusBadge = (status: string) => {
+    if (status === "Paid") {
+      return (
+        <Badge
+          variant="outline"
+          className="border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 gap-1 font-bold text-sm px-3 py-1"
+        >
+          <CheckCircle className="h-3.5 w-3.5" />
+          PAID
+        </Badge>
+      );
+    }
+    if (status === "Issued") {
+      return (
+        <Badge
+          variant="outline"
+          className="border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold text-sm px-3 py-1"
+        >
+          ISSUED
+        </Badge>
+      );
+    }
+    return (
+      <Badge variant="outline" className="font-bold text-sm px-3 py-1 uppercase">
+        {status}
+      </Badge>
+    );
+  };
+
   return (
-    <div className="payments-page">
-      <div className="payments-header">
-        <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-          <Link to="/invoices" className="btn-secondary btn-sm">
-            <ArrowLeft size={16} /> Back
+    <div className="max-w-5xl mx-auto p-6 space-y-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 print:hidden">
+        <div className="flex items-center gap-4">
+          <Link to="/invoices" className={buttonVariants({ variant: "outline", size: "sm" })}>
+            <ArrowLeft className="h-4 w-4 mr-1" /> Back
           </Link>
           <div>
-            <h1 className="payments-title" style={{ fontSize: "var(--text-2xl)" }}>
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">
               Invoice INV-{invoice.id.slice(0, 8).toUpperCase()}
             </h1>
-            <p className="payments-subtitle">
+            <p className="text-muted-foreground text-xs mt-0.5">
               Issued on {new Date(invoice.issuedAt).toLocaleDateString()} • Booking #
               {invoice.bookingId.slice(0, 8)}
             </p>
           </div>
         </div>
-        <div style={{ display: "flex", gap: "0.75rem" }}>
-          <button onClick={handlePrint} className="btn-secondary">
-            <Printer size={16} /> Print Receipt
-          </button>
+        <div className="flex gap-3">
+          <Button variant="outline" onClick={handlePrint} className="gap-2">
+            <Printer className="h-4 w-4" /> Print Receipt
+          </Button>
           {invoice.status === "Issued" && (
-            <Link to={`/invoices/${invoice.id}/pay`} className="btn-primary">
-              <CreditCard size={16} /> Pay LKR {invoice.totalAmount.toLocaleString()}
+            <Link
+              to={`/invoices/${invoice.id}/pay`}
+              className={buttonVariants({ variant: "default" })}
+            >
+              <CreditCard className="h-4 w-4 mr-1.5" /> Pay LKR{" "}
+              {invoice.totalAmount.toLocaleString()}
             </Link>
           )}
         </div>
       </div>
 
-      <div className="invoice-receipt">
-        <div className="invoice-receipt-header">
+      {/* Invoice Document Card */}
+      <Card className="p-8 space-y-8 bg-card border border-border print:border-none print:shadow-none print:p-0">
+        <div className="flex justify-between items-start border-b border-border pb-6">
           <div>
-            <div className="invoice-brand">Handee</div>
-            <div style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginTop: "0.25rem" }}>
+            <div className="text-2xl font-extrabold tracking-tight text-primary">Handee</div>
+            <div className="text-xs text-muted-foreground mt-1">
               Secure On-Demand Service Marketplace
             </div>
-            <div style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>
-              Tax / Platform Reg: LK-HD-2026-PAY
-            </div>
+            <div className="text-xs text-muted-foreground">Tax / Platform Reg: LK-HD-2026-PAY</div>
           </div>
-          <div style={{ textAlign: "right" }}>
-            <span
-              className={`badge-status ${invoice.status}`}
-              style={{ fontSize: "0.9rem", padding: "0.4rem 0.9rem" }}
-            >
-              {invoice.status === "Paid" && <CheckCircle size={14} />}
-              {invoice.status.toUpperCase()}
-            </span>
-            <div style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginTop: "0.5rem" }}>
-              Currency: <strong>{invoice.currency}</strong>
+          <div className="text-right space-y-1">
+            <div>{getStatusBadge(invoice.status)}</div>
+            <div className="text-xs text-muted-foreground">
+              Currency: <strong className="text-foreground">{invoice.currency}</strong>
             </div>
           </div>
         </div>
 
-        <div className="invoice-meta-grid">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 text-sm">
           <div>
-            <div
-              style={{
-                fontSize: "0.75rem",
-                textTransform: "uppercase",
-                fontWeight: 700,
-                color: "var(--text-muted)",
-              }}
-            >
+            <div className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
               Bill To Customer
             </div>
-            <div
-              style={{
-                fontWeight: 700,
-                color: "var(--text-h)",
-                fontSize: "1rem",
-                marginTop: "0.25rem",
-              }}
-            >
+            <div className="font-bold text-foreground text-base mt-1">
               {invoice.customerName || "Valued Customer"}
             </div>
-            <div style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>
+            <div className="text-xs text-muted-foreground mt-0.5 font-mono">
               ID: {invoice.customerId.slice(0, 8)}...
             </div>
           </div>
 
           <div>
-            <div
-              style={{
-                fontSize: "0.75rem",
-                textTransform: "uppercase",
-                fontWeight: 700,
-                color: "var(--text-muted)",
-              }}
-            >
+            <div className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
               Service Provider
             </div>
-            <div
-              style={{
-                fontWeight: 700,
-                color: "var(--text-h)",
-                fontSize: "1rem",
-                marginTop: "0.25rem",
-              }}
-            >
+            <div className="font-bold text-foreground text-base mt-1">
               {invoice.providerName || "Verified Service Professional"}
             </div>
-            <div style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>
+            <div className="text-xs text-muted-foreground mt-0.5 font-mono">
               ID: {invoice.providerId.slice(0, 8)}...
             </div>
           </div>
 
           <div>
-            <div
-              style={{
-                fontSize: "0.75rem",
-                textTransform: "uppercase",
-                fontWeight: 700,
-                color: "var(--text-muted)",
-              }}
-            >
+            <div className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
               Payment Date
             </div>
-            <div style={{ fontWeight: 600, color: "var(--text-h)", marginTop: "0.25rem" }}>
+            <div className="font-semibold text-foreground mt-1 text-sm">
               {invoice.paidAt ? new Date(invoice.paidAt).toLocaleString() : "Awaiting Settlement"}
             </div>
             {payment && (
-              <div style={{ fontSize: "0.8rem", color: "var(--text-muted)", marginTop: "0.2rem" }}>
+              <div className="text-xs text-muted-foreground mt-0.5 font-mono">
                 Ref: {payment.transactionReference}
               </div>
             )}
           </div>
         </div>
 
-        <div className="payments-table-container">
-          <table className="payments-table">
-            <thead>
-              <tr>
-                <th>Service Line Item</th>
-                <th>Category</th>
-                <th style={{ textAlign: "right" }}>Amount ({invoice.currency})</th>
-              </tr>
-            </thead>
-            <tbody>
+        <div className="border border-border rounded overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Service Line Item</TableHead>
+                <TableHead>Category</TableHead>
+                <TableHead className="text-right">Amount ({invoice.currency})</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {parsedItems.map((item, idx) => (
-                <tr key={idx}>
-                  <td style={{ fontWeight: 600 }}>{item.item}</td>
-                  <td>
-                    <span
-                      style={{
-                        fontSize: "0.75rem",
-                        padding: "0.2rem 0.5rem",
-                        background: "var(--bg-surface-elevated)",
-                        borderRadius: "4px",
-                      }}
-                    >
+                <TableRow key={idx}>
+                  <TableCell className="font-medium text-sm">{item.item}</TableCell>
+                  <TableCell>
+                    <Badge variant="secondary" className="text-xs">
                       {item.type || "Service Work"}
-                    </span>
-                  </td>
-                  <td style={{ textAlign: "right", fontWeight: 600 }}>
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right font-semibold text-sm">
                     {item.price.toLocaleString()}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-              <tr>
-                <td style={{ color: "var(--text-muted)" }}>
+              <TableRow>
+                <TableCell className="text-muted-foreground text-xs">
                   Platform Protection & Guarantee (15%)
-                </td>
-                <td style={{ color: "var(--text-muted)", fontSize: "0.8rem" }}>Escrow Fee</td>
-                <td style={{ textAlign: "right", color: "var(--text-muted)" }}>
+                </TableCell>
+                <TableCell className="text-muted-foreground text-xs">Escrow Fee</TableCell>
+                <TableCell className="text-right text-muted-foreground text-xs">
                   {invoice.platformFee.toLocaleString()}
-                </td>
-              </tr>
-            </tbody>
-          </table>
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
         </div>
 
-        <div className="invoice-summary-box">
-          <div className="summary-row">
+        <div className="flex flex-col items-end gap-2 text-sm">
+          <div className="flex justify-between w-full max-w-xs text-muted-foreground">
             <span>Subtotal:</span>
             <span>
               {invoice.currency} {invoice.baseAmount.toLocaleString()}
             </span>
           </div>
-          <div className="summary-row">
+          <div className="flex justify-between w-full max-w-xs text-muted-foreground">
             <span>Platform Trust Fee (15%):</span>
             <span>
               {invoice.currency} {invoice.platformFee.toLocaleString()}
             </span>
           </div>
-          <div className="summary-row total">
+          <div className="flex justify-between w-full max-w-xs font-bold text-lg text-foreground border-t border-border pt-3 mt-1">
             <span>Total:</span>
-            <span style={{ color: "var(--accent)" }}>
+            <span className="text-primary font-mono">
               {invoice.currency} {invoice.totalAmount.toLocaleString()}
             </span>
           </div>
         </div>
 
         {invoice.status === "Paid" && (
-          <div
-            style={{
-              marginTop: "2rem",
-              padding: "1rem 1.5rem",
-              background: "var(--bg-success)",
-              border: "1px solid rgba(16, 185, 129, 0.2)",
-              borderRadius: "10px",
-              display: "flex",
-              alignItems: "center",
-              gap: "1rem",
-            }}
-          >
-            <ShieldCheck size={28} color="var(--success)" />
+          <div className="p-4 bg-emerald-500/10 border border-emerald-500/30 rounded flex items-center gap-4">
+            <ShieldCheck className="h-7 w-7 text-emerald-600 dark:text-emerald-400 shrink-0" />
             <div>
-              <div style={{ fontWeight: 700, color: "var(--text-success)" }}>
+              <div className="font-bold text-emerald-800 dark:text-emerald-300 text-sm">
                 Paid & Verified via Sandbox Payment Gateway
               </div>
-              <div style={{ fontSize: "0.85rem", color: "var(--text-success)", opacity: 0.9 }}>
+              <div className="text-xs text-emerald-700/80 dark:text-emerald-400/80 mt-0.5">
                 Funds transferred securely. Provider payout ledger credited with 85% net earnings.
               </div>
             </div>
           </div>
         )}
-      </div>
+      </Card>
     </div>
   );
 }

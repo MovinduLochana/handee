@@ -5,14 +5,19 @@ import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, Tar
 class ApiEndpoints {
   ApiEndpoints._();
 
-  // Base URL configuration (Supports localhost, Android Emulator 10.0.2.2, or live backend)
-  // Default to the Android Emulator (10.0.2.2) or localhost.
-  // Use --dart-define=DEVICE=true to target a Physical Device over Wi-Fi
-  // Optional: --dart-define=DEVICE_IP=192.168.1.x or --dart-define=BASE_URL=http://...
+  /// Live deployed Azure backend URL
+  static const String liveBackendUrl =
+      'https://sefproject-g3cmczhth2cygqgh.southeastasia-01.azurewebsites.net';
+
+  // Base URL configuration:
+  // - Default: Deployed Azure App Service
+  // - Use --dart-define=API_URL=https://... to override with a custom URL
+  // - Use --dart-define=USE_LOCAL=true to point to local backend (emulator/localhost)
+  // - Use --dart-define=DEVICE=true to target a Physical Device over Wi-Fi
+  static const String customApiUrl = String.fromEnvironment('API_URL', defaultValue: '');
+  static const bool useLocal = bool.fromEnvironment('USE_LOCAL', defaultValue: false);
   static const bool usePhysicalDevice = bool.fromEnvironment('DEVICE', defaultValue: false);
-  static const String physicalDeviceIp = String.fromEnvironment('DEVICE_IP', defaultValue: '192.168.1.2');
-  static const String customBaseUrl = String.fromEnvironment('BASE_URL', defaultValue: '');
-  static const int defaultPort = int.fromEnvironment('PORT', defaultValue: 5057);
+  static const String physicalDeviceIp = '192.168.1.3';
 
   static String get defaultHost {
     if (kIsWeb) return 'localhost';
@@ -21,10 +26,12 @@ class ApiEndpoints {
     }
     return usePhysicalDevice ? physicalDeviceIp : 'localhost';
   }
+  static const int defaultPort = 5057;
 
   static String get baseUrl {
-    if (customBaseUrl.isNotEmpty) return customBaseUrl;
-    return 'http://$defaultHost:$defaultPort';
+    if (customApiUrl.isNotEmpty) return customApiUrl;
+    if (useLocal) return 'http://$defaultHost:$defaultPort';
+    return liveBackendUrl;
   }
 
   // Auth endpoints (AuthController)
@@ -60,8 +67,6 @@ class ApiEndpoints {
   static const String providerProfile = '/api/providers/me'; 
   static String providerById(String id) => '/api/providers/$id';
   static const String providersSearch = '/api/providers/search';
-  static const String predefinedSlots = '/api/provider-availability/slots';
-  static String providerSchedule(String providerId) => '/api/provider-availability/$providerId/schedule';
 
   // Service Listings (ServiceListingsController)
   static const String serviceListings = '/api/service-listings';

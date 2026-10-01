@@ -4,11 +4,11 @@ import '../../core/constants/colors.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/booking_provider.dart';
 import '../../providers/dispatch_provider.dart';
-import '../../widgets/role_switch_sheet.dart';
 import '../../widgets/status_badge.dart';
 import 'dispatch_queue_screen.dart';
 import 'edit_provider_profile_screen.dart';
 import 'provider_jobs_screen.dart';
+import 'provider_verification_screen.dart';
 import '../shared/profile_screen.dart';
 import '../../providers/service_directory_provider.dart';
 
@@ -105,11 +105,15 @@ class _ProviderDashboardTab extends StatelessWidget {
     final auth = context.watch<AuthProvider>();
     final dispatch = context.watch<DispatchProvider>();
     final bookingProvider = context.watch<BookingProvider>();
+    final dir = context.watch<ServiceDirectoryProvider>();
 
     final user = auth.currentUser;
     final isOnline = dispatch.isOnline;
     final offers = dispatch.incomingOffers;
     final activeBooking = bookingProvider.activeBookings.isNotEmpty ? bookingProvider.activeBookings.first : null;
+    final myProfile = dir.myProfile;
+    final verificationStatus = myProfile?.verificationStatus ?? 'Pending';
+    final isVerified = verificationStatus.toLowerCase() == 'verified';
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -118,34 +122,24 @@ class _ProviderDashboardTab extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              user?.fullName ?? 'Nimal Jayawardena',
+              user?.fullName ?? myProfile?.fullName ?? 'Service Provider',
               style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
             ),
-            const Text(
-              'Master Plumber · Colombo Central',
-              style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+            Text(
+              myProfile?.headline ?? 'Professional Tradesperson',
+              style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
             ),
           ],
         ),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 12),
-            child: ActionChip(
-              avatar: const Icon(Icons.swap_horiz, size: 16, color: AppColors.primary),
-              label: const Text('Role', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.primary)),
-              backgroundColor: AppColors.primaryUltraLight,
-              side: const BorderSide(color: AppColors.primaryLight, width: 0.5),
-              onPressed: () => RoleSwitchSheet.show(context),
-            ),
-          ),
-        ],
       ),
       body: RefreshIndicator(
         onRefresh: () async {
           final dispatchProv = context.read<DispatchProvider>();
           final bookingsProv = context.read<BookingProvider>();
+          final dirProv = context.read<ServiceDirectoryProvider>();
           await dispatchProv.fetchOffers();
           await bookingsProv.fetchProviderBookings();
+          await dirProv.loadMyProviderProfile();
         },
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
@@ -153,6 +147,75 @@ class _ProviderDashboardTab extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Pending Onboarding / Verification Guidance Banner
+              if (!isVerified) ...[
+                GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const ProviderVerificationScreen()),
+                    );
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: verificationStatus.toLowerCase() == 'rejected'
+                          ? AppColors.errorLight
+                          : AppColors.primaryUltraLight,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: verificationStatus.toLowerCase() == 'rejected'
+                            ? AppColors.error
+                            : AppColors.primaryLight,
+                        width: 1.5,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          verificationStatus.toLowerCase() == 'rejected'
+                              ? Icons.error_outline
+                              : Icons.verified_user_outlined,
+                          color: verificationStatus.toLowerCase() == 'rejected'
+                              ? AppColors.error
+                              : AppColors.primary,
+                          size: 24,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                verificationStatus.toLowerCase() == 'rejected'
+                                    ? 'Verification Action Required'
+                                    : 'Verification Status: $verificationStatus',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                  color: verificationStatus.toLowerCase() == 'rejected'
+                                      ? AppColors.error
+                                      : AppColors.primaryDark,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                verificationStatus.toLowerCase() == 'rejected'
+                                    ? 'Your submission needs updated documents. Tap to re-upload.'
+                                    : 'Admin review pending. Tap to manage or upload your NIC & trade credentials.',
+                                style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Icon(Icons.arrow_forward_ios, size: 14, color: AppColors.primary),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+
               // Online / Offline Status Toggle Card
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),

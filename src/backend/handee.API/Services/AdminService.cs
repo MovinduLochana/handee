@@ -30,12 +30,19 @@ public class AdminService : IAdminService
     public async Task<IList<AdminUserResult>> GetUsersAsync()
     {
         var users = await _userManager.Users.ToListAsync();
+        var profiles = await _db.ProviderProfiles
+            .Select(p => new { p.UserId, p.Id })
+            .ToListAsync();
+        var providerProfiles = profiles
+            .GroupBy(p => p.UserId)
+            .ToDictionary(g => g.Key, g => g.First().Id);
 
         var result = new List<AdminUserResult>(users.Count);
 
         foreach (var user in users)
         {
             var roles = await _userManager.GetRolesAsync(user);
+            providerProfiles.TryGetValue(user.Id, out var profileId);
             result.Add(new AdminUserResult(
                 user.Id,
                 user.FullName,
@@ -44,7 +51,8 @@ public class AdminService : IAdminService
                 user.IsActive,
                 user.ProviderVerificationStatus.ToString(),
                 user.CreatedAt,
-                roles
+                roles,
+                profileId == Guid.Empty ? null : profileId
             ));
         }
 

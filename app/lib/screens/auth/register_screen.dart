@@ -1,290 +1,186 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import '../../core/constants/colors.dart';
-import '../../providers/auth_provider.dart';
-import '../../widgets/custom_button.dart';
-import '../customer/customer_home_screen.dart';
-import '../provider/provider_home_screen.dart';
+import 'customer_register_screen.dart';
+import 'login_screen.dart';
+import 'provider_register_screen.dart';
 
-class RegisterScreen extends StatefulWidget {
+class RegisterScreen extends StatelessWidget {
   const RegisterScreen({super.key});
 
   @override
-  State<RegisterScreen> createState() => _RegisterScreenState();
-}
-
-class _RegisterScreenState extends State<RegisterScreen> {
-  final _nameController = TextEditingController();
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
-  final _formKey = GlobalKey<FormState>();
-  String _selectedRole = 'Customer'; // "Customer" or "Provider"
-  bool _obscurePassword = true;
-
-  @override
-  void dispose() {
-    _nameController.dispose();
-    _emailController.dispose();
-    _passwordController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _handleRegister() async {
-    if (!_formKey.currentState!.validate()) return;
-
-    final auth = context.read<AuthProvider>();
-    final success = await auth.register(
-      fullName: _nameController.text.trim(),
-      email: _emailController.text.trim(),
-      password: _passwordController.text.trim(),
-      role: _selectedRole,
-    );
-
-    if (success && mounted) {
-      if (_selectedRole == 'Provider') {
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (_) => const ProviderHomeScreen()),
-          (route) => false,
-        );
-      } else {
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (_) => const CustomerHomeScreen()),
-          (route) => false,
-        );
-      }
-    } else if (mounted && auth.errorMessage != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(auth.errorMessage!),
-          backgroundColor: AppColors.error,
-        ),
-      );
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final auth = context.watch<AuthProvider>();
-
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text('Create Account'),
+        title: const Text('Choose Account Type'),
+        backgroundColor: Colors.white,
+        elevation: 0,
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Join Handee',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.textPrimary,
-                    letterSpacing: -0.5,
-                  ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Join Handee',
+                style: TextStyle(
+                  fontSize: 26,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.textPrimary,
+                  letterSpacing: -0.5,
                 ),
-                const SizedBox(height: 6),
-                const Text(
-                  'Select your account type to get started',
-                  style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
-                ),
-                const SizedBox(height: 20),
+              ),
+              const SizedBox(height: 6),
+              const Text(
+                'Select how you want to use the platform. Note: Each email can only hold one dedicated role.',
+                style: TextStyle(fontSize: 14, color: AppColors.textSecondary, height: 1.4),
+              ),
+              const SizedBox(height: 32),
 
-                // Role Selector Tabs
-                Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: AppColors.surfaceElevated,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.border),
+              // Option 1: Customer Account
+              _buildRoleCard(
+                context: context,
+                title: 'Customer Account',
+                badge: 'Immediate Booking',
+                badgeColor: AppColors.primary,
+                description:
+                    'Register with basic contact details to immediately search verified services, request instant AI dispatches, and track jobs.',
+                icon: Icons.person_outline,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const CustomerRegisterScreen()),
+                  );
+                },
+              ),
+
+              const SizedBox(height: 18),
+
+              // Option 2: Tradesperson / Provider Account
+              _buildRoleCard(
+                context: context,
+                title: 'Service Provider / Pro',
+                badge: 'Specialized Onboarding',
+                badgeColor: const Color(0xFFD97706),
+                description:
+                    'Register through our specialized onboarding flow where you specify trade categories, service radius, and upload identity/certification documents for admin verification.',
+                icon: Icons.handyman_outlined,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const ProviderRegisterScreen()),
+                  );
+                },
+              ),
+
+              const Spacer(),
+
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text(
+                    'Already have an account? ',
+                    style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
                   ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: GestureDetector(
-                          onTap: () => setState(() => _selectedRole = 'Customer'),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(vertical: 10),
-                            decoration: BoxDecoration(
-                              color: _selectedRole == 'Customer' ? Colors.white : Colors.transparent,
-                              borderRadius: BorderRadius.circular(8),
-                              boxShadow: _selectedRole == 'Customer'
-                                  ? [
-                                      BoxShadow(
-                                        color: Colors.black.withOpacity(0.06),
-                                        blurRadius: 4,
-                                        offset: const Offset(0, 2),
-                                      ),
-                                    ]
-                                  : null,
-                            ),
-                            alignment: Alignment.center,
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Icons.person,
-                                  size: 16,
-                                  color: _selectedRole == 'Customer'
-                                      ? AppColors.primary
-                                      : AppColors.textSecondary,
-                                ),
-                                const SizedBox(width: 6),
-                                Text(
-                                  'Customer',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                    color: _selectedRole == 'Customer'
-                                        ? AppColors.primary
-                                        : AppColors.textSecondary,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (_) => const LoginScreen()),
+                      );
+                    },
+                    child: const Text(
+                      'Sign In',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primary,
                       ),
-                      Expanded(
-                        child: GestureDetector(
-                          onTap: () => setState(() => _selectedRole = 'Provider'),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(vertical: 10),
-                            decoration: BoxDecoration(
-                              color: _selectedRole == 'Provider' ? Colors.white : Colors.transparent,
-                              borderRadius: BorderRadius.circular(8),
-                              boxShadow: _selectedRole == 'Provider'
-                                  ? [
-                                      BoxShadow(
-                                        color: Colors.black.withOpacity(0.06),
-                                        blurRadius: 4,
-                                        offset: const Offset(0, 2),
-                                      ),
-                                    ]
-                                  : null,
-                            ),
-                            alignment: Alignment.center,
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Icons.handyman,
-                                  size: 16,
-                                  color: _selectedRole == 'Provider'
-                                      ? AppColors.primary
-                                      : AppColors.textSecondary,
-                                ),
-                                const SizedBox(width: 6),
-                                Text(
-                                  'Tradesperson',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                    color: _selectedRole == 'Provider'
-                                        ? AppColors.primary
-                                        : AppColors.textSecondary,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRoleCard({
+    required BuildContext context,
+    required String title,
+    required String badge,
+    required Color badgeColor,
+    required String description,
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.border, width: 1.5),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryUltraLight,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(icon, color: AppColors.primary, size: 24),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                      ),
+                      const SizedBox(height: 3),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: badgeColor.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          badge,
+                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: badgeColor),
                         ),
                       ),
                     ],
                   ),
                 ),
-
-                const SizedBox(height: 24),
-                const Text(
-                  'Full Name',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                TextFormField(
-                  controller: _nameController,
-                  decoration: const InputDecoration(
-                    hintText: 'e.g. Kasun Perera',
-                    prefixIcon: Icon(Icons.person_outline, color: AppColors.textMuted),
-                  ),
-                  validator: (val) {
-                    if (val == null || val.trim().isEmpty) return 'Please enter your name';
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 18),
-                const Text(
-                  'Email Address',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                TextFormField(
-                  controller: _emailController,
-                  keyboardType: TextInputType.emailAddress,
-                  decoration: const InputDecoration(
-                    hintText: 'name@example.lk',
-                    prefixIcon: Icon(Icons.email_outlined, color: AppColors.textMuted),
-                  ),
-                  validator: (val) {
-                    if (val == null || val.trim().isEmpty) return 'Please enter your email';
-                    if (!val.contains('@')) return 'Please enter a valid email';
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 18),
-                const Text(
-                  'Password',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                TextFormField(
-                  controller: _passwordController,
-                  obscureText: _obscurePassword,
-                  decoration: InputDecoration(
-                    hintText: 'At least 8 characters',
-                    prefixIcon: const Icon(Icons.lock_outline, color: AppColors.textMuted),
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
-                        color: AppColors.textMuted,
-                      ),
-                      onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
-                    ),
-                  ),
-                  validator: (val) {
-                    if (val == null || val.length < 8) {
-                      return 'Password must be at least 8 characters';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 28),
-                CustomButton(
-                  text: 'Create Account',
-                  isLoading: auth.isLoading,
-                  onPressed: _handleRegister,
-                ),
+                const Icon(Icons.arrow_forward_ios, size: 16, color: AppColors.textMuted),
               ],
             ),
-          ),
+            const SizedBox(height: 12),
+            Text(
+              description,
+              style: const TextStyle(fontSize: 13, color: AppColors.textSecondary, height: 1.4),
+            ),
+          ],
         ),
       ),
     );
