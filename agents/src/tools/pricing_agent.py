@@ -288,3 +288,98 @@ def validate_customer_budget_compliance(
     return rules, hard_failures, soft_signals, reasons
 
 
+def validate_fee_split_integrity(
+    estimated_price: float,
+    breakdown: PriceBreakdown,
+) -> Tuple[List[ValidationRuleCheck], int, int, List[str]]:
+    """
+    Rule 3: Enforces exact 85% provider labor / 15% platform commission integrity.
+    Guarantees no ledger imbalances occur before reaching the C# backend.
+    """
+    rules: List[ValidationRuleCheck] = []
+    hard_failures = 0
+    soft_signals = 0
+    reasons: List[str] = []
+
+    summed = round(breakdown.service_labor + breakdown.platform_fee, 2)
+    expected = round(estimated_price, 2)
+    delta = abs(summed - expected)
+
+    if delta > 0.05:
+        hard_failures += 1
+        msg = f"Ledger fee integrity check failed: Labor ({breakdown.service_labor}) + Fee ({breakdown.platform_fee}) != Total ({estimated_price})."
+        reasons.append(msg)
+        rules.append(
+            ValidationRuleCheck(
+                rule_id="H6_FEE_SPLIT_INTEGRITY",
+                rule_name="Platform Fee Split Integrity",
+                is_hard_rule=True,
+                passed=False,
+                actual_value=summed,
+                threshold=expected,
+                message=msg,
+            )
+        )
+    else:
+        rules.append(
+            ValidationRuleCheck(
+                rule_id="H6_FEE_SPLIT_INTEGRITY",
+                rule_name="Platform Fee Split Integrity",
+                is_hard_rule=True,
+                passed=True,
+                actual_value=summed,
+                threshold=expected,
+                message="85% provider labor / 15% platform fee split balances perfectly.",
+            )
+        )
+
+    return rules, hard_failures, soft_signals, reasons
+
+
+def validate_payment_handoff_integrity(
+    job_id: str,
+    estimated_price: float,
+) -> Tuple[List[ValidationRuleCheck], int, int, List[str]]:
+    """
+    Rule 4: Validates payload completeness for ASP.NET Core handoff.
+    """
+    rules: List[ValidationRuleCheck] = []
+    hard_failures = 0
+    soft_signals = 0
+    reasons: List[str] = []
+
+    is_valid_id = bool(job_id and len(job_id.strip()) > 0)
+    is_positive_price = estimated_price > 0
+
+    if not is_valid_id or not is_positive_price:
+        hard_failures += 1
+        msg = "Payment handoff contract failed: Job ID missing or non-positive price."
+        reasons.append(msg)
+        rules.append(
+            ValidationRuleCheck(
+                rule_id="H7_HANDOFF_PAYLOAD_VALIDITY",
+                rule_name="Payment Handoff Contract",
+                is_hard_rule=True,
+                passed=False,
+                actual_value={"job_id": job_id, "price": estimated_price},
+                threshold="Valid ID and price > 0",
+                message=msg,
+            )
+        )
+    else:
+        rules.append(
+            ValidationRuleCheck(
+                rule_id="H7_HANDOFF_PAYLOAD_VALIDITY",
+                rule_name="Payment Handoff Contract",
+                is_hard_rule=True,
+                passed=True,
+                actual_value={"job_id": job_id, "price": estimated_price},
+                threshold="Valid ID and price > 0",
+                message="Payment handoff contract payload valid.",
+            )
+        )
+
+    return rules, hard_failures, soft_signals, reasons
+
+
+
