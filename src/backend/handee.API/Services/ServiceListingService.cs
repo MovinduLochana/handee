@@ -18,6 +18,9 @@ public class ServiceListingService : IServiceListingService
 
     public async Task<ServiceListingResponseDto> CreateListingAsync(Guid providerId, CreateServiceListingDto dto)
     {
+        if (dto.DurationHours < 1 || dto.DurationHours > 8)
+            throw new ValidationException("Service duration must be between 1 and 8 hours.");
+
         var category = await _context.ServiceCategories.FindAsync(dto.ServiceCategoryId);
         if (category == null)
             throw new NotFoundException($"ServiceCategory with ID {dto.ServiceCategoryId} not found.");
@@ -31,7 +34,7 @@ public class ServiceListingService : IServiceListingService
             Scope = dto.Scope,
             Availability = dto.Availability,
             FixedPrice = dto.FixedPrice,
-            EstimatedDuration = dto.EstimatedDuration,
+            DurationHours = dto.DurationHours,
             IsActive = true
         };
 
@@ -43,6 +46,9 @@ public class ServiceListingService : IServiceListingService
 
     public async Task<ServiceListingResponseDto> UpdateListingAsync(Guid listingId, Guid providerId, UpdateServiceListingDto dto)
     {
+        if (dto.DurationHours < 1 || dto.DurationHours > 8)
+            throw new ValidationException("Service duration must be between 1 and 8 hours.");
+
         var listing = await _context.ServiceListings.FirstOrDefaultAsync(l => l.Id == listingId && l.ProviderId == providerId);
         
         if (listing == null)
@@ -54,7 +60,7 @@ public class ServiceListingService : IServiceListingService
         listing.Scope = dto.Scope;
         listing.Availability = dto.Availability;
         listing.FixedPrice = dto.FixedPrice;
-        listing.EstimatedDuration = dto.EstimatedDuration;
+        listing.DurationHours = dto.DurationHours;
         listing.IsActive = dto.IsActive;
         listing.UpdatedAt = DateTimeOffset.UtcNow;
 
@@ -75,11 +81,14 @@ public class ServiceListingService : IServiceListingService
     public async Task<IEnumerable<ServiceListingResponseDto>> GetListingsByProviderProfileIdAsync(Guid providerProfileId)
     {
         var profileUserId = await _context.ProviderProfiles
-            .Where(p => p.Id == providerProfileId)
+            .Where(p => p.Id == providerProfileId || p.UserId == providerProfileId)
             .Select(p => (Guid?)p.UserId)
             .FirstOrDefaultAsync();
 
-        if (profileUserId == null) return Array.Empty<ServiceListingResponseDto>();
+        if (profileUserId == null)
+        {
+            return await GetProviderListingsAsync(providerProfileId);
+        }
 
         return await GetProviderListingsAsync(profileUserId.Value);
     }
@@ -156,6 +165,7 @@ public class ServiceListingService : IServiceListingService
             Scope = listing.Scope,
             Availability = listing.Availability,
             FixedPrice = listing.FixedPrice,
+            DurationHours = listing.DurationHours > 0 ? listing.DurationHours : 1,
             EstimatedDuration = listing.EstimatedDuration,
             IsActive = listing.IsActive,
             CreatedAt = listing.CreatedAt,

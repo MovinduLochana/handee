@@ -61,15 +61,46 @@ public class ListingBookingServiceTests
             Scope = "Includes standard parts and labor",
             Availability = "Mon-Fri 9AM-5PM",
             FixedPrice = fixedPrice,
+            DurationHours = duration.HasValue ? (int)Math.Max(1, duration.Value.TotalHours) : 2,
             EstimatedDuration = duration ?? TimeSpan.FromHours(2),
             IsActive = isActive,
             Provider = provider,
             Category = category
         };
         db.ServiceListings.Add(listing);
+
+        // Ensure provider has active operating hours for all days 08:00 - 18:00
+        for (int i = 0; i < 7; i++)
+        {
+            db.ProviderOperatingSchedules.Add(new ProviderOperatingSchedule
+            {
+                ProviderId = providerId,
+                DayOfWeek = (DayOfWeek)i,
+                StartTime = new TimeSpan(8, 0, 0),
+                EndTime = new TimeSpan(18, 0, 0),
+                IsActive = true
+            });
+        }
+
         await db.SaveChangesAsync();
 
         return (db, listing, customerId, providerId);
+    }
+
+    private static DateTimeOffset UtcTime(int daysInFuture, int hour, int minute = 0)
+    {
+        var d = DateTime.UtcNow.Date.AddDays(daysInFuture);
+        return new DateTimeOffset(d.Year, d.Month, d.Day, hour, minute, 0, TimeSpan.Zero);
+    }
+
+    private static DateTimeOffset NextDayUtc(DayOfWeek dayOfWeek, int hour, int minute = 0)
+    {
+        var d = DateTime.UtcNow.Date.AddDays(1);
+        while (d.DayOfWeek != dayOfWeek)
+        {
+            d = d.AddDays(1);
+        }
+        return new DateTimeOffset(d.Year, d.Month, d.Day, hour, minute, 0, TimeSpan.Zero);
     }
 
     [Fact]
@@ -77,7 +108,7 @@ public class ListingBookingServiceTests
     {
         var db = CreateContext();
         var sut = new BookingService(db);
-        var dto = new CreateListingBookingDto(Guid.NewGuid(), DateTimeOffset.UtcNow.AddDays(1));
+        var dto = new CreateListingBookingDto(Guid.NewGuid(), UtcTime(1, 10));
 
         await Assert.ThrowsAsync<NotFoundException>(() =>
             sut.CreateFromListingAsync(dto, Guid.NewGuid()));
@@ -88,7 +119,7 @@ public class ListingBookingServiceTests
     {
         var (db, listing, customerId, _) = await SeedListingAsync(isActive: false);
         var sut = new BookingService(db);
-        var dto = new CreateListingBookingDto(listing.Id, DateTimeOffset.UtcNow.AddDays(1));
+        var dto = new CreateListingBookingDto(listing.Id, UtcTime(1, 10));
 
         var ex = await Assert.ThrowsAsync<ValidationException>(() =>
             sut.CreateFromListingAsync(dto, customerId));
@@ -100,7 +131,7 @@ public class ListingBookingServiceTests
     {
         var (db, listing, _, providerId) = await SeedListingAsync(isActive: true);
         var sut = new BookingService(db);
-        var dto = new CreateListingBookingDto(listing.Id, DateTimeOffset.UtcNow.AddDays(1));
+        var dto = new CreateListingBookingDto(listing.Id, UtcTime(1, 10));
 
         var ex = await Assert.ThrowsAsync<ValidationException>(() =>
             sut.CreateFromListingAsync(dto, providerId));
@@ -119,29 +150,59 @@ public class ListingBookingServiceTests
         Assert.Contains("future", ex.Message, StringComparison.OrdinalIgnoreCase);
     }
 
+
+
     [Fact]
-    public async Task CreateFromListingAsync_ProviderHasSlots_WhenRequestedTimeOutsideSlots_ThrowsValidationException()
+    public async Task CreateFromListingAsync_NonTopOfHour_ThrowsValidationException()
+    {
+        var (db, listing, customerId, _) = await SeedListingAsync(isActive: true);
+        var sut = new BookingService(db);
+
+        var dto = new CreateListingBookingDto(listing.Id, UtcTime(1, 10, 15));
+
+        var ex = await Assert.ThrowsAsync<ValidationException>(() =>
+            sut.CreateFromListingAsync(dto, customerId));
+        Assert.Contains("hour", ex.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task CreateFromListingAsync_OutsideOperatingHours_ThrowsValidationException()
+    {
+        var (db, listing, customerId, providerId) = await SeedListingAsync(isActive: true, duration: TimeSpan.FromHours(2));
+        var sut = new BookingService(db);
+
+        // Set operating hours Monday 09:00 - 17:00
+        var schedule = await db.ProviderOperatingSchedules
+            .FirstAsync(s => s.ProviderId == providerId && s.DayOfWeek == DayOfWeek.Monday);
+        schedule.StartTime = new TimeSpan(9, 0, 0);
+        schedule.EndTime = new TimeSpan(17, 0, 0);
+        schedule.IsActive = true;
+        await db.SaveChangesAsync();
+
+        // 2-hour job starting at 16:00 would finish at 18:00 (past 17:00 closing)
+        var dto = new CreateListingBookingDto(listing.Id, NextDayUtc(DayOfWeek.Monday, 16));
+
+        var ex = await Assert.ThrowsAsync<ValidationException>(() =>
+            sut.CreateFromListingAsync(dto, customerId));
+        Assert.Contains("operating hours", ex.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task CreateFromListingAsync_InactiveDay_ThrowsValidationException()
     {
         var (db, listing, customerId, providerId) = await SeedListingAsync(isActive: true);
         var sut = new BookingService(db);
 
-        // Add a slot for tomorrow 9 AM - 11 AM
-        var tomorrow = DateTimeOffset.UtcNow.Date.AddDays(1);
-        db.ProviderAvailabilitySlots.Add(new ProviderAvailabilitySlot
-        {
-            ProviderId = providerId,
-            StartTime = tomorrow.AddHours(9),
-            EndTime = tomorrow.AddHours(11),
-            IsBooked = false
-        });
+        var schedule = await db.ProviderOperatingSchedules
+            .FirstAsync(s => s.ProviderId == providerId && s.DayOfWeek == DayOfWeek.Sunday);
+        schedule.IsActive = false;
         await db.SaveChangesAsync();
 
-        // Customer requests 2 PM (outside the configured slot)
-        var dto = new CreateListingBookingDto(listing.Id, tomorrow.AddHours(14));
+        var dto = new CreateListingBookingDto(listing.Id, NextDayUtc(DayOfWeek.Sunday, 10));
 
         var ex = await Assert.ThrowsAsync<ValidationException>(() =>
             sut.CreateFromListingAsync(dto, customerId));
-        Assert.Contains("not available", ex.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("not available on this day", ex.Message, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -150,9 +211,9 @@ public class ListingBookingServiceTests
         var (db, listing, customerId, providerId) = await SeedListingAsync(isActive: true, duration: TimeSpan.FromHours(2));
         var sut = new BookingService(db);
 
-        var scheduleTime = DateTimeOffset.UtcNow.AddDays(2);
+        var scheduleTime = UtcTime(2, 10);
 
-        // Provider already has an active booking at scheduleTime
+        // Provider already has an active booking from 10:00 to 12:00
         db.Bookings.Add(new Booking
         {
             ProviderId = providerId,
@@ -163,8 +224,8 @@ public class ListingBookingServiceTests
         });
         await db.SaveChangesAsync();
 
-        // Customer tries to book an overlapping slot (scheduleTime + 30 mins, duration is 2h)
-        var dto = new CreateListingBookingDto(listing.Id, scheduleTime.AddMinutes(30));
+        // Customer tries to book at 11:00 (overlaps with 10:00 - 12:00)
+        var dto = new CreateListingBookingDto(listing.Id, UtcTime(2, 11));
 
         var ex = await Assert.ThrowsAsync<ValidationException>(() =>
             sut.CreateFromListingAsync(dto, customerId));
@@ -172,26 +233,15 @@ public class ListingBookingServiceTests
     }
 
     [Fact]
-    public async Task CreateFromListingAsync_ValidActiveSlotAndNoCollisions_CreatesBookingAndInvoice()
+    public async Task CreateFromListingAsync_ValidSlotAndNoCollisions_CreatesBookingAndInvoice()
     {
         var (db, listing, customerId, providerId) = await SeedListingAsync(
             isActive: true, fixedPrice: 7500m, duration: TimeSpan.FromHours(2));
         var sut = new BookingService(db);
 
-        var tomorrow = DateTimeOffset.UtcNow.Date.AddDays(1);
-        var slot = new ProviderAvailabilitySlot
-        {
-            ProviderId = providerId,
-            StartTime = tomorrow.AddHours(9),
-            EndTime = tomorrow.AddHours(12),
-            IsBooked = false
-        };
-        db.ProviderAvailabilitySlots.Add(slot);
-        await db.SaveChangesAsync();
-
         var dto = new CreateListingBookingDto(
             listing.Id,
-            tomorrow.AddHours(9),
+            UtcTime(1, 9),
             Notes: "Please bring metric pipe fittings."
         );
 
@@ -205,10 +255,6 @@ public class ListingBookingServiceTests
         Assert.Equal(7500m, result.Price);
         Assert.Equal("Plumbing", result.Category);
         Assert.Equal("Please bring metric pipe fittings.", result.Notes);
-
-        // Verify slot was marked booked
-        var updatedSlot = await db.ProviderAvailabilitySlots.FindAsync(slot.Id);
-        Assert.True(updatedSlot!.IsBooked);
 
         // Verify itemized invoice was created
         var invoice = await db.Invoices.FirstOrDefaultAsync(i => i.BookingId == result.Id);
@@ -224,7 +270,7 @@ public class ListingBookingServiceTests
         var (db, listing, customerId, providerId) = await SeedListingAsync(isActive: true);
         var sut = new BookingService(db);
 
-        var bookingTime = DateTimeOffset.UtcNow.AddDays(3);
+        var bookingTime = UtcTime(3, 10);
         var dto = new CreateListingBookingDto(listing.Id, bookingTime);
 
         var created = await sut.CreateFromListingAsync(dto, customerId);
@@ -249,7 +295,7 @@ public class ListingBookingServiceTests
         var mockNotificationService = new Mock<IBookingNotificationService>();
         var sut = new BookingService(db, new InvoiceService(db), mockNotificationService.Object);
 
-        var bookingTime = DateTimeOffset.UtcNow.AddDays(3);
+        var bookingTime = UtcTime(3, 10);
         var dto = new CreateListingBookingDto(listing.Id, bookingTime);
 
         var created = await sut.CreateFromListingAsync(dto, customerId);
@@ -283,40 +329,30 @@ public class ListingBookingServiceTests
     }
 
     [Fact]
-    public async Task CreateFromListingAsync_WhenListingEstimatedDurationExceedsSingleSlot_SuccessfullyBooksAndReservesSlots()
+    public async Task CreateFromListingAsync_WhenListingExceedsSingleHour_CalculatesConflictIntervalCorrectly()
     {
         var (db, listing, customerId, providerId) = await SeedListingAsync(
             isActive: true, fixedPrice: 5000m, duration: TimeSpan.FromHours(2));
         var sut = new BookingService(db);
 
-        var tomorrow = DateTimeOffset.UtcNow.Date.AddDays(1);
-        var slot1 = new ProviderAvailabilitySlot
-        {
-            ProviderId = providerId,
-            StartTime = tomorrow.AddHours(9),
-            EndTime = tomorrow.AddHours(10),
-            IsBooked = false
-        };
-        var slot2 = new ProviderAvailabilitySlot
-        {
-            ProviderId = providerId,
-            StartTime = tomorrow.AddHours(10),
-            EndTime = tomorrow.AddHours(11),
-            IsBooked = false
-        };
-        db.ProviderAvailabilitySlots.AddRange(slot1, slot2);
-        await db.SaveChangesAsync();
+        var firstBookingTime = UtcTime(1, 9);
+        var dto1 = new CreateListingBookingDto(listing.Id, firstBookingTime);
 
-        var dto = new CreateListingBookingDto(listing.Id, tomorrow.AddHours(9));
-
-        var result = await sut.CreateFromListingAsync(dto, customerId);
+        var result = await sut.CreateFromListingAsync(dto1, customerId);
 
         Assert.NotNull(result);
         Assert.Equal("Requested", result.Status);
 
-        var updatedSlot1 = await db.ProviderAvailabilitySlots.FindAsync(slot1.Id);
-        var updatedSlot2 = await db.ProviderAvailabilitySlots.FindAsync(slot2.Id);
-        Assert.True(updatedSlot1!.IsBooked);
-        Assert.True(updatedSlot2!.IsBooked);
+        // A 2-hour job starting at 09:00 occupies [09:00, 11:00).
+        // Attempting to book at 10:00 must fail due to overlap:
+        var overlappingDto = new CreateListingBookingDto(listing.Id, UtcTime(1, 10));
+        var ex = await Assert.ThrowsAsync<ValidationException>(() =>
+            sut.CreateFromListingAsync(overlappingDto, Guid.NewGuid()));
+        Assert.Contains("active booking during the requested time slot", ex.Message, StringComparison.OrdinalIgnoreCase);
+
+        // A job starting at 11:00 (immediately after) must succeed:
+        var nonOverlappingDto = new CreateListingBookingDto(listing.Id, UtcTime(1, 11));
+        var result2 = await sut.CreateFromListingAsync(nonOverlappingDto, Guid.NewGuid());
+        Assert.NotNull(result2);
     }
 }

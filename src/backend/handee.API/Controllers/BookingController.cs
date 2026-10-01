@@ -24,7 +24,7 @@ public class BookingController : ControllerBase
 
     // POST /bookings
     [HttpPost]
-    [Authorize(Roles = "Customer")]
+    [Authorize(Roles = "Customer,Provider")]
     public async Task<IActionResult> CreateBookingFromListing(
         [FromBody] CreateListingBookingDto dto,
         CancellationToken ct = default)

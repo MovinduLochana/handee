@@ -28,14 +28,17 @@ public class ReviewService : IReviewService
     public async Task<ReviewDto> AddReviewAsync(Guid providerProfileId, Guid customerId, CreateReviewDto dto, CancellationToken ct = default)
     {
         // Check if provider exists
-        var profile = await _providerProfileRepository.GetByIdAsync(providerProfileId, ct);
+        var profile = await _providerProfileRepository.GetByIdAsync(providerProfileId, ct)
+                   ?? await _providerProfileRepository.GetByUserIdAsync(providerProfileId, ct);
         if (profile == null)
         {
             throw new KeyNotFoundException("Provider profile not found.");
         }
+        var effectiveProfileId = profile.Id;
 
         // Check if customer already reviewed provider
-        var existingReview = await _reviewRepository.GetByCustomerAndProviderAsync(customerId, providerProfileId, ct);
+        var existingReview = await _reviewRepository.GetByCustomerAndProviderAsync(customerId, profile.Id, ct)
+                          ?? await _reviewRepository.GetByCustomerAndProviderAsync(customerId, providerProfileId, ct);
         if (existingReview != null)
         {
             throw new InvalidOperationException("Customer has already reviewed this provider.");
@@ -43,7 +46,7 @@ public class ReviewService : IReviewService
 
         var review = new Review
         {
-            ProviderProfileId = providerProfileId,
+            ProviderProfileId = effectiveProfileId,
             CustomerId = customerId,
             Rating = dto.Rating,
             Comment = dto.Comment
@@ -110,8 +113,11 @@ public class ReviewService : IReviewService
 
     public async Task<PagedResult<ReviewDto>> GetReviewsForProviderAsync(Guid providerProfileId, int page, int pageSize, CancellationToken ct = default)
     {
+        var profile = await _providerProfileRepository.GetByIdAsync(providerProfileId, ct)
+                   ?? await _providerProfileRepository.GetByUserIdAsync(providerProfileId, ct);
+        var effectiveProfileId = profile?.Id ?? providerProfileId;
         var skip = (page - 1) * pageSize;
-        var (items, totalCount) = await _reviewRepository.GetReviewsForProviderAsync(providerProfileId, skip, pageSize, ct);
+        var (items, totalCount) = await _reviewRepository.GetReviewsForProviderAsync(effectiveProfileId, skip, pageSize, ct);
 
         var dtos = items.Select(MapToDto).ToList();
         return new PagedResult<ReviewDto>(dtos, totalCount, page, pageSize);

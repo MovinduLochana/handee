@@ -34,122 +34,79 @@ public class ProviderAvailabilityControllerTests
     }
 
     [Fact]
-    public async Task Create_MissingUserId_ReturnsUnauthorized()
+    public async Task GetOperatingSchedule_ReturnsOkWithSchedule()
+    {
+        var providerId = Guid.NewGuid();
+        var controller = CreateController();
+        var schedule = new ProviderOperatingScheduleDto(providerId, new List<DayOperatingScheduleDto>());
+
+        _serviceMock.Setup(s => s.GetOperatingScheduleAsync(providerId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(schedule);
+
+        var result = await controller.GetOperatingSchedule(providerId, CancellationToken.None);
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        Assert.Equal(schedule, ok.Value);
+    }
+
+    [Fact]
+    public async Task UpdateOperatingSchedule_ValidDto_ReturnsOkWithUpdatedSchedule()
+    {
+        var providerId = Guid.NewGuid();
+        var controller = CreateController(providerId);
+        var dto = new UpdateOperatingScheduleDto(new List<DayOperatingScheduleDto>());
+        var schedule = new ProviderOperatingScheduleDto(providerId, new List<DayOperatingScheduleDto>());
+
+        _serviceMock.Setup(s => s.UpdateOperatingScheduleAsync(providerId, dto, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(schedule);
+
+        var result = await controller.UpdateOperatingSchedule(dto, CancellationToken.None);
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        Assert.Equal(schedule, ok.Value);
+    }
+
+    [Fact]
+    public async Task UpdateOperatingSchedule_Unauthenticated_ReturnsUnauthorized()
     {
         var controller = CreateController(providerId: null);
-        var result = await controller.Create(new CreateSlotDto());
+        var dto = new UpdateOperatingScheduleDto(new List<DayOperatingScheduleDto>());
+
+        var result = await controller.UpdateOperatingSchedule(dto, CancellationToken.None);
 
         Assert.IsType<UnauthorizedResult>(result);
     }
 
     [Fact]
-    public async Task CreateBatch_Success_Returns201Created()
+    public async Task UpdateOperatingSchedule_ValidationException_ReturnsBadRequest()
     {
         var providerId = Guid.NewGuid();
         var controller = CreateController(providerId);
-        var dto = new BatchCreateSlotsDto
-        {
-            Slots = new List<CreateSlotDto>
-            {
-                new() { StartTime = DateTimeOffset.UtcNow.AddDays(1), EndTime = DateTimeOffset.UtcNow.AddDays(1).AddHours(1) }
-            }
-        };
+        var dto = new UpdateOperatingScheduleDto(new List<DayOperatingScheduleDto>());
 
-        var expectedResult = new List<SlotResponseDto>
-        {
-            new(Guid.NewGuid(), providerId, dto.Slots[0].StartTime, dto.Slots[0].EndTime, false, DateTimeOffset.UtcNow, null)
-        };
+        _serviceMock.Setup(s => s.UpdateOperatingScheduleAsync(providerId, dto, It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new ValidationException("Weekly schedule cannot be empty."));
 
-        _serviceMock.Setup(s => s.CreateBatchSlotsAsync(providerId, dto))
-            .ReturnsAsync(expectedResult);
+        var result = await controller.UpdateOperatingSchedule(dto, CancellationToken.None);
 
-        var result = await controller.CreateBatch(dto);
-
-        var statusResult = Assert.IsType<ObjectResult>(result);
-        Assert.Equal(StatusCodes.Status201Created, statusResult.StatusCode);
-        Assert.Equal(expectedResult, statusResult.Value);
+        var badRequest = Assert.IsType<BadRequestObjectResult>(result);
+        Assert.Equal("Weekly schedule cannot be empty.", badRequest.Value);
     }
 
     [Fact]
-    public async Task CreateRecurring_Success_Returns201Created()
+    public async Task GetPredefinedSlots_ReturnsOkWithDailySlots()
     {
         var providerId = Guid.NewGuid();
-        var controller = CreateController(providerId);
-        var dto = new RecurringScheduleDto
-        {
-            DaysOfWeek = new List<DayOfWeek> { DayOfWeek.Monday },
-            DailyStartTime = TimeSpan.FromHours(9),
-            DailyEndTime = TimeSpan.FromHours(17),
-            SlotDurationMinutes = 60,
-            StartDate = DateTimeOffset.UtcNow.AddDays(1),
-            EndDate = DateTimeOffset.UtcNow.AddDays(8)
-        };
+        var date = new DateOnly(2026, 10, 15);
+        var controller = CreateController();
+        var response = new DailySlotsResponseDto(providerId, date, 1, true, new List<PredefinedSlotDto>());
 
-        var expectedResult = new List<SlotResponseDto>
-        {
-            new(Guid.NewGuid(), providerId, dto.StartDate, dto.StartDate.AddHours(1), false, DateTimeOffset.UtcNow, null)
-        };
+        _serviceMock.Setup(s => s.GetPredefinedSlotsForDateAsync(providerId, date, 1, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(response);
 
-        _serviceMock.Setup(s => s.CreateRecurringSlotsAsync(providerId, dto))
-            .ReturnsAsync(expectedResult);
+        var result = await controller.GetPredefinedSlots(providerId, date, 1, CancellationToken.None);
 
-        var result = await controller.CreateRecurring(dto);
-
-        var statusResult = Assert.IsType<ObjectResult>(result);
-        Assert.Equal(StatusCodes.Status201Created, statusResult.StatusCode);
-        Assert.Equal(expectedResult, statusResult.Value);
-    }
-
-    [Fact]
-    public async Task GetForProvider_PassesRangeParameters_ReturnsOk()
-    {
-        var controller = CreateController(providerId: null);
-        var targetProviderId = Guid.NewGuid();
-        var start = DateTimeOffset.UtcNow.AddDays(1);
-        var end = DateTimeOffset.UtcNow.AddDays(7);
-
-        var slots = new List<SlotResponseDto>
-        {
-            new(Guid.NewGuid(), targetProviderId, start, start.AddHours(1), false, DateTimeOffset.UtcNow, null)
-        };
-
-        _serviceMock.Setup(s => s.GetForProviderAsync(targetProviderId, start, end))
-            .ReturnsAsync(slots);
-
-        var result = await controller.GetForProvider(targetProviderId, start, end);
-
-        var okResult = Assert.IsType<OkObjectResult>(result);
-        Assert.Equal(slots, okResult.Value);
-    }
-
-    [Fact]
-    public async Task Delete_NotFound_ReturnsNotFound()
-    {
-        var providerId = Guid.NewGuid();
-        var slotId = Guid.NewGuid();
-        var controller = CreateController(providerId);
-
-        _serviceMock.Setup(s => s.DeleteSlotAsync(slotId, providerId))
-            .ThrowsAsync(new NotFoundException("Slot not found."));
-
-        var result = await controller.Delete(slotId);
-
-        var notFoundResult = Assert.IsType<NotFoundObjectResult>(result);
-        Assert.Equal("Slot not found.", notFoundResult.Value);
-    }
-
-    [Fact]
-    public async Task Delete_Success_ReturnsNoContent()
-    {
-        var providerId = Guid.NewGuid();
-        var slotId = Guid.NewGuid();
-        var controller = CreateController(providerId);
-
-        _serviceMock.Setup(s => s.DeleteSlotAsync(slotId, providerId))
-            .Returns(Task.CompletedTask);
-
-        var result = await controller.Delete(slotId);
-
-        Assert.IsType<NoContentResult>(result);
+        var ok = Assert.IsType<OkObjectResult>(result);
+        Assert.Equal(response, ok.Value);
     }
 }

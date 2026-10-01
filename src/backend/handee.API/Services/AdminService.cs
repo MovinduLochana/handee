@@ -77,7 +77,7 @@ public class AdminService : IAdminService
     }
 
     public async Task ReviewCertificationAsync(
-        Guid certificationId, Guid adminUserId, DocumentReviewStatus status, CancellationToken ct = default)
+        Guid certificationId, Guid adminUserId, DocumentReviewStatus status, string? note = null, CancellationToken ct = default)
     {
         var cert = await _certRepo.GetByIdAsync(certificationId, ct)
             ?? throw new NotFoundException($"Certification {certificationId} not found.");
@@ -87,6 +87,12 @@ public class AdminService : IAdminService
         var profile = await _providerRepo.GetByIdAsync(cert.ProviderProfileId, ct);
         if (profile != null) 
         {
+            var logNote = $"Document {cert.Type} ({cert.OriginalFileName ?? cert.FileUrl}) review status set to {status}.";
+            if (!string.IsNullOrWhiteSpace(note))
+            {
+                logNote += $" Note: {note.Trim()}";
+            }
+
             var log = new VerificationAuditLog
             {
                 Id = Guid.NewGuid(),
@@ -95,7 +101,7 @@ public class AdminService : IAdminService
                 PreviousStatus = profile.VerificationStatus,
                 NewStatus = profile.VerificationStatus,
                 Timestamp = DateTimeOffset.UtcNow,
-                Note = $"Document {cert.Type} ({cert.OriginalFileName ?? cert.FileUrl}) review status set to {status}."
+                Note = logNote
             };
             _db.VerificationAuditLogs.Add(log);
         }

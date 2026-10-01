@@ -71,7 +71,7 @@ public class AdminController : ControllerBase
         var adminId = Guid.Parse(User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier)!);
         try
         {
-            await _adminService.ReviewCertificationAsync(certId, adminId, dto.Status, ct);
+            await _adminService.ReviewCertificationAsync(certId, adminId, dto.Status, dto.Note, ct);
             return NoContent();
         }
         catch (NotFoundException ex)
@@ -106,4 +106,5 @@ public class AdminController : ControllerBase
 
 public record SetUserStatusDto(bool IsActive);
 public record SetVerificationStatusDto(ProviderVerificationStatus Status);
-public record ReviewCertificationDto(DocumentReviewStatus Status);
+public record ReviewCertificationDto(DocumentReviewStatus Status, string? Note = null);
+

@@ -254,7 +254,9 @@ public class BookingService : IBookingService
     public async Task<BookingResponseDto> UpdateScheduleAsync(
         Guid bookingId, UpdateBookingScheduleDto dto, Guid requestingUserId, bool isRequesterAdmin)
     {
-        var booking = await _db.Bookings.FindAsync(bookingId)
+        var booking = await _db.Bookings
+            .Include(b => b.ServiceListing)
+            .FirstOrDefaultAsync(b => b.Id == bookingId)
             ?? throw new NotFoundException("Booking not found.");
 
         var isCustomer = booking.CustomerId == requestingUserId;
@@ -270,7 +272,72 @@ public class BookingService : IBookingService
             throw new ValidationException(
                 $"Booking cannot be rescheduled while its status is '{booking.Status}'.");
 
-        booking.ScheduledAt = dto.ScheduledAt;
+        if (dto.ScheduledAt == null || dto.ScheduledAt.Value <= DateTimeOffset.UtcNow)
+            throw new ValidationException("Booking scheduled time must be in the future.");
+
+        var startTime = dto.ScheduledAt.Value.ToUniversalTime();
+
+        if (startTime.Minute != 0 || startTime.Second != 0)
+            throw new ValidationException("Appointments must be booked on the hour (e.g. 09:00, 10:00).");
+
+        var durationHours = booking.ServiceListing != null && booking.ServiceListing.DurationHours > 0
+            ? booking.ServiceListing.DurationHours
+            : 1;
+        var endTime = startTime.AddHours(durationHours);
+
+        // Check provider operating schedule
+        var dayOfWeek = startTime.DayOfWeek;
+        var schedule = await _db.ProviderOperatingSchedules
+            .FirstOrDefaultAsync(s => s.ProviderId == booking.ProviderId && s.DayOfWeek == dayOfWeek);
+
+        int startHour;
+        int endHour;
+        bool isWorking;
+
+        if (schedule != null)
+        {
+            isWorking = schedule.IsActive;
+            startHour = schedule.StartTime.Hours;
+            endHour = schedule.EndTime.Hours;
+        }
+        else
+        {
+            isWorking = dayOfWeek >= DayOfWeek.Monday && dayOfWeek <= DayOfWeek.Friday;
+            startHour = 9;
+            endHour = 17;
+        }
+
+        if (!isWorking)
+        {
+            throw new ValidationException("Provider is not available on this day.");
+        }
+
+        if (startTime.Hour < startHour || startTime.Hour + durationHours > endHour)
+        {
+            throw new ValidationException("Requested booking time is outside the provider's operating hours.");
+        }
+
+        // Check for conflicting active bookings for this provider
+        var hasConflict = await _db.Bookings
+            .Include(b => b.ServiceListing)
+            .Where(b => b.Id != booking.Id
+                        && b.ProviderId == booking.ProviderId
+                        && b.ScheduledAt != null
+                        && (b.Status == BookingStatus.Requested
+                            || b.Status == BookingStatus.Accepted
+                            || b.Status == BookingStatus.InProgress))
+            .AnyAsync(b => b.ScheduledAt < endTime &&
+                           startTime < b.ScheduledAt.Value.AddHours(
+                               b.ServiceListing != null && b.ServiceListing.DurationHours > 0
+                                   ? b.ServiceListing.DurationHours
+                                   : 1));
+
+        if (hasConflict)
+        {
+            throw new ValidationException("Provider already has an active booking during the requested time slot.");
+        }
+
+        booking.ScheduledAt = startTime;
         booking.UpdatedAt = DateTimeOffset.UtcNow;
 
         await _db.SaveChangesAsync();
@@ -299,10 +366,49 @@ public class BookingService : IBookingService
             throw new ValidationException("Booking scheduled time must be in the future.");
 
         var startTime = dto.ScheduledAt.ToUniversalTime();
-        var duration = listing.EstimatedDuration > TimeSpan.Zero
-            ? listing.EstimatedDuration
-            : TimeSpan.FromHours(1);
+
+        if (startTime.Minute != 0 || startTime.Second != 0)
+            throw new ValidationException("Appointments must be booked on the hour (e.g. 09:00, 10:00).");
+
+        var durationHours = listing.DurationHours > 0
+            ? listing.DurationHours
+            : (listing.EstimatedDuration > TimeSpan.Zero
+                ? (int)Math.Max(1, Math.Ceiling(listing.EstimatedDuration.TotalHours))
+                : 1);
+        var duration = TimeSpan.FromHours(durationHours);
         var endTime = startTime.Add(duration);
+
+        // Check provider operating schedule
+        var dayOfWeek = startTime.DayOfWeek;
+        var schedule = await _db.ProviderOperatingSchedules
+            .FirstOrDefaultAsync(s => s.ProviderId == listing.ProviderId && s.DayOfWeek == dayOfWeek, ct);
+
+        int startHour;
+        int endHour;
+        bool isWorking;
+
+        if (schedule != null)
+        {
+            isWorking = schedule.IsActive;
+            startHour = schedule.StartTime.Hours;
+            endHour = schedule.EndTime.Hours;
+        }
+        else
+        {
+            isWorking = dayOfWeek >= DayOfWeek.Monday && dayOfWeek <= DayOfWeek.Friday;
+            startHour = 9;
+            endHour = 17;
+        }
+
+        if (!isWorking)
+        {
+            throw new ValidationException("Provider is not available on this day.");
+        }
+
+        if (startTime.Hour < startHour || startTime.Hour + durationHours > endHour)
+        {
+            throw new ValidationException("Requested booking time is outside the provider's operating hours.");
+        }
 
         Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction? tx = null;
         if (_db.Database.IsRelational())
@@ -313,26 +419,6 @@ public class BookingService : IBookingService
         Booking booking;
         try
         {
-            // Check provider availability slots if any configured
-            var hasSlots = await _db.ProviderAvailabilitySlots
-                .AnyAsync(s => s.ProviderId == listing.ProviderId, ct);
-
-            ProviderAvailabilitySlot? matchingSlot = null;
-            if (hasSlots)
-            {
-                // Find an unbooked slot that covers the requested appointment start time
-                matchingSlot = await _db.ProviderAvailabilitySlots
-                    .FirstOrDefaultAsync(s => s.ProviderId == listing.ProviderId
-                                              && !s.IsBooked
-                                              && s.StartTime <= startTime.AddMinutes(2)
-                                              && startTime < s.EndTime, ct);
-
-                if (matchingSlot == null)
-                {
-                    throw new ValidationException("Provider is not available at the requested time slot.");
-                }
-            }
-
             // Check for conflicting active bookings
             var hasConflict = await _db.Bookings
                 .Include(b => b.ServiceListing)
@@ -342,36 +428,14 @@ public class BookingService : IBookingService
                                 || b.Status == BookingStatus.Accepted
                                 || b.Status == BookingStatus.InProgress))
                 .AnyAsync(b => b.ScheduledAt < endTime &&
-                               startTime < b.ScheduledAt.Value.AddMinutes(
-                                   b.ServiceListing != null && b.ServiceListing.EstimatedDuration > TimeSpan.Zero
-                                       ? b.ServiceListing.EstimatedDuration.TotalMinutes
-                                       : 60), ct);
+                               startTime < b.ScheduledAt.Value.AddHours(
+                                   b.ServiceListing != null && b.ServiceListing.DurationHours > 0
+                                       ? b.ServiceListing.DurationHours
+                                       : 1), ct);
 
             if (hasConflict)
             {
                 throw new ValidationException("Provider already has an active booking during the requested time slot.");
-            }
-
-            // If slot matched, mark the matched slot and any overlapping slots across the appointment duration as booked
-            if (matchingSlot != null)
-            {
-                var slotsToBook = await _db.ProviderAvailabilitySlots
-                    .Where(s => s.ProviderId == listing.ProviderId
-                                && !s.IsBooked
-                                && s.StartTime < endTime
-                                && startTime < s.EndTime)
-                    .ToListAsync(ct);
-
-                if (!slotsToBook.Contains(matchingSlot))
-                {
-                    slotsToBook.Add(matchingSlot);
-                }
-
-                foreach (var s in slotsToBook)
-                {
-                    s.IsBooked = true;
-                    s.UpdatedAt = DateTimeOffset.UtcNow;
-                }
             }
 
             var customer = await _db.Users.FindAsync([customerId], ct);
@@ -467,5 +531,6 @@ public class BookingService : IBookingService
         Price: b.ServiceListing?.FixedPrice ?? b.JobRequest?.BudgetMax ?? b.JobRequest?.BudgetMin ?? 3500m,
         Category: b.JobRequest?.ServiceCategory?.Name ?? b.ServiceListing?.Category?.Name,
         Description: b.JobRequest?.Description ?? b.ServiceListing?.Title ?? b.ServiceListing?.Description,
-        Notes: b.Notes);
+        Notes: b.Notes,
+        DurationHours: b.ServiceListing != null && b.ServiceListing.DurationHours > 0 ? b.ServiceListing.DurationHours : 1);
 }
