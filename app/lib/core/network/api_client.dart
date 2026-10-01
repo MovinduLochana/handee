@@ -258,6 +258,23 @@ class ApiClient {
           message = decoded['message'].toString();
         } else if (decoded.containsKey('error') && decoded['error'] != null) {
           message = decoded['error'].toString();
+        } else if (decoded.containsKey('errors') && decoded['errors'] is Map) {
+          final errorsMap = decoded['errors'] as Map;
+          final errorList = <String>[];
+          errorsMap.forEach((_, val) {
+            if (val is List) {
+              errorList.addAll(val.map((e) => e.toString()));
+            } else if (val != null) {
+              errorList.add(val.toString());
+            }
+          });
+          if (errorList.isNotEmpty) {
+            message = errorList.join(', ');
+          } else if (decoded.containsKey('title') && decoded['title'] != null) {
+            message = decoded['title'].toString();
+          }
+        } else if (decoded.containsKey('title') && decoded['title'] != null) {
+          message = decoded['title'].toString();
         }
       } else if (decoded is String && decoded.trim().isNotEmpty) {
         message = decoded;
