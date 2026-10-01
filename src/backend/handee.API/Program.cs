@@ -166,13 +166,11 @@ if (!app.Environment.IsDevelopment())
 // CORS must be called before UseStaticFiles so that CORS headers apply to the images
 app.UseCors();
 
-var uploadsDir = Path.Combine(builder.Environment.ContentRootPath, "uploads");
-Directory.CreateDirectory(uploadsDir); // Prevent errors if folder doesn't exist yet
-
 app.UseStaticFiles(new StaticFileOptions
 {
-    FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(uploadsDir),
-    RequestPath = "/uploads"
+    FileProvider = StoragePathResolver.CreateUploadsFileProvider(builder.Environment, builder.Configuration),
+    RequestPath = "/uploads",
+    ContentTypeProvider = StoragePathResolver.GetContentTypeProvider()
 });
 
 // Auto-apply pending migrations
