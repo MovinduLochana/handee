@@ -102,22 +102,7 @@ class ServiceDirectoryProvider extends ChangeNotifier {
       _myProfile = await providerRepo.getMyProfile();
       _errorMessage = null;
     } catch (e) {
-      // In demo/presentation mode or if endpoint fails, create a default profile model
-      _myProfile ??= ProviderProfileModel(
-        id: 'prov-demo-profile-01',
-        userId: 'provider-demo-01',
-        fullName: 'Nimal Jayawardena',
-        headline: 'Master Plumber & AC Repair Specialist',
-        bio: 'Certified technician with 10+ years of hands-on experience in residential and commercial maintenance across Colombo.',
-        description: 'Specializes in emergency leak repairs, pipe fitting, and inverter AC systems.',
-        yearsOfExperience: 10,
-        skillCategories: ['Plumbing', 'AC Repair'],
-        serviceArea: 'Colombo & Western Province',
-        languages: ['English', 'Sinhala'],
-        hourlyRate: 2500,
-        isOnline: true,
-        verificationStatus: 'Verified',
-      );
+      _errorMessage = e.toString();
     } finally {
       _setLoading(false);
     }
@@ -136,9 +121,14 @@ class ServiceDirectoryProvider extends ChangeNotifier {
     String? addressLine1,
     double? hourlyRate,
   }) async {
+    final profileId = _myProfile?.id;
+    if (profileId == null) {
+      _errorMessage = 'No provider profile available to update.';
+      return false;
+    }
+
     _setLoading(true);
     try {
-      final profileId = _myProfile?.id ?? 'prov-demo-profile-01';
       _myProfile = await providerRepo.updateMyProfile(
         profileId: profileId,
         headline: headline,
@@ -157,20 +147,9 @@ class ServiceDirectoryProvider extends ChangeNotifier {
       _setLoading(false);
       return true;
     } catch (e) {
-      // Fallback: update in-memory model
-      _myProfile = _myProfile?.copyWith(
-        headline: headline,
-        bio: bio,
-        description: description,
-        yearsOfExperience: yearsOfExperience,
-        languages: languages,
-        skillCategories: servicesOffered,
-        serviceArea: city,
-        hourlyRate: hourlyRate,
-        isOnline: isAvailableForWork,
-      );
+      _errorMessage = e.toString();
       _setLoading(false);
-      return true;
+      return false;
     }
   }
 

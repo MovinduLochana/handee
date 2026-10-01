@@ -286,3 +286,16 @@ export interface BookingStaffParams {
   page?: number;
   pageSize?: number;
 }
+
+/** DTO for GET /admin/users */
+export interface AdminUserResult {
+  id: string;
+  fullName: string;
+  email: string | null;
+  phoneNumber: string | null;
+  isActive: boolean;
+  providerVerificationStatus: string;
+  createdAt: string;
+  roles: string[];
+  providerProfileId?: string | null;
+}

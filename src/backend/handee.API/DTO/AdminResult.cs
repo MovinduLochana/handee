@@ -8,5 +8,6 @@ public record AdminUserResult(
     bool IsActive,
     string ProviderVerificationStatus,
     DateTimeOffset CreatedAt,
-    IList<string> Roles
+    IList<string> Roles,
+    Guid? ProviderProfileId = null
 );
