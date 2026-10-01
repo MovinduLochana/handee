@@ -25,6 +25,15 @@
   font-family: var(--heading);
   letter-spacing: -0.02em;
   padding-left: 1rem;
+  color: #fff;
+  text-decoration: none;
+  display: block;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.shell-sidebar .brand:hover {
+  opacity: 0.9;
 }
 
 .nav-link {

@@ -86,4 +86,20 @@ describe("Login Component", () => {
     });
     expect(mockNavigate).not.toHaveBeenCalled();
   });
+
+  it("toggles password visibility when view password button is clicked", () => {
+    renderLogin();
+
+    const passwordInput = screen.getByLabelText(/password/i) as HTMLInputElement;
+    expect(passwordInput.type).toBe("password");
+
+    const toggleBtn = screen.getByTitle(/view password/i);
+    fireEvent.click(toggleBtn);
+
+    expect(passwordInput.type).toBe("text");
+    expect(screen.getByTitle(/hide password/i)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTitle(/hide password/i));
+    expect(passwordInput.type).toBe("password");
+  });
 });

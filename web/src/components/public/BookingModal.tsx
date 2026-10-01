@@ -1,218 +1,197 @@
-import { useState, useId } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { X, Clock, Banknote, CalendarCheck, AlignLeft, Calendar, AlertCircle, Check } from "lucide-react";
-import { bookingApi } from "../../api/bookings";
-import { providerAvailabilityApi } from "../../api/providerAvailability";
-import type { BookingResponseDto, ServiceListingDto } from "../../api/types";
+import {
+  X,
+  Clock,
+  Banknote,
+  AlignLeft,
+  Smartphone,
+  Calendar,
+  ShieldCheck,
+  ExternalLink,
+} from "lucide-react";
+import type { ServiceListingDto } from "../../api/types";
 import "./BookingModal.css";
 
 interface BookingModalProps {
   listing: ServiceListingDto;
   onClose: () => void;
-  onSuccess?: (booking: BookingResponseDto) => void;
 }
 
-export default function BookingModal({ listing, onClose, onSuccess }: BookingModalProps) {
-  const scheduleId = useId();
-  const notesId = useId();
-
-  // Fetch provider's available slots
-  const { data: availableSlots = [], isLoading: isLoadingSlots } = useQuery({
-    queryKey: ["providerAvailabilitySlots", listing.providerId],
-    queryFn: () => providerAvailabilityApi.getForProvider(listing.providerId),
-    enabled: !!listing.providerId,
-  });
-
-  // Default to tomorrow 10:00 AM in local ISO-slice (YYYY-MM-DDTHH:mm)
-  const [scheduledAt, setScheduledAt] = useState(() => {
-    const d = new Date();
-    d.setDate(d.getDate() + 1);
-    d.setHours(10, 0, 0, 0);
-    const pad = (n: number) => String(n).padStart(2, "0");
-    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-  });
-
-  const [notes, setNotes] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
-  const handleBookSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!scheduledAt) {
-      setErrorMessage("Please select a date and time.");
-      return;
-    }
-
-    const scheduledDate = new Date(scheduledAt);
-    if (isNaN(scheduledDate.getTime()) || scheduledDate.getTime() <= Date.now()) {
-      setErrorMessage("Booking scheduled time must be in the future.");
-      return;
-    }
-
-    setIsSubmitting(true);
-    setErrorMessage(null);
-
-    try {
-      const created = await bookingApi.createFromListing({
-        serviceListingId: listing.id,
-        scheduledAt: scheduledDate.toISOString(),
-        notes: notes.trim() || undefined,
-      });
-
-      onSuccess?.(created);
-      onClose();
-    } catch (err: any) {
-      const data = err?.response?.data;
-      const msg =
-        (typeof data === "string" && data.trim()) ||
-        data?.error ||
-        data?.message ||
-        err?.message ||
-        "Failed to schedule booking. Please try another time slot.";
-      setErrorMessage(msg);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+export default function BookingModal({ listing, onClose }: BookingModalProps) {
+  const durationText = listing.durationHours
+    ? `${listing.durationHours} ${listing.durationHours === 1 ? "Hour" : "Hours"} (${listing.durationHours} ${listing.durationHours === 1 ? "1-hour slot" : "consecutive 1-hour slots"})`
+    : listing.estimatedDuration || "1 Hour";
 
   return (
-    <div className="booking-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div
+      className="booking-modal-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="modal-title"
+    >
       <div className="booking-modal-content">
         <div className="booking-modal-header">
-          <h2 id="modal-title">Book Service</h2>
+          <h2 id="modal-title">Service Details</h2>
           <button onClick={onClose} className="btn-close" aria-label="Close modal">
             <X size={20} />
           </button>
         </div>
 
-        <form onSubmit={handleBookSubmit}>
-          <div className="booking-modal-body">
-            <div className="service-highlight">
-              {listing.serviceCategoryName && (
-                <span className="service-badge">{listing.serviceCategoryName}</span>
-              )}
-              <h3 className="service-title">{listing.title}</h3>
-              <p className="service-description">{listing.description}</p>
-            </div>
-
-            <div className="service-details-grid">
-              <div className="detail-item full-width">
-                <span className="detail-label">
-                  <AlignLeft size={16} /> Scope of Work
-                </span>
-                <p className="detail-value">{listing.scope || "As generally described."}</p>
-              </div>
-              <div className="detail-item full-width">
-                <span className="detail-label">
-                  <Clock size={16} /> Availability
-                </span>
-                <p className="detail-value">{listing.availability || "Check with provider."}</p>
-              </div>
-              <div className="detail-item">
-                <span className="detail-label">
-                  <Banknote size={16} /> Fixed Price
-                </span>
-                <p className="detail-value price-text">LKR {listing.fixedPrice.toFixed(2)}</p>
-              </div>
-              <div className="detail-item">
-                <span className="detail-label">
-                  <Clock size={16} /> Estimated Duration
-                </span>
-                <p className="detail-value">{listing.estimatedDuration}</p>
-              </div>
-            </div>
-
-            {errorMessage && (
-              <div className="booking-modal-error" role="alert">
-                <AlertCircle size={18} />
-                <span>{errorMessage}</span>
-              </div>
+        <div className="booking-modal-body">
+          <div className="service-highlight">
+            {listing.serviceCategoryName && (
+              <span className="service-badge">{listing.serviceCategoryName}</span>
             )}
+            <h3 className="service-title">{listing.title}</h3>
+            <p className="service-description">{listing.description}</p>
+          </div>
 
-            <div className="booking-form-fields">
-              <div className="available-slots-section">
-                <span className="available-slots-label">
-                  <Clock size={14} style={{ display: "inline", verticalAlign: "middle", marginRight: 4 }} />
-                  Provider Available Slots
-                </span>
-                {isLoadingSlots ? (
-                  <span className="no-slots-hint">Loading provider slots...</span>
-                ) : availableSlots.length === 0 ? (
-                  <span className="no-slots-hint">
-                    No discrete slots configured. You may select any daytime working hour below.
-                  </span>
-                ) : (
-                  <div className="slots-chip-group">
-                    {availableSlots.slice(0, 8).map((slot) => {
-                      const d = new Date(slot.startTime);
-                      const pad = (n: number) => String(n).padStart(2, "0");
-                      const slotIsoSlice = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-                      const isSelected = scheduledAt === slotIsoSlice;
-                      const dateLabel = d.toLocaleDateString([], { month: "short", day: "numeric" });
-                      const timeLabel = d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-
-                      return (
-                        <button
-                          key={slot.id}
-                          type="button"
-                          className={`slot-chip ${isSelected ? "selected" : ""}`}
-                          onClick={() => {
-                            setScheduledAt(slotIsoSlice);
-                            setErrorMessage(null);
-                          }}
-                        >
-                          {isSelected && <Check size={14} />}
-                          <span>{dateLabel} · {timeLabel}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-
-              <div className="form-group">
-                <label htmlFor={scheduleId} className="form-label">
-                  <Calendar size={16} /> Selected Date & Time
-                </label>
-                <input
-                  id={scheduleId}
-                  type="datetime-local"
-                  className="form-input"
-                  value={scheduledAt}
-                  onChange={(e) => {
-                    setScheduledAt(e.target.value);
-                    setErrorMessage(null);
-                  }}
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor={notesId} className="form-label">
-                  Special Notes / Instructions
-                </label>
-                <textarea
-                  id={notesId}
-                  className="form-textarea"
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  placeholder="e.g. Landmark, access instructions, or special requests"
-                  rows={3}
-                />
-              </div>
+          <div className="service-details-grid">
+            <div className="detail-item full-width">
+              <span className="detail-label">
+                <AlignLeft size={16} /> Scope of Work
+              </span>
+              <p className="detail-value">{listing.scope || "As generally described."}</p>
+            </div>
+            <div className="detail-item">
+              <span className="detail-label">
+                <Banknote size={16} /> Fixed Price
+              </span>
+              <p className="detail-value price-text">LKR {listing.fixedPrice.toFixed(2)}</p>
+            </div>
+            <div className="detail-item">
+              <span className="detail-label">
+                <Clock size={16} /> Time Required
+              </span>
+              <p className="detail-value">{durationText}</p>
             </div>
           </div>
 
-          <div className="booking-modal-footer">
-            <button type="button" onClick={onClose} className="btn-cancel" disabled={isSubmitting}>
-              Cancel
-            </button>
-            <button type="submit" className="btn-confirm-book" disabled={isSubmitting}>
-              <CalendarCheck size={18} /> {isSubmitting ? "Booking..." : "Confirm Booking"}
-            </button>
+          {/* ── Book on Mobile App Section ── */}
+          <div
+            className="book-on-mobile-card"
+            style={{
+              padding: "var(--space-6)",
+              background: "var(--bg, #f8fafc)",
+              border: "1px solid var(--border-strong, #cbd5e1)",
+              borderRadius: "12px",
+              display: "flex",
+              flexDirection: "column",
+              gap: "var(--space-4)",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "flex-start", gap: "14px" }}>
+              <div
+                style={{
+                  width: "44px",
+                  height: "44px",
+                  borderRadius: "10px",
+                  background: "var(--primary-ultra-light, #e0f2fe)",
+                  color: "var(--primary, #0284c7)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexShrink: 0,
+                }}
+              >
+                <Smartphone size={24} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <h4
+                  style={{
+                    margin: "0 0 4px",
+                    fontSize: "1.05rem",
+                    fontWeight: 700,
+                    color: "var(--text-h)",
+                  }}
+                >
+                  Book on Handee Mobile App
+                </h4>
+                <p
+                  style={{
+                    margin: 0,
+                    fontSize: "0.875rem",
+                    color: "var(--text-muted)",
+                    lineHeight: 1.5,
+                  }}
+                >
+                  Customer bookings are handled exclusively through our mobile application to
+                  provide real-time 1-hour predefined slot selection.
+                </p>
+              </div>
+            </div>
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: "10px",
+                fontSize: "0.825rem",
+                color: "var(--text-secondary)",
+                padding: "10px 12px",
+                background: "var(--bg-surface)",
+                borderRadius: "8px",
+                border: "1px solid var(--border)",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                <Calendar size={14} color="var(--primary)" />
+                <span>14-day dynamic date strip</span>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                <Clock size={14} color="var(--primary)" />
+                <span>Predefined 1-hour slot picker</span>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                <ShieldCheck size={14} color="var(--primary)" />
+                <span>Guaranteed fixed price</span>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                <ExternalLink size={14} color="var(--primary)" />
+                <span>Instant in-app confirmation</span>
+              </div>
+            </div>
+
+            <div style={{ display: "flex", gap: "10px", marginTop: "4px" }}>
+              <a
+                href={`handee://listings/${listing.id}`}
+                className="wizard-btn wizard-btn-primary"
+                style={{
+                  flex: 1,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "8px",
+                  textDecoration: "none",
+                  padding: "0.75rem 1rem",
+                  fontSize: "0.95rem",
+                  fontWeight: 700,
+                  borderRadius: "8px",
+                }}
+                onClick={() => {
+                  // Fallback if deep link is not registered on desktop
+                  setTimeout(() => {
+                    alert(
+                      "Please open or download the Handee Flutter App on your mobile device to book this service listing.",
+                    );
+                  }, 500);
+                }}
+              >
+                <Smartphone size={18} /> Open in Handee App
+              </a>
+            </div>
           </div>
-        </form>
+        </div>
+
+        <div className="booking-modal-footer" style={{ justifyContent: "flex-end" }}>
+          <button
+            type="button"
+            onClick={onClose}
+            className="btn-cancel"
+            style={{ width: "auto", minWidth: "120px" }}
+          >
+            Close
+          </button>
+        </div>
       </div>
     </div>
   );

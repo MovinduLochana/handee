@@ -4,12 +4,13 @@ import { useMutation } from "@tanstack/react-query";
 import { authApi } from "../../api/auth";
 import { usersApi } from "../../api/users";
 import { extractApiError } from "../../lib/api";
-import { Loader2, AlertCircle } from "lucide-react";
+import { Loader2, AlertCircle, Eye, EyeOff } from "lucide-react";
 import "./Auth.css";
 
 export default function Login() {
   const navigate = useNavigate();
   const [authError, setAuthError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   const loginMutation = useMutation({
     mutationFn: (credentials: any) => authApi.login(credentials),
@@ -84,14 +85,25 @@ export default function Login() {
           </div>
           <div className="form-group">
             <label htmlFor="password">Password</label>
-            <input
-              type="password"
-              id="password"
-              name="password"
-              placeholder="••••••••"
-              required
-              disabled={loginMutation.isPending}
-            />
+            <div className="password-input-wrapper">
+              <input
+                type={showPassword ? "text" : "password"}
+                id="password"
+                name="password"
+                placeholder="••••••••"
+                required
+                disabled={loginMutation.isPending}
+              />
+              <button
+                type="button"
+                className="password-toggle-btn"
+                onClick={() => setShowPassword((prev) => !prev)}
+                aria-label={showPassword ? "Hide" : "Show"}
+                title={showPassword ? "Hide password" : "View password"}
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
           </div>
           <button
             type="submit"

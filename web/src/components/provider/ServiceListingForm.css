@@ -1,37 +1,42 @@
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(13, 20, 36, 0.4);
-  /* tinted overlay mapping to var(--text-h) */
+  background: rgba(13, 20, 36, 0.45);
   backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 100;
+  z-index: 1000;
+  padding: 1rem;
+  box-sizing: border-box;
 }
 
 .modal-content {
   background: var(--bg-surface);
   width: 100%;
-  max-width: 850px;
+  max-width: 540px;
+  max-height: 88vh;
   border-radius: 12px;
   box-shadow: var(--shadow-xl);
   display: flex;
   flex-direction: column;
   animation: modal-fade-in 0.2s var(--ease-out-expo);
+  overflow: hidden;
 }
 
 .modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: var(--space-5) var(--space-6);
+  padding: 1rem 1.25rem;
   border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
 }
 
 .modal-header h2 {
   margin: 0;
-  font-size: var(--text-lg);
+  font-size: 1.15rem;
+  font-weight: 700;
   color: var(--text-h);
 }
 
@@ -52,10 +57,29 @@
 }
 
 .listing-form {
-  padding: var(--space-5);
+  padding: 1.25rem;
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
+  gap: 1rem;
+  overflow-y: auto;
+  max-height: calc(88vh - 65px);
+}
+
+.listing-form::-webkit-scrollbar {
+  width: 6px;
+}
+
+.listing-form::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.listing-form::-webkit-scrollbar-thumb {
+  background: var(--border-strong, #cbd5e1);
+  border-radius: 4px;
+}
+
+.listing-form::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
 }
 
 .form-grid {

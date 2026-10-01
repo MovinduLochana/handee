@@ -6,7 +6,6 @@ import { providerApi } from "../../api/providers";
 import { extractApiError } from "../../lib/api";
 import StatusBadge from "../../components/provider/StatusBadge";
 import DocumentCard from "../../components/provider/DocumentCard";
-import type { ProviderProfileAdminDto } from "../../api/types";
 import "./VerificationStatus.css";
 
 export default function VerificationStatusTracker() {
@@ -14,7 +13,11 @@ export default function VerificationStatusTracker() {
   const queryClient = useQueryClient();
   const [uploadError, setUploadError] = useState<string | null>(null);
 
-  const { data: myProfile, isLoading, isError } = useQuery({
+  const {
+    data: myProfile,
+    isLoading,
+    isError,
+  } = useQuery({
     queryKey: ["myProfile"],
     queryFn: providerApi.getMyProfile,
     retry: 1,
@@ -197,11 +200,24 @@ export default function VerificationStatusTracker() {
                             </div>
                             <span className="timeline-date">{ts}</span>
                           </div>
-                          {log.note && (
-                            <div className="timeline-note">
-                              <strong>Admin Note:</strong> {log.note}
-                            </div>
-                          )}
+                          {(() => {
+                            let adminNoteToDisplay: string | null = log.note;
+                            if (log.note && log.note.includes("review status set to Approved")) {
+                              const noteMatch = log.note.match(/[\s.]*Note:\s*(.+)$/is);
+                              if (noteMatch && noteMatch[1]?.trim()) {
+                                adminNoteToDisplay = noteMatch[1].trim();
+                              } else {
+                                adminNoteToDisplay = null;
+                              }
+                            }
+                            return (
+                              adminNoteToDisplay && (
+                                <div className="timeline-note">
+                                  <strong>Admin Note:</strong> {adminNoteToDisplay}
+                                </div>
+                              )
+                            );
+                          })()}
                         </div>
                       </div>
                     );

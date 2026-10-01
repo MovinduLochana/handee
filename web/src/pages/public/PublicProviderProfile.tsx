@@ -5,11 +5,11 @@ import {
   ArrowLeft,
   MapPin,
   Briefcase,
-  Calendar,
   ShieldCheck,
   CheckCircle,
   User,
   Star,
+  Smartphone,
 } from "lucide-react";
 import { providerApi } from "../../api/providers";
 import { serviceListingsApi } from "../../api/serviceListings";
@@ -202,7 +202,7 @@ export default function PublicProviderProfile() {
                   </div>
                 </div>
               ) : (
-                <div style={{ marginTop: "var(--space-10)" }}>
+                <div id="fixed-price-services" style={{ marginTop: "var(--space-10)" }}>
                   <h4
                     className="services-heading"
                     style={{
@@ -303,17 +303,73 @@ export default function PublicProviderProfile() {
 
           <div className="public-sidebar animate-fade-up animate-delay-300">
             <div className="public-sidebar-card">
-              <button
-                className="public-book-btn"
-                disabled={!profile.isAvailableForWork}
-                onClick={() => alert("Booking flow not implemented.")}
+              <div
+                className="public-mobile-cta"
+                style={{
+                  padding: "var(--space-6)",
+                  background: "var(--bg-surface)",
+                  border: "1px solid var(--border)",
+                  borderRadius: "16px",
+                  textAlign: "center",
+                  boxShadow: "var(--shadow-sm)",
+                }}
               >
-                <Calendar size={18} />
-                {profile.isAvailableForWork ? "Request Service" : "Currently Unavailable"}
-              </button>
+                <div
+                  style={{
+                    width: "48px",
+                    height: "48px",
+                    borderRadius: "50%",
+                    background: "var(--primary-ultra-light, #e0f2fe)",
+                    color: "var(--accent, #0284c7)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    margin: "0 auto var(--space-3)",
+                  }}
+                >
+                  <Smartphone size={24} />
+                </div>
+                <h3 style={{ fontSize: "1.1rem", fontWeight: 700, margin: "0 0 var(--space-2)" }}>
+                  Book on Mobile App
+                </h3>
+                <p
+                  style={{
+                    fontSize: "0.875rem",
+                    color: "var(--text-muted)",
+                    lineHeight: 1.5,
+                    margin: "0 0 var(--space-4)",
+                  }}
+                >
+                  Customer bookings and predefined 1-hour time slots are scheduled exclusively on
+                  the Handee Mobile App.
+                </p>
+                <a
+                  href="#fixed-price-services"
+                  className="wizard-btn wizard-btn-primary"
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "8px",
+                    width: "100%",
+                    textDecoration: "none",
+                    boxSizing: "border-box",
+                  }}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    document
+                      .getElementById("fixed-price-services")
+                      ?.scrollIntoView({ behavior: "smooth" });
+                  }}
+                >
+                  Browse Fixed Services
+                </a>
+              </div>
 
               {!profile.isAvailableForWork && profile.availabilityNote && (
-                <p className="availability-note">{profile.availabilityNote}</p>
+                <p className="availability-note" style={{ marginTop: "var(--space-3)" }}>
+                  {profile.availabilityNote}
+                </p>
               )}
             </div>
           </div>

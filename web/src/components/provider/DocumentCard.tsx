@@ -1,5 +1,5 @@
 import { useRef } from "react";
-import { FileText, Download, Upload } from "lucide-react";
+import { FileText, Eye, Upload } from "lucide-react";
 import StatusBadge from "./StatusBadge";
 import type { CertificationDto } from "../../api/types";
 import "./DocumentCard.css";
@@ -69,8 +69,9 @@ export default function DocumentCard({
             rel="noopener noreferrer"
             className="document-action-btn"
             title="View document"
+            aria-label="View document"
           >
-            <Download size={16} />
+            <Eye size={16} />
           </a>
         )}
         {showActions && certification.reviewStatus === "Pending" && (

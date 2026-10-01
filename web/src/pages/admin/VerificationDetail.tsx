@@ -12,9 +12,16 @@ import {
   Search,
   Clock,
   AlertTriangle,
+  Eye,
+  X,
 } from "lucide-react";
 import { providerApi } from "../../api/providers";
-import type { ProviderProfileAdminDto, VerificationActionDto } from "../../api/types";
+import type {
+  ProviderProfileAdminDto,
+  VerificationActionDto,
+  CertificationDto,
+  AuditLogDto,
+} from "../../api/types";
 import StatusBadge from "../../components/provider/StatusBadge";
 import DocumentCard from "../../components/provider/DocumentCard";
 import { extractApiError } from "../../lib/api";
@@ -27,6 +34,13 @@ export default function VerificationDetail() {
   const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
   const [rejectNote, setRejectNote] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // Document review states
+  const [approvingCert, setApprovingCert] = useState<CertificationDto | null>(null);
+  const [approveNote, setApproveNote] = useState("");
+  const [rejectingCert, setRejectingCert] = useState<CertificationDto | null>(null);
+  const [rejectDocNote, setRejectDocNote] = useState("");
+  const [viewingAuditLog, setViewingAuditLog] = useState<AuditLogDto | null>(null);
 
   const { data: profile, isLoading } = useQuery({
     queryKey: ["adminProviderProfile", id],
@@ -43,16 +57,13 @@ export default function VerificationDetail() {
     onSuccess: async (payload) => {
       setErrorMessage(null);
       // Immediately update local cache so the UI transitions instantly (0ms lag)
-      queryClient.setQueryData<ProviderProfileAdminDto>(
-        ["adminProviderProfile", id],
-        (old) => {
-          if (!old) return old;
-          return {
-            ...old,
-            verificationStatus: payload.newStatus,
-          };
-        }
-      );
+      queryClient.setQueryData<ProviderProfileAdminDto>(["adminProviderProfile", id], (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          verificationStatus: payload.newStatus,
+        };
+      });
 
       setIsRejectModalOpen(false);
       setRejectNote("");
@@ -71,25 +82,30 @@ export default function VerificationDetail() {
   });
 
   const documentReviewMutation = useMutation({
-    mutationFn: async ({ certId, status }: { certId: string; status: "Approved" | "Rejected" }) => {
-      await providerApi.reviewCertification(certId, status);
+    mutationFn: async ({
+      certId,
+      status,
+      note,
+    }: {
+      certId: string;
+      status: "Approved" | "Rejected";
+      note?: string;
+    }) => {
+      await providerApi.reviewCertification(certId, status, note);
       return { certId, status };
     },
     onSuccess: async ({ certId, status }) => {
       setErrorMessage(null);
       // Immediately update certification status in cache
-      queryClient.setQueryData<ProviderProfileAdminDto>(
-        ["adminProviderProfile", id],
-        (old) => {
-          if (!old) return old;
-          return {
-            ...old,
-            certifications: old.certifications.map((c) =>
-              c.id === certId ? { ...c, reviewStatus: status } : c
-            ),
-          };
-        }
-      );
+      queryClient.setQueryData<ProviderProfileAdminDto>(["adminProviderProfile", id], (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          certifications: old.certifications.map((c) =>
+            c.id === certId ? { ...c, reviewStatus: status } : c,
+          ),
+        };
+      });
 
       await queryClient.invalidateQueries({ queryKey: ["adminProviderProfile", id] });
       await queryClient.refetchQueries({ queryKey: ["adminProviderProfile", id] });
@@ -250,12 +266,14 @@ export default function VerificationDetail() {
                       key={cert.id}
                       certification={cert}
                       showActions={true}
-                      onApprove={(id) =>
-                        documentReviewMutation.mutate({ certId: id, status: "Approved" })
-                      }
-                      onReject={(id) =>
-                        documentReviewMutation.mutate({ certId: id, status: "Rejected" })
-                      }
+                      onApprove={() => {
+                        setApprovingCert(cert);
+                        setApproveNote("");
+                      }}
+                      onReject={() => {
+                        setRejectingCert(cert);
+                        setRejectDocNote("");
+                      }}
                     />
                   ))}
                 </div>
@@ -272,85 +290,315 @@ export default function VerificationDetail() {
               {profile.auditLogs.length === 0 ? (
                 <p style={{ color: "var(--text-muted)" }}>No audit history available.</p>
               ) : (
-                <table className="data-table">
-                  <thead>
-                    <tr>
-                      <th>Date</th>
-                      <th>Status Change</th>
-                      <th>Note</th>
-                      <th>Admin ID</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {[...profile.auditLogs]
-                      .sort(
-                        (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
-                      )
-                      .map((log) => (
-                        <tr key={log.id}>
-                          <td style={{ whiteSpace: "nowrap" }}>
-                            {new Date(log.timestamp).toLocaleString("en-LK", {
-                              dateStyle: "short",
-                              timeStyle: "short",
-                            })}
-                          </td>
-                          <td>
-                            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                              {log.previousStatus !== log.newStatus ? (
-                                <>
-                                  <span style={{ color: "var(--text-muted)", fontSize: "0.8rem" }}>
-                                    {log.previousStatus}
-                                  </span>
-                                  <span style={{ color: "var(--text-muted)" }}>→</span>
-                                  <StatusBadge status={log.newStatus} size="sm" />
-                                </>
-                              ) : (
-                                (() => {
-                                  const docApproved = log.note?.includes("status set to Approved");
-                                  const docRejected = log.note?.includes("status set to Rejected");
-                                  return (
+                <div className="audit-table-container">
+                  <table className="data-table audit-table">
+                    <thead>
+                      <tr>
+                        <th>Date</th>
+                        <th>Status Change</th>
+                        <th>Note</th>
+                        <th>Admin</th>
+                        <th style={{ textAlign: "right" }}>Details</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[...profile.auditLogs]
+                        .sort(
+                          (a, b) =>
+                            new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
+                        )
+                        .map((log) => (
+                          <tr key={log.id}>
+                            <td style={{ whiteSpace: "nowrap" }}>
+                              {new Date(log.timestamp).toLocaleString("en-LK", {
+                                dateStyle: "short",
+                                timeStyle: "short",
+                              })}
+                            </td>
+                            <td style={{ whiteSpace: "nowrap" }}>
+                              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                                {log.previousStatus !== log.newStatus ? (
+                                  <>
                                     <span
-                                      style={{
-                                        fontWeight: 600,
-                                        padding: "4px 10px",
-                                        borderRadius: "99px",
-                                        fontSize: "0.75rem",
-                                        backgroundColor: docApproved
-                                          ? "var(--bg-success)"
-                                          : docRejected
-                                            ? "var(--bg-danger)"
-                                            : "var(--bg-card)",
-                                        color: docApproved
-                                          ? "var(--text-success)"
-                                          : docRejected
-                                            ? "var(--text-danger)"
-                                            : "var(--text-h)",
-                                      }}
+                                      style={{ color: "var(--text-muted)", fontSize: "0.8rem" }}
                                     >
-                                      {docApproved
-                                        ? "Approved"
-                                        : docRejected
-                                          ? "Rejected"
-                                          : "Audit"}
+                                      {log.previousStatus}
                                     </span>
-                                  );
-                                })()
-                              )}
-                            </div>
-                          </td>
-                          <td style={{ maxWidth: 300 }}>{log.note || "-"}</td>
-                          <td style={{ fontSize: "0.75rem", fontFamily: "monospace" }}>
-                            {log.adminUserId.split("-")[0]}
-                          </td>
-                        </tr>
-                      ))}
-                  </tbody>
-                </table>
+                                    <span style={{ color: "var(--text-muted)" }}>→</span>
+                                    <StatusBadge status={log.newStatus} size="sm" />
+                                  </>
+                                ) : (
+                                  (() => {
+                                    const docApproved =
+                                      log.note?.includes("status set to Approved");
+                                    const docRejected =
+                                      log.note?.includes("status set to Rejected");
+                                    return (
+                                      <span
+                                        style={{
+                                          fontWeight: 600,
+                                          padding: "4px 10px",
+                                          borderRadius: "99px",
+                                          fontSize: "0.75rem",
+                                          backgroundColor: docApproved
+                                            ? "var(--bg-success)"
+                                            : docRejected
+                                              ? "var(--bg-danger)"
+                                              : "var(--bg-card)",
+                                          color: docApproved
+                                            ? "var(--text-success)"
+                                            : docRejected
+                                              ? "var(--text-danger)"
+                                              : "var(--text-h)",
+                                        }}
+                                      >
+                                        {docApproved
+                                          ? "Approved"
+                                          : docRejected
+                                            ? "Rejected"
+                                            : "Audit"}
+                                      </span>
+                                    );
+                                  })()
+                                )}
+                              </div>
+                            </td>
+                            <td
+                              className="audit-note-cell"
+                              style={{
+                                whiteSpace: "nowrap",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                maxWidth: "160px",
+                                cursor: "pointer",
+                              }}
+                              title={log.note || ""}
+                              onClick={() => setViewingAuditLog(log)}
+                            >
+                              {log.note || "-"}
+                            </td>
+                            <td
+                              style={{
+                                fontSize: "0.75rem",
+                                fontFamily: "monospace",
+                                whiteSpace: "nowrap",
+                              }}
+                            >
+                              {log.adminUserId.split("-")[0]}
+                            </td>
+                            <td style={{ whiteSpace: "nowrap", textAlign: "right" }}>
+                              <button
+                                type="button"
+                                className="audit-view-btn"
+                                onClick={() => setViewingAuditLog(log)}
+                                title="View audit details"
+                              >
+                                <Eye size={13} /> Details
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                    </tbody>
+                  </table>
+                </div>
               )}
             </div>
           </div>
         </main>
       </div>
+
+      {/* Audit Log Detail Modal */}
+      {viewingAuditLog && (
+        <div className="rejection-modal-backdrop" onClick={() => setViewingAuditLog(null)}>
+          <div
+            className="rejection-modal"
+            style={{ maxWidth: "560px" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: "1.25rem",
+              }}
+            >
+              <h3
+                style={{
+                  margin: 0,
+                  fontSize: "1.2rem",
+                  color: "var(--text-h)",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                }}
+              >
+                <Clock size={18} style={{ color: "var(--accent)" }} /> Audit Log Entry
+              </h3>
+              <button
+                type="button"
+                onClick={() => setViewingAuditLog(null)}
+                style={{
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  color: "var(--text-muted)",
+                  padding: "4px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+                aria-label="Close"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: "1rem",
+                marginBottom: "1.25rem",
+                padding: "1rem",
+                background: "var(--bg-card, rgba(0,0,0,0.02))",
+                borderRadius: "8px",
+                border: "1px solid var(--border)",
+              }}
+            >
+              <div>
+                <span
+                  style={{
+                    fontSize: "0.75rem",
+                    color: "var(--text-muted)",
+                    textTransform: "uppercase",
+                    fontWeight: 600,
+                  }}
+                >
+                  Timestamp
+                </span>
+                <p style={{ margin: "4px 0 0", fontSize: "0.875rem", fontWeight: 500 }}>
+                  {new Date(viewingAuditLog.timestamp).toLocaleString("en-LK", {
+                    dateStyle: "medium",
+                    timeStyle: "medium",
+                  })}
+                </p>
+              </div>
+
+              <div>
+                <span
+                  style={{
+                    fontSize: "0.75rem",
+                    color: "var(--text-muted)",
+                    textTransform: "uppercase",
+                    fontWeight: 600,
+                  }}
+                >
+                  Status Transition
+                </span>
+                <div style={{ marginTop: "4px" }}>
+                  {viewingAuditLog.previousStatus !== viewingAuditLog.newStatus ? (
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                      <span style={{ color: "var(--text-muted)", fontSize: "0.8rem" }}>
+                        {viewingAuditLog.previousStatus}
+                      </span>
+                      <span style={{ color: "var(--text-muted)" }}>→</span>
+                      <StatusBadge status={viewingAuditLog.newStatus} size="sm" />
+                    </div>
+                  ) : (
+                    (() => {
+                      const docApproved = viewingAuditLog.note?.includes("status set to Approved");
+                      const docRejected = viewingAuditLog.note?.includes("status set to Rejected");
+                      return (
+                        <span
+                          style={{
+                            fontWeight: 600,
+                            padding: "3px 8px",
+                            borderRadius: "99px",
+                            fontSize: "0.75rem",
+                            backgroundColor: docApproved
+                              ? "var(--bg-success)"
+                              : docRejected
+                                ? "var(--bg-danger)"
+                                : "var(--bg-card)",
+                            color: docApproved
+                              ? "var(--text-success)"
+                              : docRejected
+                                ? "var(--text-danger)"
+                                : "var(--text-h)",
+                          }}
+                        >
+                          {docApproved ? "Approved" : docRejected ? "Rejected" : "Document Audit"}
+                        </span>
+                      );
+                    })()
+                  )}
+                </div>
+              </div>
+
+              <div style={{ gridColumn: "span 2" }}>
+                <span
+                  style={{
+                    fontSize: "0.75rem",
+                    color: "var(--text-muted)",
+                    textTransform: "uppercase",
+                    fontWeight: 600,
+                  }}
+                >
+                  Admin User ID
+                </span>
+                <p
+                  style={{
+                    margin: "4px 0 0",
+                    fontSize: "0.85rem",
+                    fontFamily: "monospace",
+                    wordBreak: "break-all",
+                    color: "var(--text-h)",
+                  }}
+                >
+                  {viewingAuditLog.adminUserId}
+                </p>
+              </div>
+            </div>
+
+            <div className="wizard-field" style={{ marginBottom: "1.5rem" }}>
+              <label style={{ fontWeight: 600, marginBottom: "0.35rem" }}>Audit Note</label>
+              <div
+                style={{
+                  padding: "0.85rem 1rem",
+                  background: "var(--bg, #f8fafc)",
+                  border: "1px solid var(--border-strong, #cbd5e1)",
+                  borderRadius: "8px",
+                  fontSize: "0.9rem",
+                  lineHeight: 1.6,
+                  color: "var(--text-h)",
+                  whiteSpace: "pre-wrap",
+                  wordBreak: "break-word",
+                  maxHeight: "220px",
+                  overflowY: "auto",
+                }}
+              >
+                {viewingAuditLog.note || (
+                  <span style={{ color: "var(--text-muted)", fontStyle: "italic" }}>
+                    No note provided.
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "flex-end" }}>
+              <button
+                type="button"
+                className="wizard-btn wizard-btn-secondary"
+                style={{ minWidth: "100px" }}
+                onClick={() => setViewingAuditLog(null)}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Rejection Modal */}
       {isRejectModalOpen && (
@@ -391,6 +639,146 @@ export default function VerificationDetail() {
                 disabled={!rejectNote.trim() || statusMutation.isPending}
               >
                 {statusMutation.isPending ? "Processing..." : "Confirm Rejection"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Document Approval Modal with Note */}
+      {approvingCert && (
+        <div className="rejection-modal-backdrop">
+          <div className="rejection-modal">
+            <h3 style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <CheckCircle size={20} style={{ color: "var(--success, #10b981)" }} /> Approve
+              Submitted Document
+            </h3>
+            <p style={{ color: "var(--text-muted)", fontSize: "0.9rem", marginBottom: "1.25rem" }}>
+              Approving <strong>{approvingCert.originalFileName || approvingCert.type}</strong> (
+              {approvingCert.type}). You can optionally attach an approval note to this record.
+            </p>
+
+            <div className="wizard-field">
+              <label>Approval Note (Optional)</label>
+              <textarea
+                value={approveNote}
+                onChange={(e) => setApproveNote(e.target.value)}
+                placeholder="e.g. Verified with national registry, document is valid and legible."
+                rows={3}
+              />
+            </div>
+
+            <div style={{ display: "flex", gap: "1rem", marginTop: "1.5rem" }}>
+              <button
+                className="wizard-btn wizard-btn-secondary"
+                style={{ flex: 1 }}
+                onClick={() => {
+                  setApprovingCert(null);
+                  setApproveNote("");
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                className="wizard-btn btn-approve"
+                style={{
+                  flex: 1,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "0.5rem",
+                  background: "var(--success, #10b981)",
+                  color: "#fff",
+                }}
+                onClick={() => {
+                  documentReviewMutation.mutate(
+                    {
+                      certId: approvingCert.id,
+                      status: "Approved",
+                      note: approveNote.trim() || undefined,
+                    },
+                    {
+                      onSuccess: () => {
+                        setApprovingCert(null);
+                        setApproveNote("");
+                      },
+                    },
+                  );
+                }}
+                disabled={documentReviewMutation.isPending}
+              >
+                <CheckCircle size={16} />
+                {documentReviewMutation.isPending ? "Approving..." : "Confirm Approval"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Document Rejection Modal with Note */}
+      {rejectingCert && (
+        <div className="rejection-modal-backdrop">
+          <div className="rejection-modal">
+            <h3 style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <XCircle size={20} style={{ color: "var(--text-danger, #ef4444)" }} /> Reject
+              Submitted Document
+            </h3>
+            <p style={{ color: "var(--text-muted)", fontSize: "0.9rem", marginBottom: "1.25rem" }}>
+              Rejecting <strong>{rejectingCert.originalFileName || rejectingCert.type}</strong> (
+              {rejectingCert.type}). Please provide a reason for rejecting this document.
+            </p>
+
+            <div className="wizard-field">
+              <label>Rejection Reason (Optional)</label>
+              <textarea
+                value={rejectDocNote}
+                onChange={(e) => setRejectDocNote(e.target.value)}
+                placeholder="e.g. Document is expired, unreadable, or missing required details."
+                rows={3}
+              />
+            </div>
+
+            <div style={{ display: "flex", gap: "1rem", marginTop: "1.5rem" }}>
+              <button
+                className="wizard-btn wizard-btn-secondary"
+                style={{ flex: 1 }}
+                onClick={() => {
+                  setRejectingCert(null);
+                  setRejectDocNote("");
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                className="wizard-btn"
+                style={{
+                  flex: 1,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "0.5rem",
+                  background: "var(--bg-danger)",
+                  color: "var(--text-danger)",
+                  border: "1px solid var(--text-danger)",
+                }}
+                onClick={() => {
+                  documentReviewMutation.mutate(
+                    {
+                      certId: rejectingCert.id,
+                      status: "Rejected",
+                      note: rejectDocNote.trim() || undefined,
+                    },
+                    {
+                      onSuccess: () => {
+                        setRejectingCert(null);
+                        setRejectDocNote("");
+                      },
+                    },
+                  );
+                }}
+                disabled={documentReviewMutation.isPending}
+              >
+                <XCircle size={16} />
+                {documentReviewMutation.isPending ? "Rejecting..." : "Confirm Rejection"}
               </button>
             </div>
           </div>

@@ -1,516 +1,465 @@
-import { useState, useMemo, useEffect } from "react";
-import { createPortal } from "react-dom";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Calendar, Plus, Repeat, Trash2, Lock, X } from "lucide-react";
+import {
+  Clock,
+  Calendar,
+  CheckCircle2,
+  AlertCircle,
+  Save,
+  Sparkles,
+  Smartphone,
+  Copy,
+  Info,
+} from "lucide-react";
+import { providerApi } from "../../api/providers";
 import { providerAvailabilityApi } from "../../api/providerAvailability";
-import type { ProviderAvailabilitySlotDto, CreateSlotDto, RecurringScheduleDto } from "../../api/types";
+import type { DayOperatingScheduleDto, UpdateOperatingScheduleDto } from "../../api/types";
 import "./ProviderAvailability.css";
 
-const DAYS_OF_WEEK = [
-  { label: "Monday", value: 1 },
-  { label: "Tuesday", value: 2 },
-  { label: "Wednesday", value: 3 },
-  { label: "Thursday", value: 4 },
-  { label: "Friday", value: 5 },
-  { label: "Saturday", value: 6 },
-  { label: "Sunday", value: 0 },
+interface DayDef {
+  dayIndex: number;
+  dayName: string;
+}
+
+const DAYS_ORDER: DayDef[] = [
+  { dayIndex: 1, dayName: "Monday" },
+  { dayIndex: 2, dayName: "Tuesday" },
+  { dayIndex: 3, dayName: "Wednesday" },
+  { dayIndex: 4, dayName: "Thursday" },
+  { dayIndex: 5, dayName: "Friday" },
+  { dayIndex: 6, dayName: "Saturday" },
+  { dayIndex: 0, dayName: "Sunday" },
 ];
+
+interface DayScheduleRow {
+  dayIndex: number;
+  dayName: string;
+  isActive: boolean;
+  startTime: string; // "HH:mm"
+  endTime: string; // "HH:mm"
+}
+
+const DEFAULT_SCHEDULE: DayScheduleRow[] = DAYS_ORDER.map((d) => ({
+  dayIndex: d.dayIndex,
+  dayName: d.dayName,
+  isActive: d.dayIndex >= 1 && d.dayIndex <= 5, // Mon-Fri active by default
+  startTime: "09:00",
+  endTime: "17:00",
+}));
+
+function parseTimeToMinutes(timeStr: string): number {
+  if (!timeStr) return 0;
+  const parts = timeStr.split(":");
+  const hours = parseInt(parts[0] || "0", 10);
+  const minutes = parseInt(parts[1] || "0", 10);
+  return hours * 60 + minutes;
+}
+
+function calculateSlots(startTime: string, endTime: string): number {
+  const startMins = parseTimeToMinutes(startTime);
+  const endMins = parseTimeToMinutes(endTime);
+  const diff = endMins - startMins;
+  if (diff <= 0) return 0;
+  return Math.floor(diff / 60);
+}
+
+function normalizeTimeToHHmm(timeStr: string): string {
+  if (!timeStr) return "09:00";
+  // If format is "09:00:00", take first 5 chars
+  return timeStr.slice(0, 5);
+}
 
 export default function ProviderAvailability() {
   const queryClient = useQueryClient();
-  const [activeFilter, setActiveFilter] = useState<"ALL" | "AVAILABLE" | "BOOKED">("ALL");
-  const [isSingleModalOpen, setIsSingleModalOpen] = useState(false);
-  const [isRecurringModalOpen, setIsRecurringModalOpen] = useState(false);
+  const [schedule, setSchedule] = useState<DayScheduleRow[]>(DEFAULT_SCHEDULE);
   const [formError, setFormError] = useState<string | null>(null);
+  const [saveSuccess, setSaveSuccess] = useState<boolean>(false);
 
-  // Single Slot Form State
-  const [slotDate, setSlotDate] = useState(() => new Date().toISOString().split("T")[0]);
-  const [slotStartTime, setSlotStartTime] = useState("09:00");
-  const [slotEndTime, setSlotEndTime] = useState("10:00");
-
-  // Recurring Schedule Form State
-  const [selectedDays, setSelectedDays] = useState<number[]>([1, 2, 3, 4, 5]);
-  const [dailyStart, setDailyStart] = useState("09:00");
-  const [dailyEnd, setDailyEnd] = useState("17:00");
-  const [slotDuration, setSlotDuration] = useState(60);
-  const [recurStartDate, setRecurStartDate] = useState(() => new Date().toISOString().split("T")[0]);
-  const [recurEndDate, setRecurEndDate] = useState(() => {
-    const d = new Date();
-    d.setDate(d.getDate() + 14);
-    return d.toISOString().split("T")[0];
+  // 1. Fetch current provider profile
+  const {
+    data: profile,
+    isLoading: isLoadingProfile,
+    isError: isProfileError,
+    error: profileError,
+  } = useQuery({
+    queryKey: ["myProfile"],
+    queryFn: () => providerApi.getMyProfile(),
   });
 
+  // 2. Fetch existing operating schedule once profile ID is available
+  const {
+    data: operatingScheduleData,
+    isLoading: isLoadingSchedule,
+    isError: isScheduleError,
+    error: scheduleError,
+  } = useQuery({
+    queryKey: ["providerOperatingSchedule", profile?.id],
+    queryFn: () => providerAvailabilityApi.getOperatingSchedule(profile!.id),
+    enabled: !!profile?.id,
+  });
+
+  // Sync loaded schedule into local state
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        if (isSingleModalOpen) {
-          setIsSingleModalOpen(false);
-          setFormError(null);
+    if (operatingScheduleData?.weeklySchedule && operatingScheduleData.weeklySchedule.length > 0) {
+      const incoming = operatingScheduleData.weeklySchedule;
+      const merged = DAYS_ORDER.map((def) => {
+        const found = incoming.find((item: DayOperatingScheduleDto) => {
+          if (typeof item.dayOfWeek === "number") {
+            return item.dayOfWeek === def.dayIndex;
+          }
+          return String(item.dayOfWeek).toLowerCase() === def.dayName.toLowerCase();
+        });
+
+        if (found) {
+          return {
+            dayIndex: def.dayIndex,
+            dayName: def.dayName,
+            isActive: found.isActive,
+            startTime: normalizeTimeToHHmm(found.startTime),
+            endTime: normalizeTimeToHHmm(found.endTime),
+          };
         }
-        if (isRecurringModalOpen) {
-          setIsRecurringModalOpen(false);
-          setFormError(null);
+        return {
+          dayIndex: def.dayIndex,
+          dayName: def.dayName,
+          isActive: def.dayIndex >= 1 && def.dayIndex <= 5,
+          startTime: "09:00",
+          endTime: "17:00",
+        };
+      });
+      setSchedule(merged);
+    }
+  }, [operatingScheduleData]);
+
+  // Update schedule mutation
+  const saveMutation = useMutation({
+    mutationFn: (dto: UpdateOperatingScheduleDto) =>
+      providerAvailabilityApi.updateOperatingSchedule(dto),
+    onSuccess: () => {
+      setSaveSuccess(true);
+      setFormError(null);
+      if (profile?.id) {
+        queryClient.invalidateQueries({
+          queryKey: ["providerOperatingSchedule", profile.id],
+        });
+      }
+      setTimeout(() => setSaveSuccess(false), 4000);
+    },
+    onError: (err: any) => {
+      setSaveSuccess(false);
+      setFormError(
+        err?.response?.data?.message ||
+          err?.response?.data ||
+          err?.message ||
+          "Failed to save operating schedule. Please check your inputs.",
+      );
+    },
+  });
+
+  const handleToggleDay = (dayIndex: number) => {
+    setSchedule((prev) =>
+      prev.map((row) => (row.dayIndex === dayIndex ? { ...row, isActive: !row.isActive } : row)),
+    );
+    setSaveSuccess(false);
+    setFormError(null);
+  };
+
+  const handleTimeChange = (dayIndex: number, field: "startTime" | "endTime", value: string) => {
+    setSchedule((prev) =>
+      prev.map((row) => (row.dayIndex === dayIndex ? { ...row, [field]: value } : row)),
+    );
+    setSaveSuccess(false);
+    setFormError(null);
+  };
+
+  // Presets
+  const handleApplyWeekdaysPreset = () => {
+    setSchedule(
+      DAYS_ORDER.map((d) => ({
+        dayIndex: d.dayIndex,
+        dayName: d.dayName,
+        isActive: d.dayIndex >= 1 && d.dayIndex <= 5,
+        startTime: "09:00",
+        endTime: "17:00",
+      })),
+    );
+    setSaveSuccess(false);
+    setFormError(null);
+  };
+
+  const handleApplyAllDaysPreset = () => {
+    setSchedule(
+      DAYS_ORDER.map((d) => ({
+        dayIndex: d.dayIndex,
+        dayName: d.dayName,
+        isActive: true,
+        startTime: "09:00",
+        endTime: "17:00",
+      })),
+    );
+    setSaveSuccess(false);
+    setFormError(null);
+  };
+
+  const handleCopyToAllDays = (sourceDayIndex: number) => {
+    const sourceRow = schedule.find((r) => r.dayIndex === sourceDayIndex);
+    if (!sourceRow) return;
+
+    setSchedule((prev) =>
+      prev.map((row) => ({
+        ...row,
+        startTime: sourceRow.startTime,
+        endTime: sourceRow.endTime,
+      })),
+    );
+    setSaveSuccess(false);
+    setFormError(null);
+  };
+
+  const handleSave = (e: React.FormEvent) => {
+    e.preventDefault();
+    setFormError(null);
+    setSaveSuccess(false);
+
+    // Validation: Any active day must have endTime > startTime
+    for (const row of schedule) {
+      if (row.isActive) {
+        const startMins = parseTimeToMinutes(row.startTime);
+        const endMins = parseTimeToMinutes(row.endTime);
+        if (endMins <= startMins) {
+          setFormError(
+            `${row.dayName}: Daily end time (${row.endTime}) must be later than start time (${row.startTime}).`,
+          );
+          return;
         }
       }
+    }
+
+    const payload: UpdateOperatingScheduleDto = {
+      weeklySchedule: schedule.map((row) => ({
+        dayOfWeek: row.dayIndex,
+        startTime: row.startTime.length === 5 ? `${row.startTime}:00` : row.startTime,
+        endTime: row.endTime.length === 5 ? `${row.endTime}:00` : row.endTime,
+        isActive: row.isActive,
+      })),
     };
 
-    if (isSingleModalOpen || isRecurringModalOpen) {
-      window.addEventListener("keydown", handleKeyDown);
-      document.body.style.overflow = "hidden";
-    }
-
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-      document.body.style.overflow = "";
-    };
-  }, [isSingleModalOpen, isRecurringModalOpen]);
-
-  const { data: slots = [], isLoading, isError, error } = useQuery({
-    queryKey: ["providerAvailabilityMine"],
-    queryFn: () => providerAvailabilityApi.getMine(),
-  });
-
-  const createSingleMutation = useMutation({
-    mutationFn: (dto: CreateSlotDto) => providerAvailabilityApi.create(dto),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["providerAvailabilityMine"] });
-      setIsSingleModalOpen(false);
-      setFormError(null);
-    },
-    onError: (err: any) => {
-      setFormError(err?.response?.data?.message || err?.response?.data || err.message || "Failed to create slot");
-    },
-  });
-
-  const createRecurringMutation = useMutation({
-    mutationFn: (dto: RecurringScheduleDto) => providerAvailabilityApi.createRecurring(dto),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["providerAvailabilityMine"] });
-      setIsRecurringModalOpen(false);
-      setFormError(null);
-    },
-    onError: (err: any) => {
-      setFormError(err?.response?.data?.message || err?.response?.data || err.message || "Failed to generate recurring schedule");
-    },
-  });
-
-  const deleteSlotMutation = useMutation({
-    mutationFn: (slotId: string) => providerAvailabilityApi.delete(slotId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["providerAvailabilityMine"] });
-    },
-    onError: (err: any) => {
-      alert(err?.response?.data?.message || err?.response?.data || "Failed to delete slot");
-    },
-  });
-
-  const handleCreateSingle = (e: React.FormEvent) => {
-    e.preventDefault();
-    setFormError(null);
-    const startIso = `${slotDate}T${slotStartTime}:00`;
-    const endIso = `${slotDate}T${slotEndTime}:00`;
-    const start = new Date(startIso);
-    const end = new Date(endIso);
-
-    if (end <= start) {
-      setFormError("End time must be after start time.");
-      return;
-    }
-
-    createSingleMutation.mutate({
-      startTime: start.toISOString(),
-      endTime: end.toISOString(),
-    });
+    saveMutation.mutate(payload);
   };
 
-  const handleCreateRecurring = (e: React.FormEvent) => {
-    e.preventDefault();
-    setFormError(null);
+  // Aggregated calculations
+  const totalActiveDays = schedule.filter((r) => r.isActive).length;
+  const totalWeeklySlots = schedule
+    .filter((r) => r.isActive)
+    .reduce((sum, r) => sum + calculateSlots(r.startTime, r.endTime), 0);
 
-    if (selectedDays.length === 0) {
-      setFormError("Please select at least one day of the week.");
-      return;
-    }
-
-    const start = new Date(`${recurStartDate}T00:00:00`);
-    const end = new Date(`${recurEndDate}T23:59:59`);
-
-    if (end <= start) {
-      setFormError("End date must be after start date.");
-      return;
-    }
-
-    const tzOffsetMinutes = -new Date().getTimezoneOffset();
-
-    createRecurringMutation.mutate({
-      daysOfWeek: selectedDays,
-      dailyStartTime: `${dailyStart}:00`,
-      dailyEndTime: `${dailyEnd}:00`,
-      slotDurationMinutes: Number(slotDuration),
-      startDate: start.toISOString(),
-      endDate: end.toISOString(),
-      timeZoneOffsetMinutes: tzOffsetMinutes,
-    });
-  };
-
-  const toggleDay = (dayValue: number) => {
-    setSelectedDays(prev =>
-      prev.includes(dayValue) ? prev.filter(d => d !== dayValue) : [...prev, dayValue]
-    );
-  };
-
-  // Group slots by date
-  const groupedSlots = useMemo(() => {
-    const filtered = slots.filter(s => {
-      if (activeFilter === "AVAILABLE") return !s.isBooked;
-      if (activeFilter === "BOOKED") return s.isBooked;
-      return true;
-    });
-
-    const groups: Record<string, ProviderAvailabilitySlotDto[]> = {};
-    for (const slot of filtered) {
-      const dateKey = new Date(slot.startTime).toLocaleDateString(undefined, {
-        weekday: "long",
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      });
-      if (!groups[dateKey]) groups[dateKey] = [];
-      groups[dateKey].push(slot);
-    }
-    return groups;
-  }, [slots, activeFilter]);
-
-  const formatTime = (isoString: string) => {
-    return new Date(isoString).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-  };
+  const isLoading = isLoadingProfile || (profile?.id && isLoadingSchedule);
+  const isError = isProfileError || isScheduleError;
+  const currentError = profileError || scheduleError;
 
   return (
     <div className="availability-page animate-fade-up">
       <div className="availability-header">
         <div>
-          <h1>Availability & Working Hours</h1>
-          <p>Configure when customers can book appointments with you.</p>
-        </div>
-        <div className="header-actions">
-          <button className="btn-secondary" onClick={() => { setIsRecurringModalOpen(true); setFormError(null); }}>
-            <Repeat size={16} /> Recurring Schedule
-          </button>
-          <button className="btn-primary" onClick={() => { setIsSingleModalOpen(true); setFormError(null); }}>
-            <Plus size={16} /> Add Slot
-          </button>
-        </div>
-      </div>
-
-      <div className="filter-bar">
-        <button
-          className={`filter-tab ${activeFilter === "ALL" ? "active" : ""}`}
-          onClick={() => setActiveFilter("ALL")}
-        >
-          All Slots ({slots.length})
-        </button>
-        <button
-          className={`filter-tab ${activeFilter === "AVAILABLE" ? "active" : ""}`}
-          onClick={() => setActiveFilter("AVAILABLE")}
-        >
-          Available ({slots.filter(s => !s.isBooked).length})
-        </button>
-        <button
-          className={`filter-tab ${activeFilter === "BOOKED" ? "active" : ""}`}
-          onClick={() => setActiveFilter("BOOKED")}
-        >
-          Booked ({slots.filter(s => s.isBooked).length})
-        </button>
-      </div>
-
-      {isLoading ? (
-        <div className="state-container">Loading availability schedule...</div>
-      ) : isError ? (
-        <div className="error-banner">
-          Failed to load availability slots:{" "}
-          {(error as any)?.response?.data?.message ||
-            (typeof (error as any)?.response?.data === "string" ? (error as any)?.response?.data : null) ||
-            (error as any)?.message ||
-            "Please ensure you are signed in with an active provider account."}
-        </div>
-      ) : Object.keys(groupedSlots).length === 0 ? (
-        <div className="day-card" style={{ textAlign: "center", padding: "3rem" }}>
-          <Calendar size={48} className="empty-calendar-icon" style={{ margin: "0 auto 1rem", opacity: 0.5 }} />
-          <h3>No Availability Slots Found</h3>
-          <p style={{ color: "var(--text-muted)", marginTop: "0.5rem" }}>
-            Add single slots or generate a recurring weekly timetable so clients can book appointments.
+          <h1>Weekly Operating Schedule</h1>
+          <p>
+            Define your regular working days and daily hours. Handee automatically divides your
+            schedule into 1-hour predefined booking slots for mobile clients.
           </p>
         </div>
-      ) : (
-        <div className="days-list">
-          {Object.entries(groupedSlots).map(([dateLabel, daySlots]) => (
-            <div key={dateLabel} className="day-card">
-              <h3 className="day-title">
-                <Calendar size={18} className="day-title-icon" /> {dateLabel}
-              </h3>
-              <div className="slots-grid">
-                {daySlots.map(slot => (
-                  <div
-                    key={slot.id}
-                    className={`slot-item ${slot.isBooked ? "booked" : "available"}`}
-                  >
-                    <div>
-                      <div className="slot-time">
-                        {formatTime(slot.startTime)} - {formatTime(slot.endTime)}
-                      </div>
-                      <span className={`slot-status-badge ${slot.isBooked ? "booked" : "available"}`}>
-                        {slot.isBooked ? "Booked" : "Available"}
-                      </span>
-                    </div>
+        <div className="header-actions">
+          <button
+            type="button"
+            className="btn-primary"
+            onClick={handleSave}
+            disabled={saveMutation.isPending || isLoading}
+          >
+            <Save size={16} />
+            {saveMutation.isPending ? "Saving..." : "Save Schedule"}
+          </button>
+        </div>
+      </div>
 
-                    {!slot.isBooked ? (
-                      <button
-                        className="btn-delete-slot"
-                        title="Delete slot"
-                        onClick={() => {
-                          if (confirm("Delete this availability slot?")) {
-                            deleteSlotMutation.mutate(slot.id);
-                          }
-                        }}
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    ) : (
-                      <Lock size={16} className="slot-locked-icon" title="Reserved for booking" />
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
+      {/* Info notice about mobile app bookings */}
+      <div className="schedule-info-banner">
+        <Smartphone size={22} className="info-icon" />
+        <div className="info-content">
+          <div className="info-title">Simplified 1-Hour Predefined Slots</div>
+          <div className="info-desc">
+            Customers book your service listings directly through the{" "}
+            <strong>Handee Mobile App</strong> by selecting available 1-hour time slots. Your
+            service listings will reserve consecutive 1-hour blocks based on their duration.
+          </div>
+        </div>
+      </div>
+
+      {/* Summary and Preset Toolbar */}
+      <div className="schedule-toolbar">
+        <div className="summary-stats">
+          <div className="stat-pill">
+            <Calendar size={14} />
+            <span>
+              <strong>{totalActiveDays}</strong> Active Days
+            </span>
+          </div>
+          <div className="stat-pill">
+            <Clock size={14} />
+            <span>
+              <strong>{totalWeeklySlots}</strong> Bookable 1-Hr Slots / Week
+            </span>
+          </div>
+        </div>
+
+        <div className="presets-group">
+          <span className="presets-label">Quick Presets:</span>
+          <button
+            type="button"
+            className="preset-chip"
+            onClick={handleApplyWeekdaysPreset}
+            title="Mon–Fri 09:00 to 17:00, weekends off"
+          >
+            <Sparkles size={13} /> Mon–Fri (9 AM – 5 PM)
+          </button>
+          <button
+            type="button"
+            className="preset-chip"
+            onClick={handleApplyAllDaysPreset}
+            title="All 7 days 09:00 to 17:00"
+          >
+            All Days Active
+          </button>
+        </div>
+      </div>
+
+      {formError && (
+        <div className="error-banner">
+          <AlertCircle size={18} />
+          <span>{formError}</span>
         </div>
       )}
 
-      {/* Single Slot Modal */}
-      {isSingleModalOpen &&
-        createPortal(
-          <div
-            className="availability-modal-overlay modal-overlay"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="single-slot-modal-title"
-            onClick={(e) => {
-              if (e.target === e.currentTarget) {
-                setIsSingleModalOpen(false);
-                setFormError(null);
-              }
-            }}
-          >
-            <div className="availability-modal-content modal-content">
-              <div className="modal-header">
-                <h2 id="single-slot-modal-title">Add Single Time Slot</h2>
-                <button
-                  type="button"
-                  className="modal-close"
-                  aria-label="Close modal"
-                  onClick={() => {
-                    setIsSingleModalOpen(false);
-                    setFormError(null);
-                  }}
-                >
-                  <X size={20} />
-                </button>
-              </div>
+      {saveSuccess && (
+        <div className="success-banner">
+          <CheckCircle2 size={18} />
+          <span>Operating schedule successfully updated!</span>
+        </div>
+      )}
 
-              <form onSubmit={handleCreateSingle} className="modal-form">
-                <div className="modal-body">
-                  {formError && <div className="error-banner">{formError}</div>}
-                  <div className="form-group">
-                    <label htmlFor="single-slot-date">Date</label>
+      {isLoading ? (
+        <div className="state-container">Loading operating schedule...</div>
+      ) : isError ? (
+        <div className="error-banner">
+          <AlertCircle size={18} />
+          <span>
+            Failed to load operating schedule:{" "}
+            {(currentError as any)?.response?.data?.message ||
+              (typeof (currentError as any)?.response?.data === "string"
+                ? (currentError as any)?.response?.data
+                : null) ||
+              (currentError as any)?.message ||
+              "Please ensure you are signed in with an active provider account."}
+          </span>
+        </div>
+      ) : (
+        <form onSubmit={handleSave} className="schedule-card-list">
+          {schedule.map((row) => {
+            const slotsCount = calculateSlots(row.startTime, row.endTime);
+            const isTimeValid = parseTimeToMinutes(row.endTime) > parseTimeToMinutes(row.startTime);
+
+            return (
+              <div
+                key={row.dayIndex}
+                className={`day-row-card ${row.isActive ? "active-day" : "inactive-day"}`}
+              >
+                <div className="day-info-section">
+                  <div className="day-name-wrapper">
+                    <span className="day-name">{row.dayName}</span>
+                    <span className={`day-status-tag ${row.isActive ? "tag-working" : "tag-off"}`}>
+                      {row.isActive ? "Working" : "Day Off"}
+                    </span>
+                  </div>
+
+                  <label className="toggle-switch-container">
                     <input
-                      id="single-slot-date"
-                      type="date"
-                      value={slotDate}
-                      onChange={(e) => setSlotDate(e.target.value)}
-                      required
+                      type="checkbox"
+                      checked={row.isActive}
+                      onChange={() => handleToggleDay(row.dayIndex)}
+                      aria-label={`Toggle ${row.dayName}`}
                     />
-                  </div>
-                  <div className="form-group-row">
-                    <div className="form-group">
-                      <label htmlFor="single-slot-start">Start Time</label>
-                      <input
-                        id="single-slot-start"
-                        type="time"
-                        value={slotStartTime}
-                        onChange={(e) => setSlotStartTime(e.target.value)}
-                        required
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label htmlFor="single-slot-end">End Time</label>
-                      <input
-                        id="single-slot-end"
-                        type="time"
-                        value={slotEndTime}
-                        onChange={(e) => setSlotEndTime(e.target.value)}
-                        required
-                      />
-                    </div>
-                  </div>
+                    <span className="toggle-slider"></span>
+                  </label>
                 </div>
 
-                <div className="modal-actions">
-                  <button
-                    type="button"
-                    className="btn-secondary"
-                    onClick={() => {
-                      setIsSingleModalOpen(false);
-                      setFormError(null);
-                    }}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="btn-primary"
-                    disabled={createSingleMutation.isPending}
-                  >
-                    {createSingleMutation.isPending ? "Creating..." : "Save Slot"}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>,
-          document.body
-        )}
+                {row.isActive ? (
+                  <div className="day-controls-section">
+                    <div className="time-pickers-group">
+                      <div className="time-field">
+                        <label htmlFor={`start-time-${row.dayIndex}`}>Start Time</label>
+                        <input
+                          id={`start-time-${row.dayIndex}`}
+                          type="time"
+                          value={row.startTime}
+                          onChange={(e) =>
+                            handleTimeChange(row.dayIndex, "startTime", e.target.value)
+                          }
+                          required
+                        />
+                      </div>
+                      <span className="time-separator">to</span>
+                      <div className="time-field">
+                        <label htmlFor={`end-time-${row.dayIndex}`}>End Time</label>
+                        <input
+                          id={`end-time-${row.dayIndex}`}
+                          type="time"
+                          value={row.endTime}
+                          onChange={(e) =>
+                            handleTimeChange(row.dayIndex, "endTime", e.target.value)
+                          }
+                          required
+                        />
+                      </div>
+                    </div>
 
-      {/* Recurring Schedule Modal */}
-      {isRecurringModalOpen &&
-        createPortal(
-          <div
-            className="availability-modal-overlay modal-overlay"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="recurring-schedule-modal-title"
-            onClick={(e) => {
-              if (e.target === e.currentTarget) {
-                setIsRecurringModalOpen(false);
-                setFormError(null);
-              }
-            }}
-          >
-            <div className="availability-modal-content modal-content">
-              <div className="modal-header">
-                <h2 id="recurring-schedule-modal-title">Generate Recurring Schedule</h2>
-                <button
-                  type="button"
-                  className="modal-close"
-                  aria-label="Close modal"
-                  onClick={() => {
-                    setIsRecurringModalOpen(false);
-                    setFormError(null);
-                  }}
-                >
-                  <X size={20} />
-                </button>
+                    <div className="day-meta-section">
+                      <div className={`slots-count-badge ${!isTimeValid ? "badge-invalid" : ""}`}>
+                        <Clock size={13} />
+                        {isTimeValid
+                          ? `${slotsCount} bookable slot${slotsCount === 1 ? "" : "s"} (1 hr each)`
+                          : "Invalid time range"}
+                      </div>
+
+                      <button
+                        type="button"
+                        className="btn-copy-hours"
+                        title={`Copy ${row.startTime} - ${row.endTime} to all days`}
+                        onClick={() => handleCopyToAllDays(row.dayIndex)}
+                      >
+                        <Copy size={13} /> Copy to all
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="day-off-notice">
+                    <Info size={15} />
+                    <span>No bookings accepted on this day.</span>
+                  </div>
+                )}
               </div>
+            );
+          })}
 
-              <form onSubmit={handleCreateRecurring} className="modal-form">
-                <div className="modal-body">
-                  {formError && <div className="error-banner">{formError}</div>}
-                  <div className="form-group">
-                    <label>Working Days</label>
-                    <div className="days-checkbox-group">
-                      {DAYS_OF_WEEK.map((d) => (
-                        <label key={d.value} className="checkbox-label">
-                          <input
-                            type="checkbox"
-                            checked={selectedDays.includes(d.value)}
-                            onChange={() => toggleDay(d.value)}
-                          />
-                          <span>{d.label}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="form-group-row">
-                    <div className="form-group">
-                      <label htmlFor="recur-daily-start">Daily Start</label>
-                      <input
-                        id="recur-daily-start"
-                        type="time"
-                        value={dailyStart}
-                        onChange={(e) => setDailyStart(e.target.value)}
-                        required
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label htmlFor="recur-daily-end">Daily End</label>
-                      <input
-                        id="recur-daily-end"
-                        type="time"
-                        value={dailyEnd}
-                        onChange={(e) => setDailyEnd(e.target.value)}
-                        required
-                      />
-                    </div>
-                  </div>
-                  <div className="form-group">
-                    <label htmlFor="recur-slot-duration">Slot Duration</label>
-                    <select
-                      id="recur-slot-duration"
-                      value={slotDuration}
-                      onChange={(e) => setSlotDuration(Number(e.target.value))}
-                    >
-                      <option value={30}>30 Minutes</option>
-                      <option value={60}>60 Minutes (1 Hour)</option>
-                      <option value={90}>90 Minutes</option>
-                      <option value={120}>120 Minutes (2 Hours)</option>
-                    </select>
-                  </div>
-                  <div className="form-group-row">
-                    <div className="form-group">
-                      <label htmlFor="recur-from-date">From Date</label>
-                      <input
-                        id="recur-from-date"
-                        type="date"
-                        value={recurStartDate}
-                        onChange={(e) => setRecurStartDate(e.target.value)}
-                        required
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label htmlFor="recur-to-date">To Date</label>
-                      <input
-                        id="recur-to-date"
-                        type="date"
-                        value={recurEndDate}
-                        onChange={(e) => setRecurEndDate(e.target.value)}
-                        required
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="modal-actions">
-                  <button
-                    type="button"
-                    className="btn-secondary"
-                    onClick={() => {
-                      setIsRecurringModalOpen(false);
-                      setFormError(null);
-                    }}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="btn-primary"
-                    disabled={createRecurringMutation.isPending}
-                  >
-                    {createRecurringMutation.isPending ? "Generating..." : "Generate Slots"}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>,
-          document.body
-        )}
+          <div className="bottom-save-bar">
+            <button
+              type="submit"
+              className="btn-primary btn-large"
+              disabled={saveMutation.isPending || isLoading}
+            >
+              <Save size={18} />
+              {saveMutation.isPending ? "Saving Schedule..." : "Save Operating Schedule"}
+            </button>
+          </div>
+        </form>
+      )}
     </div>
   );
 }

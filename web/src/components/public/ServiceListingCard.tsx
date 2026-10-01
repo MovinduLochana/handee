@@ -41,7 +41,10 @@ export default function ServiceListingCard({
         <div className="service-meta">
           <div className="service-price">LKR {listing.fixedPrice.toFixed(2)}</div>
           <div className="service-duration">
-            <Clock size={14} /> {listing.estimatedDuration}
+            <Clock size={14} />{" "}
+            {listing.durationHours
+              ? `${listing.durationHours} ${listing.durationHours === 1 ? "Hour" : "Hours"}`
+              : listing.estimatedDuration}
           </div>
         </div>
 

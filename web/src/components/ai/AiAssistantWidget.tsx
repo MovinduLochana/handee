@@ -55,7 +55,10 @@ export default function AiAssistantWidget() {
     setIsLoading(true);
 
     try {
-      const response = await agentsApi.queryAssistant(text.trim(), userProfile?.id || "guest-customer");
+      const response = await agentsApi.queryAssistant(
+        text.trim(),
+        userProfile?.id || "guest-customer",
+      );
       const botMsg: ChatMessage = {
         id: `bot-${Date.now()}`,
         sender: "assistant",

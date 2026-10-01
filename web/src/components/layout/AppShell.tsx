@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { NavLink, Outlet, useNavigate, useLocation } from "react-router-dom";
+import { NavLink, Link, Outlet, useNavigate, useLocation } from "react-router-dom";
 import {
   Home,
   Bell,
@@ -103,7 +103,9 @@ export default function AppShell() {
   return (
     <div className="shell-container">
       <aside className="shell-sidebar">
-        <div className="brand">Handee</div>
+        <Link to="/" className="brand">
+          Handee
+        </Link>
         <nav className="shell-nav">
           {navigation.map((item) => {
             const Icon = item.icon;

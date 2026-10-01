@@ -1,74 +1,41 @@
 import { api } from "../lib/api";
 import type {
-  ProviderAvailabilitySlotDto,
-  CreateSlotDto,
-  BatchCreateSlotsDto,
-  RecurringScheduleDto,
+  ProviderOperatingScheduleDto,
+  UpdateOperatingScheduleDto,
+  PredefinedSlotDto,
 } from "./types";
 
 export const providerAvailabilityApi = {
   /**
-   * Public / Customer: Get available non-conflicting time slots for a provider.
-   * Optionally filtered by date range.
+   * Get dynamic 1-hour predefined slots for a provider on a specific date.
    */
-  async getForProvider(
-    providerId: string,
-    startDate?: string,
-    endDate?: string,
-  ): Promise<ProviderAvailabilitySlotDto[]> {
-    const params: Record<string, string> = {};
-    if (startDate) params.startDate = startDate;
-    if (endDate) params.endDate = endDate;
+  async getPredefinedSlots(providerId: string, date: string): Promise<PredefinedSlotDto[]> {
+    const response = await api.get<PredefinedSlotDto[]>("/api/provider-availability/slots", {
+      params: { providerId, date },
+    });
+    return response.data;
+  },
 
-    const response = await api.get<ProviderAvailabilitySlotDto[]>(
-      `/api/provider-availability/${providerId}`,
-      { params },
+  /**
+   * Get provider's declarative operating schedule (weekly working days and hours).
+   */
+  async getOperatingSchedule(providerId: string): Promise<ProviderOperatingScheduleDto> {
+    const response = await api.get<ProviderOperatingScheduleDto>(
+      `/api/provider-availability/${providerId}/schedule`,
     );
     return response.data;
   },
 
   /**
-   * Provider: Get all of current provider's slots (both booked and unbooked).
+   * Update provider's declarative operating schedule.
    */
-  async getMine(): Promise<ProviderAvailabilitySlotDto[]> {
-    const response = await api.get<ProviderAvailabilitySlotDto[]>("/api/provider-availability/mine");
-    return response.data;
-  },
-
-  /**
-   * Provider: Create a single availability slot.
-   */
-  async create(data: CreateSlotDto): Promise<ProviderAvailabilitySlotDto> {
-    const response = await api.post<ProviderAvailabilitySlotDto>("/api/provider-availability", data);
-    return response.data;
-  },
-
-  /**
-   * Provider: Batch create multiple discrete availability slots.
-   */
-  async createBatch(data: BatchCreateSlotsDto): Promise<ProviderAvailabilitySlotDto[]> {
-    const response = await api.post<ProviderAvailabilitySlotDto[]>(
-      "/api/provider-availability/batch",
+  async updateOperatingSchedule(
+    data: UpdateOperatingScheduleDto,
+  ): Promise<ProviderOperatingScheduleDto> {
+    const response = await api.put<ProviderOperatingScheduleDto>(
+      "/api/provider-availability/schedule",
       data,
     );
     return response.data;
-  },
-
-  /**
-   * Provider: Generate recurring availability slots according to daily schedules.
-   */
-  async createRecurring(data: RecurringScheduleDto): Promise<ProviderAvailabilitySlotDto[]> {
-    const response = await api.post<ProviderAvailabilitySlotDto[]>(
-      "/api/provider-availability/recurring",
-      data,
-    );
-    return response.data;
-  },
-
-  /**
-   * Provider: Delete an unbooked availability slot.
-   */
-  async delete(id: string): Promise<void> {
-    await api.delete(`/api/provider-availability/${id}`);
   },
 };

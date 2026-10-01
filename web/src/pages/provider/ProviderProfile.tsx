@@ -12,6 +12,8 @@ import LocationPicker from "../../components/provider/LocationPicker";
 import ServiceListingCard from "../../components/public/ServiceListingCard";
 import "./ProviderProfile.css";
 
+const LANGUAGE_OPTIONS = ["Sinhala", "English", "Tamil"];
+
 export default function ProviderProfile() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -206,24 +208,31 @@ export default function ProviderProfile() {
             <StatusBadge status={myProfile.verificationStatus} size="sm" />
           </h1>
           <div
-            className="profile-roles"
-            style={{ display: "flex", alignItems: "center", gap: "10px" }}
+            className="profile-headline"
+            style={{
+              fontSize: "0.95rem",
+              color: "var(--text)",
+              fontWeight: 500,
+              marginBottom: "0.35rem",
+            }}
           >
-            <span>{myProfile.headline ?? "Complete your profile headline"}</span>
-            {myProfile.serviceAreaDisplayName && (
-              <span
-                style={{
-                  fontSize: "0.9em",
-                  color: "var(--text-muted)",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "4px",
-                }}
-              >
-                <MapPin size={14} /> {myProfile.serviceAreaDisplayName}
-              </span>
-            )}
+            {myProfile.headline ?? "Complete your profile headline"}
           </div>
+          {myProfile.serviceAreaDisplayName && (
+            <div
+              className="profile-location"
+              style={{
+                fontSize: "0.85rem",
+                color: "var(--text-muted)",
+                display: "flex",
+                alignItems: "center",
+                gap: "4px",
+                fontWeight: 500,
+              }}
+            >
+              <MapPin size={14} /> {myProfile.serviceAreaDisplayName}
+            </div>
+          )}
         </div>
 
         <div className="profile-header-actions">
@@ -286,38 +295,115 @@ export default function ProviderProfile() {
 
           <div className="wizard-field">
             <label>Languages</label>
-            <div
-              className="tag-input-container"
-              style={
-                !isEditing
-                  ? { backgroundColor: "var(--bg-surface)", border: "1px solid transparent" }
-                  : {}
-              }
-            >
-              {languages.map((lang) => (
-                <span key={lang} className="tag-input-tag">
-                  {lang}
-                  {isEditing && (
-                    <button
-                      className="tag-input-remove"
-                      onClick={() => setLanguages(languages.filter((l) => l !== lang))}
+            {!isEditing ? (
+              <div
+                style={{
+                  display: "flex",
+                  gap: "0.5rem",
+                  flexWrap: "wrap",
+                  marginTop: "0.5rem",
+                  padding: "0.25rem 0",
+                }}
+              >
+                {languages.length > 0 ? (
+                  languages.map((lang) => (
+                    <span key={lang} className="language-pill">
+                      {lang}
+                    </span>
+                  ))
+                ) : (
+                  <p
+                    style={{
+                      margin: 0,
+                      color: "var(--text-muted)",
+                      fontSize: "0.9rem",
+                      fontStyle: "italic",
+                    }}
+                  >
+                    No languages specified
+                  </p>
+                )}
+              </div>
+            ) : (
+              <div style={{ marginTop: "0.5rem" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    gap: "1.5rem",
+                    flexWrap: "wrap",
+                    padding: "0.25rem 0",
+                    marginBottom: "0.75rem",
+                  }}
+                >
+                  {LANGUAGE_OPTIONS.map((lang) => (
+                    <label
+                      key={lang}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "0.5rem",
+                        cursor: "pointer",
+                        fontSize: "0.95rem",
+                        fontWeight: 600,
+                        color: "var(--text-h)",
+                        textTransform: "none",
+                      }}
                     >
-                      ×
-                    </button>
-                  )}
-                </span>
-              ))}
-              {isEditing && (
-                <input
-                  type="text"
-                  className="tag-input-field"
-                  placeholder="Add language (press Enter)..."
-                  value={langInput}
-                  onChange={(e) => setLangInput(e.target.value)}
-                  onKeyDown={handleAddLang}
-                />
-              )}
-            </div>
+                      <input
+                        type="checkbox"
+                        checked={languages.includes(lang)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setLanguages((prev) => [...prev, lang]);
+                          } else {
+                            setLanguages((prev) => prev.filter((l) => l !== lang));
+                          }
+                        }}
+                        style={{ width: "18px", height: "18px", cursor: "pointer" }}
+                      />
+                      {lang}
+                    </label>
+                  ))}
+                </div>
+
+                <div style={{ marginTop: "0.5rem" }}>
+                  <div
+                    style={{
+                      fontSize: "0.825rem",
+                      color: "var(--text-secondary)",
+                      marginBottom: "0.35rem",
+                      fontWeight: 500,
+                    }}
+                  >
+                    Other languages (optional):
+                  </div>
+                  <div className="tag-input-container">
+                    {languages
+                      .filter((lang) => !LANGUAGE_OPTIONS.includes(lang))
+                      .map((lang) => (
+                        <span key={lang} className="tag-input-tag">
+                          {lang}
+                          <button
+                            type="button"
+                            className="tag-input-remove"
+                            onClick={() => setLanguages(languages.filter((l) => l !== lang))}
+                          >
+                            ×
+                          </button>
+                        </span>
+                      ))}
+                    <input
+                      type="text"
+                      className="tag-input-field"
+                      placeholder="Add another language (press Enter)..."
+                      value={langInput}
+                      onChange={(e) => setLangInput(e.target.value)}
+                      onKeyDown={handleAddLang}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -442,16 +528,26 @@ export default function ProviderProfile() {
         <div className="edit-card-body">
           <div className="wizard-field">
             <label>Service Categories</label>
-            <div className="skill-grid">
-              {categories.map((cat) => (
-                <ServiceCategoryTag
-                  key={cat.id}
-                  category={cat}
-                  selected={selectedSkillIds.has(cat.id)}
-                  onClick={isEditing ? () => toggleSkill(cat.id) : undefined}
-                />
-              ))}
-            </div>
+            {(!isEditing ? categories.filter((cat) => selectedSkillIds.has(cat.id)) : categories)
+              .length === 0 ? (
+              <p style={{ color: "var(--text-muted)", fontSize: "0.88rem", margin: "0.5rem 0" }}>
+                No service categories selected.
+              </p>
+            ) : (
+              <div className="skill-grid">
+                {(!isEditing
+                  ? categories.filter((cat) => selectedSkillIds.has(cat.id))
+                  : categories
+                ).map((cat) => (
+                  <ServiceCategoryTag
+                    key={cat.id}
+                    category={cat}
+                    selected={selectedSkillIds.has(cat.id)}
+                    onClick={isEditing ? () => toggleSkill(cat.id) : undefined}
+                  />
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="wizard-field" style={{ marginTop: "1.5rem" }}>

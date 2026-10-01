@@ -106,7 +106,11 @@ export const providerApi = {
    * Admin: Reviews an individual certification document.
    * Expected: 204 No Content
    */
-  async reviewCertification(certId: string, status: DocumentReviewStatus): Promise<void> {
-    await api.patch(`/admin/certifications/${certId}/review`, { status });
+  async reviewCertification(
+    certId: string,
+    status: DocumentReviewStatus,
+    note?: string,
+  ): Promise<void> {
+    await api.patch(`/admin/certifications/${certId}/review`, { status, note });
   },
 };
