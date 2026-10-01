@@ -124,7 +124,14 @@ public class ProviderController(
         try
         {
             await verificationService.TransitionAsync(id, adminId.Value, dto.NewStatus, dto.Note, ct);
-            await trustService.InvalidateCacheAsync(id, ct);
+            try
+            {
+                await trustService.InvalidateCacheAsync(id, ct);
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "Failed to invalidate cache after verification transition on profile {ProfileId}", id);
+            }
             return NoContent();
         }
         catch (InvalidOperationException ex)

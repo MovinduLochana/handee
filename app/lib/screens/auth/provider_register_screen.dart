@@ -262,37 +262,37 @@ class _ProviderRegisterScreenState extends State<ProviderRegisterScreen> {
                 child: _buildCurrentStep(),
               ),
             ),
-
-            // Bottom Navigation Bar
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                border: Border(top: BorderSide(color: AppColors.borderLight)),
-              ),
-              child: Row(
-                children: [
-                  if (_currentStep > 0) ...[
-                    OutlinedButton(
-                      onPressed: _isSubmitting ? null : _prevStep,
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                      ),
-                      child: const Text('Back'),
-                    ),
-                    const SizedBox(width: 12),
-                  ],
-                  Expanded(
-                    child: CustomButton(
-                      text: _currentStep == 2 ? 'Complete Onboarding' : 'Next Step',
-                      isLoading: _isSubmitting,
-                      onPressed: _currentStep == 2 ? _handleCompleteOnboarding : _nextStep,
-                    ),
-                  ),
-                ],
-              ),
-            ),
           ],
+        ),
+      ),
+      bottomNavigationBar: SafeArea(
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            border: Border(top: BorderSide(color: AppColors.borderLight)),
+          ),
+          child: Row(
+            children: [
+              if (_currentStep > 0) ...[
+                OutlinedButton(
+                  onPressed: _isSubmitting ? null : _prevStep,
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                  ),
+                  child: const Text('Back'),
+                ),
+                const SizedBox(width: 12),
+              ],
+              Expanded(
+                child: CustomButton(
+                  text: _currentStep == 2 ? 'Complete Onboarding' : 'Next Step',
+                  isLoading: _isSubmitting,
+                  onPressed: _currentStep == 2 ? _handleCompleteOnboarding : _nextStep,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

@@ -1,5 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useJsApiLoader, Autocomplete, GoogleMap, MarkerF, CircleF } from "@react-google-maps/api";
+import { Search, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 type Library = "places";
 const MAP_LIBRARIES: Library[] = ["places"];
@@ -28,35 +30,91 @@ export default function LocationPicker({
   });
 
   const [autocomplete, setAutocomplete] = useState<google.maps.places.Autocomplete | null>(null);
+  const [inputValue, setInputValue] = useState(address);
+  const [isSearching, setIsSearching] = useState(false);
 
   const inputRef = React.useRef<HTMLInputElement>(null);
 
+  useEffect(() => {
+    setInputValue(address);
+  }, [address]);
+
+  const fallbackGeocode = async (query: string) => {
+    if (!query.trim()) return;
+    setIsSearching(true);
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`,
+        { headers: { "Accept-Language": "en" } },
+      );
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.length > 0) {
+          const item = data[0];
+          const newLat = parseFloat(item.lat);
+          const newLng = parseFloat(item.lon);
+          const newAddress = item.display_name || query;
+          setInputValue(newAddress);
+          onChange(newLat, newLng, newAddress, radiusKm);
+          return;
+        }
+      }
+    } catch {
+      // ignore network errors
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
   const onLoadAutocomplete = (autocompleteInstance: google.maps.places.Autocomplete) => {
+    try {
+      autocompleteInstance.setFields(["geometry", "formatted_address", "name"]);
+    } catch {
+      // ignore
+    }
     setAutocomplete(autocompleteInstance);
   };
 
   const onPlaceChanged = () => {
     if (autocomplete !== null) {
-      let newLat = lat;
-      let newLng = lng;
-      let newAddress = address;
+      try {
+        const place = autocomplete.getPlace();
+        let newLat = lat;
+        let newLng = lng;
+        let newAddress = inputValue;
 
-      const place = autocomplete.getPlace();
-      if (place.geometry && place.geometry.location) {
-        newLat = place.geometry.location.lat();
-        newLng = place.geometry.location.lng();
-      }
-      if (place.formatted_address) {
-        newAddress = place.formatted_address;
-      } else if (place.name) {
-        newAddress = place.name;
-      }
+        if (place && place.geometry && place.geometry.location) {
+          newLat = place.geometry.location.lat();
+          newLng = place.geometry.location.lng();
+        }
+        if (place && place.formatted_address) {
+          newAddress = place.formatted_address;
+        } else if (place && place.name) {
+          newAddress = place.name;
+        }
 
-      if (inputRef.current) {
-        inputRef.current.value = newAddress;
-      }
+        if (newAddress) {
+          setInputValue(newAddress);
+        }
 
-      onChange(newLat, newLng, newAddress, radiusKm);
+        if (newLat !== null && newLng !== null) {
+          onChange(newLat, newLng, newAddress, radiusKm);
+          return;
+        }
+      } catch {
+        // Fall back to Nominatim if getPlace fails
+      }
+    }
+
+    if (inputValue.trim()) {
+      fallbackGeocode(inputValue.trim());
+    }
+  };
+
+  const handleManualSearch = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (inputValue.trim()) {
+      fallbackGeocode(inputValue.trim());
     }
   };
 
@@ -65,21 +123,42 @@ export default function LocationPicker({
     const clickLat = e.latLng.lat();
     const clickLng = e.latLng.lng();
 
-    const geocoder = new google.maps.Geocoder();
-    geocoder.geocode({ location: { lat: clickLat, lng: clickLng } }, (results, status) => {
-      let newAddress = address;
-      if (status === "OK" && results && results[0]) {
-        newAddress = results[0].formatted_address;
-      } else {
-        newAddress = `${clickLat.toFixed(4)}, ${clickLng.toFixed(4)}`;
-      }
+    try {
+      const geocoder = new google.maps.Geocoder();
+      geocoder.geocode({ location: { lat: clickLat, lng: clickLng } }, async (results, status) => {
+        if (status === "OK" && results && results[0]) {
+          const newAddress = results[0].formatted_address;
+          setInputValue(newAddress);
+          onChange(clickLat, clickLng, newAddress, radiusKm);
+        } else {
+          // Fallback reverse geocoding via OpenStreetMap
+          try {
+            const res = await fetch(
+              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${clickLat}&lon=${clickLng}`,
+              { headers: { "Accept-Language": "en" } },
+            );
+            if (res.ok) {
+              const data = await res.json();
+              if (data && data.display_name) {
+                setInputValue(data.display_name);
+                onChange(clickLat, clickLng, data.display_name, radiusKm);
+                return;
+              }
+            }
+          } catch {
+            // ignore
+          }
 
-      if (inputRef.current) {
-        inputRef.current.value = newAddress;
-      }
-
-      onChange(clickLat, clickLng, newAddress, radiusKm);
-    });
+          const fallbackAddr = `${clickLat.toFixed(4)}, ${clickLng.toFixed(4)}`;
+          setInputValue(fallbackAddr);
+          onChange(clickLat, clickLng, fallbackAddr, radiusKm);
+        }
+      });
+    } catch {
+      const fallbackAddr = `${clickLat.toFixed(4)}, ${clickLng.toFixed(4)}`;
+      setInputValue(fallbackAddr);
+      onChange(clickLat, clickLng, fallbackAddr, radiusKm);
+    }
   };
 
   const handleRadiusChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -134,15 +213,43 @@ export default function LocationPicker({
       </div>
 
       {isEditing && (
-        <Autocomplete onLoad={onLoadAutocomplete} onPlaceChanged={onPlaceChanged}>
-          <input
-            ref={inputRef}
-            defaultValue={address}
-            type="text"
-            placeholder="Search for a location..."
-            className="w-full h-9 border border-input bg-background px-3 py-1 text-sm text-foreground shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-          />
-        </Autocomplete>
+        <form onSubmit={handleManualSearch} className="flex gap-2">
+          <div className="flex-1 relative">
+            <Autocomplete onLoad={onLoadAutocomplete} onPlaceChanged={onPlaceChanged}>
+              <input
+                ref={inputRef}
+                value={inputValue}
+                onChange={(e) => {
+                  setInputValue(e.target.value);
+                  onChange(lat, lng, e.target.value, radiusKm);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleManualSearch();
+                  }
+                }}
+                type="text"
+                placeholder="Search for a location or city..."
+                className="w-full h-9 border border-input bg-background px-3 py-1 text-sm text-foreground shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              />
+            </Autocomplete>
+          </div>
+          <Button
+            type="submit"
+            size="sm"
+            variant="secondary"
+            disabled={isSearching || !inputValue.trim()}
+            className="h-9 px-3 gap-1.5 shrink-0 rounded-none cursor-pointer"
+          >
+            {isSearching ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <Search className="w-3.5 h-3.5" />
+            )}
+            <span className="text-xs">Search</span>
+          </Button>
+        </form>
       )}
 
       <div className="h-[300px] w-full overflow-hidden border border-border">
