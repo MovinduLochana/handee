@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/colors.dart';
 import '../../data/models/booking_model.dart';
 import '../../providers/booking_provider.dart';
-import '../../widgets/status_badge.dart';
+import '../../widgets/booking_card.dart';
 import 'active_job_screen.dart';
 
 class ProviderJobsScreen extends StatefulWidget {
@@ -81,93 +80,21 @@ class _ProviderJobsScreenState extends State<ProviderJobsScreen> with SingleTick
       );
     }
 
-    final currencyFormat = NumberFormat('#,##0', 'en_US');
-
     return ListView.separated(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       itemCount: items.length,
       separatorBuilder: (context, index) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
         final booking = items[index];
-        final formattedDate = DateFormat('dd MMM yyyy, hh:mm a').format(booking.createdAt);
-
-        return InkWell(
+        return BookingCard(
+          booking: booking,
+          isProviderView: true,
           onTap: () {
             Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => ActiveJobScreen(booking: booking)),
             );
           },
-          borderRadius: BorderRadius.circular(16),
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.borderLight),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.02),
-                  blurRadius: 6,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      booking.category ?? booking.jobRequest?.categoryName ?? 'Field Service',
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-                    ),
-                    StatusBadge(status: booking.status),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  booking.description ?? booking.jobRequest?.description ?? 'Field job request',
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
-                ),
-                const SizedBox(height: 12),
-                const Divider(height: 1, color: AppColors.borderLight),
-                const SizedBox(height: 10),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        const Icon(Icons.person, size: 16, color: AppColors.primary),
-                        const SizedBox(width: 4),
-                        Text(
-                          booking.customerName ?? 'Verified Customer',
-                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-                        ),
-                      ],
-                    ),
-                    if (booking.price != null)
-                      Text(
-                        'Rs. ${currencyFormat.format(booking.price)}',
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.primary,
-                        ),
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  formattedDate,
-                  style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
-                ),
-              ],
-            ),
-          ),
         );
       },
     );

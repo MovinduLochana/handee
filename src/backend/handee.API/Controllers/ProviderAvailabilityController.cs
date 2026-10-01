@@ -1,4 +1,3 @@
-using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using handee.API.Common.Extensions;
@@ -9,7 +8,6 @@ using handee.API.Interfaces;
 namespace handee.API.Controllers;
 
 [ApiController]
-[Route("provider-availability")]
 [Route("api/provider-availability")]
 [Authorize]
 public class ProviderAvailabilityController : ControllerBase
@@ -21,66 +19,44 @@ public class ProviderAvailabilityController : ControllerBase
         _availabilityService = availabilityService;
     }
 
-    // POST /provider-availability
-    [HttpPost]
+    // GET /api/provider-availability/slots?providerId={id}&date={yyyy-MM-dd}&durationHours=1
+    [HttpGet("slots")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetPredefinedSlots(
+        [FromQuery] Guid providerId,
+        [FromQuery] DateOnly date,
+        [FromQuery] int durationHours = 1,
+        CancellationToken ct = default)
+    {
+        var result = await _availabilityService.GetPredefinedSlotsForDateAsync(providerId, date, durationHours, ct);
+        return Ok(result);
+    }
+
+    // GET /api/provider-availability/{providerId}/schedule
+    [HttpGet("{providerId:guid}/schedule")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetOperatingSchedule(Guid providerId, CancellationToken ct)
+    {
+        var result = await _availabilityService.GetOperatingScheduleAsync(providerId, ct);
+        return Ok(result);
+    }
+
+    // PUT /api/provider-availability/schedule
+    [HttpPut("schedule")]
     [Authorize(Roles = "Provider")]
-    public async Task<IActionResult> Create([FromBody] CreateSlotDto dto)
+    public async Task<IActionResult> UpdateOperatingSchedule([FromBody] UpdateOperatingScheduleDto dto, CancellationToken ct)
     {
         var providerId = User.GetUserId();
         if (providerId is null) return Unauthorized();
 
         try
         {
-            var result = await _availabilityService.CreateSlotAsync(providerId.Value, dto);
-            return StatusCode(StatusCodes.Status201Created, result);
+            var result = await _availabilityService.UpdateOperatingScheduleAsync(providerId.Value, dto, ct);
+            return Ok(result);
         }
         catch (ValidationException ex)
         {
             return BadRequest(ex.Message);
         }
     }
-
-    // GET /provider-availability/{providerId}
-    [HttpGet("{providerId:guid}")]
-    public async Task<IActionResult> GetForProvider(Guid providerId)
-    {
-        var result = await _availabilityService.GetForProviderAsync(providerId);
-        return Ok(result);
-    }
-
-    // GET /provider-availability/mine
-    [HttpGet("mine")]
-    [Authorize(Roles = "Provider")]
-    public async Task<IActionResult> GetMine()
-    {
-        var providerId = User.GetUserId();
-        if (providerId is null) return Unauthorized();
-
-        var result = await _availabilityService.GetOwnAsync(providerId.Value);
-        return Ok(result);
-    }
-
-    // DELETE /provider-availability/{id}
-    [HttpDelete("{id:guid}")]
-    [Authorize(Roles = "Provider")]
-    public async Task<IActionResult> Delete(Guid id)
-    {
-        var providerId = User.GetUserId();
-        if (providerId is null) return Unauthorized();
-
-        try
-        {
-            await _availabilityService.DeleteSlotAsync(id, providerId.Value);
-            return NoContent();
-        }
-        catch (NotFoundException ex)
-        {
-            return NotFound(ex.Message);
-        }
-        catch (ValidationException ex)
-        {
-            return BadRequest(ex.Message);
-        }
-    }
-
 }

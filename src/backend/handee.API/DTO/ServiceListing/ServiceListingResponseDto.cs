@@ -10,6 +10,7 @@ public class ServiceListingResponseDto
     public string Scope { get; set; } = string.Empty;
     public string Availability { get; set; } = string.Empty;
     public decimal FixedPrice { get; set; }
+    public int DurationHours { get; set; } = 1;
     public TimeSpan EstimatedDuration { get; set; }
     public bool IsActive { get; set; }
     public DateTimeOffset CreatedAt { get; set; }

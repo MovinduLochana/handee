@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/network/api_client.dart';
 import '../data/models/booking_model.dart';
 import '../data/repositories/booking_repository.dart';
 
@@ -57,15 +58,24 @@ class BookingProvider extends ChangeNotifier {
   }
 
   Future<void> selectBooking(String bookingId) async {
-    _selectedBooking = _bookings.firstWhere(
-      (b) => b.id == bookingId,
-      orElse: () => _bookings.first,
+    final existing = _bookings.cast<BookingModel?>().firstWhere(
+      (b) => b?.id == bookingId,
+      orElse: () => null,
     );
-    notifyListeners();
+    if (existing != null) {
+      _selectedBooking = existing;
+      notifyListeners();
+    }
 
     try {
       final fresh = await repository.getBookingById(bookingId);
       if (fresh != null) {
+        final idx = _bookings.indexWhere((b) => b.id == bookingId);
+        if (idx != -1) {
+          _bookings[idx] = fresh;
+        } else {
+          _bookings.add(fresh);
+        }
         _selectedBooking = fresh;
         notifyListeners();
       }
@@ -107,6 +117,38 @@ class BookingProvider extends ChangeNotifier {
       _errorMessage = e.toString();
       notifyListeners();
       return false;
+    }
+  }
+
+  Future<BookingModel?> createBookingFromListing({
+    required String serviceListingId,
+    required DateTime scheduledAt,
+    String? notes,
+  }) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final booking = await repository.createBookingFromListing(
+        serviceListingId: serviceListingId,
+        scheduledAt: scheduledAt,
+        notes: notes,
+      );
+      _bookings.insert(0, booking);
+      _isLoading = false;
+      notifyListeners();
+      return booking;
+    } on ApiException catch (e) {
+      _errorMessage = e.message;
+      _isLoading = false;
+      notifyListeners();
+      rethrow;
+    } catch (e) {
+      _errorMessage = e.toString();
+      _isLoading = false;
+      notifyListeners();
+      rethrow;
     }
   }
 }

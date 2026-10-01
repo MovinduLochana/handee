@@ -154,6 +154,7 @@ export interface ProviderSearchParams {
 // ─── Certification Review ──────────────────────────────────────────────────
 export interface ReviewCertificationDto {
   status: DocumentReviewStatus;
+  note?: string;
 }
 
 // ─── Service Listings ───────────────────────────────────────────────────────
@@ -166,6 +167,7 @@ export interface ServiceListingDto {
   scope: string;
   availability: string;
   fixedPrice: number;
+  durationHours?: number;
   estimatedDuration: string;
   isActive: boolean;
   createdAt: string;
@@ -181,6 +183,7 @@ export interface CreateServiceListingDto {
   scope: string;
   availability: string;
   fixedPrice: number;
+  durationHours: number;
   estimatedDuration: string;
   isActive: boolean;
 }
@@ -192,8 +195,35 @@ export interface UpdateServiceListingDto {
   scope: string;
   availability: string;
   fixedPrice: number;
+  durationHours: number;
   estimatedDuration: string;
   isActive: boolean;
+}
+
+// ─── Declarative Operating Schedule ─────────────────────────────────────────
+export type DayOfWeekName =
+  | "Monday"
+  | "Tuesday"
+  | "Wednesday"
+  | "Thursday"
+  | "Friday"
+  | "Saturday"
+  | "Sunday";
+
+export interface DayOperatingScheduleDto {
+  dayOfWeek: DayOfWeekName | number;
+  startTime: string; // "09:00:00"
+  endTime: string; // "17:00:00"
+  isActive: boolean;
+}
+
+export interface ProviderOperatingScheduleDto {
+  providerId: string;
+  weeklySchedule: DayOperatingScheduleDto[];
+}
+
+export interface UpdateOperatingScheduleDto {
+  weeklySchedule: DayOperatingScheduleDto[];
 }
 
 // ─── Booking & Scheduling ──────────────────────────────────────────────────
@@ -249,6 +279,7 @@ export interface BookingResponseDto {
   category: string | null;
   description: string | null;
   notes: string | null;
+  durationHours: number;
 }
 
 /** DTO/ServiceCategoryResponseDto.cs */
@@ -270,6 +301,13 @@ export interface UpdateBookingScheduleDto {
   scheduledAt: string | null;
 }
 
+/** DTO/CreateListingBookingDto.cs */
+export interface CreateListingBookingDto {
+  serviceListingId: string;
+  scheduledAt: string;
+  notes?: string | null;
+}
+
 /** Query params of GET /job-requests (JobRequestController.GetForStaff). */
 export interface JobRequestStaffParams {
   status?: JobRequestStatus;
@@ -285,6 +323,13 @@ export interface BookingStaffParams {
   sortDescending?: boolean;
   page?: number;
   pageSize?: number;
+}
+
+/** DTO/PredefinedSlotDto.cs */
+export interface PredefinedSlotDto {
+  startTime: string;
+  endTime: string;
+  isAvailable: boolean;
 }
 
 /** DTO for GET /admin/users */

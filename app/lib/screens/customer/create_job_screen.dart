@@ -8,7 +8,6 @@ import '../../core/constants/colors.dart';
 import '../../data/models/service_category_model.dart';
 import '../../data/repositories/service_category_repository.dart';
 import '../../providers/job_request_provider.dart';
-import '../../providers/service_category_provider.dart';
 import '../../widgets/custom_button.dart';
 import 'booking_tracker_screen.dart';
 

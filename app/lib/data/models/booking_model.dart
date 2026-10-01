@@ -25,6 +25,7 @@ class BookingModel {
   final String? category;
   final String? description;
   final String? notes;
+  final int durationHours;
 
   BookingModel({
     required this.id,
@@ -46,6 +47,7 @@ class BookingModel {
     this.category,
     this.description,
     this.notes,
+    this.durationHours = 1,
   });
 
   bool get isRequested => status.toLowerCase() == 'requested';
@@ -103,6 +105,9 @@ class BookingModel {
       category: json['category']?.toString(),
       description: json['description']?.toString(),
       notes: json['notes']?.toString(),
+      durationHours: (json['durationHours'] as num?)?.toInt() ??
+          (json['DurationHours'] as num?)?.toInt() ??
+          1,
     );
   }
 
@@ -125,6 +130,7 @@ class BookingModel {
       'category': category,
       'description': description,
       'notes': notes,
+      'durationHours': durationHours,
     };
   }
 
@@ -148,6 +154,7 @@ class BookingModel {
     String? category,
     String? description,
     String? notes,
+    int? durationHours,
   }) {
     return BookingModel(
       id: id ?? this.id,
@@ -169,6 +176,7 @@ class BookingModel {
       category: category ?? this.category,
       description: description ?? this.description,
       notes: notes ?? this.notes,
+      durationHours: durationHours ?? this.durationHours,
     );
   }
 }

@@ -10,7 +10,12 @@ public class ServiceListing
     public string Scope { get; set; } = string.Empty;
     public string Availability { get; set; } = string.Empty;
     public decimal FixedPrice { get; set; }
-    public TimeSpan EstimatedDuration { get; set; }
+    public int DurationHours { get; set; } = 1;
+    public TimeSpan EstimatedDuration
+    {
+        get => TimeSpan.FromHours(DurationHours > 0 ? DurationHours : 1);
+        set => DurationHours = Math.Max(1, (int)Math.Round(value.TotalHours));
+    }
     public bool IsActive { get; set; } = true;
 
     // Audit fields

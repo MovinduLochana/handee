@@ -6,7 +6,6 @@ import '../../../providers/service_category_provider.dart';
 import '../../../widgets/provider_listing_card.dart';
 import '../../../widgets/service_listing_card.dart';
 import 'public_provider_profile_screen.dart';
-import 'create_job_screen.dart';
 import 'service_listing_details_screen.dart';
 
 class ServiceSearchScreen extends StatefulWidget {
@@ -251,7 +250,7 @@ class _ServiceSearchScreenState extends State<ServiceSearchScreen> {
                     child: ListView.separated(
                       padding: const EdgeInsets.all(16),
                       itemCount: results.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 12),
+                      separatorBuilder: (_, _) => const SizedBox(height: 12),
                       itemBuilder: (context, index) {
                         final provider = results[index];
                         return ProviderListingCard(
@@ -296,7 +295,7 @@ class _ServiceSearchScreenState extends State<ServiceSearchScreen> {
                     child: ListView.separated(
                       padding: const EdgeInsets.all(16),
                       itemCount: results.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 12),
+                      separatorBuilder: (_, _) => const SizedBox(height: 12),
                       itemBuilder: (context, index) {
                         final listing = results[index];
                         return ServiceListingCard(

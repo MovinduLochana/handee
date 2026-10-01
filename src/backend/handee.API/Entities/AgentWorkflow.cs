@@ -68,6 +68,7 @@ public class AgentWorkflow
 
     public decimal? EstimatedPrice { get; set; }
     public Guid? SelectedProviderId { get; set; }
+    public Guid? SelectedServiceListingId { get; set; }
 
     public string? FinalResultJson { get; set; }
     public string? DecisionNote { get; set; }
@@ -79,5 +80,6 @@ public class AgentWorkflow
     // Navigation properties
     public JobRequest JobRequest { get; set; } = default!;
     public ApplicationUser? SelectedProvider { get; set; }
+    public ServiceListing? SelectedServiceListing { get; set; }
     public ICollection<AgentStepLog> StepLogs { get; set; } = new List<AgentStepLog>();
 }

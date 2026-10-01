@@ -31,7 +31,7 @@ public class ProviderProfileRepository(AppDbContext db) : IProviderProfileReposi
 
     public async Task<Guid?> GetOwnerUserIdAsync(Guid profileId, CancellationToken ct = default) =>
         await db.ProviderProfiles
-            .Where(p => p.Id == profileId)
+            .Where(p => p.Id == profileId || p.UserId == profileId)
             .Select(p => (Guid?)p.UserId)
             .FirstOrDefaultAsync(ct);
 

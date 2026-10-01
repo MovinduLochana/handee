@@ -7,17 +7,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:app/core/network/api_client.dart';
 import 'package:app/core/services/storage_service.dart';
 import 'package:app/data/models/booking_model.dart';
-import 'package:app/data/models/provider_profile_model.dart';
 import 'package:app/data/repositories/auth_repository.dart';
 import 'package:app/data/repositories/provider_repository.dart';
 import 'package:app/providers/auth_provider.dart';
-import 'package:app/providers/service_directory_provider.dart';
-import 'package:app/data/repositories/service_listing_repository.dart';
 import 'package:provider/provider.dart';
 import 'package:app/screens/customer/edit_customer_profile_screen.dart';
-import 'package:app/screens/provider/edit_provider_profile_screen.dart';
-import 'package:app/providers/service_category_provider.dart';
-import 'package:app/data/repositories/service_category_repository.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
