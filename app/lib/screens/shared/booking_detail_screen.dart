@@ -35,6 +35,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<BookingProvider>().selectBooking(widget.bookingId);
+      context.read<PaymentProvider>().fetchInvoiceForBooking(widget.bookingId);
     });
   }
 

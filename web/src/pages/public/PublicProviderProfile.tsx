@@ -72,7 +72,7 @@ export default function PublicProviderProfile() {
           description="This provider profile doesn't exist or is currently unavailable."
           action={
             <Button asChild className="mt-4">
-              <Link to="/">Return Home</Link>
+              <Link to="/providers">Back to Providers</Link>
             </Button>
           }
         />
@@ -86,10 +86,10 @@ export default function PublicProviderProfile() {
         {/* Nav */}
         <nav>
           <Link
-            to="/"
+            to="/providers"
             className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
           >
-            <ArrowLeft className="h-4 w-4" /> Back to Search
+            <ArrowLeft className="h-4 w-4" /> Back to Providers
           </Link>
         </nav>
 
@@ -187,7 +187,7 @@ export default function PublicProviderProfile() {
                 </div>
 
                 {profile.bio && (
-                  <p className="text-sm md:text-base text-foreground leading-relaxed">
+                  <p className="text-sm md:text-base text-foreground leading-relaxed whitespace-pre-line">
                     {profile.bio}
                   </p>
                 )}

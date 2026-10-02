@@ -174,6 +174,16 @@ export default function VerificationDetail() {
                 <p className="text-xs text-muted-foreground">
                   {profile.headline || "No headline set"}
                 </p>
+                {profile.bio && (
+                  <p className="text-xs text-muted-foreground mt-2 italic whitespace-pre-line text-left leading-relaxed">
+                    {profile.bio}
+                  </p>
+                )}
+                {profile.description && (
+                  <p className="text-xs text-muted-foreground mt-2 whitespace-pre-line text-left leading-relaxed">
+                    {profile.description}
+                  </p>
+                )}
               </div>
 
               <div className="pt-1 flex justify-center">

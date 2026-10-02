@@ -11,6 +11,7 @@ import 'package:app/data/repositories/booking_repository.dart';
 import 'package:app/data/repositories/assistant_repository.dart';
 import 'package:app/data/repositories/invoice_repository.dart';
 import 'package:app/data/repositories/payment_repository.dart';
+import 'package:app/providers/payment_provider.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -406,6 +407,54 @@ void main() {
     expect(payment.isSucceeded, isTrue);
     expect(payment.transactionReference, 'ch_sbx_mock_abc123');
     expect(payment.cardLast4, '4242');
+  });
+
+  test('ApiClient parses ASP.NET Core ValidationProblemDetails errors correctly', () async {
+    final mockClient = MockClient((request) async {
+      return http.Response(
+        jsonEncode({
+          'type': 'https://tools.ietf.org/html/rfc9110#section-15.5.1',
+          'title': 'One or more validation errors occurred.',
+          'status': 400,
+          'errors': {
+            'InvoiceId': [
+              'The JSON value could not be converted to System.Guid. Path: \$.invoiceId',
+            ],
+          },
+        }),
+        400,
+        headers: {'content-type': 'application/json'},
+      );
+    });
+
+    final apiClient = ApiClient(storage: storage, httpClient: mockClient, baseUrl: 'http://test');
+
+    try {
+      await apiClient.post('/payments', body: {'invoiceId': 'invalid-guid'});
+      fail('Should throw ApiException');
+    } on ApiException catch (e) {
+      expect(e.statusCode, 400);
+      expect(e.message, contains('The JSON value could not be converted to System.Guid'));
+    }
+  });
+
+  test('PaymentProvider processSandboxPayment handles placeholder invoiceId gracefully', () async {
+    final mockClient = MockClient((request) async => http.Response('Not Found', 404));
+    final apiClient = ApiClient(storage: storage, httpClient: mockClient, baseUrl: 'http://test');
+    final invoiceRepo = InvoiceRepository(apiClient: apiClient);
+    final paymentRepo = PaymentRepository(apiClient: apiClient);
+
+    final provider = PaymentProvider(invoiceRepo: invoiceRepo, paymentRepo: paymentRepo);
+
+    final payment = await provider.processSandboxPayment(
+      invoiceId: 'inv-stub-1234',
+      bookingId: 'book-stub-5678',
+    );
+
+    expect(payment, isNotNull);
+    expect(payment!.isSucceeded, isTrue);
+    expect(payment.transactionReference, startsWith('ch_sbx_'));
+    expect(provider.myPayments.length, 1);
   });
 }
 
