@@ -115,8 +115,12 @@ function source(relativePath: string): string {
 
 /** Positional-record parameters, camel-cased the way the API serializes them. */
 function recordFields(csharp: string): string[] {
-  const recordMatch = csharp.match(/public\s+record\s+\w+(?:<[^>]+>)?\s*\(([\s\S]*?)\)\s*(?:;|:|\{)/);
-  const rawParams = recordMatch ? recordMatch[1] : csharp.slice(csharp.indexOf("(") + 1, csharp.lastIndexOf(")"));
+  const recordMatch = csharp.match(
+    /public\s+record\s+\w+(?:<[^>]+>)?\s*\(([\s\S]*?)\)\s*(?:;|:|\{)/,
+  );
+  const rawParams = recordMatch
+    ? recordMatch[1]
+    : csharp.slice(csharp.indexOf("(") + 1, csharp.lastIndexOf(")"));
   const stripped = rawParams.replace(/\[[^\]]*\]/g, "");
   return stripped
     .split(",")
