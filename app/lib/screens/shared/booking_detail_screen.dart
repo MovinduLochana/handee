@@ -190,6 +190,41 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
               ),
             ),
 
+            if (booking.isDeclined) ...[
+              const SizedBox(height: 18),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFF1F2),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFFFECDD3)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Row(
+                      children: [
+                        Icon(Icons.cancel_outlined, color: AppColors.error, size: 22),
+                        SizedBox(width: 10),
+                        Text(
+                          'Booking Request Declined',
+                          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.error),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      booking.notes != null && booking.notes!.toLowerCase().contains('declined reason:')
+                          ? booking.notes!
+                          : 'The service provider declined this scheduled booking request. Your requested time slot has been released.',
+                      style: const TextStyle(fontSize: 13, color: Color(0xFF9F1239), height: 1.4),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+
             const SizedBox(height: 18),
 
             // Time Slot & Reschedule Section (Dynamic Duration-Aware Predefined Slot System)
@@ -219,8 +254,16 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
 
             const SizedBox(height: 24),
 
+            if (!isViewerProvider && booking.isDeclined) ...[
+              CustomButton(
+                text: 'Find Another Service Provider',
+                icon: Icons.search,
+                onPressed: () => Navigator.pop(context),
+              ),
+            ],
+
             // Dispute Action Trigger
-            if (!booking.isDisputed && !booking.isCompleted) ...[
+            if (!booking.isDisputed && !booking.isCompleted && !booking.isDeclined) ...[
               CustomButton(
                 text: 'Raise Issue or Dispute',
                 isOutlined: true,

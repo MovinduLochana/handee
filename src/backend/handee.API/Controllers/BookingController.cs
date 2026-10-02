@@ -71,6 +71,7 @@ public class BookingController : ControllerBase
 
     // GET /bookings/provider-mine
     [HttpGet("provider-mine")]
+    [HttpGet("/api/provider/bookings")]
     public async Task<IActionResult> GetProviderMine()
     {
         var providerId = User.GetUserId();
@@ -78,6 +79,33 @@ public class BookingController : ControllerBase
 
         var result = await _bookingService.GetForProviderAsync(providerId.Value);
         return Ok(result);
+    }
+
+    // POST /api/provider/bookings/{id}/confirm
+    [HttpPost("{id:guid}/confirm")]
+    [HttpPost("/api/provider/bookings/{id:guid}/confirm")]
+    public async Task<IActionResult> ConfirmBooking([FromRoute] Guid id)
+    {
+        var providerId = User.GetUserId();
+        if (providerId is null) return Unauthorized();
+
+        try
+        {
+            var result = await _bookingService.UpdateStatusAsync(
+                id,
+                new UpdateBookingStatusDto(BookingStatus.Accepted),
+                providerId.Value,
+                User.IsInRole("Admin"));
+            return Ok(result);
+        }
+        catch (NotFoundException ex)
+        {
+            return NotFound(new { error = ex.Message });
+        }
+        catch (ValidationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
     }
 
     // GET /bookings/provider-offers
@@ -88,6 +116,45 @@ public class BookingController : ControllerBase
         if (providerId is null) return Unauthorized();
 
         var result = await _bookingService.GetProviderOffersAsync(providerId.Value);
+        return Ok(result);
+    }
+
+    // GET /api/provider/instant-offers
+    [HttpGet("provider-instant-offers")]
+    [HttpGet("/api/provider/instant-offers")]
+    public async Task<IActionResult> GetProviderInstantOffers(CancellationToken ct = default)
+    {
+        var providerId = User.GetUserId();
+        if (providerId is null) return Unauthorized();
+
+        var result = await _bookingService.GetProviderInstantOffersAsync(providerId.Value, ct);
+        return Ok(result);
+    }
+
+    // GET /api/provider/booking-requests
+    [HttpGet("provider-requests")]
+    [HttpGet("/api/provider/booking-requests")]
+    public async Task<IActionResult> GetProviderBookingRequests(CancellationToken ct = default)
+    {
+        var providerId = User.GetUserId();
+        if (providerId is null) return Unauthorized();
+
+        var result = await _bookingService.GetProviderScheduledRequestsAsync(providerId.Value, ct);
+        return Ok(result);
+    }
+
+    // POST /api/provider/bookings/{id}/decline
+    [HttpPost("{id:guid}/decline")]
+    [HttpPost("/api/provider/bookings/{id:guid}/decline")]
+    public async Task<IActionResult> DeclineBooking(
+        [FromRoute] Guid id,
+        [FromBody] DeclineBookingDto? dto = null,
+        CancellationToken ct = default)
+    {
+        var providerId = User.GetUserId();
+        if (providerId is null) return Unauthorized();
+
+        var result = await _bookingService.DeclineBookingAsync(id, providerId.Value, dto?.Reason, ct);
         return Ok(result);
     }
 

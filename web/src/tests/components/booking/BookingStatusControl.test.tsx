@@ -14,11 +14,13 @@ vi.mock("../../../api/bookings", async (importOriginal) => {
 // Written out independently of LEGAL_BOOKING_TRANSITIONS, as the user-visible
 // labels, from BookingService.LegalTransitions.
 const EXPECTED_OPTIONS: Record<BookingStatus, string[]> = {
-  Requested: ["Accepted", "Disputed"],
+  Requested: ["Accepted", "Disputed", "Expired", "Declined"],
   Accepted: ["In Progress", "Disputed"],
   InProgress: ["Completed", "Disputed"],
   Completed: ["Disputed"],
   Disputed: ["Requested", "Accepted", "In Progress", "Completed"],
+  Expired: [],
+  Declined: [],
 };
 
 describe("BookingStatusControl", () => {

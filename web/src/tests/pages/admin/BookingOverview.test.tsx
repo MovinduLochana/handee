@@ -68,7 +68,7 @@ describe("BookingOverview", () => {
 
     // One tiny page per status, never the full list.
     expect(jobRequestApi.getForStaff).toHaveBeenCalledTimes(3);
-    expect(bookingApi.getForStaff).toHaveBeenCalledTimes(5);
+    expect(bookingApi.getForStaff).toHaveBeenCalledTimes(7);
     expect(bookingApi.getForStaff).toHaveBeenCalledWith({
       status: "Disputed",
       page: 1,

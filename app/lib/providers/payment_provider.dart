@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../core/network/api_client.dart';
 import '../data/models/invoice_model.dart';
 import '../data/models/payment_model.dart';
+import '../data/models/payout_model.dart';
 import '../data/repositories/invoice_repository.dart';
 import '../data/repositories/payment_repository.dart';
 
@@ -12,6 +13,8 @@ class PaymentProvider extends ChangeNotifier {
   final Map<String, InvoiceModel> _invoicesByBooking = {};
   List<InvoiceModel> _myInvoices = [];
   List<PaymentModel> _myPayments = [];
+  ProviderEarningsSummaryModel? _providerEarningsSummary;
+  List<PayoutModel> _providerPayouts = [];
 
   bool _isLoading = false;
   bool _isProcessing = false;
@@ -30,6 +33,8 @@ class PaymentProvider extends ChangeNotifier {
 
   List<InvoiceModel> get myInvoices => _myInvoices;
   List<PaymentModel> get myPayments => _myPayments;
+  ProviderEarningsSummaryModel? get providerEarningsSummary => _providerEarningsSummary;
+  List<PayoutModel> get providerPayouts => _providerPayouts;
 
   InvoiceModel? getInvoiceForBooking(String bookingId) => _invoicesByBooking[bookingId];
 
@@ -254,6 +259,43 @@ class PaymentProvider extends ChangeNotifier {
       _isProcessing = false;
       notifyListeners();
       return null;
+    }
+  }
+
+  /// Fetches real provider earnings summary from backend ledger.
+  Future<void> fetchProviderEarningsSummary() async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final summary = await paymentRepo.getProviderEarningsSummary();
+      if (summary != null) {
+        _providerEarningsSummary = summary;
+      }
+      _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      _errorMessage = e.toString();
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// Fetches real provider payout history from backend ledger.
+  Future<void> fetchProviderPayouts() async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      _providerPayouts = await paymentRepo.getProviderPayoutHistory();
+      _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      _errorMessage = e.toString();
+      _isLoading = false;
+      notifyListeners();
     }
   }
 }

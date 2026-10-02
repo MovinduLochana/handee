@@ -6,6 +6,7 @@ using handee.API.Entities;
 using handee.API.Interfaces;
 using handee.API.Repositories;
 using handee.API.Services;
+using handee.API.Workers;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
@@ -15,7 +16,11 @@ using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using StackExchange.Redis;
 
+
+
 var builder = WebApplication.CreateBuilder(args);
+
+Console.WriteLine($"Environment: {builder.Environment.EnvironmentName}");
 
 builder.Services.AddCors(options =>
 {
@@ -124,6 +129,8 @@ builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IAgentWorkflowService, AgentWorkflowService>();
 builder.Services.AddScoped<IJobRequestService, JobRequestService>();
 builder.Services.AddScoped<IBookingService, BookingService>();
+builder.Services.AddScoped<IBookingExpirationService, BookingExpirationService>();
+builder.Services.AddHostedService<BookingExpirationWorker>();
 builder.Services.AddScoped<IServiceCategoryService, ServiceCategoryService>();
 builder.Services.AddScoped<IServiceListingService, ServiceListingService>();
 builder.Services.AddScoped<IProviderAvailabilityService, ProviderAvailabilityService>();

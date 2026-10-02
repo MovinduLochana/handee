@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import '../../core/constants/api_endpoints.dart';
 import '../../core/network/api_client.dart';
 import '../models/booking_model.dart';
@@ -23,6 +24,73 @@ class BookingRepository {
       return response.map((e) => BookingModel.fromJson(e as Map<String, dynamic>)).toList();
     }
     return [];
+  }
+
+  Future<List<BookingModel>> getProviderBookingRequests() async {
+    // 1. Primary endpoint: /api/provider/booking-requests
+    try {
+      final response = await apiClient.get(ApiEndpoints.providerBookingRequests);
+      if (response is List) {
+        return response
+            .map((e) => BookingModel.fromJson(e as Map<String, dynamic>))
+            .where((b) => b.isScheduled && b.isRequested)
+            .toList();
+      }
+    } catch (e) {
+      debugPrint('Error fetching from ${ApiEndpoints.providerBookingRequests}: $e');
+    }
+
+    // 2. Route fallback: /bookings/provider-requests
+    try {
+      final altResponse = await apiClient.get('/bookings/provider-requests');
+      if (altResponse is List) {
+        return altResponse
+            .map((e) => BookingModel.fromJson(e as Map<String, dynamic>))
+            .where((b) => b.isScheduled && b.isRequested)
+            .toList();
+      }
+    } catch (_) {}
+
+    // 3. Server deployment fallback: /bookings/provider-offers (deployed on live Azure, returning requested bookings)
+    try {
+      final legacyResponse = await apiClient.get('/bookings/provider-offers');
+      if (legacyResponse is List) {
+        return legacyResponse
+            .map((e) => BookingModel.fromJson(e as Map<String, dynamic>))
+            .where((b) => b.isScheduled && b.isRequested)
+            .toList();
+      }
+    } catch (_) {}
+
+    return [];
+  }
+
+  Future<BookingModel> confirmBooking(String bookingId) async {
+    try {
+      final response = await apiClient.post(ApiEndpoints.confirmBooking(bookingId));
+      if (response is Map<String, dynamic>) {
+        return BookingModel.fromJson(response);
+      }
+    } catch (_) {
+      // Graceful fallback to PUT /bookings/{id}/status if dedicated confirm endpoint is unavailable
+      return await updateBookingStatus(bookingId, 'Accepted');
+    }
+    final updated = await getBookingById(bookingId);
+    if (updated != null) return updated;
+    throw ApiException(statusCode: 500, message: 'Failed to confirm booking');
+  }
+
+  Future<BookingModel> declineBooking(String bookingId, {String? reason}) async {
+    final response = await apiClient.post(
+      ApiEndpoints.declineBooking(bookingId),
+      body: reason != null ? {'reason': reason} : null,
+    );
+    if (response is Map<String, dynamic>) {
+      return BookingModel.fromJson(response);
+    }
+    final updated = await getBookingById(bookingId);
+    if (updated != null) return updated;
+    throw ApiException(statusCode: 500, message: 'Failed to decline booking');
   }
 
   Future<BookingModel?> getBookingById(String id) async {

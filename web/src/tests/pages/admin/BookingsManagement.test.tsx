@@ -86,7 +86,7 @@ describe("BookingsManagement", () => {
     renderPage();
     await screen.findByText("3f2c9d1e");
 
-    expect(optionsFor("3f2c9d1e")).toEqual(["Accepted", "Disputed"]);
+    expect(optionsFor("3f2c9d1e")).toEqual(["Accepted", "Disputed", "Expired", "Declined"]);
     expect(optionsFor("c0000000")).toEqual(["Disputed"]);
     expect(optionsFor("d0000000")).toEqual(["Requested", "Accepted", "InProgress", "Completed"]);
   });

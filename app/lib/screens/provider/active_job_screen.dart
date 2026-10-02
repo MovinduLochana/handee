@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/colors.dart';
+import '../../core/utils/external_launcher_helper.dart';
 import '../../data/models/booking_model.dart';
 import '../../providers/booking_provider.dart';
 import '../../widgets/custom_button.dart';
@@ -83,7 +84,9 @@ class _ActiveJobScreenState extends State<ActiveJobScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        _booking.jobRequest?.categoryName ?? 'Plumbing Repair',
+                        _booking.category?.isNotEmpty == true
+                            ? _booking.category!
+                            : (_booking.jobRequest?.categoryName ?? 'Field Service'),
                         style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
                       ),
                       StatusBadge(status: _booking.status),
@@ -91,7 +94,9 @@ class _ActiveJobScreenState extends State<ActiveJobScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    _booking.jobRequest?.description ?? 'Immediate repair required',
+                    _booking.description?.isNotEmpty == true
+                        ? _booking.description!
+                        : (_booking.jobRequest?.description ?? 'Immediate repair required'),
                     style: const TextStyle(fontSize: 13, color: AppColors.textSecondary, height: 1.4),
                   ),
                   const SizedBox(height: 14),
@@ -152,22 +157,20 @@ class _ActiveJobScreenState extends State<ActiveJobScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              _booking.customerName ?? 'Kasun Perera',
+                              _booking.customerName ?? 'Customer',
                               style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
                             ),
                             Text(
-                              _booking.customerPhone ?? '+94 77 123 4567',
+                              _booking.customerPhone ?? 'No phone provided',
                               style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
                             ),
                           ],
                         ),
                       ),
                       IconButton(
-                        onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Calling ${_booking.customerPhone ?? '+94 77 123 4567'}...')),
-                          );
-                        },
+                        key: const Key('active_job_call_button'),
+                        tooltip: 'Call Customer',
+                        onPressed: () => ExternalLauncherHelper.launchPhoneCall(context, _booking.customerPhone),
                         icon: const Icon(Icons.phone, color: AppColors.primary),
                       ),
                     ],
@@ -177,14 +180,27 @@ class _ActiveJobScreenState extends State<ActiveJobScreen> {
                   const SizedBox(height: 12),
                   Row(
                     children: [
-                      const Icon(Icons.location_on, size: 16, color: AppColors.primary),
+                      const Icon(Icons.location_on, size: 18, color: AppColors.primary),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          _booking.serviceLocation ?? 'No. 42, Flower Road, Colombo 07',
+                          _booking.serviceLocation?.isNotEmpty == true
+                              ? _booking.serviceLocation!
+                              : 'Service location not specified',
                           style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
                         ),
                       ),
+                      if (_booking.serviceLocation != null && _booking.serviceLocation!.isNotEmpty)
+                        TextButton.icon(
+                          key: const Key('active_job_navigate_button'),
+                          style: TextButton.styleFrom(
+                            visualDensity: VisualDensity.compact,
+                            foregroundColor: AppColors.primary,
+                          ),
+                          onPressed: () => ExternalLauncherHelper.launchMapNavigation(context, _booking.serviceLocation),
+                          icon: const Icon(Icons.navigation, size: 14),
+                          label: const Text('Directions', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                        ),
                     ],
                   ),
                 ],

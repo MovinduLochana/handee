@@ -19,4 +19,22 @@ public interface IBookingNotificationService
         string category,
         decimal? estimatedPrice,
         CancellationToken ct = default);
+
+    Task NotifyInstantJobDispatchedAsync(
+        Guid providerId,
+        Guid bookingId,
+        Guid jobRequestId,
+        string category,
+        decimal? estimatedPrice,
+        int expiresAtSeconds,
+        CancellationToken ct = default);
+
+    Task NotifyScheduledBookingRequestedAsync(
+        Guid providerId,
+        Guid bookingId,
+        string categoryName,
+        DateTimeOffset scheduledAt,
+        decimal price,
+        int remainingSeconds,
+        CancellationToken ct = default);
 }

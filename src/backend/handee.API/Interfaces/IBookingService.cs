@@ -13,6 +13,8 @@ public interface IBookingService
     Task<List<BookingResponseDto>> GetForCustomerAsync(Guid customerId);
     Task<List<BookingResponseDto>> GetForProviderAsync(Guid providerId);
     Task<List<BookingResponseDto>> GetProviderOffersAsync(Guid providerId);
+    Task<List<BookingResponseDto>> GetProviderInstantOffersAsync(Guid providerId, CancellationToken ct = default);
+    Task<List<BookingResponseDto>> GetProviderScheduledRequestsAsync(Guid providerId, CancellationToken ct = default);
 
     Task<PagedResult<BookingResponseDto>> GetForStaffAsync(
         BookingStatus? status,
@@ -28,4 +30,7 @@ public interface IBookingService
 
     Task<BookingResponseDto> CreateFromListingAsync(
         CreateListingBookingDto dto, Guid customerId, CancellationToken ct = default);
+
+    Task<BookingResponseDto> DeclineBookingAsync(
+        Guid bookingId, Guid providerId, string? reason = null, CancellationToken ct = default);
 }

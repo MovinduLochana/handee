@@ -17,7 +17,7 @@ class ApiEndpoints {
   static const String customApiUrl = String.fromEnvironment('API_URL', defaultValue: '');
   static const bool useLocal = bool.fromEnvironment('USE_LOCAL', defaultValue: false);
   static const bool usePhysicalDevice = bool.fromEnvironment('DEVICE', defaultValue: false);
-  static const String physicalDeviceIp = '192.168.1.3';
+  static const String physicalDeviceIp = '192.168.1.2';
 
   static String get defaultHost {
     if (kIsWeb) return 'localhost';
@@ -55,9 +55,13 @@ class ApiEndpoints {
   static const String bookings = '/bookings';
   static const String customerBookings = '/bookings/mine';
   static const String providerBookings = '/bookings/provider-mine';
+  static const String providerInstantOffers = '/api/provider/instant-offers';
+  static const String providerBookingRequests = '/api/provider/booking-requests';
   static String bookingById(String id) => '/bookings/$id';
   static String updateBookingStatus(String id) => '/bookings/$id/status';
   static String updateBookingSchedule(String id) => '/bookings/$id/schedule';
+  static String confirmBooking(String id) => '/api/provider/bookings/$id/confirm';
+  static String declineBooking(String id) => '/api/provider/bookings/$id/decline';
 
   // AI Assistant (backend-mediated endpoint per Single Public Backend rule)
   static const String assistantQuery = '/assistant/query';
@@ -85,6 +89,8 @@ class ApiEndpoints {
   static String paymentById(String id) => '/payments/$id';
   static String paymentByInvoiceId(String invoiceId) => '/payments/invoice/$invoiceId';
 
-  static const String providerPayouts = '/payouts/provider';
-  static const String providerPayoutSummary = '/payouts/provider/summary';
+  static const String providerPayouts = '/api/payouts/history';
+  static const String providerPayoutSummary = '/api/payouts/summary';
+  static String providerPayoutsByProvider(String providerId) => '/api/payouts/provider/$providerId';
+  static String providerPayoutSummaryByProvider(String providerId) => '/api/payouts/provider/$providerId/summary';
 }
