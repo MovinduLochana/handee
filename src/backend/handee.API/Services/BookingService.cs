@@ -477,6 +477,9 @@ public class BookingService : IBookingService
                 BookingType = BookingType.Scheduled,
                 ExpiresAt = expiresAt,
                 ScheduledAt = startTime,
+                ServiceLocation = !string.IsNullOrWhiteSpace(dto.ServiceLocation) ? dto.ServiceLocation.Trim() : null,
+                Latitude = dto.Latitude,
+                Longitude = dto.Longitude,
                 Notes = dto.Notes,
                 CreatedAt = now,
                 ServiceListing = listing,
@@ -618,7 +621,7 @@ public class BookingService : IBookingService
             CustomerName: b.Customer?.FullName,
             CustomerPhone: b.Customer?.PhoneNumber,
             ProviderName: b.Provider?.FullName,
-            ServiceLocation: b.JobRequest?.Location,
+            ServiceLocation: b.ServiceLocation ?? b.JobRequest?.Location,
             Price: b.ServiceListing?.FixedPrice ?? b.JobRequest?.BudgetMax ?? b.JobRequest?.BudgetMin ?? 3500m,
             Category: b.JobRequest?.ServiceCategory?.Name ?? b.ServiceListing?.Category?.Name,
             Description: b.JobRequest?.Description ?? b.ServiceListing?.Title ?? b.ServiceListing?.Description,
@@ -626,6 +629,8 @@ public class BookingService : IBookingService
             DurationHours: b.ServiceListing != null && b.ServiceListing.DurationHours > 0 ? b.ServiceListing.DurationHours : 1,
             BookingType: b.BookingType.ToString(),
             ExpiresAt: b.ExpiresAt,
-            RemainingSeconds: remainingSeconds);
+            RemainingSeconds: remainingSeconds,
+            Latitude: b.Latitude,
+            Longitude: b.Longitude);
     }
 }

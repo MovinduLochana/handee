@@ -5,5 +5,8 @@ namespace handee.API.DTO;
 public record CreateListingBookingDto(
     [Required] Guid ServiceListingId,
     [Required] DateTimeOffset ScheduledAt,
-    string? Notes = null
+    string? Notes = null,
+    string? ServiceLocation = null,
+    double? Latitude = null,
+    double? Longitude = null
 );

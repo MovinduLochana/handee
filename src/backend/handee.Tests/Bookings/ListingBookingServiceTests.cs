@@ -373,4 +373,34 @@ public class ListingBookingServiceTests
         var result2 = await sut.CreateFromListingAsync(nonOverlappingDto, Guid.NewGuid());
         Assert.NotNull(result2);
     }
+
+    [Fact]
+    public async Task CreateFromListingAsync_WithLocationAndCoordinates_PersistsAndReturnsLocation()
+    {
+        var (db, listing, customerId, _) = await SeedListingAsync(isActive: true);
+        var sut = new BookingService(db);
+
+        var dto = new CreateListingBookingDto(
+            listing.Id,
+            UtcTime(1, 10),
+            Notes: "House behind temple",
+            ServiceLocation: "No. 42, Galle Road, Colombo 03",
+            Latitude: 6.9056,
+            Longitude: 79.8622
+        );
+
+        var result = await sut.CreateFromListingAsync(dto, customerId);
+
+        Assert.NotNull(result);
+        Assert.Equal("No. 42, Galle Road, Colombo 03", result.ServiceLocation);
+        Assert.Equal(6.9056, result.Latitude);
+        Assert.Equal(79.8622, result.Longitude);
+
+        // Verify persisted in DB
+        var persisted = await db.Bookings.FindAsync(result.Id);
+        Assert.NotNull(persisted);
+        Assert.Equal("No. 42, Galle Road, Colombo 03", persisted.ServiceLocation);
+        Assert.Equal(6.9056, persisted.Latitude);
+        Assert.Equal(79.8622, persisted.Longitude);
+    }
 }
