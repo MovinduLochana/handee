@@ -60,6 +60,8 @@ const BOOKING_KEYS = exactKeys<BookingResponseDto>()([
   "bookingType",
   "expiresAt",
   "remainingSeconds",
+  "latitude",
+  "longitude",
 ]);
 
 const JOB_REQUEST_KEYS = exactKeys<JobRequestResponseDto>()([
@@ -96,6 +98,9 @@ const CREATE_LISTING_BOOKING_DTO_KEYS = exactKeys<CreateListingBookingDto>()([
   "serviceListingId",
   "scheduledAt",
   "notes",
+  "serviceLocation",
+  "latitude",
+  "longitude",
 ]);
 
 // ─── Runtime: compare against the real C# source ────────────────────────────
