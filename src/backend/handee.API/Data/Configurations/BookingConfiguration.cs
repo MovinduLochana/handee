@@ -32,11 +32,21 @@ public class BookingConfiguration : IEntityTypeConfiguration<Booking>
             .HasMaxLength(20)
             .IsRequired();
 
+        builder.Property(b => b.BookingType)
+            .HasConversion<string>()
+            .HasMaxLength(20)
+            .HasDefaultValue(BookingType.Scheduled)
+            .IsRequired();
+
+        builder.Property(b => b.ExpiresAt)
+            .IsRequired(false);
+
         builder.HasOne(b => b.ServiceListing)
             .WithMany()
             .HasForeignKey(b => b.ServiceListingId)
             .OnDelete(DeleteBehavior.SetNull);
 
         builder.HasIndex(b => b.Status);
+        builder.HasIndex(b => b.BookingType);
     }
 }

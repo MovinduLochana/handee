@@ -279,9 +279,16 @@ public class ListingBookingServiceTests
         var customerBookings = await sut.GetForCustomerAsync(customerId);
         Assert.Contains(customerBookings, b => b.Id == created.Id);
 
-        // Appears in provider's offers (since status is Requested)
+        // Appears in provider's scheduled requests (status Requested, type Scheduled)
+        var providerRequests = await sut.GetProviderScheduledRequestsAsync(providerId);
+        Assert.Contains(providerRequests, b => b.Id == created.Id);
+
+        // Does NOT appear in provider's instant offers
         var providerOffers = await sut.GetProviderOffersAsync(providerId);
-        Assert.Contains(providerOffers, b => b.Id == created.Id);
+        Assert.DoesNotContain(providerOffers, b => b.Id == created.Id);
+
+        var providerInstantOffers = await sut.GetProviderInstantOffersAsync(providerId);
+        Assert.DoesNotContain(providerInstantOffers, b => b.Id == created.Id);
 
         // Appears in provider's all bookings
         var providerBookings = await sut.GetForProviderAsync(providerId);
@@ -301,14 +308,25 @@ public class ListingBookingServiceTests
         var created = await sut.CreateFromListingAsync(dto, customerId);
 
         mockNotificationService.Verify(
-            n => n.NotifyJobDispatchedAsync(
+            n => n.NotifyScheduledBookingRequestedAsync(
                 providerId,
                 created.Id,
-                null,
                 listing.Category.Name,
+                created.ScheduledAt!.Value,
                 listing.FixedPrice,
+                It.IsAny<int>(),
                 It.IsAny<CancellationToken>()),
             Times.Once);
+
+        mockNotificationService.Verify(
+            n => n.NotifyJobDispatchedAsync(
+                It.IsAny<Guid>(),
+                It.IsAny<Guid>(),
+                It.IsAny<Guid?>(),
+                It.IsAny<string>(),
+                It.IsAny<decimal?>(),
+                It.IsAny<CancellationToken>()),
+            Times.Never);
     }
       
     [Fact]  

@@ -6,12 +6,22 @@ public enum BookingStatus
     Accepted,
     InProgress,
     Completed,
-    Disputed
+    Disputed,
+    Expired,
+    Declined
+}
+
+public enum BookingType
+{
+    Scheduled,
+    InstantMatch
 }
 
 public class Booking
 {
     public Guid Id { get; set; } = Guid.NewGuid();
+
+    public BookingType BookingType { get; set; } = BookingType.Scheduled;
 
     public Guid? JobRequestId { get; set; }
 
@@ -39,6 +49,8 @@ public class Booking
     // Nullable: a booking can exist before a time is confirmed (e.g. still
     // Requested, awaiting provider acceptance).
     public DateTimeOffset? ScheduledAt { get; set; }
+
+    public DateTimeOffset? ExpiresAt { get; set; }
 
     public string? Notes { get; set; }
 

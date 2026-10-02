@@ -48,7 +48,7 @@ public class BookingService : IBookingService
     /// </summary>
     private static readonly Dictionary<BookingStatus, BookingStatus[]> LegalTransitions = new()
     {
-        [BookingStatus.Requested] = [BookingStatus.Accepted, BookingStatus.Disputed],
+        [BookingStatus.Requested] = [BookingStatus.Accepted, BookingStatus.Disputed, BookingStatus.Expired, BookingStatus.Declined],
         [BookingStatus.Accepted] = [BookingStatus.InProgress, BookingStatus.Disputed],
         [BookingStatus.InProgress] = [BookingStatus.Completed, BookingStatus.Disputed],
         [BookingStatus.Completed] = [BookingStatus.Disputed],
@@ -57,6 +57,8 @@ public class BookingService : IBookingService
             BookingStatus.Requested, BookingStatus.Accepted,
             BookingStatus.InProgress, BookingStatus.Completed
         ],
+        [BookingStatus.Expired] = [],
+        [BookingStatus.Declined] = [],
     };
 
     private enum RequiredParty { ProviderOnly, CustomerOrProvider }
@@ -67,6 +69,8 @@ public class BookingService : IBookingService
     private static readonly Dictionary<(BookingStatus From, BookingStatus To), RequiredParty> TransitionAuthorization = new()
     {
         [(BookingStatus.Requested, BookingStatus.Accepted)] = RequiredParty.ProviderOnly,
+        [(BookingStatus.Requested, BookingStatus.Declined)] = RequiredParty.ProviderOnly,
+        [(BookingStatus.Requested, BookingStatus.Expired)] = RequiredParty.CustomerOrProvider,
         [(BookingStatus.Accepted, BookingStatus.InProgress)] = RequiredParty.ProviderOnly,
         [(BookingStatus.InProgress, BookingStatus.Completed)] = RequiredParty.ProviderOnly,
         [(BookingStatus.Requested, BookingStatus.Disputed)] = RequiredParty.CustomerOrProvider,
@@ -99,15 +103,20 @@ public class BookingService : IBookingService
         return ToDto(booking);
     }
 
-    public async Task<List<BookingResponseDto>> GetForCustomerAsync(Guid customerId)
+    private IQueryable<Booking> QueryBookingsWithDetails()
     {
-        var bookings = await _db.Bookings
+        return _db.Bookings
             .Include(b => b.Customer)
             .Include(b => b.Provider)
             .Include(b => b.JobRequest)
                 .ThenInclude(j => j!.ServiceCategory)
             .Include(b => b.ServiceListing)
-                .ThenInclude(l => l!.Category)
+                .ThenInclude(l => l!.Category);
+    }
+
+    public async Task<List<BookingResponseDto>> GetForCustomerAsync(Guid customerId)
+    {
+        var bookings = await QueryBookingsWithDetails()
             .Where(b => b.CustomerId == customerId)
             .OrderByDescending(b => b.CreatedAt)
             .ToListAsync();
@@ -117,13 +126,7 @@ public class BookingService : IBookingService
 
     public async Task<List<BookingResponseDto>> GetForProviderAsync(Guid providerId)
     {
-        var bookings = await _db.Bookings
-            .Include(b => b.Customer)
-            .Include(b => b.Provider)
-            .Include(b => b.JobRequest)
-                .ThenInclude(j => j!.ServiceCategory)
-            .Include(b => b.ServiceListing)
-                .ThenInclude(l => l!.Category)
+        var bookings = await QueryBookingsWithDetails()
             .Where(b => b.ProviderId == providerId)
             .OrderByDescending(b => b.CreatedAt)
             .ToListAsync();
@@ -133,16 +136,33 @@ public class BookingService : IBookingService
 
     public async Task<List<BookingResponseDto>> GetProviderOffersAsync(Guid providerId)
     {
-        var bookings = await _db.Bookings
-            .Include(b => b.Customer)
-            .Include(b => b.Provider)
-            .Include(b => b.JobRequest)
-                .ThenInclude(j => j!.ServiceCategory)
-            .Include(b => b.ServiceListing)
-                .ThenInclude(l => l!.Category)
-            .Where(b => b.ProviderId == providerId && b.Status == BookingStatus.Requested)
+        return await GetProviderInstantOffersAsync(providerId);
+    }
+
+    public async Task<List<BookingResponseDto>> GetProviderInstantOffersAsync(Guid providerId, CancellationToken ct = default)
+    {
+        var now = DateTimeOffset.UtcNow;
+        var bookings = await QueryBookingsWithDetails()
+            .Where(b => b.ProviderId == providerId
+                        && b.BookingType == BookingType.InstantMatch
+                        && b.Status == BookingStatus.Requested
+                        && (b.ExpiresAt == null || b.ExpiresAt > now))
             .OrderByDescending(b => b.CreatedAt)
-            .ToListAsync();
+            .ToListAsync(ct);
+
+        return bookings.Select(ToDto).ToList();
+    }
+
+    public async Task<List<BookingResponseDto>> GetProviderScheduledRequestsAsync(Guid providerId, CancellationToken ct = default)
+    {
+        var now = DateTimeOffset.UtcNow;
+        var bookings = await QueryBookingsWithDetails()
+            .Where(b => b.ProviderId == providerId
+                        && b.BookingType == BookingType.Scheduled
+                        && b.Status == BookingStatus.Requested
+                        && (b.ExpiresAt == null || b.ExpiresAt > now))
+            .OrderBy(b => b.ScheduledAt)
+            .ToListAsync(ct);
 
         return bookings.Select(ToDto).ToList();
     }
@@ -440,6 +460,13 @@ public class BookingService : IBookingService
 
             var customer = await _db.Users.FindAsync([customerId], ct);
 
+            var now = DateTimeOffset.UtcNow;
+            var defaultExpiresAt = now.AddHours(24);
+            var capAtTwoHoursBeforeScheduled = startTime.AddHours(-2);
+            var expiresAt = defaultExpiresAt < capAtTwoHoursBeforeScheduled
+                ? defaultExpiresAt
+                : (capAtTwoHoursBeforeScheduled > now ? capAtTwoHoursBeforeScheduled : now.AddMinutes(30));
+
             booking = new Booking
             {
                 Id = Guid.NewGuid(),
@@ -447,9 +474,11 @@ public class BookingService : IBookingService
                 ProviderId = listing.ProviderId,
                 CustomerId = customerId,
                 Status = BookingStatus.Requested,
+                BookingType = BookingType.Scheduled,
+                ExpiresAt = expiresAt,
                 ScheduledAt = startTime,
                 Notes = dto.Notes,
-                CreatedAt = DateTimeOffset.UtcNow,
+                CreatedAt = now,
                 ServiceListing = listing,
                 Provider = listing.Provider,
                 Customer = customer!
@@ -497,12 +526,17 @@ public class BookingService : IBookingService
         {
             try
             {
-                await _notificationService.NotifyJobDispatchedAsync(
+                var remaining = booking.ExpiresAt.HasValue
+                    ? (int)Math.Max(0, (booking.ExpiresAt.Value - DateTimeOffset.UtcNow).TotalSeconds)
+                    : 86400;
+
+                await _notificationService.NotifyScheduledBookingRequestedAsync(
                     listing.ProviderId,
                     booking.Id,
-                    null,
                     listing.Category?.Name ?? listing.Title,
+                    booking.ScheduledAt!.Value,
                     listing.FixedPrice,
+                    remaining,
                     ct);
             }
             catch
@@ -514,23 +548,84 @@ public class BookingService : IBookingService
         return ToDto(booking);
     }
 
-    private static BookingResponseDto ToDto(Booking b) => new(
-        b.Id,
-        b.JobRequestId,
-        b.ServiceListingId,
-        b.ProviderId,
-        b.CustomerId,
-        b.Status.ToString(),
-        b.ScheduledAt,
-        b.CreatedAt,
-        b.UpdatedAt,
-        CustomerName: b.Customer?.FullName,
-        CustomerPhone: b.Customer?.PhoneNumber,
-        ProviderName: b.Provider?.FullName,
-        ServiceLocation: b.JobRequest?.Location,
-        Price: b.ServiceListing?.FixedPrice ?? b.JobRequest?.BudgetMax ?? b.JobRequest?.BudgetMin ?? 3500m,
-        Category: b.JobRequest?.ServiceCategory?.Name ?? b.ServiceListing?.Category?.Name,
-        Description: b.JobRequest?.Description ?? b.ServiceListing?.Title ?? b.ServiceListing?.Description,
-        Notes: b.Notes,
-        DurationHours: b.ServiceListing != null && b.ServiceListing.DurationHours > 0 ? b.ServiceListing.DurationHours : 1);
+    public async Task<BookingResponseDto> DeclineBookingAsync(
+        Guid bookingId, Guid providerId, string? reason = null, CancellationToken ct = default)
+    {
+        var booking = await QueryBookingsWithDetails()
+            .FirstOrDefaultAsync(b => b.Id == bookingId, ct)
+            ?? throw new NotFoundException("Booking not found.");
+
+        if (booking.ProviderId != providerId)
+        {
+            throw new NotFoundException("Booking not found.");
+        }
+
+        if (booking.Status != BookingStatus.Requested)
+        {
+            throw new ValidationException($"Cannot decline booking with status '{booking.Status}'.");
+        }
+
+        booking.Status = BookingStatus.Declined;
+        if (!string.IsNullOrWhiteSpace(reason))
+        {
+            booking.Notes = string.IsNullOrWhiteSpace(booking.Notes)
+                ? $"Declined reason: {reason.Trim()}"
+                : $"{booking.Notes}\n[Declined reason: {reason.Trim()}]";
+        }
+        booking.UpdatedAt = DateTimeOffset.UtcNow;
+
+        await _db.SaveChangesAsync(ct);
+
+        if (_notificationService != null)
+        {
+            try
+            {
+                await _notificationService.NotifyBookingStatusChangedAsync(
+                    booking.Id,
+                    booking.CustomerId,
+                    booking.ProviderId,
+                    booking.Status,
+                    booking.UpdatedAt.Value,
+                    ct);
+            }
+            catch
+            {
+            }
+        }
+
+        return ToDto(booking);
+    }
+
+    private static BookingResponseDto ToDto(Booking b)
+    {
+        int? remainingSeconds = null;
+        if (b.ExpiresAt.HasValue)
+        {
+            var diff = (int)Math.Max(0, (b.ExpiresAt.Value - DateTimeOffset.UtcNow).TotalSeconds);
+            remainingSeconds = diff;
+        }
+
+        return new(
+            b.Id,
+            b.JobRequestId,
+            b.ServiceListingId,
+            b.ProviderId,
+            b.CustomerId,
+            b.Status.ToString(),
+            b.ScheduledAt,
+            b.CreatedAt,
+            b.UpdatedAt,
+            CustomerName: b.Customer?.FullName,
+            CustomerPhone: b.Customer?.PhoneNumber,
+            ProviderName: b.Provider?.FullName,
+            ServiceLocation: b.JobRequest?.Location,
+            Price: b.ServiceListing?.FixedPrice ?? b.JobRequest?.BudgetMax ?? b.JobRequest?.BudgetMin ?? 3500m,
+            Category: b.JobRequest?.ServiceCategory?.Name ?? b.ServiceListing?.Category?.Name,
+            Description: b.JobRequest?.Description ?? b.ServiceListing?.Title ?? b.ServiceListing?.Description,
+            Notes: b.Notes,
+            DurationHours: b.ServiceListing != null && b.ServiceListing.DurationHours > 0 ? b.ServiceListing.DurationHours : 1,
+            BookingType: b.BookingType.ToString(),
+            ExpiresAt: b.ExpiresAt,
+            RemainingSeconds: remainingSeconds);
+    }
 }
