@@ -334,7 +334,12 @@ class BookingCard extends StatelessWidget {
                       icon: const Icon(Icons.directions_outlined, size: 18, color: AppColors.primary),
                       tooltip: 'Directions',
                       visualDensity: VisualDensity.compact,
-                      onPressed: () => ExternalLauncherHelper.launchMapNavigation(context, booking.serviceLocation),
+                      onPressed: () => ExternalLauncherHelper.launchMapNavigation(
+                        context,
+                        booking.serviceLocation,
+                        latitude: booking.latitude,
+                        longitude: booking.longitude,
+                      ),
                     ),
                 ],
                 if (booking.price != null) ...[

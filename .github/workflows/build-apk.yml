@@ -84,6 +84,8 @@ jobs:
             flutter build apk --release
           fi
         working-directory: app
+        env:
+          MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
 
       - name: Prepare Named APK Asset
         shell: bash

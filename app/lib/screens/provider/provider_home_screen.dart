@@ -59,54 +59,57 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
           color: Colors.white,
           border: Border(top: BorderSide(color: AppColors.borderLight, width: 1)),
         ),
-        child: BottomNavigationBar(
-          currentIndex: _currentIndex,
-          onTap: (index) => setState(() => _currentIndex = index),
-          type: BottomNavigationBarType.fixed,
-          backgroundColor: Colors.white,
-          selectedItemColor: AppColors.primary,
-          unselectedItemColor: AppColors.textMuted,
-          selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
-          unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 12),
-          elevation: 0,
-          items: [
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.dashboard_outlined),
-              activeIcon: Icon(Icons.dashboard),
-              label: 'Dashboard',
-            ),
-            BottomNavigationBarItem(
-              icon: Badge(
-                isLabelVisible: pendingOffers > 0,
-                label: Text(pendingOffers.toString()),
-                child: const Icon(Icons.flash_on_outlined),
+        child: SafeArea(
+          top: false,
+          child: BottomNavigationBar(
+            currentIndex: _currentIndex,
+            onTap: (index) => setState(() => _currentIndex = index),
+            type: BottomNavigationBarType.fixed,
+            backgroundColor: Colors.white,
+            selectedItemColor: AppColors.primary,
+            unselectedItemColor: AppColors.textMuted,
+            selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+            unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 12),
+            elevation: 0,
+            items: [
+              const BottomNavigationBarItem(
+                icon: Icon(Icons.dashboard_outlined),
+                activeIcon: Icon(Icons.dashboard),
+                label: 'Dashboard',
               ),
-              activeIcon: Badge(
-                isLabelVisible: pendingOffers > 0,
-                label: Text(pendingOffers.toString()),
-                child: const Icon(Icons.flash_on),
+              BottomNavigationBarItem(
+                icon: Badge(
+                  isLabelVisible: pendingOffers > 0,
+                  label: Text(pendingOffers.toString()),
+                  child: const Icon(Icons.flash_on_outlined),
+                ),
+                activeIcon: Badge(
+                  isLabelVisible: pendingOffers > 0,
+                  label: Text(pendingOffers.toString()),
+                  child: const Icon(Icons.flash_on),
+                ),
+                label: 'Dispatch',
               ),
-              label: 'Dispatch',
-            ),
-            BottomNavigationBarItem(
-              icon: Badge(
-                isLabelVisible: pendingRequests > 0,
-                label: Text(pendingRequests.toString()),
-                child: const Icon(Icons.work_outline),
+              BottomNavigationBarItem(
+                icon: Badge(
+                  isLabelVisible: pendingRequests > 0,
+                  label: Text(pendingRequests.toString()),
+                  child: const Icon(Icons.work_outline),
+                ),
+                activeIcon: Badge(
+                  isLabelVisible: pendingRequests > 0,
+                  label: Text(pendingRequests.toString()),
+                  child: const Icon(Icons.work),
+                ),
+                label: 'My Jobs',
               ),
-              activeIcon: Badge(
-                isLabelVisible: pendingRequests > 0,
-                label: Text(pendingRequests.toString()),
-                child: const Icon(Icons.work),
+              const BottomNavigationBarItem(
+                icon: Icon(Icons.person_outline),
+                activeIcon: Icon(Icons.person),
+                label: 'Profile',
               ),
-              label: 'My Jobs',
-            ),
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.person_outline),
-              activeIcon: Icon(Icons.person),
-              label: 'Profile',
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -620,7 +623,12 @@ class _ProviderDashboardTab extends StatelessWidget {
                           Expanded(
                             child: OutlinedButton.icon(
                               key: const Key('dashboard_navigate_button'),
-                              onPressed: () => ExternalLauncherHelper.launchMapNavigation(context, activeBooking.serviceLocation),
+                              onPressed: () => ExternalLauncherHelper.launchMapNavigation(
+                                context,
+                                activeBooking.serviceLocation,
+                                latitude: activeBooking.latitude,
+                                longitude: activeBooking.longitude,
+                              ),
                               icon: const Icon(Icons.navigation_outlined, size: 16),
                               label: const Text('Directions'),
                               style: OutlinedButton.styleFrom(

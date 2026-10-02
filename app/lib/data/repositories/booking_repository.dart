@@ -138,6 +138,9 @@ class BookingRepository {
   Future<BookingModel> createBookingFromListing({
     required String serviceListingId,
     required DateTime scheduledAt,
+    String? serviceLocation,
+    double? latitude,
+    double? longitude,
     String? notes,
   }) async {
     final response = await apiClient.post(
@@ -145,6 +148,9 @@ class BookingRepository {
       body: {
         'serviceListingId': serviceListingId,
         'scheduledAt': scheduledAt.toUtc().toIso8601String(),
+        if (serviceLocation != null && serviceLocation.isNotEmpty) 'serviceLocation': serviceLocation,
+        'latitude': ?latitude,
+        'longitude': ?longitude,
         if (notes != null && notes.isNotEmpty) 'notes': notes,
       },
     );

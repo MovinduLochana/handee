@@ -17,6 +17,8 @@ class BookingModel {
   final String? customerPhone;
   final String? providerName;
   final String? serviceLocation;
+  final double? latitude;
+  final double? longitude;
   final double? price;
 
   /// Flat fields on BookingResponseDto, resolved server-side from the linked
@@ -46,6 +48,8 @@ class BookingModel {
     this.customerPhone,
     this.providerName,
     this.serviceLocation,
+    this.latitude,
+    this.longitude,
     this.price,
     this.category,
     this.description,
@@ -161,6 +165,8 @@ class BookingModel {
       customerPhone: json['customerPhone']?.toString() ?? json['CustomerPhone']?.toString(),
       providerName: json['providerName']?.toString() ?? json['ProviderName']?.toString(),
       serviceLocation: json['serviceLocation']?.toString() ?? json['ServiceLocation']?.toString(),
+      latitude: (json['latitude'] as num?)?.toDouble() ?? (json['Latitude'] as num?)?.toDouble(),
+      longitude: (json['longitude'] as num?)?.toDouble() ?? (json['Longitude'] as num?)?.toDouble(),
       price: (json['price'] as num?)?.toDouble() ?? (json['Price'] as num?)?.toDouble(),
       category: json['category']?.toString() ?? json['Category']?.toString(),
       description: json['description']?.toString() ?? json['Description']?.toString(),
@@ -192,6 +198,8 @@ class BookingModel {
       'customerPhone': customerPhone,
       'providerName': providerName,
       'serviceLocation': serviceLocation,
+      'latitude': latitude,
+      'longitude': longitude,
       'price': price,
       'category': category,
       'description': description,
@@ -219,6 +227,8 @@ class BookingModel {
     String? customerPhone,
     String? providerName,
     String? serviceLocation,
+    double? latitude,
+    double? longitude,
     double? price,
     String? category,
     String? description,
@@ -244,6 +254,8 @@ class BookingModel {
       customerPhone: customerPhone ?? this.customerPhone,
       providerName: providerName ?? this.providerName,
       serviceLocation: serviceLocation ?? this.serviceLocation,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
       price: price ?? this.price,
       category: category ?? this.category,
       description: description ?? this.description,

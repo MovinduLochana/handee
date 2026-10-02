@@ -670,7 +670,12 @@ class _ProviderJobsScreenState extends State<ProviderJobsScreen> with TickerProv
                       ),
                       InkWell(
                         key: Key('navigate_customer_${booking.id}'),
-                        onTap: () => ExternalLauncherHelper.launchMapNavigation(context, booking.serviceLocation),
+                        onTap: () => ExternalLauncherHelper.launchMapNavigation(
+                          context,
+                          booking.serviceLocation,
+                          latitude: booking.latitude,
+                          longitude: booking.longitude,
+                        ),
                         borderRadius: BorderRadius.circular(6),
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),

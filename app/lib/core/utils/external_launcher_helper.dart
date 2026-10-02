@@ -63,10 +63,19 @@ class ExternalLauncherHelper {
   }
 
   /// Builds a map navigation query and opens the external map app.
-  /// Uses the universal Google Maps search intent URL for maximum compatibility.
+  /// Prefers exact latitude/longitude coordinates if provided for pin-point accuracy.
+  /// Falls back to address text search query if coordinates are absent.
   /// Returns `true` if launched successfully, `false` otherwise.
-  static Future<bool> launchMapNavigation(BuildContext context, String? addressQuery) async {
-    if (addressQuery == null || addressQuery.trim().isEmpty) {
+  static Future<bool> launchMapNavigation(
+    BuildContext context,
+    String? addressQuery, {
+    double? latitude,
+    double? longitude,
+  }) async {
+    final hasCoords = latitude != null && longitude != null;
+    final hasAddress = addressQuery != null && addressQuery.trim().isNotEmpty;
+
+    if (!hasCoords && !hasAddress) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Service location is not specified'),
@@ -76,8 +85,8 @@ class ExternalLauncherHelper {
       return false;
     }
 
-    final query = addressQuery.trim();
-    final uri = Uri.parse('https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(query)}');
+    final query = hasCoords ? '$latitude,$longitude' : Uri.encodeComponent(addressQuery!.trim());
+    final uri = Uri.parse('https://www.google.com/maps/search/?api=1&query=$query');
 
     try {
       final launcher = urlLauncherOverride ?? launchUrl;
