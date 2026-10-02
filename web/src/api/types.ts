@@ -239,7 +239,16 @@ export type JobUrgency = "Low" | "Medium" | "High" | "Emergency";
 export type JobRequestStatus = "PendingAiReview" | "Open" | "Cancelled";
 
 /** Entities/Booking.cs — BookingStatus */
-export type BookingStatus = "Requested" | "Accepted" | "InProgress" | "Completed" | "Disputed";
+export type BookingStatus =
+  | "Requested"
+  | "Accepted"
+  | "InProgress"
+  | "Completed"
+  | "Disputed"
+  | "Expired"
+  | "Declined";
+
+export type BookingType = "Scheduled" | "InstantMatch";
 
 /** DTO/JobRequestResponseDto.cs */
 export interface JobRequestResponseDto {
@@ -280,6 +289,9 @@ export interface BookingResponseDto {
   description: string | null;
   notes: string | null;
   durationHours: number;
+  bookingType?: BookingType | string | null;
+  expiresAt?: string | null;
+  remainingSeconds?: number | null;
 }
 
 /** DTO/ServiceCategoryResponseDto.cs */

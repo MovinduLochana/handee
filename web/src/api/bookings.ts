@@ -16,11 +16,13 @@ import type {
  * the backend will accept from each status. Keep the two in sync.
  */
 export const LEGAL_BOOKING_TRANSITIONS: Record<BookingStatus, readonly BookingStatus[]> = {
-  Requested: ["Accepted", "Disputed"],
+  Requested: ["Accepted", "Disputed", "Expired", "Declined"],
   Accepted: ["InProgress", "Disputed"],
   InProgress: ["Completed", "Disputed"],
   Completed: ["Disputed"],
   Disputed: ["Requested", "Accepted", "InProgress", "Completed"],
+  Expired: [],
+  Declined: [],
 };
 
 /** In C# enum order. */
@@ -32,6 +34,8 @@ export const BOOKING_STATUS_LABELS: Record<BookingStatus, string> = {
   InProgress: "In Progress",
   Completed: "Completed",
   Disputed: "Disputed",
+  Expired: "Expired",
+  Declined: "Declined",
 };
 
 export function getLegalTransitions(from: BookingStatus): readonly BookingStatus[] {
@@ -84,6 +88,44 @@ export const bookingApi = {
    */
   async createFromListing(data: CreateListingBookingDto): Promise<BookingResponseDto> {
     const response = await api.post<BookingResponseDto>("/bookings", data);
+    return response.data;
+  },
+
+  /**
+   * Provider: Gets pending scheduled booking requests for provider review.
+   * Expected: 200 OK — BookingResponseDto[]
+   */
+  async getProviderScheduledRequests(): Promise<BookingResponseDto[]> {
+    const response = await api.get<BookingResponseDto[]>("/api/provider/booking-requests");
+    return response.data;
+  },
+
+  /**
+   * Provider: Gets all bookings belonging to the current provider.
+   * Expected: 200 OK — BookingResponseDto[]
+   */
+  async getProviderBookings(): Promise<BookingResponseDto[]> {
+    const response = await api.get<BookingResponseDto[]>("/api/provider/bookings");
+    return response.data;
+  },
+
+  /**
+   * Provider: Accepts / confirms a pending booking request.
+   * Expected: 200 OK — BookingResponseDto
+   */
+  async confirmBooking(id: string): Promise<BookingResponseDto> {
+    const response = await api.post<BookingResponseDto>(`/api/provider/bookings/${id}/confirm`);
+    return response.data;
+  },
+
+  /**
+   * Provider: Declines a pending booking request with an optional reason.
+   * Expected: 200 OK — BookingResponseDto
+   */
+  async declineBooking(id: string, reason?: string): Promise<BookingResponseDto> {
+    const response = await api.post<BookingResponseDto>(`/api/provider/bookings/${id}/decline`, {
+      reason,
+    });
     return response.data;
   },
 };

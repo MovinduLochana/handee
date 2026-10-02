@@ -57,6 +57,9 @@ const BOOKING_KEYS = exactKeys<BookingResponseDto>()([
   "description",
   "notes",
   "durationHours",
+  "bookingType",
+  "expiresAt",
+  "remainingSeconds",
 ]);
 
 const JOB_REQUEST_KEYS = exactKeys<JobRequestResponseDto>()([
@@ -237,5 +240,28 @@ describe("parsing real-shaped API responses", () => {
 
     expect(api.post).toHaveBeenCalledWith("/bookings", payload);
     expect(res).toEqual(booking);
+  });
+
+  it("provider methods call correct endpoints for scheduled requests, mine, confirm, and decline", async () => {
+    vi.mocked(api.get).mockResolvedValue({ data: [booking] });
+    vi.mocked(api.post).mockResolvedValue({ data: booking });
+
+    const requests = await bookingApi.getProviderScheduledRequests();
+    expect(api.get).toHaveBeenCalledWith("/api/provider/booking-requests");
+    expect(requests).toEqual([booking]);
+
+    const mine = await bookingApi.getProviderBookings();
+    expect(api.get).toHaveBeenCalledWith("/api/provider/bookings");
+    expect(mine).toEqual([booking]);
+
+    const confirmed = await bookingApi.confirmBooking(booking.id);
+    expect(api.post).toHaveBeenCalledWith(`/api/provider/bookings/${booking.id}/confirm`);
+    expect(confirmed).toEqual(booking);
+
+    const declined = await bookingApi.declineBooking(booking.id, "Fully booked");
+    expect(api.post).toHaveBeenCalledWith(`/api/provider/bookings/${booking.id}/decline`, {
+      reason: "Fully booked",
+    });
+    expect(declined).toEqual(booking);
   });
 });
