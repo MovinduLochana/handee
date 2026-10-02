@@ -13,8 +13,19 @@ import 'location_picker_screen.dart';
 
 class CreateJobScreen extends StatefulWidget {
   final String? initialCategory;
+  final String? initialAddress;
+  final double? initialLatitude;
+  final double? initialLongitude;
+  final bool initialLocationConfirmed;
 
-  const CreateJobScreen({super.key, this.initialCategory});
+  const CreateJobScreen({
+    super.key,
+    this.initialCategory,
+    this.initialAddress,
+    this.initialLatitude,
+    this.initialLongitude,
+    this.initialLocationConfirmed = false,
+  });
 
   @override
   State<CreateJobScreen> createState() => _CreateJobScreenState();
@@ -38,9 +49,10 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
   final Set<String> _selectedChips = <String>{};
 
   // Step 1: Location & Logistics
-  String _serviceAddress = 'Colombo 03, Western Province, Sri Lanka';
-  double? _latitude = 6.9271;
-  double? _longitude = 79.8612;
+  late String _serviceAddress;
+  late double? _latitude;
+  late double? _longitude;
+  late bool _isLocationConfirmed;
   final TextEditingController _landmarkController = TextEditingController();
 
   // Step 2: Urgency, Budget & Photos
@@ -118,6 +130,15 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
       'Water Heater / Geyser Repair',
     ],
   };
+
+  @override
+  void initState() {
+    super.initState();
+    _serviceAddress = widget.initialAddress ?? '';
+    _latitude = widget.initialLatitude;
+    _longitude = widget.initialLongitude;
+    _isLocationConfirmed = widget.initialLocationConfirmed;
+  }
 
   @override
   void didChangeDependencies() {
@@ -316,6 +337,7 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
         _serviceAddress = result.address;
         _latitude = result.latitude;
         _longitude = result.longitude;
+        _isLocationConfirmed = true;
       });
     }
   }
@@ -336,9 +358,9 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
       }
       return true;
     } else if (step == 1) {
-      if (_serviceAddress.trim().isEmpty) {
+      if (!_isLocationConfirmed || _serviceAddress.trim().isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please select or specify a service address')),
+          const SnackBar(content: Text('Please confirm your service location on the map')),
         );
         return false;
       }
@@ -405,22 +427,32 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
       return;
     }
 
+    if (!_isLocationConfirmed || _serviceAddress.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please confirm your service location on the map')),
+      );
+      return;
+    }
+
     final provider = context.read<JobRequestProvider>();
 
     // Build location payload with landmark and coordinates
     final landmark = _landmarkController.text.trim();
-    String locationPayload = landmark.isNotEmpty
+    String baseLocation = landmark.isNotEmpty
         ? '$_serviceAddress ($landmark)'
         : _serviceAddress;
 
-    if (_latitude != null && _longitude != null) {
-      locationPayload =
-          '$locationPayload [${_latitude!.toStringAsFixed(4)},${_longitude!.toStringAsFixed(4)}]';
+    final coordSuffix = (_latitude != null && _longitude != null)
+        ? ' [${_latitude!.toStringAsFixed(4)},${_longitude!.toStringAsFixed(4)}]'
+        : '';
+
+    const maxPayloadLength = 300;
+    final maxBaseLength = maxPayloadLength - coordSuffix.length;
+    if (baseLocation.length > maxBaseLength) {
+      baseLocation = baseLocation.substring(0, maxBaseLength);
     }
 
-    if (locationPayload.length > 300) {
-      locationPayload = locationPayload.substring(0, 300);
-    }
+    final locationPayload = '$baseLocation$coordSuffix';
 
     final description = _descController.text.trim();
     final clampedDesc = description.length > 2000 ? description.substring(0, 2000) : description;
@@ -841,7 +873,11 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                         const SizedBox(height: 3),
                         Text(
                           _serviceAddress.isNotEmpty ? _serviceAddress : 'No address selected',
-                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: _serviceAddress.isNotEmpty ? AppColors.textPrimary : AppColors.textMuted,
+                          ),
                         ),
                         if (_latitude != null && _longitude != null) ...[
                           const SizedBox(height: 4),
@@ -869,7 +905,7 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                 child: OutlinedButton.icon(
                   onPressed: _openLocationPicker,
                   icon: const Icon(Icons.edit_location_alt_outlined, size: 18),
-                  label: const Text('Change Location on Google Maps'),
+                  label: Text(_isLocationConfirmed ? 'Change Location on Google Maps' : 'Select Location on Google Maps'),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppColors.primary,
                     side: const BorderSide(color: AppColors.primary),
@@ -1360,7 +1396,9 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
               _buildReviewRow(
                 icon: Icons.location_on_outlined,
                 title: 'Service Address',
-                value: landmark.isNotEmpty ? '$_serviceAddress\nNote: $landmark' : _serviceAddress,
+                value: landmark.isNotEmpty
+                    ? '$_serviceAddress\nNote: $landmark'
+                    : (_serviceAddress.isNotEmpty ? _serviceAddress : 'No address selected'),
               ),
               const SizedBox(height: 14),
 

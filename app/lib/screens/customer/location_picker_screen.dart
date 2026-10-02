@@ -52,6 +52,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
   bool _isGeocoding = false;
   bool _isLocating = false;
   final bool _mapError = false;
+  int _geocodeGeneration = 0;
 
   @override
   void initState() {
@@ -74,9 +75,11 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
   }
 
   Future<void> _reverseGeocode(LatLng target) async {
+    final generation = ++_geocodeGeneration;
+
     if (kIsWeb) {
       // Basic formatting fallback on web
-      if (mounted) {
+      if (mounted && _geocodeGeneration == generation) {
         setState(() {
           _detectedAddress = 'Lat: ${target.latitude.toStringAsFixed(4)}, Lng: ${target.longitude.toStringAsFixed(4)}';
         });
@@ -84,10 +87,11 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
       return;
     }
 
+    if (!mounted) return;
     setState(() => _isGeocoding = true);
     try {
       final placemarks = await Geocoding().placemarkFromCoordinates(target.latitude, target.longitude);
-      if (placemarks.isNotEmpty && mounted) {
+      if (placemarks.isNotEmpty && mounted && _geocodeGeneration == generation) {
         final place = placemarks.first;
         final parts = <String>[
           if (place.street != null && place.street!.trim().isNotEmpty) place.street!,
@@ -100,13 +104,15 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
         });
       }
     } catch (_) {
-      if (mounted) {
+      if (mounted && _geocodeGeneration == generation) {
         setState(() {
           _detectedAddress = 'Lat: ${target.latitude.toStringAsFixed(4)}, Lng: ${target.longitude.toStringAsFixed(4)}';
         });
       }
     } finally {
-      if (mounted) setState(() => _isGeocoding = false);
+      if (mounted && _geocodeGeneration == generation) {
+        setState(() => _isGeocoding = false);
+      }
     }
   }
 

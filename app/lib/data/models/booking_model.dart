@@ -164,9 +164,27 @@ class BookingModel {
       customerName: json['customerName']?.toString() ?? json['CustomerName']?.toString(),
       customerPhone: json['customerPhone']?.toString() ?? json['CustomerPhone']?.toString(),
       providerName: json['providerName']?.toString() ?? json['ProviderName']?.toString(),
-      serviceLocation: json['serviceLocation']?.toString() ?? json['ServiceLocation']?.toString(),
-      latitude: (json['latitude'] as num?)?.toDouble() ?? (json['Latitude'] as num?)?.toDouble(),
-      longitude: (json['longitude'] as num?)?.toDouble() ?? (json['Longitude'] as num?)?.toDouble(),
+      serviceLocation: () {
+        final raw = json['serviceLocation']?.toString() ?? json['ServiceLocation']?.toString();
+        if (raw == null) return null;
+        return raw.replaceAll(RegExp(r'\s*\[\s*-?\d+(?:\.\d+)?\s*,\s*-?\d+(?:\.\d+)?\s*\]'), '').trim();
+      }(),
+      latitude: (json['latitude'] as num?)?.toDouble() ??
+          (json['Latitude'] as num?)?.toDouble() ??
+          () {
+            final raw = json['serviceLocation']?.toString() ?? json['ServiceLocation']?.toString();
+            if (raw == null) return null;
+            final m = RegExp(r'\[\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*\]').firstMatch(raw);
+            return m != null ? double.tryParse(m.group(1)!) : null;
+          }(),
+      longitude: (json['longitude'] as num?)?.toDouble() ??
+          (json['Longitude'] as num?)?.toDouble() ??
+          () {
+            final raw = json['serviceLocation']?.toString() ?? json['ServiceLocation']?.toString();
+            if (raw == null) return null;
+            final m = RegExp(r'\[\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*\]').firstMatch(raw);
+            return m != null ? double.tryParse(m.group(2)!) : null;
+          }(),
       price: (json['price'] as num?)?.toDouble() ?? (json['Price'] as num?)?.toDouble(),
       category: json['category']?.toString() ?? json['Category']?.toString(),
       description: json['description']?.toString() ?? json['Description']?.toString(),

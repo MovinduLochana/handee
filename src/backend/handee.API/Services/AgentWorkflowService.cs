@@ -383,6 +383,7 @@ public class AgentWorkflowService : IAgentWorkflowService
 
                 var scheduledAt = await FindNextAvailableSlotAsync(workflow.SelectedProviderId.Value, durationHours, ct);
 
+                var (cleanLocation, locLat, locLng) = ParseLocationCoordinates(workflow.JobRequest.Location);
                 var now = DateTimeOffset.UtcNow;
                 booking = new Booking
                 {
@@ -394,7 +395,10 @@ public class AgentWorkflowService : IAgentWorkflowService
                     BookingType = BookingType.InstantMatch,
                     ExpiresAt = now.AddSeconds(90),
                     ScheduledAt = scheduledAt,
-                    CreatedAt = now
+                    CreatedAt = now,
+                    ServiceLocation = cleanLocation,
+                    Latitude = locLat,
+                    Longitude = locLng
                 };
                 _db.Bookings.Add(booking);
                 await _db.SaveChangesAsync(ct);
@@ -728,6 +732,7 @@ public class AgentWorkflowService : IAgentWorkflowService
         var scheduledAt = await FindNextAvailableSlotAsync(nextProviderId, durationHours, ct);
         var now = DateTimeOffset.UtcNow;
 
+        var (cleanLocation, locLat, locLng) = ParseLocationCoordinates(jobRequest.Location);
         var newBooking = new Booking
         {
             JobRequestId = jobRequest.Id,
@@ -738,7 +743,10 @@ public class AgentWorkflowService : IAgentWorkflowService
             BookingType = BookingType.InstantMatch,
             ExpiresAt = now.AddSeconds(90),
             ScheduledAt = scheduledAt,
-            CreatedAt = now
+            CreatedAt = now,
+            ServiceLocation = cleanLocation,
+            Latitude = locLat,
+            Longitude = locLng
         };
 
         _db.Bookings.Add(newBooking);
@@ -772,5 +780,26 @@ public class AgentWorkflowService : IAgentWorkflowService
         }
 
         return true;
+    }
+
+    private static (string? cleanLocation, double? latitude, double? longitude) ParseLocationCoordinates(string? rawLocation)
+    {
+        if (string.IsNullOrWhiteSpace(rawLocation)) return (null, null, null);
+
+        var match = System.Text.RegularExpressions.Regex.Match(rawLocation, @"\[\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*\]");
+        if (match.Success)
+        {
+            double? lat = null;
+            double? lng = null;
+            if (double.TryParse(match.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture, out var parsedLat))
+                lat = parsedLat;
+            if (double.TryParse(match.Groups[2].Value, System.Globalization.CultureInfo.InvariantCulture, out var parsedLng))
+                lng = parsedLng;
+
+            var clean = System.Text.RegularExpressions.Regex.Replace(rawLocation, @"\s*\[\s*-?\d+(?:\.\d+)?\s*,\s*-?\d+(?:\.\d+)?\s*\]", "").Trim();
+            return (clean, lat, lng);
+        }
+
+        return (rawLocation.Trim(), null, null);
     }
 }

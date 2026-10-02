@@ -133,4 +133,23 @@ void main() {
       expect(roundTripped.budgetMax, original.budgetMax);
     });
   });
+
+  group('JobRequestModel.cleanLocation', () {
+    test('strips trailing bracketed coordinates from location string', () {
+      final model = JobRequestModel.fromJson(
+        realResponseJson()..['location'] = 'Colombo 03, Western Province (Keells) [6.9271,79.8612]',
+      );
+
+      expect(model.location, 'Colombo 03, Western Province (Keells) [6.9271,79.8612]');
+      expect(model.cleanLocation, 'Colombo 03, Western Province (Keells)');
+    });
+
+    test('returns original string when no bracketed coordinates are attached', () {
+      final model = JobRequestModel.fromJson(
+        realResponseJson()..['location'] = 'Kandy City Center, Kandy',
+      );
+
+      expect(model.cleanLocation, 'Kandy City Center, Kandy');
+    });
+  });
 }

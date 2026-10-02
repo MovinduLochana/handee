@@ -142,4 +142,44 @@ void main() {
       expect(declined.overlapsWith(active), isFalse);
     });
   });
+
+  group('BookingModel.fromJson location coordinates extraction', () {
+    test('extracts latitude and longitude from bracketed coordinates and cleans serviceLocation', () {
+      final json = {
+        'id': 'b1',
+        'providerId': 'p1',
+        'customerId': 'c1',
+        'status': 'Requested',
+        'createdAt': '2026-10-02T10:00:00Z',
+        'serviceLocation': 'Colombo 03, Western Province (Keells) [6.9271,79.8612]',
+        'latitude': null,
+        'longitude': null,
+      };
+
+      final booking = BookingModel.fromJson(json);
+
+      expect(booking.serviceLocation, equals('Colombo 03, Western Province (Keells)'));
+      expect(booking.latitude, equals(6.9271));
+      expect(booking.longitude, equals(79.8612));
+    });
+
+    test('preserves explicit latitude and longitude if provided by backend', () {
+      final json = {
+        'id': 'b2',
+        'providerId': 'p1',
+        'customerId': 'c1',
+        'status': 'Requested',
+        'createdAt': '2026-10-02T10:00:00Z',
+        'serviceLocation': 'Colombo 03, Western Province (Keells)',
+        'latitude': 6.9271,
+        'longitude': 79.8612,
+      };
+
+      final booking = BookingModel.fromJson(json);
+
+      expect(booking.serviceLocation, equals('Colombo 03, Western Province (Keells)'));
+      expect(booking.latitude, equals(6.9271));
+      expect(booking.longitude, equals(79.8612));
+    });
+  });
 }

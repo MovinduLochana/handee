@@ -72,8 +72,21 @@ class ExternalLauncherHelper {
     double? latitude,
     double? longitude,
   }) async {
-    final hasCoords = latitude != null && longitude != null;
-    final hasAddress = addressQuery != null && addressQuery.trim().isNotEmpty;
+    double? effectiveLat = latitude;
+    double? effectiveLng = longitude;
+    String? cleanAddress = addressQuery?.trim();
+
+    if (cleanAddress != null && cleanAddress.isNotEmpty) {
+      final coordMatch = RegExp(r'\[\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*\]').firstMatch(cleanAddress);
+      if (coordMatch != null) {
+        effectiveLat ??= double.tryParse(coordMatch.group(1)!);
+        effectiveLng ??= double.tryParse(coordMatch.group(2)!);
+        cleanAddress = cleanAddress.replaceAll(RegExp(r'\s*\[\s*-?\d+(?:\.\d+)?\s*,\s*-?\d+(?:\.\d+)?\s*\]'), '').trim();
+      }
+    }
+
+    final hasCoords = effectiveLat != null && effectiveLng != null;
+    final hasAddress = cleanAddress != null && cleanAddress.isNotEmpty;
 
     if (!hasCoords && !hasAddress) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -85,7 +98,7 @@ class ExternalLauncherHelper {
       return false;
     }
 
-    final query = hasCoords ? '$latitude,$longitude' : Uri.encodeComponent(addressQuery!.trim());
+    final query = hasCoords ? '$effectiveLat,$effectiveLng' : Uri.encodeComponent(cleanAddress!);
     final uri = Uri.parse('https://www.google.com/maps/search/?api=1&query=$query');
 
     try {

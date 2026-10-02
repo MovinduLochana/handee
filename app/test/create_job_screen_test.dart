@@ -85,6 +85,10 @@ Widget createTestWidget({
   required FakeServiceCategoryRepo categoryRepo,
   required FakeJobRequestRepo jobRepo,
   String? initialCategory,
+  String? initialAddress,
+  double? initialLatitude,
+  double? initialLongitude,
+  bool initialLocationConfirmed = false,
 }) {
   return MultiProvider(
     providers: [
@@ -103,7 +107,13 @@ Widget createTestWidget({
       ),
     ],
     child: MaterialApp(
-      home: CreateJobScreen(initialCategory: initialCategory),
+      home: CreateJobScreen(
+        initialCategory: initialCategory,
+        initialAddress: initialAddress,
+        initialLatitude: initialLatitude,
+        initialLongitude: initialLongitude,
+        initialLocationConfirmed: initialLocationConfirmed,
+      ),
     ),
   );
 }
@@ -207,7 +217,34 @@ void main() {
     expect(find.text('STEP 2 OF 4'), findsOneWidget);
     expect(find.text('Location & Access'), findsOneWidget);
     expect(find.text('Pinned Service Address'), findsOneWidget);
-    expect(find.textContaining('Colombo 03'), findsOneWidget);
+    expect(find.text('No address selected'), findsOneWidget);
+    expect(find.text('Select Location on Google Maps'), findsOneWidget);
+  });
+
+  testWidgets('Validation blocks advancing from Step 2 if location is not confirmed', (tester) async {
+    setTestViewport(tester);
+
+    await tester.pumpWidget(createTestWidget(
+      categoryRepo: categoryRepo,
+      jobRepo: jobRepo,
+    ));
+    await tester.pumpAndSettle();
+
+    // Step 1: fill description
+    await tester.enterText(find.byType(TextFormField).first, 'Water pipe broken in kitchen sink');
+    await tester.pumpAndSettle();
+
+    // Step 1 -> Step 2
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+    expect(find.text('STEP 2 OF 4'), findsOneWidget);
+
+    // Try tapping Continue on Step 2 without confirmed location
+    await tester.tap(find.text('Continue'));
+    await tester.pump();
+
+    expect(find.text('Please confirm your service location on the map'), findsOneWidget);
+    expect(find.text('STEP 2 OF 4'), findsOneWidget);
   });
 
   testWidgets('Navigates backwards and forwards across steps smoothly', (tester) async {
@@ -216,6 +253,10 @@ void main() {
     await tester.pumpWidget(createTestWidget(
       categoryRepo: categoryRepo,
       jobRepo: jobRepo,
+      initialAddress: 'Colombo 03, Western Province, Sri Lanka',
+      initialLatitude: 6.9271,
+      initialLongitude: 79.8612,
+      initialLocationConfirmed: true,
     ));
     await tester.pumpAndSettle();
 
@@ -265,6 +306,10 @@ void main() {
     await tester.pumpWidget(createTestWidget(
       categoryRepo: categoryRepo,
       jobRepo: jobRepo,
+      initialAddress: 'Colombo 03, Western Province, Sri Lanka',
+      initialLatitude: 6.9271,
+      initialLongitude: 79.8612,
+      initialLocationConfirmed: true,
     ));
     await tester.pumpAndSettle();
 
@@ -306,6 +351,57 @@ void main() {
     expect(jobRepo.lastCreated!.urgency, equals('Emergency'));
     expect(jobRepo.lastCreated!.description, equals('Bathroom tap is completely broken and leaking'));
     expect(jobRepo.lastCreated!.location, contains('Colombo 03'));
+    expect(jobRepo.lastCreated!.location, contains('[6.9271,79.8612]'));
+  });
+
+  testWidgets('Submitting on Step 4 preserves coordinate suffix when truncating long location', (tester) async {
+    setTestViewport(tester);
+
+    final longAddress = 'No. 42, High Street, ${'A' * 250}';
+    final longLandmark = 'B' * 50;
+
+    await tester.pumpWidget(createTestWidget(
+      categoryRepo: categoryRepo,
+      jobRepo: jobRepo,
+      initialAddress: longAddress,
+      initialLatitude: 6.9271,
+      initialLongitude: 79.8612,
+      initialLocationConfirmed: true,
+    ));
+    await tester.pumpAndSettle();
+
+    // Step 1: fill description
+    await tester.enterText(find.byType(TextFormField).first, 'Bathroom tap is completely broken and leaking');
+    await tester.pumpAndSettle();
+
+    // Move to Step 2
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+
+    // Step 2: enter landmark
+    final textFieldsStep2 = find.byType(TextFormField);
+    if (textFieldsStep2.evaluate().isNotEmpty) {
+      await tester.enterText(textFieldsStep2.last, longLandmark);
+      await tester.pumpAndSettle();
+    }
+
+    // Move to Step 3
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+
+    // Move to Step 4
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+
+    // Confirm & Dispatch Pro
+    await tester.tap(find.text('Confirm & Dispatch Pro'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(jobRepo.lastCreated, isNotNull);
+    final location = jobRepo.lastCreated!.location;
+    expect(location.length, lessThanOrEqualTo(300));
+    expect(location, endsWith(' [6.9271,79.8612]'));
   });
 
   testWidgets('RangeSlider handles category with high minimum price band without assertion failure', (tester) async {
@@ -323,6 +419,10 @@ void main() {
     await tester.pumpWidget(createTestWidget(
       categoryRepo: highCategoryRepo,
       jobRepo: jobRepo,
+      initialAddress: 'Colombo 03, Western Province, Sri Lanka',
+      initialLatitude: 6.9271,
+      initialLongitude: 79.8612,
+      initialLocationConfirmed: true,
     ));
     await tester.pumpAndSettle();
 
