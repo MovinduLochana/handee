@@ -2,8 +2,7 @@ import axios from "axios";
 import { getAccessToken, getRefreshToken, setTokens, clearTokens } from "./tokenManager";
 
 // Base URL: Injected via Vite ENV variables or defaults to local backend
-export const BASE_URL =
-  import.meta.env.VITE_API_URL || "http://localhost:5057";
+export const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5057";
 
 // Diagnostic banner in browser console
 const isLocalBackend = BASE_URL.includes("localhost") || BASE_URL.includes("127.0.0.1");
@@ -12,7 +11,7 @@ console.log(
   "background: #0284c7; color: white; padding: 2px 6px; border-radius: 4px; font-weight: bold;",
   "color: #64748b; font-weight: normal; margin-left: 4px;",
   isLocalBackend ? "color: #16a34a; font-weight: bold;" : "color: #9333ea; font-weight: bold;",
-  "color: #64748b; font-style: italic;"
+  "color: #64748b; font-style: italic;",
 );
 
 export const getFullMediaUrl = (url?: string | null): string => {

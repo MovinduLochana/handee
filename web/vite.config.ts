@@ -10,16 +10,26 @@ function startupBannerPlugin(apiUrl: string, agentUrl: string, mode: string): Pl
     configureServer(server) {
       server.httpServer?.once("listening", () => {
         const isLocal = apiUrl.includes("localhost") || apiUrl.includes("127.0.0.1");
-        const targetType = isLocal ? "\x1b[32m[LOCAL BACKEND]\x1b[0m" : "\x1b[35m[DEPLOYED AZURE BACKEND]\x1b[0m";
+        const targetType = isLocal
+          ? "\x1b[32m[LOCAL BACKEND]\x1b[0m"
+          : "\x1b[35m[DEPLOYED AZURE BACKEND]\x1b[0m";
 
-        console.log("\n\x1b[36m================================================================\x1b[0m");
+        console.log(
+          "\n\x1b[36m================================================================\x1b[0m",
+        );
         console.log("\x1b[1m🌐  HANDEE REACT WEB PORTAL STARTED\x1b[0m");
-        console.log("\x1b[36m================================================================\x1b[0m");
+        console.log(
+          "\x1b[36m================================================================\x1b[0m",
+        );
         console.log(` \x1b[33m⚙️  Vite Mode      :\x1b[0m ${mode}`);
         console.log(` \x1b[34m🎯 Target Backend :\x1b[0m ${targetType} ${apiUrl}`);
         console.log(` \x1b[35m🤖 AI Agent URL   :\x1b[0m ${agentUrl}`);
-        console.log(" \x1b[90m💡 Tip: Run 'npm run dev:local' for Local or 'npm run dev:cloud' for Azure.\x1b[0m");
-        console.log("\x1b[36m================================================================\x1b[0m\n");
+        console.log(
+          " \x1b[90m💡 Tip: Run 'npm run dev:local' for Local or 'npm run dev:cloud' for Azure.\x1b[0m",
+        );
+        console.log(
+          "\x1b[36m================================================================\x1b[0m\n",
+        );
       });
     },
   };
@@ -49,4 +59,3 @@ export default defineConfig(({ mode }) => {
     },
   };
 });
-
