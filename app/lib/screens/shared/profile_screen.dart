@@ -87,11 +87,12 @@ class ProfileScreen extends StatelessWidget {
             const SizedBox(height: 20),
 
             // Profile Fulfillment / Edit Card
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
+            Material(
+              color: Colors.white,
+              clipBehavior: Clip.antiAlias,
+              shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.borderLight),
+                side: const BorderSide(color: AppColors.borderLight),
               ),
               child: ListTile(
                 leading: Container(
@@ -202,11 +203,12 @@ class ProfileScreen extends StatelessWidget {
             const SizedBox(height: 20),
 
             // App info & logout
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
+            Material(
+              color: Colors.white,
+              clipBehavior: Clip.antiAlias,
+              shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.borderLight),
+                side: const BorderSide(color: AppColors.borderLight),
               ),
               child: Column(
                 children: [

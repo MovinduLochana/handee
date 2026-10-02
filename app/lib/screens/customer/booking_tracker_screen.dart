@@ -169,7 +169,9 @@ class _BookingTrackerScreenState extends State<BookingTrackerScreen> {
                           const Icon(Icons.location_on, size: 14, color: AppColors.primary),
                           const SizedBox(width: 4),
                           Text(
-                            request.location.split(',').first,
+                            request.cleanLocation.isNotEmpty
+                                ? request.cleanLocation.split(',').first
+                                : request.location.split(',').first,
                             style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textSecondary),
                           ),
                         ],

@@ -8,6 +8,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/booking_provider.dart';
 import '../../widgets/predefined_slot_picker.dart';
 import '../auth/login_screen.dart';
+import 'location_picker_screen.dart';
 
 class ServiceListingDetailsScreen extends StatelessWidget {
   final ServiceListingModel listing;
@@ -385,8 +386,22 @@ class _BookingFormSheet extends StatefulWidget {
 class _BookingFormSheetState extends State<_BookingFormSheet> {
   final TextEditingController _notesController = TextEditingController();
   PredefinedSlotModel? _selectedSlot;
+  String? _serviceLocation;
+  double? _latitude;
+  double? _longitude;
   bool _isSubmitting = false;
   String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    try {
+      final auth = Provider.of<AuthProvider>(context, listen: false);
+      if (auth.currentUser?.address != null && auth.currentUser!.address!.isNotEmpty) {
+        _serviceLocation = auth.currentUser!.address;
+      }
+    } catch (_) {}
+  }
 
   @override
   void dispose() {
@@ -394,10 +409,37 @@ class _BookingFormSheetState extends State<_BookingFormSheet> {
     super.dispose();
   }
 
+  Future<void> _openMapLocationPicker() async {
+    final result = await Navigator.of(context).push<LocationResult>(
+      MaterialPageRoute(
+        builder: (_) => LocationPickerScreen(
+          initialAddress: _serviceLocation,
+          initialLatitude: _latitude,
+          initialLongitude: _longitude,
+        ),
+      ),
+    );
+
+    if (result != null && mounted) {
+      setState(() {
+        _serviceLocation = result.address;
+        _latitude = result.latitude;
+        _longitude = result.longitude;
+      });
+    }
+  }
+
   Future<void> _submitBooking() async {
     if (_selectedSlot == null) {
       setState(() {
         _errorMessage = 'Please select an available time slot.';
+      });
+      return;
+    }
+
+    if (_serviceLocation == null || _serviceLocation!.trim().isEmpty) {
+      setState(() {
+        _errorMessage = 'Please set your service location on the map.';
       });
       return;
     }
@@ -423,6 +465,9 @@ class _BookingFormSheetState extends State<_BookingFormSheet> {
       await bookingProvider.createBookingFromListing(
         serviceListingId: widget.listing.id,
         scheduledAt: _selectedSlot!.startTime,
+        serviceLocation: _serviceLocation,
+        latitude: _latitude,
+        longitude: _longitude,
         notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
       );
 
@@ -576,6 +621,65 @@ class _BookingFormSheetState extends State<_BookingFormSheet> {
                     _errorMessage = null;
                   });
                 },
+              ),
+              const SizedBox(height: 18),
+
+              // Service Location Card
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Service Location',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                  TextButton.icon(
+                    onPressed: _openMapLocationPicker,
+                    icon: const Icon(Icons.map_outlined, size: 16),
+                    label: const Text('Set on Map', style: TextStyle(fontWeight: FontWeight.w700)),
+                    style: TextButton.styleFrom(
+                      foregroundColor: AppColors.primary,
+                      padding: EdgeInsets.zero,
+                      minimumSize: const Size(50, 30),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              InkWell(
+                onTap: _openMapLocationPicker,
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: AppColors.background,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.borderLight),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.location_on, color: AppColors.primary, size: 22),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          _serviceLocation ?? 'Tap to select location on map',
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textPrimary,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const Icon(Icons.chevron_right, color: AppColors.textMuted, size: 20),
+                    ],
+                  ),
+                ),
               ),
               const SizedBox(height: 18),
 

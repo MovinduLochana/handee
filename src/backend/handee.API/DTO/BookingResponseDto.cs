@@ -21,5 +21,7 @@ public record BookingResponseDto(
     int DurationHours = 1,
     string? BookingType = null,
     DateTimeOffset? ExpiresAt = null,
-    int? RemainingSeconds = null
+    int? RemainingSeconds = null,
+    double? Latitude = null,
+    double? Longitude = null
 );

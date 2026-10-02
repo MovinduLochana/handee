@@ -150,6 +150,45 @@ void main() {
       expect(capturedMode, equals(LaunchMode.externalApplication));
     });
 
+    testWidgets('launchMapNavigation prioritizes exact coordinates over address query for pin-point directions', (tester) async {
+      Uri? capturedUri;
+      LaunchMode? capturedMode;
+
+      ExternalLauncherHelper.urlLauncherOverride = (uri, {mode = LaunchMode.platformDefault}) async {
+        capturedUri = uri;
+        capturedMode = mode;
+        return true;
+      };
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Builder(
+              builder: (context) => ElevatedButton(
+                onPressed: () => ExternalLauncherHelper.launchMapNavigation(
+                  context,
+                  'No. 42, Temple Road',
+                  latitude: 6.9056,
+                  longitude: 79.8622,
+                ),
+                child: const Text('Navigate Coords'),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Navigate Coords'));
+      await tester.pumpAndSettle();
+
+      expect(capturedUri, isNotNull);
+      expect(
+        capturedUri.toString(),
+        equals('https://www.google.com/maps/search/?api=1&query=6.9056,79.8622'),
+      );
+      expect(capturedMode, equals(LaunchMode.externalApplication));
+    });
+
     testWidgets('shows snackbar when address is null or empty', (tester) async {
       int launchCallCount = 0;
       ExternalLauncherHelper.urlLauncherOverride = (uri, {mode = LaunchMode.platformDefault}) async {

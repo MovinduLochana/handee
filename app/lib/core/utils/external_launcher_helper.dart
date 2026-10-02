@@ -63,10 +63,32 @@ class ExternalLauncherHelper {
   }
 
   /// Builds a map navigation query and opens the external map app.
-  /// Uses the universal Google Maps search intent URL for maximum compatibility.
+  /// Prefers exact latitude/longitude coordinates if provided for pin-point accuracy.
+  /// Falls back to address text search query if coordinates are absent.
   /// Returns `true` if launched successfully, `false` otherwise.
-  static Future<bool> launchMapNavigation(BuildContext context, String? addressQuery) async {
-    if (addressQuery == null || addressQuery.trim().isEmpty) {
+  static Future<bool> launchMapNavigation(
+    BuildContext context,
+    String? addressQuery, {
+    double? latitude,
+    double? longitude,
+  }) async {
+    double? effectiveLat = latitude;
+    double? effectiveLng = longitude;
+    String? cleanAddress = addressQuery?.trim();
+
+    if (cleanAddress != null && cleanAddress.isNotEmpty) {
+      final coordMatch = RegExp(r'\[\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*\]').firstMatch(cleanAddress);
+      if (coordMatch != null) {
+        effectiveLat ??= double.tryParse(coordMatch.group(1)!);
+        effectiveLng ??= double.tryParse(coordMatch.group(2)!);
+        cleanAddress = cleanAddress.replaceAll(RegExp(r'\s*\[\s*-?\d+(?:\.\d+)?\s*,\s*-?\d+(?:\.\d+)?\s*\]'), '').trim();
+      }
+    }
+
+    final hasCoords = effectiveLat != null && effectiveLng != null;
+    final hasAddress = cleanAddress != null && cleanAddress.isNotEmpty;
+
+    if (!hasCoords && !hasAddress) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Service location is not specified'),
@@ -76,8 +98,8 @@ class ExternalLauncherHelper {
       return false;
     }
 
-    final query = addressQuery.trim();
-    final uri = Uri.parse('https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(query)}');
+    final query = hasCoords ? '$effectiveLat,$effectiveLng' : Uri.encodeComponent(cleanAddress!);
+    final uri = Uri.parse('https://www.google.com/maps/search/?api=1&query=$query');
 
     try {
       final launcher = urlLauncherOverride ?? launchUrl;

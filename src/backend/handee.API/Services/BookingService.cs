@@ -390,6 +390,15 @@ public class BookingService : IBookingService
         if (startTime.Minute != 0 || startTime.Second != 0)
             throw new ValidationException("Appointments must be booked on the hour (e.g. 09:00, 10:00).");
 
+        if ((dto.Latitude.HasValue && !dto.Longitude.HasValue) || (!dto.Latitude.HasValue && dto.Longitude.HasValue))
+            throw new ValidationException("Latitude and Longitude must both be provided or both be omitted.");
+
+        if (dto.Latitude.HasValue && (dto.Latitude.Value < -90.0 || dto.Latitude.Value > 90.0))
+            throw new ValidationException("Latitude must be between -90 and 90.");
+
+        if (dto.Longitude.HasValue && (dto.Longitude.Value < -180.0 || dto.Longitude.Value > 180.0))
+            throw new ValidationException("Longitude must be between -180 and 180.");
+
         var durationHours = listing.DurationHours > 0
             ? listing.DurationHours
             : (listing.EstimatedDuration > TimeSpan.Zero
@@ -477,6 +486,9 @@ public class BookingService : IBookingService
                 BookingType = BookingType.Scheduled,
                 ExpiresAt = expiresAt,
                 ScheduledAt = startTime,
+                ServiceLocation = !string.IsNullOrWhiteSpace(dto.ServiceLocation) ? dto.ServiceLocation.Trim() : null,
+                Latitude = dto.Latitude,
+                Longitude = dto.Longitude,
                 Notes = dto.Notes,
                 CreatedAt = now,
                 ServiceListing = listing,
@@ -596,6 +608,27 @@ public class BookingService : IBookingService
         return ToDto(booking);
     }
 
+    private static (string? cleanLocation, double? latitude, double? longitude) ParseLocationCoordinates(string? rawLocation)
+    {
+        if (string.IsNullOrWhiteSpace(rawLocation)) return (null, null, null);
+
+        var match = System.Text.RegularExpressions.Regex.Match(rawLocation, @"\[\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*\]");
+        if (match.Success)
+        {
+            double? lat = null;
+            double? lng = null;
+            if (double.TryParse(match.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture, out var parsedLat))
+                lat = parsedLat;
+            if (double.TryParse(match.Groups[2].Value, System.Globalization.CultureInfo.InvariantCulture, out var parsedLng))
+                lng = parsedLng;
+
+            var clean = System.Text.RegularExpressions.Regex.Replace(rawLocation, @"\s*\[\s*-?\d+(?:\.\d+)?\s*,\s*-?\d+(?:\.\d+)?\s*\]", "").Trim();
+            return (clean, lat, lng);
+        }
+
+        return (rawLocation.Trim(), null, null);
+    }
+
     private static BookingResponseDto ToDto(Booking b)
     {
         int? remainingSeconds = null;
@@ -604,6 +637,11 @@ public class BookingService : IBookingService
             var diff = (int)Math.Max(0, (b.ExpiresAt.Value - DateTimeOffset.UtcNow).TotalSeconds);
             remainingSeconds = diff;
         }
+
+        var rawLocation = b.ServiceLocation ?? b.JobRequest?.Location;
+        var (cleanLocation, parsedLat, parsedLng) = ParseLocationCoordinates(rawLocation);
+        var latitude = b.Latitude ?? parsedLat;
+        var longitude = b.Longitude ?? parsedLng;
 
         return new(
             b.Id,
@@ -618,7 +656,7 @@ public class BookingService : IBookingService
             CustomerName: b.Customer?.FullName,
             CustomerPhone: b.Customer?.PhoneNumber,
             ProviderName: b.Provider?.FullName,
-            ServiceLocation: b.JobRequest?.Location,
+            ServiceLocation: cleanLocation,
             Price: b.ServiceListing?.FixedPrice ?? b.JobRequest?.BudgetMax ?? b.JobRequest?.BudgetMin ?? 3500m,
             Category: b.JobRequest?.ServiceCategory?.Name ?? b.ServiceListing?.Category?.Name,
             Description: b.JobRequest?.Description ?? b.ServiceListing?.Title ?? b.ServiceListing?.Description,
@@ -626,6 +664,8 @@ public class BookingService : IBookingService
             DurationHours: b.ServiceListing != null && b.ServiceListing.DurationHours > 0 ? b.ServiceListing.DurationHours : 1,
             BookingType: b.BookingType.ToString(),
             ExpiresAt: b.ExpiresAt,
-            RemainingSeconds: remainingSeconds);
+            RemainingSeconds: remainingSeconds,
+            Latitude: latitude,
+            Longitude: longitude);
     }
 }

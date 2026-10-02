@@ -60,6 +60,8 @@ const BOOKING_KEYS = exactKeys<BookingResponseDto>()([
   "bookingType",
   "expiresAt",
   "remainingSeconds",
+  "latitude",
+  "longitude",
 ]);
 
 const JOB_REQUEST_KEYS = exactKeys<JobRequestResponseDto>()([
@@ -96,6 +98,9 @@ const CREATE_LISTING_BOOKING_DTO_KEYS = exactKeys<CreateListingBookingDto>()([
   "serviceListingId",
   "scheduledAt",
   "notes",
+  "serviceLocation",
+  "latitude",
+  "longitude",
 ]);
 
 // ─── Runtime: compare against the real C# source ────────────────────────────
@@ -110,10 +115,17 @@ function source(relativePath: string): string {
 
 /** Positional-record parameters, camel-cased the way the API serializes them. */
 function recordFields(csharp: string): string[] {
-  const params = csharp.slice(csharp.indexOf("(") + 1, csharp.lastIndexOf(")"));
-  return params
+  const recordMatch = csharp.match(
+    /public\s+record\s+\w+(?:<[^>]+>)?\s*\(([\s\S]*?)\)\s*(?:;|:|\{)/,
+  );
+  const rawParams = recordMatch
+    ? recordMatch[1]
+    : csharp.slice(csharp.indexOf("(") + 1, csharp.lastIndexOf(")"));
+  const stripped = rawParams.replace(/\[[^\]]*\]/g, "");
+  return stripped
     .split(",")
     .map((p) => p.split("=")[0].trim().split(/\s+/).pop()!)
+    .filter(Boolean)
     .map((name) => name[0].toLowerCase() + name.slice(1));
 }
 

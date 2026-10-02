@@ -54,6 +54,10 @@ public class Booking
 
     public string? Notes { get; set; }
 
+    public string? ServiceLocation { get; set; }
+    public double? Latitude { get; set; }
+    public double? Longitude { get; set; }
+
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
     public DateTimeOffset? UpdatedAt { get; set; }
 

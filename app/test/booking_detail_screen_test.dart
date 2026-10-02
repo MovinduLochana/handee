@@ -34,6 +34,9 @@ class MockBookingRepository implements BookingRepository {
   Future<BookingModel> createBookingFromListing({
     required String serviceListingId,
     required DateTime scheduledAt,
+    String? serviceLocation,
+    double? latitude,
+    double? longitude,
     String? notes,
   }) async => booking;
 

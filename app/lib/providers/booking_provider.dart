@@ -261,6 +261,9 @@ class BookingProvider extends ChangeNotifier {
   Future<BookingModel?> createBookingFromListing({
     required String serviceListingId,
     required DateTime scheduledAt,
+    String? serviceLocation,
+    double? latitude,
+    double? longitude,
     String? notes,
   }) async {
     _isLoading = true;
@@ -271,6 +274,9 @@ class BookingProvider extends ChangeNotifier {
       final booking = await repository.createBookingFromListing(
         serviceListingId: serviceListingId,
         scheduledAt: scheduledAt,
+        serviceLocation: serviceLocation,
+        latitude: latitude,
+        longitude: longitude,
         notes: notes,
       );
       _bookings.insert(0, booking);

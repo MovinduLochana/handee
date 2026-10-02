@@ -292,6 +292,8 @@ export interface BookingResponseDto {
   bookingType?: BookingType | string | null;
   expiresAt?: string | null;
   remainingSeconds?: number | null;
+  latitude?: number | null;
+  longitude?: number | null;
 }
 
 /** DTO/ServiceCategoryResponseDto.cs */
@@ -318,6 +320,9 @@ export interface CreateListingBookingDto {
   serviceListingId: string;
   scheduledAt: string;
   notes?: string | null;
+  serviceLocation?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
 }
 
 /** Query params of GET /job-requests (JobRequestController.GetForStaff). */

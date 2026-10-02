@@ -197,7 +197,12 @@ class _ActiveJobScreenState extends State<ActiveJobScreen> {
                             visualDensity: VisualDensity.compact,
                             foregroundColor: AppColors.primary,
                           ),
-                          onPressed: () => ExternalLauncherHelper.launchMapNavigation(context, _booking.serviceLocation),
+                          onPressed: () => ExternalLauncherHelper.launchMapNavigation(
+                            context,
+                            _booking.serviceLocation,
+                            latitude: _booking.latitude,
+                            longitude: _booking.longitude,
+                          ),
                           icon: const Icon(Icons.navigation, size: 14),
                           label: const Text('Directions', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
                         ),

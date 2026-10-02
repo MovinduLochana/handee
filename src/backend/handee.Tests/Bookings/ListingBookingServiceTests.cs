@@ -373,4 +373,159 @@ public class ListingBookingServiceTests
         var result2 = await sut.CreateFromListingAsync(nonOverlappingDto, Guid.NewGuid());
         Assert.NotNull(result2);
     }
+
+    [Fact]
+    public async Task CreateFromListingAsync_WithLocationAndCoordinates_PersistsAndReturnsLocation()
+    {
+        var (db, listing, customerId, _) = await SeedListingAsync(isActive: true);
+        var sut = new BookingService(db);
+
+        var dto = new CreateListingBookingDto(
+            listing.Id,
+            UtcTime(1, 10),
+            Notes: "House behind temple",
+            ServiceLocation: "No. 42, Galle Road, Colombo 03",
+            Latitude: 6.9056,
+            Longitude: 79.8622
+        );
+
+        var result = await sut.CreateFromListingAsync(dto, customerId);
+
+        Assert.NotNull(result);
+        Assert.Equal("No. 42, Galle Road, Colombo 03", result.ServiceLocation);
+        Assert.Equal(6.9056, result.Latitude);
+        Assert.Equal(79.8622, result.Longitude);
+
+        // Verify persisted in DB
+        var persisted = await db.Bookings.FindAsync(result.Id);
+        Assert.NotNull(persisted);
+        Assert.Equal("No. 42, Galle Road, Colombo 03", persisted.ServiceLocation);
+        Assert.Equal(6.9056, persisted.Latitude);
+        Assert.Equal(79.8622, persisted.Longitude);
+    }
+
+    [Fact]
+    public async Task CreateFromListingAsync_WithIncompleteCoordinates_ThrowsValidationException()
+    {
+        var (db, listing, customerId, _) = await SeedListingAsync(isActive: true);
+        var sut = new BookingService(db);
+
+        // Latitude without Longitude
+        var dto1 = new CreateListingBookingDto(
+            listing.Id,
+            UtcTime(1, 10),
+            Latitude: 6.9056,
+            Longitude: null
+        );
+        var ex1 = await Assert.ThrowsAsync<ValidationException>(() =>
+            sut.CreateFromListingAsync(dto1, customerId));
+        Assert.Contains("both be provided or both be omitted", ex1.Message, StringComparison.OrdinalIgnoreCase);
+
+        // Longitude without Latitude
+        var dto2 = new CreateListingBookingDto(
+            listing.Id,
+            UtcTime(1, 10),
+            Latitude: null,
+            Longitude: 79.8622
+        );
+        var ex2 = await Assert.ThrowsAsync<ValidationException>(() =>
+            sut.CreateFromListingAsync(dto2, customerId));
+        Assert.Contains("both be provided or both be omitted", ex2.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Theory]
+    [InlineData(-90.1, 79.8622, "Latitude")]
+    [InlineData(90.1, 79.8622, "Latitude")]
+    [InlineData(6.9056, -180.1, "Longitude")]
+    [InlineData(6.9056, 180.1, "Longitude")]
+    public async Task CreateFromListingAsync_WithOutOfRangeCoordinates_ThrowsValidationException(
+        double latitude, double longitude, string expectedField)
+    {
+        var (db, listing, customerId, _) = await SeedListingAsync(isActive: true);
+        var sut = new BookingService(db);
+
+        var dto = new CreateListingBookingDto(
+            listing.Id,
+            UtcTime(1, 10),
+            Latitude: latitude,
+            Longitude: longitude
+        );
+
+        var ex = await Assert.ThrowsAsync<ValidationException>(() =>
+            sut.CreateFromListingAsync(dto, customerId));
+        Assert.Contains(expectedField, ex.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void CreateListingBookingDto_DataAnnotationsValidation_RejectsInvalidCoordinates()
+    {
+        // Missing pair
+        var incompleteDto = new CreateListingBookingDto(
+            Guid.NewGuid(),
+            DateTimeOffset.UtcNow.AddDays(1),
+            Latitude: 6.9056
+        );
+        var context = new System.ComponentModel.DataAnnotations.ValidationContext(incompleteDto);
+        var results = new List<System.ComponentModel.DataAnnotations.ValidationResult>();
+        var isValid = System.ComponentModel.DataAnnotations.Validator.TryValidateObject(
+            incompleteDto, context, results, validateAllProperties: true);
+
+        Assert.False(isValid);
+        Assert.Contains(results, r => r.ErrorMessage != null && r.ErrorMessage.Contains("both be provided or both be omitted"));
+
+        // Out of range latitude
+        var outOfRangeDto = new CreateListingBookingDto(
+            Guid.NewGuid(),
+            DateTimeOffset.UtcNow.AddDays(1),
+            Latitude: 100.0,
+            Longitude: 50.0
+        );
+        var context2 = new System.ComponentModel.DataAnnotations.ValidationContext(outOfRangeDto);
+        var results2 = new List<System.ComponentModel.DataAnnotations.ValidationResult>();
+        var isValid2 = System.ComponentModel.DataAnnotations.Validator.TryValidateObject(
+            outOfRangeDto, context2, results2, validateAllProperties: true);
+
+        Assert.False(isValid2);
+        Assert.Contains(results2, r => r.ErrorMessage != null && r.ErrorMessage.Contains("Latitude must be between -90 and 90"));
+    }
+
+    [Fact]
+    public async Task BookingService_ToDto_ParsesCoordinatesFromJobRequestLocationAndCleansServiceLocation()
+    {
+        var db = CreateContext();
+        var customerId = Guid.NewGuid();
+        var providerId = Guid.NewGuid();
+
+        var jobRequest = new JobRequest
+        {
+            Id = Guid.NewGuid(),
+            CustomerId = customerId,
+            Location = "Colombo 03, Western Province, Sri Lanka (Keells) [6.9271,79.8612]",
+            Description = "Leaking pipe under kitchen sink",
+            ServiceCategoryId = Guid.NewGuid()
+        };
+        db.JobRequests.Add(jobRequest);
+
+        var booking = new Booking
+        {
+            Id = Guid.NewGuid(),
+            CustomerId = customerId,
+            ProviderId = providerId,
+            JobRequestId = jobRequest.Id,
+            JobRequest = jobRequest,
+            Status = BookingStatus.Requested,
+            BookingType = BookingType.InstantMatch,
+            ScheduledAt = DateTimeOffset.UtcNow.AddDays(1)
+        };
+        db.Bookings.Add(booking);
+        await db.SaveChangesAsync();
+
+        var sut = new BookingService(db);
+        var result = await sut.GetByIdAsync(booking.Id, customerId, isRequesterAdmin: false);
+
+        Assert.NotNull(result);
+        Assert.Equal("Colombo 03, Western Province, Sri Lanka (Keells)", result.ServiceLocation);
+        Assert.Equal(6.9271, result.Latitude);
+        Assert.Equal(79.8612, result.Longitude);
+    }
 }
