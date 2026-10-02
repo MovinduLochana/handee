@@ -5,7 +5,9 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/colors.dart';
 import '../../data/models/agent_workflow_model.dart';
+import '../../data/models/booking_model.dart';
 import '../../data/models/invoice_model.dart';
+import '../../providers/booking_provider.dart';
 import '../../providers/job_request_provider.dart';
 import '../../providers/payment_provider.dart';
 import '../../widgets/custom_button.dart';
@@ -31,6 +33,7 @@ class _BookingTrackerScreenState extends State<BookingTrackerScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final provider = context.read<JobRequestProvider>();
       provider.refreshTrackedRequest();
+      context.read<BookingProvider>().fetchCustomerBookings();
       _startPolling();
     });
   }
@@ -46,12 +49,21 @@ class _BookingTrackerScreenState extends State<BookingTrackerScreen> {
       final provider = context.read<JobRequestProvider>();
       final request = provider.currentTrackedRequest;
 
-      // Stop rapid polling once request is Open or Cancelled, or after 20 polls (~50s)
-      if (request != null && (request.isOpen || request.isCancelled || _pollCount >= 20)) {
+      final bookingProvider = context.read<BookingProvider>();
+      final matching = bookingProvider.bookings.cast<BookingModel?>().firstWhere(
+        (b) => b?.jobRequestId == request?.id,
+        orElse: () => null,
+      );
+
+      // Stop rapid polling once request is Cancelled, or booking is Accepted, or after 30 polls (~75s)
+      if (request != null && (request.isCancelled || (matching != null && matching.isAccepted) || _pollCount >= 30)) {
         timer.cancel();
       }
 
       await provider.refreshTrackedRequest();
+      if (mounted) {
+        await context.read<BookingProvider>().fetchCustomerBookings();
+      }
     });
   }
 
@@ -64,6 +76,7 @@ class _BookingTrackerScreenState extends State<BookingTrackerScreen> {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<JobRequestProvider>();
+    final bookingProvider = context.watch<BookingProvider>();
     final request = provider.currentTrackedRequest ??
         (provider.requests.isNotEmpty ? provider.requests.first : null);
     final workflow = provider.currentWorkflow;
@@ -74,6 +87,15 @@ class _BookingTrackerScreenState extends State<BookingTrackerScreen> {
         body: const Center(child: Text('No active job request to track')),
       );
     }
+
+    final matchingBooking = bookingProvider.bookings.cast<BookingModel?>().firstWhere(
+      (b) => b?.jobRequestId == request.id,
+      orElse: () => null,
+    );
+
+    final isProviderAccepted = matchingBooking != null && (matchingBooking.isAccepted || matchingBooking.isInProgress);
+    final isProviderDeclined = matchingBooking != null && (matchingBooking.isDeclined || matchingBooking.isExpired);
+    final providerName = matchingBooking?.providerName ?? workflow?.selectedProviderName ?? 'Matched Provider';
 
     final isPendingReview = request.isPendingAiReview;
     final isOpen = request.isOpen;
@@ -90,7 +112,10 @@ class _BookingTrackerScreenState extends State<BookingTrackerScreen> {
           IconButton(
             tooltip: 'Refresh status',
             icon: const Icon(Icons.refresh),
-            onPressed: () => provider.refreshTrackedRequest(),
+            onPressed: () {
+              provider.refreshTrackedRequest();
+              context.read<BookingProvider>().fetchCustomerBookings();
+            },
           ),
         ],
       ),
@@ -207,28 +232,46 @@ class _BookingTrackerScreenState extends State<BookingTrackerScreen> {
                     isDone: isAiComplete,
                     isActive: !isAiComplete && isPendingReview,
                   ),
-                  _buildTimelineLine(isDone: isOpen),
+                  _buildTimelineLine(isDone: isOpen && isProviderAccepted),
                   _buildTimelineStep(
                     icon: isCancelled
                         ? Icons.cancel_outlined
                         : (isOpen
-                            ? Icons.check_circle
+                            ? (isProviderAccepted
+                                ? Icons.check_circle
+                                : (isProviderDeclined
+                                    ? Icons.sync_problem_rounded
+                                    : Icons.access_time_rounded))
                             : (isHumanApprovalRequired ? Icons.shield_outlined : Icons.radio_button_unchecked)),
                     title: isCancelled
                         ? '3. Request Cancelled'
                         : (isOpen
-                            ? '3. Dispatched & Ready'
+                            ? (isProviderAccepted
+                                ? '3. Provider Accepted & Confirmed'
+                                : (isProviderDeclined
+                                    ? '3. Provider Unavailable'
+                                    : '3. Dispatched — Awaiting Acceptance'))
                             : (isHumanApprovalRequired ? '3. Queued for Admin Review' : '3. Open for Matching')),
                     subtitle: isCancelled
                         ? 'This request was cancelled'
                         : (isOpen
-                            ? 'Approved and dispatched — provider ready for confirmation'
+                            ? (isProviderAccepted
+                                ? '$providerName accepted your request! Service confirmed.'
+                                : (isProviderDeclined
+                                    ? 'The provider was unable to accept. AI is finding another match...'
+                                    : 'Offer dispatched to $providerName — waiting for provider to accept'))
                             : (isHumanApprovalRequired
                                 ? 'AI safety check flagged variance. Staff will verify shortly.'
                                 : 'Awaiting the outcome of AI review')),
-                    isDone: isOpen,
-                    isActive: isHumanApprovalRequired && isPendingReview,
-                    iconColorOverride: isHumanApprovalRequired && isPendingReview ? Colors.amber.shade700 : null,
+                    isDone: isOpen && isProviderAccepted,
+                    isActive: (isOpen && !isProviderAccepted && !isCancelled) || (isHumanApprovalRequired && isPendingReview),
+                    iconColorOverride: isCancelled
+                        ? AppColors.error
+                        : (isOpen
+                            ? (isProviderAccepted
+                                ? AppColors.success
+                                : (isProviderDeclined ? AppColors.error : AppColors.warning))
+                            : (isHumanApprovalRequired && isPendingReview ? Colors.amber.shade700 : null)),
                   ),
                 ],
               ),
@@ -363,23 +406,47 @@ class _BookingTrackerScreenState extends State<BookingTrackerScreen> {
               const SizedBox(height: 24),
             ],
 
-            // Dispatched & Booking Information
+            // Dispatched & Provider Acceptance Status
             if (isOpen) ...[
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: isProviderAccepted ? Colors.white : const Color(0xFFFFFBEB),
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppColors.primaryLight.withOpacity(0.4)),
+                  border: Border.all(
+                    color: isProviderAccepted
+                        ? AppColors.success.withOpacity(0.4)
+                        : (isProviderDeclined ? AppColors.error.withOpacity(0.4) : const Color(0xFFFDE68A)),
+                    width: 1.5,
+                  ),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.event_available_outlined, color: AppColors.primary, size: 22),
+                    Icon(
+                      isProviderAccepted
+                          ? Icons.check_circle_outline
+                          : (isProviderDeclined ? Icons.error_outline : Icons.schedule_send_rounded),
+                      color: isProviderAccepted
+                          ? AppColors.success
+                          : (isProviderDeclined ? AppColors.error : const Color(0xFFD97706)),
+                      size: 24,
+                    ),
                     const SizedBox(width: 12),
-                    const Expanded(
+                    Expanded(
                       child: Text(
-                        'Your request is open and dispatched! A booking has been created for your provider.',
-                        style: TextStyle(fontSize: 12, color: AppColors.textSecondary, height: 1.4),
+                        isProviderAccepted
+                            ? 'Provider accepted! Your booking is confirmed with $providerName.'
+                            : (isProviderDeclined
+                                ? 'The matched provider was unavailable. Our AI system is re-matching your request with another qualified professional.'
+                                : 'Request dispatched to $providerName! Waiting for the provider to accept the request before the booking is confirmed.'),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: isProviderAccepted
+                              ? AppColors.textSecondary
+                              : (isProviderDeclined ? const Color(0xFF9F1239) : const Color(0xFF92400E)),
+                          height: 1.4,
+                          fontWeight: isProviderAccepted ? FontWeight.normal : FontWeight.w500,
+                        ),
                       ),
                     ),
                   ],
@@ -494,28 +561,51 @@ class _BookingTrackerScreenState extends State<BookingTrackerScreen> {
                         ),
                         if (!isPaid) ...[
                           const SizedBox(height: 16),
-                          CustomButton(
-                            text: 'Pay Securely Now',
-                            icon: Icons.lock_outline,
-                            onPressed: () {
-                              showModalBottomSheet(
-                                context: context,
-                                isScrollControlled: true,
-                                backgroundColor: Colors.transparent,
-                                builder: (_) => InvoicePaymentSheet(
-                                  invoice: invoice,
-                                  onPaymentSuccess: () {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text('Payment processed successfully via sandbox!'),
-                                        backgroundColor: AppColors.success,
-                                      ),
-                                    );
-                                  },
-                                ),
-                              );
-                            },
-                          ),
+                          if (!isProviderAccepted) ...[
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFFFBEB),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: const Color(0xFFFDE68A)),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.info_outline, size: 16, color: Color(0xFFD97706)),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      'Payment unlocks once $providerName accepts the booking request.',
+                                      style: const TextStyle(fontSize: 12, color: Color(0xFF92400E), fontWeight: FontWeight.w500),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ] else ...[
+                            CustomButton(
+                              text: 'Pay Securely Now',
+                              icon: Icons.lock_outline,
+                              onPressed: () {
+                                showModalBottomSheet(
+                                  context: context,
+                                  isScrollControlled: true,
+                                  backgroundColor: Colors.transparent,
+                                  builder: (_) => InvoicePaymentSheet(
+                                    invoice: invoice,
+                                    onPaymentSuccess: () {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(
+                                          content: Text('Payment processed successfully via sandbox!'),
+                                          backgroundColor: AppColors.success,
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                );
+                              },
+                            ),
+                          ],
                         ],
                       ],
                     ),

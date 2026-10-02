@@ -614,26 +614,30 @@ class _BookingFormSheetState extends State<_BookingFormSheet> {
               const SizedBox(height: 24),
 
               // Confirm button
-              ElevatedButton(
-                onPressed: _isSubmitting ? null : _submitBooking,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  minimumSize: const Size(double.infinity, 54),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
+              SizedBox(
+                width: double.infinity,
+                height: 54,
+                child: ElevatedButton(
+                  onPressed: _isSubmitting ? null : _submitBooking,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size(64, 54),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
                   ),
+                  child: _isSubmitting
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                        )
+                      : const Text(
+                          'Confirm & Book',
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+                        ),
                 ),
-                child: _isSubmitting
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                      )
-                    : const Text(
-                        'Confirm & Book',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
-                      ),
               ),
             ],
           ),

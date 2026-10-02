@@ -66,6 +66,19 @@ class FakeBookingRepository implements BookingRepository {
   Future<BookingModel> updateBookingStatus(String bookingId, String newStatus) async {
     throw UnimplementedError();
   }
+
+  @override
+  Future<List<BookingModel>> getProviderBookingRequests() async => [];
+
+  @override
+  Future<BookingModel> confirmBooking(String bookingId) async {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<BookingModel> declineBooking(String bookingId, {String? reason}) async {
+    throw UnimplementedError();
+  }
 }
 
 void main() {

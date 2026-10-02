@@ -23,8 +23,9 @@ class CustomButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final Widget button;
     if (isOutlined) {
-      return OutlinedButton(
+      button = OutlinedButton(
         onPressed: isLoading ? null : onPressed,
         style: OutlinedButton.styleFrom(
           side: BorderSide(
@@ -36,18 +37,24 @@ class CustomButton extends StatelessWidget {
         ),
         child: _buildChild(context, textColor ?? backgroundColor ?? AppColors.primary),
       );
+    } else {
+      button = ElevatedButton(
+        onPressed: isLoading ? null : onPressed,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: backgroundColor ?? AppColors.primary,
+          foregroundColor: textColor ?? Colors.white,
+          elevation: 0,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+        ),
+        child: _buildChild(context, textColor ?? Colors.white),
+      );
     }
 
-    return ElevatedButton(
-      onPressed: isLoading ? null : onPressed,
-      style: ElevatedButton.styleFrom(
-        backgroundColor: backgroundColor ?? AppColors.primary,
-        foregroundColor: textColor ?? Colors.white,
-        elevation: 0,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-      ),
-      child: _buildChild(context, textColor ?? Colors.white),
+    return SizedBox(
+      width: double.infinity,
+      height: 50,
+      child: button,
     );
   }
 

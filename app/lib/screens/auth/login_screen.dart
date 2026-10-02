@@ -8,7 +8,6 @@ import '../customer/customer_home_screen.dart';
 import '../provider/provider_home_screen.dart';
 import 'customer_register_screen.dart';
 import 'provider_register_screen.dart';
-import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});

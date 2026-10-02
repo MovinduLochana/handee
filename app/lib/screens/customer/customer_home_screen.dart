@@ -13,6 +13,7 @@ import 'service_search_screen.dart';
 import 'public_provider_profile_screen.dart';
 import 'service_listing_details_screen.dart';
 import '../shared/profile_screen.dart';
+import '../shared/booking_detail_screen.dart';
 import '../../providers/service_category_provider.dart';
 import '../../providers/service_directory_provider.dart';
 import '../../widgets/provider_listing_card.dart';
@@ -112,6 +113,8 @@ class _CustomerHomeTab extends StatelessWidget {
     final user = auth.currentUser;
     final activeRequest = jobReqProvider.requests.isNotEmpty ? jobReqProvider.requests.first : null;
     final activeBooking = bookingProvider.activeBookings.isNotEmpty ? bookingProvider.activeBookings.first : null;
+    final pendingBooking = bookingProvider.pendingBookings.isNotEmpty ? bookingProvider.pendingBookings.first : null;
+    final declinedBooking = bookingProvider.declinedBookings.isNotEmpty ? bookingProvider.declinedBookings.first : null;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -340,42 +343,169 @@ class _CustomerHomeTab extends StatelessWidget {
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
                 ),
                 const SizedBox(height: 10),
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: AppColors.border),
+                GestureDetector(
+                  onTap: () {
+                    context.read<BookingProvider>().selectBooking(activeBooking.id);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => BookingDetailScreen(bookingId: activeBooking.id),
+                      ),
+                    );
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: AppColors.border),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: const BoxDecoration(
+                            color: AppColors.primaryUltraLight,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.handyman, color: AppColors.primary, size: 24),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                activeBooking.providerName ?? activeBooking.provider?.fullName ?? 'Assigned Tradesperson',
+                                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+                              ),
+                              const SizedBox(height: 3),
+                              Text(
+                                activeBooking.category ?? activeBooking.jobRequest?.categoryName ?? 'Service in Progress',
+                                style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                              ),
+                            ],
+                          ),
+                        ),
+                        StatusBadge(status: activeBooking.status),
+                      ],
+                    ),
                   ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: AppColors.primaryUltraLight,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(Icons.handyman, color: AppColors.primary, size: 24),
+                ),
+                const SizedBox(height: 48),
+              ] else if (pendingBooking != null) ...[
+                const Text(
+                  'Pending Booking Request',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                ),
+                const SizedBox(height: 10),
+                GestureDetector(
+                  onTap: () {
+                    context.read<BookingProvider>().selectBooking(pendingBooking.id);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => BookingDetailScreen(bookingId: pendingBooking.id),
                       ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              activeBooking.providerName ?? activeBooking.provider?.fullName ?? 'Assigned Tradesperson',
-                              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
-                            ),
-                            const SizedBox(height: 3),
-                            Text(
-                              activeBooking.category ?? activeBooking.jobRequest?.categoryName ?? 'Service in Progress',
-                              style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
-                            ),
-                          ],
+                    );
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: const Color(0xFFFDE68A)),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: const BoxDecoration(
+                            color: Color(0xFFFFFBEB),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.schedule, color: Color(0xFFD97706), size: 24),
                         ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                pendingBooking.providerName ?? pendingBooking.provider?.fullName ?? 'Service Provider',
+                                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+                              ),
+                              const SizedBox(height: 3),
+                              Text(
+                                pendingBooking.category ?? 'Scheduled Service (Awaiting Confirmation)',
+                                style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                              ),
+                            ],
+                          ),
+                        ),
+                        StatusBadge(status: pendingBooking.status),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 48),
+              ] else if (declinedBooking != null) ...[
+                const Text(
+                  'Declined Booking Request',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.error),
+                ),
+                const SizedBox(height: 10),
+                GestureDetector(
+                  onTap: () {
+                    context.read<BookingProvider>().selectBooking(declinedBooking.id);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => BookingDetailScreen(bookingId: declinedBooking.id),
                       ),
-                      StatusBadge(status: activeBooking.status),
-                    ],
+                    );
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFF1F2),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: const Color(0xFFFECDD3)),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: const BoxDecoration(
+                            color: Color(0xFFFEE2E2),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.cancel_outlined, color: AppColors.error, size: 24),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                declinedBooking.providerName ?? declinedBooking.provider?.fullName ?? 'Service Provider',
+                                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15, color: AppColors.textPrimary),
+                              ),
+                              const SizedBox(height: 3),
+                              Text(
+                                declinedBooking.notes != null && declinedBooking.notes!.toLowerCase().contains('declined reason:')
+                                    ? declinedBooking.notes!
+                                    : 'Provider declined this booking request. Tap to view or re-book.',
+                                style: const TextStyle(fontSize: 12, color: Color(0xFF9F1239)),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        ),
+                        StatusBadge(status: declinedBooking.status),
+                      ],
+                    ),
                   ),
                 ),
                 const SizedBox(height: 48),
