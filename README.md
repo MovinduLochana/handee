@@ -80,47 +80,92 @@ Ensure you have the following installed on your system:
 
 ---
 
-## 4. Running Services (One-Command Runner)
+## 4. Environment & Connectivity Topology (Local vs Deployed Cloud)
 
-The project provides a unified PowerShell runner script [`run-services.ps1`](./run-services.ps1) with flags to run specific service profiles:
+To prevent confusion regarding where data comes from and where it is saved, the Handee platform provides two clean connectivity profiles:
 
-### Option 1: Backend and AI Workflow Only
-```powershell
-.\run-services.ps1 -BackendAndAiOnly
-# Or alias:
-.\run-services.ps1 -Core
+```mermaid
+flowchart TD
+    subgraph ProfileA["LOCAL PROFILE (-Target Local) [Default]"]
+        WebLocal["React Web (:5173)"] -->|http://localhost:5057| ApiLocal["Local Backend API (:5057 / :5000)"]
+        FlutterLocal["Flutter Mobile (Emulator)"] -->|http://10.0.2.2:5057| ApiLocal
+        ApiLocal -->|Npgsql| DBLocal[("Local PostgreSQL (HandeeDb:5432)")]
+        ApiLocal -->|Cache| RedisLocal[("Local Redis (:6379)")]
+        ApiLocal -->|Internal| AgentLocal["AI Agents (:8000)"]
+    end
+
+    subgraph ProfileB["CLOUD PROFILE (-Target Cloud)"]
+        WebCloud["React Web"] --> ApiAzure["Azure Backend (sefproject...azurewebsites.net)"]
+        FlutterCloud["Flutter Mobile"] --> ApiAzure
+        ApiAzure --> DBCloud[("Neon Cloud PostgreSQL (neondb)")]
+        ApiAzure --> RedisCloud[("Redis Cloud Labs")]
+        ApiAzure --> AgentCloud["AI Agents (Railway)"]
+    end
 ```
 
-### Option 2: Backend, AI Workflow and Mobile Only
-```powershell
-.\run-services.ps1 -BackendAiAndMobileOnly
-# Or alias:
-.\run-services.ps1 -Mobile
-```
+### Environment Matrix
 
-### Option 3: Backend, AI Workflow and Web Only
-```powershell
-.\run-services.ps1 -BackendAiAndWebOnly
-# Or alias:
-.\run-services.ps1 -Web
-```
+| Component | Local Profile (`-Target Local` / Default) | Cloud Profile (`-Target Cloud`) |
+| :--- | :--- | :--- |
+| **Backend API** | `http://localhost:5057` & `:5000` | Deployed Azure (`https://sefproject...azurewebsites.net`) |
+| **Database** | Local PostgreSQL (`localhost:5432` / `HandeeDb`) | Neon Tech Cloud PostgreSQL (`neondb`) |
+| **Redis Cache** | Local Redis (`localhost:6379`) | Redis Labs Cloud Instance |
+| **React Web Portal** | Talks to `http://localhost:5057` (`npm run dev:local`) | Talks to Azure Backend (`npm run dev:cloud`) |
+| **Flutter Mobile** | Talks to `http://10.0.2.2:5057` (`--dart-define=USE_LOCAL=true`) | Talks to Azure Backend (`--dart-define=USE_LOCAL=false`) |
 
-### Option 4: All Services (Default)
+### Instant Startup Transparency (Console Banners)
+
+Every application automatically outputs a diagnostic banner when it spins up, eliminating ambiguity:
+
+1. **Backend API**:
+   - Prints active database host, DB name, Redis connection, and AI agent endpoint to the console on startup.
+   - Live JSON diagnostic endpoint: `GET http://localhost:5057/api/system/info`.
+2. **React Web Portal**:
+   - Terminal shows the active target backend URL when Vite starts.
+   - Browser DevTools Console (`F12`) displays a styled `[Handee Web]` badge with the active API URL on every page load.
+3. **Flutter Mobile App**:
+   - Debug console prints the target backend URL, routing aliases (`10.0.2.2:5057`), and platform flags when `main()` initializes.
+
+---
+
+## 5. Running Services (One-Command Runner)
+
+The project provides a unified PowerShell runner script [`run-services.ps1`](./run-services.ps1) with flags to run specific service profiles and target environments:
+
+### Target Profile Shortcuts
+
 ```powershell
-.\run-services.ps1 -All
-# Or simply:
+# 1. All services connected LOCALLY (Default)
 .\run-services.ps1
+
+# 2. All services targeting DEPLOYED CLOUD (Azure & Neon Cloud DB)
+.\run-services.ps1 -Target Cloud
+
+# 3. Local backend connected to Neon Cloud DB (useful if you don't have local Postgres installed)
+.\run-services.ps1 -CloudDb
 ```
 
-### Stopping Background Services
-To terminate all background processes started by the runner:
+### Selective Subsystem Profiles
+
+You can combine `-Target` with any service profile:
+
 ```powershell
+# Backend & AI Only (Local DB)
+.\run-services.ps1 -BackendAndAiOnly
+
+# Backend, AI & Mobile Only (Targeting Local)
+.\run-services.ps1 -BackendAiAndMobileOnly
+
+# Backend, AI & Web Only (Targeting Local)
+.\run-services.ps1 -BackendAiAndWebOnly
+
+# Stop all background services
 .\run-services.ps1 -Stop
 ```
 
 ---
 
-## 5. Running Services Manually
+## 6. Running Services Manually
 
 If you prefer launching services in individual terminal tabs:
 
@@ -136,28 +181,53 @@ python -m uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
 ```powershell
 cd src/backend/Handee.Api
 dotnet build
+
+# Run against Local PostgreSQL (default):
 dotnet run --urls "http://0.0.0.0:5057;http://0.0.0.0:5000"
+
+# Or run against Neon Cloud PostgreSQL:
+$env:USE_CLOUD_DB='true'; dotnet run --urls "http://0.0.0.0:5057;http://0.0.0.0:5000"
 ```
-*Database migrations & seed data apply automatically on startup.*
+*Diagnostics check:* `curl http://localhost:5057/api/system/info`
 
 ### 3. React Web Portal (`web/`)
 ```powershell
 cd web
 npm install
-npm run dev
+
+# Connect to Local Backend (http://localhost:5057):
+npm run dev:local
+# (or simply: npm run dev)
+
+# Connect to Deployed Azure Backend:
+npm run dev:cloud
 ```
-*Accessible at:* `http://localhost:5173`
 
 ### 4. Flutter Mobile App (`app/`)
 ```powershell
 cd app
 flutter pub get
-flutter run
+
+# Connect to Local Backend (Android emulator automatically uses 10.0.2.2:5057):
+flutter run --dart-define=USE_LOCAL=true
+
+# Connect to Deployed Azure Backend:
+flutter run --dart-define=USE_LOCAL=false
 ```
 
 ---
 
-## 6. Testing Guide
+## 7. VS Code 1-Click Debugging
+
+The workspace includes pre-configured launch profiles in [`.vscode/launch.json`](./.vscode/launch.json). Open the **Run and Debug** view (`Ctrl+Shift+D`) to start any service with 1 click:
+- `Backend (.NET - Local Database)`
+- `Backend (.NET - Cloud Neon DB)`
+- `Flutter Mobile (Local Backend)`
+- `Flutter Mobile (Cloud Azure Backend)`
+
+---
+
+## 8. Testing Guide
 
 ### 1. AI Agent Subsystem Tests (Python / pytest)
 Tests the 4-agent LangGraph workflow, category classification, scope estimation, price estimation, and the 3 deterministic risk validation tiers:
@@ -200,7 +270,7 @@ npm test
 
 ---
 
-## 7. End-to-End Workflow Verification
+## 9. End-to-End Workflow Verification
 
 ### Scenario A: Instant Match Job Request with AI Auto-Dispatch (Low Risk)
 1. **Submit Job Request**:
@@ -234,7 +304,7 @@ npm test
 
 ---
 
-## 8. Default Credentials & Seed Data
+## 10. Default Credentials & Seed Data
 
 | Role | Email | Password | Surface |
 | :--- | :--- | :--- | :--- |
@@ -244,7 +314,7 @@ npm test
 
 ---
 
-## 9. Project Structure
+## 11. Project Structure
 
 ```
 .

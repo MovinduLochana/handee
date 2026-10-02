@@ -20,7 +20,69 @@ using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
 
-Console.WriteLine($"Environment: {builder.Environment.EnvironmentName}");
+// Check if cloud database is explicitly requested via config or environment variable
+var useCloudDb = builder.Configuration.GetValue<bool?>("UseCloudDatabase") == true ||
+                 string.Equals(Environment.GetEnvironmentVariable("USE_CLOUD_DB"), "true", StringComparison.OrdinalIgnoreCase);
+
+var dbConnectionString = useCloudDb
+    ? (builder.Configuration.GetConnectionString("CloudConnection") ?? builder.Configuration.GetConnectionString("DefaultConnection")!)
+    : (builder.Configuration.GetConnectionString("LocalConnection") ?? builder.Configuration.GetConnectionString("DefaultConnection")!);
+
+var dbInfo = ParsePostgresInfo(dbConnectionString);
+var redisConn = builder.Configuration.GetConnectionString("Redis") ?? "localhost:6379";
+var redisInfo = ParseRedisInfo(redisConn);
+var agentUrl = builder.Configuration["AgentService:BaseUrl"] ?? "Not configured";
+
+Console.ForegroundColor = ConsoleColor.Cyan;
+Console.WriteLine("================================================================================");
+Console.WriteLine("🚀  HANDEE ASP.NET CORE BACKEND STARTING UP");
+Console.WriteLine("================================================================================");
+Console.ResetColor();
+
+Console.Write(" ⚙️  Environment     : ");
+Console.ForegroundColor = ConsoleColor.Yellow;
+Console.WriteLine(builder.Environment.EnvironmentName);
+Console.ResetColor();
+
+Console.Write(" 🗄️  Active Database : ");
+if (dbInfo.IsCloud)
+{
+    Console.ForegroundColor = ConsoleColor.Magenta;
+    Console.Write("[CLOUD - Neon PostgreSQL] ");
+    Console.ResetColor();
+    Console.WriteLine($"Host: {dbInfo.Host} | Database: {dbInfo.Database}");
+}
+else
+{
+    Console.ForegroundColor = ConsoleColor.Green;
+    Console.Write("[LOCAL PostgreSQL] ");
+    Console.ResetColor();
+    Console.WriteLine($"Host: {dbInfo.Host}:{dbInfo.Port} | Database: {dbInfo.Database}");
+}
+
+Console.Write(" 🔴 Redis Cache     : ");
+if (redisInfo.IsCloud)
+{
+    Console.ForegroundColor = ConsoleColor.Magenta;
+    Console.WriteLine("[CLOUD Redis Labs]");
+}
+else
+{
+    Console.ForegroundColor = ConsoleColor.Green;
+    Console.WriteLine($"[LOCAL Redis] {redisConn}");
+}
+Console.ResetColor();
+
+Console.Write(" 🤖 AI Agent Service : ");
+Console.ForegroundColor = ConsoleColor.Cyan;
+Console.WriteLine(agentUrl);
+Console.ResetColor();
+
+Console.ForegroundColor = ConsoleColor.DarkGray;
+Console.WriteLine(" 💡 Config Switch: Set 'UseCloudDatabase: true' or USE_CLOUD_DB=true for Cloud DB.");
+Console.ForegroundColor = ConsoleColor.Cyan;
+Console.WriteLine("================================================================================");
+Console.ResetColor();
 
 builder.Services.AddCors(options =>
 {
@@ -37,7 +99,7 @@ builder.Services.AddOpenApi();
 
 // ── Database ──────────────────────────────────────────────────────────────────
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseNpgsql(dbConnectionString));
 
 // ── ASP.NET Identity ──────────────────────────────────────────────────────────
 builder.Services.AddIdentityCore<ApplicationUser>(options =>
@@ -92,7 +154,6 @@ builder.Services.Configure<AuthOptions>(builder.Configuration.GetSection(AuthOpt
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection(EmailSettings.SectionName));
 
 // ── Redis Cache ───────────────────────────────────────────────────────────────
-var redisConn = builder.Configuration.GetConnectionString("Redis") ?? "localhost:6379";
 builder.Services.AddStackExchangeRedisCache(options =>
 {
     options.ConfigurationOptions = ParseRedisConnectionString(redisConn);
@@ -235,8 +296,57 @@ app.UseAuthorization();
 app.MapControllers();
 app.MapHub<handee.API.Hubs.BookingHub>("/hubs/booking");
 app.MapHealthChecks("/health");
+
+app.MapGet("/api/system/info", () => Results.Ok(new
+{
+    service = "Handee.Api",
+    environment = app.Environment.EnvironmentName,
+    database = new
+    {
+        type = dbInfo.IsCloud ? "Cloud (Neon PostgreSQL)" : "Local PostgreSQL",
+        host = dbInfo.Host,
+        port = dbInfo.Port,
+        database = dbInfo.Database,
+        isCloud = dbInfo.IsCloud
+    },
+    redis = new
+    {
+        type = redisInfo.IsCloud ? "Cloud Redis" : "Local Redis",
+        endpoint = redisConn,
+        isCloud = redisInfo.IsCloud
+    },
+    agentService = agentUrl
+})).AllowAnonymous();
+
 app.Run();
 return;
+
+static (string Host, string Database, int Port, bool IsCloud) ParsePostgresInfo(string connStr)
+{
+    try
+    {
+        var csb = new Npgsql.NpgsqlConnectionStringBuilder(connStr);
+        var host = csb.Host ?? "localhost";
+        var db = csb.Database ?? "HandeeDb";
+        var port = csb.Port > 0 ? csb.Port : 5432;
+        var isCloud = host.Contains("neon.tech", StringComparison.OrdinalIgnoreCase) ||
+                      host.Contains("aws", StringComparison.OrdinalIgnoreCase) ||
+                      host.Contains("azure", StringComparison.OrdinalIgnoreCase);
+        return (host, db, port, isCloud);
+    }
+    catch
+    {
+        return ("unknown", "unknown", 5432, false);
+    }
+}
+
+static (string Host, bool IsCloud) ParseRedisInfo(string connStr)
+{
+    var isCloud = connStr.Contains("redislabs.com", StringComparison.OrdinalIgnoreCase) ||
+                  connStr.Contains("cloud", StringComparison.OrdinalIgnoreCase) ||
+                  connStr.Contains("upstash", StringComparison.OrdinalIgnoreCase);
+    return (connStr, isCloud);
+}
 
 static ConfigurationOptions ParseRedisConnectionString(string connectionString)
 {

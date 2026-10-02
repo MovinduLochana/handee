@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, TargetPlatform;
+import 'package:flutter/foundation.dart' show debugPrint, kIsWeb, defaultTargetPlatform, TargetPlatform;
 
 /// Centralized API Endpoints for Handee ASP.NET Core Backend.
 /// Matches the exact routes implemented in Handee.Api controllers.
@@ -32,6 +32,31 @@ class ApiEndpoints {
     if (customApiUrl.isNotEmpty) return customApiUrl;
     if (useLocal) return 'http://$defaultHost:$defaultPort';
     return liveBackendUrl;
+  }
+
+  /// Logs a prominent diagnostic banner on application spin-up
+  static void logStartupConfiguration() {
+    final activeUrl = baseUrl;
+    final isLocal = activeUrl.contains('localhost') ||
+                    activeUrl.contains('10.0.2.2') ||
+                    (usePhysicalDevice && activeUrl.contains(physicalDeviceIp));
+    final targetLabel = isLocal ? '[LOCAL BACKEND]' : '[DEPLOYED AZURE CLOUD]';
+
+    debugPrint('================================================================');
+    debugPrint('📱  HANDEE FLUTTER MOBILE APP STARTING UP');
+    debugPrint('================================================================');
+    debugPrint(' 🎯 Target Backend : $targetLabel $activeUrl');
+    debugPrint(' ⚙️  Flags          : USE_LOCAL=$useLocal | DEVICE=$usePhysicalDevice');
+    if (isLocal) {
+      debugPrint(' 🌐 Host Routing   : $defaultHost:$defaultPort');
+      if (defaultTargetPlatform == TargetPlatform.android && !usePhysicalDevice) {
+        debugPrint(' 🤖 Android Note   : 10.0.2.2 routes to host machine localhost:5057');
+      }
+    } else {
+      debugPrint(' ☁️  Cloud Note     : Connected to Azure Web App & Neon Tech PostgreSQL');
+    }
+    debugPrint(' 💡 Run local via  : flutter run --dart-define=USE_LOCAL=true');
+    debugPrint('================================================================');
   }
 
   // Auth endpoints (AuthController)

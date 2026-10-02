@@ -6,6 +6,8 @@
   "scripts": {
     "test": "vitest",
     "dev": "vite",
+    "dev:local": "vite",
+    "dev:cloud": "vite --mode cloud",
     "build": "tsc -noEmit && vite build",
     "preview": "vite preview",
     "lint": "oxlint",

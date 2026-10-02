@@ -1,10 +1,19 @@
 import axios from "axios";
 import { getAccessToken, getRefreshToken, setTokens, clearTokens } from "./tokenManager";
 
-// Base URL: Injected via Vite ENV variables or defaults to deployed Azure Web App
+// Base URL: Injected via Vite ENV variables or defaults to local backend
 export const BASE_URL =
-  import.meta.env.VITE_API_URL ||
-  "https://sefproject-g3cmczhth2cygqgh.southeastasia-01.azurewebsites.net";
+  import.meta.env.VITE_API_URL || "http://localhost:5057";
+
+// Diagnostic banner in browser console
+const isLocalBackend = BASE_URL.includes("localhost") || BASE_URL.includes("127.0.0.1");
+console.log(
+  `%c[Handee Web]%c Connected Backend: %c${BASE_URL}%c (${isLocalBackend ? "LOCAL" : "DEPLOYED AZURE"})`,
+  "background: #0284c7; color: white; padding: 2px 6px; border-radius: 4px; font-weight: bold;",
+  "color: #64748b; font-weight: normal; margin-left: 4px;",
+  isLocalBackend ? "color: #16a34a; font-weight: bold;" : "color: #9333ea; font-weight: bold;",
+  "color: #64748b; font-style: italic;"
+);
 
 export const getFullMediaUrl = (url?: string | null): string => {
   if (!url) return "";

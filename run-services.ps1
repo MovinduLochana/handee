@@ -52,7 +52,14 @@ param(
 
     [Parameter(ParameterSetName = "Stop")]
     [Alias("kill")]
-    [switch]$Stop
+    [switch]$Stop,
+
+    [Parameter()]
+    [ValidateSet("Local", "Cloud")]
+    [string]$Target = "Local",
+
+    [Parameter()]
+    [switch]$CloudDb
 )
 
 $ErrorActionPreference = "Stop"
@@ -161,6 +168,10 @@ Write-Host "=================================================================" -
 Write-Host "           HANDEE PLATFORM SERVICE RUNNER                        " -ForegroundColor White
 Write-Host "=================================================================" -ForegroundColor Cyan
 Write-Host " Selected Profile : $ProfileName" -ForegroundColor Yellow
+Write-Host " Target Topology  : $Target (Web & Mobile -> $Target Backend)" -ForegroundColor $(if ($Target -eq "Local") { "Green" } else { "Magenta" })
+if ($CloudDb) {
+    Write-Host " Database Override: Neon Cloud PostgreSQL forced via -CloudDb" -ForegroundColor Magenta
+}
 Write-Host " Working Directory: $RootDir" -ForegroundColor DarkGray
 Write-Host "-----------------------------------------------------------------" -ForegroundColor Cyan
 
@@ -232,10 +243,13 @@ if ($RunAi) {
 # 2. Start ASP.NET Core Web API Backend
 # -----------------------------------------------------------------------------
 if ($RunBackend) {
-    Write-Host "[2/4] Launching ASP.NET Core Backend (Ports 5057 & 5000)..." -ForegroundColor Green
+    $useCloudDbFlag = ($CloudDb -or $Target -eq "Cloud")
+    $dbModeText = if ($useCloudDbFlag) { "CLOUD DB (Neon)" } else { "LOCAL DB (PostgreSQL)" }
+    Write-Host "[2/4] Launching ASP.NET Core Backend (Ports 5057 & 5000) [$dbModeText]..." -ForegroundColor Green
     $BackendDir = Join-Path $RootDir "src\backend\Handee.Api"
-    $BackendCmd = "dotnet run --urls `"http://0.0.0.0:5057;http://0.0.0.0:5000`""
-    $pid2 = Start-ServiceWindow -Title "Handee - Backend API (Ports 5057 & 5000)" -WorkingDirectory $BackendDir -CommandText $BackendCmd -Color "Cyan"
+    $envPrefix = if ($useCloudDbFlag) { "`$env:USE_CLOUD_DB='true'; " } else { "`$env:USE_CLOUD_DB='false'; " }
+    $BackendCmd = "$envPrefix dotnet run --urls `"http://0.0.0.0:5057;http://0.0.0.0:5000`""
+    $pid2 = Start-ServiceWindow -Title "Handee - Backend API [$dbModeText] (Ports 5057 & 5000)" -WorkingDirectory $BackendDir -CommandText $BackendCmd -Color "Cyan"
     if ($pid2) { $SpawnedPids += $pid2 }
 }
 
@@ -243,10 +257,12 @@ if ($RunBackend) {
 # 3. Start React Web Portal (Vite)
 # -----------------------------------------------------------------------------
 if ($RunWeb) {
-    Write-Host "[3/4] Launching React Web Portal (Vite on :5173)..." -ForegroundColor Green
+    $webScript = if ($Target -eq "Cloud") { "npm run dev:cloud" } else { "npm run dev:local" }
+    $webTargetText = if ($Target -eq "Cloud") { "CLOUD AZURE (https://sefproject...)" } else { "LOCAL (http://localhost:5057)" }
+    Write-Host "[3/4] Launching React Web Portal (Vite on :5173) [Target: $webTargetText]..." -ForegroundColor Green
     $WebDir = Join-Path $RootDir "web"
-    $WebCmd = "npm run dev"
-    $pid3 = Start-ServiceWindow -Title "Handee - React Web Portal (Port 5173)" -WorkingDirectory $WebDir -CommandText $WebCmd -Color "Yellow"
+    $WebCmd = $webScript
+    $pid3 = Start-ServiceWindow -Title "Handee - React Web Portal [TARGET: $Target]" -WorkingDirectory $WebDir -CommandText $WebCmd -Color "Yellow"
     if ($pid3) { $SpawnedPids += $pid3 }
 }
 
@@ -254,10 +270,12 @@ if ($RunWeb) {
 # 4. Start Flutter Mobile App
 # -----------------------------------------------------------------------------
 if ($RunMobile) {
-    Write-Host "[4/4] Launching Flutter Mobile App..." -ForegroundColor Green
+    $flutterLocalArg = if ($Target -eq "Cloud") { "--dart-define=USE_LOCAL=false" } else { "--dart-define=USE_LOCAL=true" }
+    $mobileTargetText = if ($Target -eq "Cloud") { "CLOUD AZURE (https://sefproject...)" } else { "LOCAL (http://10.0.2.2:5057)" }
+    Write-Host "[4/4] Launching Flutter Mobile App [Target: $mobileTargetText]..." -ForegroundColor Green
     $AppDir = Join-Path $RootDir "app"
-    $MobileCmd = "flutter run"
-    $pid4 = Start-ServiceWindow -Title "Handee - Flutter Mobile App" -WorkingDirectory $AppDir -CommandText $MobileCmd -Color "Blue"
+    $MobileCmd = "flutter run $flutterLocalArg"
+    $pid4 = Start-ServiceWindow -Title "Handee - Flutter Mobile App [TARGET: $Target]" -WorkingDirectory $AppDir -CommandText $MobileCmd -Color "Blue"
     if ($pid4) { $SpawnedPids += $pid4 }
 }
 
@@ -273,11 +291,15 @@ Start-Sleep -Seconds 1
 Write-Host "`n-----------------------------------------------------------------" -ForegroundColor Cyan
 Write-Host "               ACTIVE SERVICES DASHBOARD                         " -ForegroundColor White
 Write-Host "-----------------------------------------------------------------" -ForegroundColor Cyan
+Write-Host " Topology Target Mode : $Target" -ForegroundColor $(if ($Target -eq "Local") { "Green" } else { "Magenta" })
 
 if ($RunBackend) {
+    $backendDb = if ($CloudDb -or $Target -eq "Cloud") { "Cloud Neon PostgreSQL (neondb)" } else { "Local PostgreSQL (HandeeDb:5432)" }
     Write-Host "  [ASP.NET Core Backend]   http://localhost:5057  (Web endpoint)" -ForegroundColor Green
-    Write-Host "                           http://localhost:5000  (Mobile emulator alias 10.0.2.2)" -ForegroundColor DarkGreen
-    Write-Host "                           OpenAPI: http://localhost:5057/openapi/v1.json" -ForegroundColor DarkGray
+    Write-Host "                           http://localhost:5000  (Mobile emulator endpoint)" -ForegroundColor DarkGreen
+    Write-Host "                           Active Database: $backendDb" -ForegroundColor DarkCyan
+    Write-Host "                           Diagnostics    : http://localhost:5057/api/system/info" -ForegroundColor DarkGray
+    Write-Host "                           OpenAPI Spec   : http://localhost:5057/openapi/v1.json" -ForegroundColor DarkGray
 }
 
 if ($RunAi) {
@@ -287,14 +309,19 @@ if ($RunAi) {
 }
 
 if ($RunWeb) {
-    Write-Host "  [React Web Portal]       http://localhost:5173" -ForegroundColor Yellow
+    $webTargetUrl = if ($Target -eq "Cloud") { "https://sefproject-g3cmczhth2cygqgh.southeastasia-01.azurewebsites.net" } else { "http://localhost:5057" }
+    Write-Host "  [React Web Portal]       http://localhost:5173  -> talks to: $webTargetUrl" -ForegroundColor Yellow
 }
 
 if ($RunMobile) {
-    Write-Host "  [Flutter Mobile App]     Running via Flutter tooling (live hot-reload)" -ForegroundColor Cyan
+    $mobileTargetUrl = if ($Target -eq "Cloud") { "https://sefproject-g3cmczhth2cygqgh.southeastasia-01.azurewebsites.net" } else { "http://10.0.2.2:5057 (Android) / http://localhost:5057" }
+    Write-Host "  [Flutter Mobile App]     Running via Flutter    -> talks to: $mobileTargetUrl" -ForegroundColor Cyan
 }
 
 Write-Host "-----------------------------------------------------------------" -ForegroundColor Cyan
 Write-Host " Note: Each service runs in its own window for live logs & hot reload." -ForegroundColor DarkGray
-Write-Host " To stop all services later, run:" -ForegroundColor DarkGray
-Write-Host "   .\run-services.ps1 -Stop`n" -ForegroundColor White
+Write-Host " Configuration shortcuts:" -ForegroundColor DarkGray
+Write-Host "   .\run-services.ps1               -> All services connected LOCALLY" -ForegroundColor White
+Write-Host "   .\run-services.ps1 -Target Cloud  -> Web & Mobile connect to DEPLOYED AZURE" -ForegroundColor White
+Write-Host "   .\run-services.ps1 -CloudDb       -> Local backend connects to Neon Cloud DB" -ForegroundColor White
+Write-Host "   .\run-services.ps1 -Stop          -> Stop all services`n" -ForegroundColor White

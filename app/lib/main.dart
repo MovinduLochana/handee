@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import 'core/constants/api_endpoints.dart';
 import 'core/network/api_client.dart';
 import 'core/services/storage_service.dart';
 import 'core/theme/app_theme.dart';
@@ -135,6 +136,7 @@ Widget buildHandeeApp({
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  ApiEndpoints.logStartupConfiguration();
   final storageService = await StorageService.getInstance();
   runApp(buildHandeeApp(storageService: storageService));
 }
