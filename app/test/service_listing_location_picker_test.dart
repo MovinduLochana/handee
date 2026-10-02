@@ -106,4 +106,22 @@ void main() {
     expect(find.byType(DropdownButtonFormField<String>), findsNothing);
     expect(find.byIcon(Icons.my_location), findsOneWidget);
   });
+
+  testWidgets('LocationPickerScreen keeps landmark field empty when initialAddress is passed', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: LocationPickerScreen(
+          initialAddress: '42 Flower Road, Colombo 03',
+          initialLatitude: 6.9056,
+          initialLongitude: 79.8622,
+        ),
+      ),
+    );
+
+    // Verify landmark input field starts empty and does not duplicate initial address
+    final textField = tester.widget<TextField>(find.byType(TextField));
+    expect(textField.controller?.text, isEmpty);
+    // Detected address card displays the initial address
+    expect(find.text('42 Flower Road, Colombo 03'), findsOneWidget);
+  });
 }

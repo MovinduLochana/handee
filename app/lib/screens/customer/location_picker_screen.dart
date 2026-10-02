@@ -61,7 +61,6 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
         : _defaultLocation;
 
     if (widget.initialAddress != null && widget.initialAddress!.isNotEmpty) {
-      _detailController.text = widget.initialAddress!;
       _detectedAddress = widget.initialAddress!;
     } else {
       _reverseGeocode(_currentCenter);
@@ -130,7 +129,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
         if (permission == LocationPermission.denied) {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Location permissions were denied.')),
+              const SnackBar(content: Text('Location permission is needed to pinpoint your address. Please allow access.')),
             );
           }
           return;
@@ -140,7 +139,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
       if (permission == LocationPermission.deniedForever) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Location permissions are permanently denied. Please enable in Settings.')),
+            const SnackBar(content: Text('Location access is disabled. Please open device Settings to allow access.')),
           );
         }
         return;
@@ -175,7 +174,11 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
     String finalAddress = '';
 
     if (streetDetail.isNotEmpty) {
-      finalAddress = '$streetDetail, $_detectedAddress';
+      if (_detectedAddress.toLowerCase().contains(streetDetail.toLowerCase())) {
+        finalAddress = _detectedAddress;
+      } else {
+        finalAddress = '$streetDetail, $_detectedAddress';
+      }
     } else {
       finalAddress = _detectedAddress;
     }
@@ -355,7 +358,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                     TextField(
                       controller: _detailController,
                       decoration: InputDecoration(
-                        labelText: 'House / Street / Landmark (Optional)',
+                        labelText: 'House no., apartment, or landmark (optional)',
                         hintText: 'e.g. No. 42, Temple Road, Apt 3B',
                         prefixIcon: const Icon(Icons.home_outlined, color: AppColors.textMuted, size: 20),
                         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),

@@ -12,6 +12,7 @@ import 'package:app/data/repositories/provider_repository.dart';
 import 'package:app/providers/auth_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:app/screens/customer/edit_customer_profile_screen.dart';
+import 'package:app/screens/shared/profile_screen.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -171,4 +172,32 @@ void main() {
 
     expect(authProvider.currentUser?.fullName, 'Nimali Fernando');
   });
+
+  testWidgets('ProfileScreen renders cleanly without shape/borderRadius assertion failure', (tester) async {
+    final client = ApiClient(
+      storage: storage,
+      httpClient: MockClient((req) async => http.Response('{}', 200)),
+      baseUrl: 'http://localhost',
+    );
+    final authRepo = AuthRepository(apiClient: client, storage: storage);
+    final authProvider = AuthProvider(authRepo: authRepo, storage: storage);
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider<AuthProvider>.value(
+        value: authProvider,
+        child: const MaterialApp(
+          home: ProfileScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(find.byType(ProfileScreen), findsOneWidget);
+    expect(find.text('Account & Settings'), findsOneWidget);
+    expect(find.text('Edit Customer Profile'), findsOneWidget);
+    expect(find.text('Trust & Verification Guidelines'), findsOneWidget);
+    expect(find.text('Help & Support (Sri Lanka)'), findsOneWidget);
+  });
 }
+
