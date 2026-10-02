@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -91,7 +91,9 @@ describe("ProviderBookings Page", () => {
     );
 
   it("renders pending scheduled inquiries with customer details and expiration badge", async () => {
-    vi.mocked(bookingApi.getProviderScheduledRequests).mockResolvedValueOnce([mockScheduledRequest]);
+    vi.mocked(bookingApi.getProviderScheduledRequests).mockResolvedValueOnce([
+      mockScheduledRequest,
+    ]);
     vi.mocked(bookingApi.getProviderBookings).mockResolvedValueOnce([]);
 
     renderPage();

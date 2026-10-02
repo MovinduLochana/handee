@@ -6,8 +6,6 @@ import {
   Clock,
   MapPin,
   Phone,
-  User,
-  AlertCircle,
   CheckCircle2,
   XCircle,
   Inbox,

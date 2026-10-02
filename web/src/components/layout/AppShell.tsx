@@ -85,7 +85,12 @@ export default function AppShell() {
     { name: "Verification Status", to: "/provider/status", icon: CheckSquare, show: isProvider },
     { name: "My Profile", to: "/provider/profile", icon: UserCircle, show: isProvider },
     { name: "Service Listings", to: "/provider/service-listings", icon: Package, show: isProvider },
-    { name: "Bookings & Inquiries", to: "/provider/bookings", icon: CalendarCheck, show: isProvider },
+    {
+      name: "Bookings & Inquiries",
+      to: "/provider/bookings",
+      icon: CalendarCheck,
+      show: isProvider,
+    },
     { name: "My Reviews", to: "/provider/reviews", icon: Star, show: isProvider },
     { name: "Payouts & Earnings", to: "/provider/payouts", icon: DollarSign, show: isProvider },
 
