@@ -22,8 +22,8 @@ How do we implement and execute the required non-functional, database integrity,
    - Evaluated authentication enforcement, malformed JWT rejection, SQL injection sanitization, security headers, and AI prompt injection. Generated HTML audit report.
 5. **Cross-Component E2E Workflow Automation**:
    - Implemented [`run-e2e-workflow.ps1`](file:///d:/SLIIT/Year%203%20Semester%201/SE3090%20-%20Software%20Engineering%20Frameworks/Assignment/handee/tests/e2e/run-e2e-workflow.ps1) with Newman CLI running the 70-request chained Postman test suite.
-6. **Multi-Job Continuous Integration Pipeline**:
-   - Implemented [`.github/workflows/ci-testing-suite.yml`](file:///d:/SLIIT/Year%203%20Semester%201/SE3090%20-%20Software%20Engineering%20Frameworks/Assignment/handee/.github/workflows/ci-testing-suite.yml) running backend, AI, web, and mobile tests with coverage on Git push.
+6. **Modular Continuous Integration Pipelines**:
+   - Implemented dedicated subsystem CI workflows ([`backend-ci.yml`](file:///d:/SLIIT/Year%203%20Semester%201/SE3090%20-%20Software%20Engineering%20Frameworks/Assignment/handee/.github/workflows/backend-ci.yml), [`ai-ci.yml`](file:///d:/SLIIT/Year%203%20Semester%201/SE3090%20-%20Software%20Engineering%20Frameworks/Assignment/handee/.github/workflows/ai-ci.yml), [`frontend-ci.yml`](file:///d:/SLIIT/Year%203%20Semester%201/SE3090%20-%20Software%20Engineering%20Frameworks/Assignment/handee/.github/workflows/frontend-ci.yml), [`mobile-ci.yml`](file:///d:/SLIIT/Year%203%20Semester%201/SE3090%20-%20Software%20Engineering%20Frameworks/Assignment/handee/.github/workflows/mobile-ci.yml)) running tests with coverage on Git push without redundant runner duplication.
 7. **Unified Evidence Runner & Submission Deliverables**:
    - Implemented [`generate-all-evidence.ps1`](file:///d:/SLIIT/Year%203%20Semester%201/SE3090%20-%20Software%20Engineering%20Frameworks/Assignment/handee/scripts/generate-all-evidence.ps1).
    - Compiled all 5 required submission documents under `docs/testing/`:

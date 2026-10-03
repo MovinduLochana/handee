@@ -164,7 +164,7 @@ To execute the test suites and generate verifiable evidence, implement the follo
 | **Full E2E Workflow Test** | Python / Requests or Newman | `tests/e2e/test_cross_platform_workflow.py` | Validates complete cross-component business workflow |
 | **Database Integrity Tests** | xUnit + EF Core / Npgsql | `src/backend/handee.Tests/Data/DatabaseIntegrityAndTransactionTests.cs` | Tests DB constraints, FKs, and transaction rollback |
 | **AI Adversarial & Safety Tests** | pytest | `agents/tests/test_ai_safety_and_adversarial.py` | Tests prompt injection, malicious inputs, safe failure |
-| **Multi-Job CI Pipeline** | GitHub Actions | `.github/workflows/ci-testing-suite.yml` | Executes all 5 test suites on push with pass badges and logs |
+| **Modular CI Pipelines** | GitHub Actions | `.github/workflows/{backend,ai,frontend,mobile}-ci.yml` | Executes dedicated subsystem test suites on push with pass badges and logs |
 | **Unified Coverage Collector** | ReportGenerator / lcov | `scripts/generate-all-coverage.ps1` | Aggregates code coverage across .NET, React, Python, Flutter |
 
 ---
