@@ -1,0 +1,50 @@
+{
+  "timestamp": "2026-10-03T21:57:40.509835+00:00",
+  "results": [
+    {
+      "name": "Authentication Enforcement",
+      "category": "OWASP API2:2023 - Broken Authentication",
+      "description": "Verifies protected resources require valid credentials",
+      "status": "PASSED",
+      "passed": true,
+      "details": "API correctly rejected unauthenticated request with HTTP 401 Unauthorized",
+      "durationMs": 313.82
+    },
+    {
+      "name": "JWT Integrity & Signature",
+      "category": "OWASP API2:2023 - Broken Authentication",
+      "description": "Verifies forged or malformed tokens are rejected",
+      "status": "PASSED",
+      "passed": true,
+      "details": "API successfully rejected forged JWT token with HTTP 401 Unauthorized",
+      "durationMs": 276.41
+    },
+    {
+      "name": "SQL Injection Resistance",
+      "category": "OWASP API8:2023 - Security Misconfiguration",
+      "description": "Tests search query parameters against SQL injection",
+      "status": "PASSED",
+      "passed": true,
+      "details": "Parameterized query sanitized injection payload without database exception",
+      "durationMs": 236.43
+    },
+    {
+      "name": "HTTP Security Headers",
+      "category": "OWASP API8:2023 - Security Misconfiguration",
+      "description": "Inspects API response headers for security controls",
+      "status": "PASSED",
+      "passed": true,
+      "details": "Security headers evaluated. Headers received: 7",
+      "durationMs": 255.99
+    },
+    {
+      "name": "AI Prompt Injection Defense",
+      "category": "OWASP LLM01:2025 - Prompt Injection",
+      "description": "Tests conversational AI endpoint against adversarial override",
+      "status": "PASSED",
+      "passed": true,
+      "details": "AI gateway input validation rejected adversarial payload with HTTP 422",
+      "durationMs": 403.64
+    }
+  ]
+}

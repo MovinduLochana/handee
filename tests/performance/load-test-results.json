@@ -1,0 +1,90 @@
+{
+  "timestamp": "2026-10-03T21:57:38.845Z",
+  "allPassed": false,
+  "results": [
+    {
+      "endpoint": "Service Listings Catalog",
+      "url": "https://sefproject-g3cmczhth2cygqgh.southeastasia-01.azurewebsites.net/api/service-listings",
+      "totalRequests": 100,
+      "successful": 90,
+      "failed": 10,
+      "errorRate": "10.00%",
+      "durationMs": 12301,
+      "requestsPerSecond": 8.13,
+      "slaThresholdMs": 1500,
+      "latencies": {
+        "min": 202.21,
+        "avg": 1203.04,
+        "p50": 268.82,
+        "p90": 8000,
+        "p95": 8000,
+        "p99": 8000,
+        "max": 8000
+      },
+      "passed": false
+    },
+    {
+      "endpoint": "Provider Search Directory",
+      "url": "https://sefproject-g3cmczhth2cygqgh.southeastasia-01.azurewebsites.net/api/providers/search?searchTerm=Plumbing",
+      "totalRequests": 100,
+      "successful": 100,
+      "failed": 0,
+      "errorRate": "0.00%",
+      "durationMs": 3380,
+      "requestsPerSecond": 29.59,
+      "slaThresholdMs": 1500,
+      "latencies": {
+        "min": 219.79,
+        "avg": 318.9,
+        "p50": 267.71,
+        "p90": 705.23,
+        "p95": 711.21,
+        "p99": 718.69,
+        "max": 718.69
+      },
+      "passed": true
+    },
+    {
+      "endpoint": "AI Assistant Gateway Readiness",
+      "url": "https://handee-production.up.railway.app/health",
+      "totalRequests": 100,
+      "successful": 100,
+      "failed": 0,
+      "errorRate": "0.00%",
+      "durationMs": 2738,
+      "requestsPerSecond": 36.52,
+      "slaThresholdMs": 1500,
+      "latencies": {
+        "min": 208.71,
+        "avg": 262.93,
+        "p50": 230.25,
+        "p90": 415.7,
+        "p95": 439.33,
+        "p99": 510.27,
+        "max": 510.27
+      },
+      "passed": true
+    },
+    {
+      "endpoint": "AI Assistant Query Inference",
+      "url": "https://handee-production.up.railway.app/api/v1/assistant/query",
+      "totalRequests": 2,
+      "successful": 2,
+      "failed": 0,
+      "errorRate": "0.00%",
+      "durationMs": 9910,
+      "requestsPerSecond": 0.2,
+      "slaThresholdMs": 15000,
+      "latencies": {
+        "min": 4510.55,
+        "avg": 4954.68,
+        "p50": 5398.8,
+        "p90": 5398.8,
+        "p95": 5398.8,
+        "p99": 5398.8,
+        "max": 5398.8
+      },
+      "passed": true
+    }
+  ]
+}
