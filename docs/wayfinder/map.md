@@ -23,6 +23,7 @@ Full-stack completion of Component 1 (Booking & Scheduling): Audit, design, and 
 - [ ] [T3: Booking Lifecycle Actions, Rescheduling & SignalR Status Push](tickets/T3-booking-lifecycle-reschedule-cancel-dispute.md) `wayfinder:task` `unblocked`
 - [ ] [T4: Instant Match AI Domain Agent & Admin Approval Gate Integration](tickets/T4-instant-match-ai-domain-agent-integration.md) `wayfinder:research` `unblocked`
 - [ ] [T5: React Web App Customer Bookings & Self-Service Portal](tickets/T5-customer-portal-bookings-management-screen.md) `wayfinder:task` `unblocked`
+- [x] [T6: SE3090 Software Testing & Quality Evaluation Suite](tickets/T6-se3090-software-testing-and-quality-evaluation.md) `wayfinder:task` `closed`
 
 ---
 
