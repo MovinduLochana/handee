@@ -3,7 +3,8 @@ import 'package:provider/provider.dart';
 import '../../core/constants/colors.dart';
 import '../../data/models/assistant_message_model.dart';
 import '../../providers/assistant_provider.dart';
-import 'create_job_screen.dart';
+import 'public_provider_profile_screen.dart';
+import 'service_listing_details_screen.dart';
 
 class AssistantChatScreen extends StatefulWidget {
   const AssistantChatScreen({super.key});
@@ -215,6 +216,7 @@ class _AssistantChatScreenState extends State<AssistantChatScreen> {
             if (message.recommendedProviders.isNotEmpty) ...[
               const SizedBox(height: 10),
               ...message.recommendedProviders.map((provider) {
+                final targetId = provider.id.isNotEmpty ? provider.id : provider.userId;
                 return Container(
                   margin: const EdgeInsets.only(bottom: 8),
                   padding: const EdgeInsets.all(12),
@@ -249,26 +251,28 @@ class _AssistantChatScreenState extends State<AssistantChatScreen> {
                           ],
                         ),
                       ),
-                      ElevatedButton(
+                      OutlinedButton.icon(
                         onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => CreateJobScreen(
-                                initialCategory: provider.skillCategories.isNotEmpty
-                                    ? provider.skillCategories.first
-                                    : 'Plumbing',
+                          if (targetId.isNotEmpty) {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => PublicProviderProfileScreen(
+                                  providerId: targetId,
+                                  initialProfile: provider,
+                                ),
                               ),
-                            ),
-                          );
+                            );
+                          }
                         },
-                        style: ElevatedButton.styleFrom(
+                        icon: const Icon(Icons.person_outline, size: 14),
+                        label: const Text('View Profile'),
+                        style: OutlinedButton.styleFrom(
                           minimumSize: Size.zero,
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                          textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                          textStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
                         ),
-                        child: const Text('Book'),
                       ),
                     ],
                   ),
@@ -276,22 +280,99 @@ class _AssistantChatScreenState extends State<AssistantChatScreen> {
               }),
             ],
 
-            // Suggestion Chips
-            if (message.suggestions.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 6,
-                children: message.suggestions.map((sug) {
-                  return ActionChip(
-                    label: Text(sug, style: const TextStyle(fontSize: 12, color: AppColors.primaryDark)),
-                    backgroundColor: Colors.white,
-                    side: const BorderSide(color: AppColors.primaryLight, width: 0.8),
-                    onPressed: () => _sendMessage(sug),
-                  );
-                }).toList(),
-              ),
+            // Recommended Services Cards
+            if (message.recommendedListings.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              ...message.recommendedListings.map((listing) {
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: AppColors.borderLight),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppColors.primaryUltraLight,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.build_circle_outlined, color: AppColors.primary, size: 20),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              listing.title,
+                              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            Text(
+                              'Rs. ${listing.fixedPrice.toStringAsFixed(0)} · ${listing.providerFullName ?? 'Verified Specialist'}',
+                              style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                            ),
+                          ],
+                        ),
+                      ),
+                      OutlinedButton.icon(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => ServiceListingDetailsScreen(listing: listing),
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.open_in_new, size: 13),
+                        label: const Text('View Service'),
+                        style: OutlinedButton.styleFrom(
+                          minimumSize: Size.zero,
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          textStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }),
             ],
+
+            // Suggestion Chips (filtered to exclude booking/instant match)
+            Builder(
+              builder: (context) {
+                final safeSuggestions = message.suggestions.where((sug) {
+                  final lower = sug.toLowerCase();
+                  return !lower.contains('instant match') &&
+                      !lower.contains('priority') &&
+                      !lower.startsWith('book ');
+                }).toList();
+
+                if (safeSuggestions.isEmpty) return const SizedBox.shrink();
+
+                return Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Wrap(
+                    spacing: 8,
+                    runSpacing: 6,
+                    children: safeSuggestions.map((sug) {
+                      return ActionChip(
+                        label: Text(sug, style: const TextStyle(fontSize: 12, color: AppColors.primaryDark)),
+                        backgroundColor: Colors.white,
+                        side: const BorderSide(color: AppColors.primaryLight, width: 0.8),
+                        onPressed: () => _sendMessage(sug),
+                      );
+                    }).toList(),
+                  ),
+                );
+              },
+            ),
           ],
         ),
       ),

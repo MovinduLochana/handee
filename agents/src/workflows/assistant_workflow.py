@@ -40,12 +40,26 @@ def _get_llm():
         return None
 
 
+def _sanitize_suggestions(suggestions: List[str]) -> List[str]:
+    blocked = ("instant match", "priority book", "book now", "emergency book", "prioity")
+    clean = []
+    for s in suggestions:
+        s_lower = s.lower()
+        if any(b in s_lower for b in blocked):
+            continue
+        if s_lower.startswith("book "):
+            s = "View " + s[5:]
+        clean.append(s)
+    return clean
+
+
 async def process_assistant_query(request: AssistantQueryRequest) -> AssistantQueryResponse:
     """
     Handles customer conversational queries:
     - Identifies greetings and platform chit-chat vs trade requests
     - Searches matching verified providers and catalog service listings
     - Formulates natural language reply powered by LLM and live platform data
+    - Surfaces profile and service links without in-chat booking or instant-match
     """
     query = request.query.strip()
     llm = _get_llm()
@@ -78,12 +92,12 @@ async def process_assistant_query(request: AssistantQueryRequest) -> AssistantQu
             category="General",
             suggested_providers=[],
             suggested_listings=[],
-            suggestions=[
+            suggestions=_sanitize_suggestions([
                 "Find AC Repair specialists",
-                "Emergency plumbing pipe leak in Colombo",
+                "Plumbing repair in Colombo",
                 "Electrical switchboard inspection",
-                "How does booking work?"
-            ]
+                "How does provider verification work?"
+            ])
         )
 
     # 2. Classify intent / trade category
@@ -111,12 +125,12 @@ async def process_assistant_query(request: AssistantQueryRequest) -> AssistantQu
                         category="General",
                         suggested_providers=[],
                         suggested_listings=[],
-                        suggestions=[
+                        suggestions=_sanitize_suggestions([
                             "Need AC Repair in Colombo",
-                            "Emergency plumbing repair",
+                            "Plumbing repair rates",
                             "Electrical safety audit",
                             "Browse all service listings"
-                        ]
+                        ])
                     )
             except Exception as e:
                 logger.info(f"LLM general query fallback: {e}")
@@ -130,12 +144,12 @@ async def process_assistant_query(request: AssistantQueryRequest) -> AssistantQu
             category="General",
             suggested_providers=[],
             suggested_listings=[],
-            suggestions=[
+            suggestions=_sanitize_suggestions([
                 "Find AC Repair technicians",
-                "Emergency plumbing repair",
+                "Plumbing pipe inspection",
                 "Electrical wiring check",
                 "Explore Service Listings"
-            ]
+            ])
         )
 
     # 4. Specific Trade Request: query matching live providers and service listings
@@ -163,8 +177,9 @@ async def process_assistant_query(request: AssistantQueryRequest) -> AssistantQu
                 f"Benchmark price: Rs. {int(benchmark):,}.\n"
                 f"Real platform listings: {listing_info}.\n"
                 f"Real platform providers: {provider_info}.\n\n"
-                f"Formulate a concise, helpful response (2-3 sentences max) recommending the service or provider, "
-                f"highlighting real prices and verified platform booking."
+                f"Formulate a concise, helpful informational response (2-3 sentences max) for {category} recommending the service or provider, "
+                f"explicitly mentioning the {category} service, highlighting real prices and verified qualifications. Do NOT offer to book, reserve, or instant match directly in chat. "
+                f"Explain that customers can check the provider's profile or service listing for details."
             )
             res = await llm.ainvoke([
                 {"role": "system", "content": "You are the friendly, helpful Handee AI Assistant on Handee marketplace."},
@@ -198,17 +213,17 @@ async def process_assistant_query(request: AssistantQueryRequest) -> AssistantQu
             )
 
     suggestions = [
-        f"Request Instant Match for {category}",
         f"View {category} Pricing Guide",
+        f"Browse verified {category} specialists",
     ]
     if top_listing:
-        suggestions.append(f"Book {top_listing['title']} (Rs. {int(top_listing['price']):,})")
-    suggestions.append("Find emergency providers")
+        suggestions.append(f"View {top_listing['title']} (Rs. {int(top_listing['price']):,})")
+    suggestions.append(f"Compare {category} rates")
 
     return AssistantQueryResponse(
         reply=reply,
         category=category,
         suggested_providers=providers[:3],
         suggested_listings=listings[:2],
-        suggestions=suggestions
+        suggestions=_sanitize_suggestions(suggestions)
     )

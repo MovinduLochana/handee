@@ -41,6 +41,7 @@ class ApiClient {
   }
 
   String get baseUrl => _baseUrl;
+  http.Client get httpClient => _httpClient;
 
   Map<String, String> _buildHeaders({Map<String, String>? extraHeaders}) {
     final headers = <String, String>{

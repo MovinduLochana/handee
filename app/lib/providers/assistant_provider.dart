@@ -18,11 +18,11 @@ class AssistantProvider extends ChangeNotifier {
   void _initWelcome() {
     _messages.add(
       AssistantMessageModel.assistant(
-        'Hello! I am your Handee AI Assistant. I can help you find verified tradespeople, estimate service costs, or request an Instant Match repair anywhere in Sri Lanka.',
+        'Hello! I am your Handee AI Assistant. I can help you find verified tradespeople, estimate service costs, or discover services anywhere in Sri Lanka.',
         suggestions: [
           'Find a Plumber in Colombo',
           'AC Service & Repair cost',
-          'Emergency Electrician',
+          'Electrician rates in Colombo',
           'How does Handee verification work?',
         ],
       ),
@@ -46,8 +46,8 @@ class AssistantProvider extends ChangeNotifier {
       _isTyping = false;
       _messages.add(
         AssistantMessageModel.assistant(
-          'I encountered a brief connection issue. However, you can browse verified categories or submit an Instant Match directly.',
-          suggestions: ['Request Instant Match', 'Browse Plumbing', 'Browse Electrical'],
+          'I encountered a brief connection issue. However, you can browse verified categories or search for specialists directly.',
+          suggestions: ['Browse Plumbing', 'Browse Electrical', 'View AC Specialists'],
         ),
       );
       notifyListeners();

@@ -313,7 +313,11 @@ public class AgentWorkflowService : IAgentWorkflowService
             var response = await client.PostAsJsonAsync("/api/v1/assistant/query", payload, ct);
             if (response.IsSuccessStatusCode)
             {
-                var result = await response.Content.ReadFromJsonAsync<AssistantQueryResponseDto>(cancellationToken: ct);
+                var jsonOptions = new System.Text.Json.JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                };
+                var result = await response.Content.ReadFromJsonAsync<AssistantQueryResponseDto>(jsonOptions, cancellationToken: ct);
                 if (result != null) return result;
             }
         }
@@ -328,7 +332,7 @@ public class AgentWorkflowService : IAgentWorkflowService
             Category: "General Maintenance",
             SuggestedProviders: new List<object>(),
             SuggestedListings: new List<object>(),
-            Suggestions: new List<string> { "Request Instant Match", "View Category Pricing", "Browse Listings" }
+            Suggestions: new List<string> { "View Verified Providers", "View Category Pricing", "Browse Listings" }
         );
     }
 

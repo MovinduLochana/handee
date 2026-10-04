@@ -51,12 +51,12 @@ class ServiceListingModel {
       description: json['description']?.toString() ?? '',
       scope: json['scope']?.toString() ?? '',
       availability: json['availability']?.toString() ?? '',
-      fixedPrice: (json['fixedPrice'] as num?)?.toDouble() ?? 0.0,
+      fixedPrice: (json['fixedPrice'] as num?)?.toDouble() ?? (json['price'] as num?)?.toDouble() ?? 0.0,
       estimatedDuration: json['estimatedDuration']?.toString() ?? '01:00:00',
       durationHours: parsedDurationHours,
       isActive: json['isActive'] as bool? ?? false,
-      serviceCategoryName: json['serviceCategoryName']?.toString(),
-      providerFullName: json['providerFullName']?.toString(),
+      serviceCategoryName: json['serviceCategoryName']?.toString() ?? json['category']?.toString(),
+      providerFullName: json['providerFullName']?.toString() ?? json['providerName']?.toString(),
     );
   }
 

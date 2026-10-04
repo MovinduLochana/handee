@@ -1,4 +1,5 @@
 import 'provider_profile_model.dart';
+import 'service_listing_model.dart';
 
 class AssistantMessageModel {
   final String id;
@@ -7,6 +8,7 @@ class AssistantMessageModel {
   final DateTime timestamp;
   final List<String> suggestions;
   final List<ProviderProfileModel> recommendedProviders;
+  final List<ServiceListingModel> recommendedListings;
 
   AssistantMessageModel({
     required this.id,
@@ -15,6 +17,7 @@ class AssistantMessageModel {
     required this.timestamp,
     this.suggestions = const [],
     this.recommendedProviders = const [],
+    this.recommendedListings = const [],
   });
 
   bool get isUser => sender.toLowerCase() == 'user';
@@ -33,6 +36,7 @@ class AssistantMessageModel {
     String text, {
     List<String> suggestions = const [],
     List<ProviderProfileModel> recommendedProviders = const [],
+    List<ServiceListingModel> recommendedListings = const [],
   }) {
     return AssistantMessageModel(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -41,6 +45,7 @@ class AssistantMessageModel {
       timestamp: DateTime.now(),
       suggestions: suggestions,
       recommendedProviders: recommendedProviders,
+      recommendedListings: recommendedListings,
     );
   }
 }
