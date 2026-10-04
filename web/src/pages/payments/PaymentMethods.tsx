@@ -90,8 +90,8 @@ export default function PaymentMethods() {
         <CardContent className="p-4 flex items-center gap-3 text-sm">
           <Sparkles className="h-5 w-5 text-primary shrink-0" />
           <div className="text-foreground">
-            <strong className="text-foreground">Secure Vault:</strong> Your saved cards will
-            appear securely during checkout.
+            <strong className="text-foreground">Secure Vault:</strong> Your saved cards will appear
+            securely during checkout.
           </div>
         </CardContent>
       </Card>
@@ -306,8 +306,8 @@ export default function PaymentMethods() {
         <CardContent className="p-4 flex items-center gap-3 text-xs text-muted-foreground">
           <ShieldCheck className="h-6 w-6 text-primary shrink-0" />
           <div>
-            <strong className="text-foreground">Secure Vault:</strong> All card details
-            are securely encrypted and stored.
+            <strong className="text-foreground">Secure Vault:</strong> All card details are securely
+            encrypted and stored.
           </div>
         </CardContent>
       </Card>

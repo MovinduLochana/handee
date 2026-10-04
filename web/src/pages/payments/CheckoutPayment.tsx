@@ -208,9 +208,7 @@ export default function CheckoutPayment() {
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Gateway:</span>
                 <span className="text-foreground">
-                  {activeCard?.brand === "PayHere"
-                    ? "PayHere"
-                    : "Stripe"}
+                  {activeCard?.brand === "PayHere" ? "PayHere" : "Stripe"}
                 </span>
               </div>
             </div>
