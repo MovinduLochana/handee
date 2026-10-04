@@ -14,6 +14,7 @@ import {
   SlidersHorizontal,
 } from "lucide-react";
 import { agentWorkflowApi, type AgentWorkflowDto } from "../../api/agentWorkflow";
+import UrgencyMultipliersConfig from "@/components/dashboard/UrgencyMultipliersConfig";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -243,6 +244,9 @@ export default function AgentWorkflow() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Dynamic Pricing Engine: Urgency Multipliers Configuration */}
+      <UrgencyMultipliersConfig />
 
       {/* Filter Tabs */}
       <div className="flex flex-wrap items-center justify-between gap-4">

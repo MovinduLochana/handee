@@ -252,16 +252,32 @@ URGENCY_MULTIPLIERS: Dict[str, float] = {
 
 def estimate_price_detailed(input_data: PriceEstimationInput) -> PriceEstimationOutput:
     base_benchmark = CATEGORY_BENCHMARKS.get(input_data.category, 3500.0)
+
+    # Active multipliers map: dynamically supplied or fallback to default
+    active_urgency_multipliers = {**URGENCY_MULTIPLIERS}
+    if input_data.urgency_multipliers:
+        active_urgency_multipliers.update({
+            k.lower(): float(v) for k, v in input_data.urgency_multipliers.items()
+        })
+
+    urgency_key = (input_data.urgency or "normal").lower()
     if "price_multiplier" in input_data.scope:
         complexity_mult = float(input_data.scope["price_multiplier"])
-        urgency_mult = URGENCY_MULTIPLIERS.get(input_data.urgency.lower(), 1.0)
+        urgency_mult = active_urgency_multipliers.get(urgency_key, 1.0)
     elif "price_multiplier_min" in input_data.scope and "price_multiplier_max" in input_data.scope:
-        complexity_mult = (float(input_data.scope["price_multiplier_min"]) + float(input_data.scope["price_multiplier_max"])) / 2.0
-        # Urgency factor is already included in scope multipliers by estimate_scope
-        urgency_mult = 1.0
+        raw_midpoint = (float(input_data.scope["price_multiplier_min"]) + float(input_data.scope["price_multiplier_max"])) / 2.0
+        if input_data.urgency_multipliers:
+            # Dynamic config provided: urgency factor from dynamic config
+            urgency_mult = active_urgency_multipliers.get(urgency_key, 1.0)
+            scope_factor = float(input_data.scope.get("urgency_multiplier", 1.0))
+            complexity_mult = (raw_midpoint / scope_factor) if scope_factor > 0 else raw_midpoint
+        else:
+            # Fallback legacy behavior for tests: scope multipliers already contain urgency factor
+            complexity_mult = raw_midpoint
+            urgency_mult = 1.0
     else:
         complexity_mult = 1.0
-        urgency_mult = URGENCY_MULTIPLIERS.get(input_data.urgency.lower(), 1.0)
+        urgency_mult = active_urgency_multipliers.get(urgency_key, 1.0)
 
     subtotal = base_benchmark * complexity_mult * urgency_mult
     raw_estimate = subtotal

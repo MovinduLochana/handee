@@ -12,23 +12,33 @@ public class BookingService : IBookingService
     private readonly AppDbContext _db;
     private readonly IInvoiceService _invoiceService;
     private readonly IBookingNotificationService? _notificationService;
+    private readonly IPricingConfigService? _pricingConfigService;
 
-    public BookingService(AppDbContext db) : this(db, new InvoiceService(db), null)
+    public BookingService(AppDbContext db) : this(db, new InvoiceService(db), null, null)
     {
     }
 
-    public BookingService(AppDbContext db, IInvoiceService invoiceService) : this(db, invoiceService, null)
+    public BookingService(AppDbContext db, IInvoiceService invoiceService) : this(db, invoiceService, null, null)
     {
     }
 
     public BookingService(
         AppDbContext db,
         IInvoiceService invoiceService,
-        IBookingNotificationService? notificationService)
+        IBookingNotificationService? notificationService) : this(db, invoiceService, notificationService, null)
+    {
+    }
+
+    public BookingService(
+        AppDbContext db,
+        IInvoiceService invoiceService,
+        IBookingNotificationService? notificationService,
+        IPricingConfigService? pricingConfigService)
     {
         _db = db;
         _invoiceService = invoiceService;
         _notificationService = notificationService;
+        _pricingConfigService = pricingConfigService;
     }
 
     /// <summary>
@@ -87,6 +97,7 @@ public class BookingService : IBookingService
         var booking = await _db.Bookings
             .Include(b => b.Customer)
             .Include(b => b.Provider)
+            .Include(b => b.Invoice)
             .Include(b => b.JobRequest)
                 .ThenInclude(j => j!.ServiceCategory)
             .Include(b => b.ServiceListing)
@@ -108,6 +119,7 @@ public class BookingService : IBookingService
         return _db.Bookings
             .Include(b => b.Customer)
             .Include(b => b.Provider)
+            .Include(b => b.Invoice)
             .Include(b => b.JobRequest)
                 .ThenInclude(j => j!.ServiceCategory)
             .Include(b => b.ServiceListing)
@@ -179,6 +191,7 @@ public class BookingService : IBookingService
         var query = _db.Bookings
             .Include(b => b.Customer)
             .Include(b => b.Provider)
+            .Include(b => b.Invoice)
             .Include(b => b.JobRequest)
                 .ThenInclude(j => j!.ServiceCategory)
             .Include(b => b.ServiceListing)
@@ -643,6 +656,28 @@ public class BookingService : IBookingService
         var latitude = b.Latitude ?? parsedLat;
         var longitude = b.Longitude ?? parsedLng;
 
+        decimal? calculatedPrice = b.Invoice?.TotalAmount;
+        if (!calculatedPrice.HasValue || calculatedPrice.Value <= 0)
+        {
+            var rawPrice = b.ServiceListing?.FixedPrice ?? b.JobRequest?.BudgetMax ?? b.JobRequest?.BudgetMin ?? 3500m;
+            if (b.JobRequest != null)
+            {
+                var mult = b.JobRequest.Urgency switch
+                {
+                    JobUrgency.Low => 0.95m,
+                    JobUrgency.Medium => 1.05m,
+                    JobUrgency.High => 1.20m,
+                    JobUrgency.Emergency => 1.40m,
+                    _ => 1.0m
+                };
+                calculatedPrice = Math.Round(rawPrice * mult, 2);
+            }
+            else
+            {
+                calculatedPrice = rawPrice;
+            }
+        }
+
         return new(
             b.Id,
             b.JobRequestId,
@@ -657,7 +692,7 @@ public class BookingService : IBookingService
             CustomerPhone: b.Customer?.PhoneNumber,
             ProviderName: b.Provider?.FullName,
             ServiceLocation: cleanLocation,
-            Price: b.ServiceListing?.FixedPrice ?? b.JobRequest?.BudgetMax ?? b.JobRequest?.BudgetMin ?? 3500m,
+            Price: calculatedPrice,
             Category: b.JobRequest?.ServiceCategory?.Name ?? b.ServiceListing?.Category?.Name,
             Description: b.JobRequest?.Description ?? b.ServiceListing?.Title ?? b.ServiceListing?.Description,
             Notes: b.Notes,

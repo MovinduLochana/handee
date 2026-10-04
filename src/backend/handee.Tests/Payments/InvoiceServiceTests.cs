@@ -144,6 +144,35 @@ public class InvoiceServiceTests
     }
 
     [Fact]
+    public async Task CreateInvoiceForBookingAsync_WithEmergencyUrgency_Itemizes_PriorityDispatchSurcharge()
+    {
+        var test = await SeedBookingAsync();
+        using var db = test.Db;
+        var sut = new InvoiceService(test.Db);
+
+        // Emergency with 1.40x multiplier on base 2000 => final price 2800
+        var result = await sut.CreateInvoiceForBookingAsync(
+            test.Booking.Id,
+            test.CustomerId,
+            test.ProviderId,
+            2800m,
+            QuoteApprovalStatus.AutoApproved,
+            "Electrical Repairs",
+            1.40m,
+            "Emergency"
+        );
+
+        Assert.NotNull(result);
+        Assert.Equal(2380m, result.BaseAmount);
+        Assert.Equal(420m, result.PlatformFee);
+        Assert.Equal(2800m, result.TotalAmount);
+        Assert.NotNull(result.LineItems);
+        Assert.Contains("Standard Service Labor", result.LineItems);
+        Assert.Contains("Priority Dispatch Surcharge (Emergency 1.4x)", result.LineItems);
+        Assert.Contains("Platform Trust & Verification Fee (15%)", result.LineItems);
+    }
+
+    [Fact]
     public async Task CreateInvoiceForBookingAsync_Is_Idempotent()
     {
         var test = await SeedBookingAsync();

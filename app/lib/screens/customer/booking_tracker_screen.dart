@@ -62,9 +62,10 @@ class _BookingTrackerScreenState extends State<BookingTrackerScreen> {
       }
 
       await provider.refreshTrackedRequest();
-      if (mounted) {
-        await context.read<BookingProvider>().fetchCustomerBookings();
-      }
+      if (!mounted) return;
+      await context.read<BookingProvider>().fetchCustomerBookings();
+      if (!mounted) return;
+      await context.read<PaymentProvider>().fetchMyInvoices();
     });
   }
 
@@ -472,6 +473,25 @@ class _BookingTrackerScreenState extends State<BookingTrackerScreen> {
                     }
                   }
                   final targetBookingId = linkedBooking?.id ?? request.id;
+                  final double rawBase = (linkedBooking?.price ?? workflow?.estimatedPrice ?? 3500.0).toDouble();
+                  final double mult = () {
+                    switch (request.urgency.toLowerCase()) {
+                      case 'emergency': return 1.40;
+                      case 'high': return 1.20;
+                      case 'medium': return 1.05;
+                      case 'low': return 0.95;
+                      default: return 1.0;
+                    }
+                  }();
+                  final double totalVal = (linkedBooking?.price != null || workflow?.estimatedPrice != null)
+                      ? rawBase
+                      : (rawBase * mult).roundToDouble();
+                  final double baseVal = (totalVal * 0.85).roundToDouble();
+                  final double feeVal = (totalVal - baseVal).roundToDouble();
+                  final double standardTotal = mult > 0 ? (totalVal / mult).roundToDouble() : totalVal;
+                  final double standardLabor = (standardTotal * 0.85).roundToDouble();
+                  final double urgencySurchargeVal = (baseVal - standardLabor).roundToDouble();
+
                   final invoice = paymentProvider.getInvoiceForBooking(targetBookingId) ??
                       paymentProvider.getInvoiceForBooking(request.id) ??
                       InvoiceModel(
@@ -480,10 +500,11 @@ class _BookingTrackerScreenState extends State<BookingTrackerScreen> {
                         customerId: request.customerId,
                         customerName: 'Customer',
                         providerId: workflow?.selectedProviderId ?? 'prov-001',
-                        providerName: workflow?.selectedProviderName ?? 'Sunil Perera',
-                        baseAmount: (workflow?.estimatedPrice ?? 4500.0) * 0.85,
-                        platformFee: (workflow?.estimatedPrice ?? 4500.0) * 0.15,
-                        totalAmount: workflow?.estimatedPrice ?? 4500.00,
+                        providerName: workflow?.selectedProviderName ?? 'Matched Provider',
+                        baseAmount: baseVal,
+                        platformFee: feeVal,
+                        totalAmount: totalVal,
+                        urgencySurcharge: urgencySurchargeVal,
                         status: 'Issued',
                         adminApprovalStatus: 'AutoApproved',
                         createdAt: DateTime.now(),
@@ -547,22 +568,49 @@ class _BookingTrackerScreenState extends State<BookingTrackerScreen> {
                           ],
                         ),
                         const SizedBox(height: 14),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text('Service Base Rate:', style: TextStyle(fontSize: 13, color: AppColors.textSecondary)),
-                            Text('Rs. ${currencyFmt.format(invoice.baseAmount)}', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-                          ],
-                        ),
+                        ...invoice.lineItems.map((item) {
+                          final isUrgency = item.type?.toLowerCase() == 'urgency' ||
+                              item.item.toLowerCase().contains('priority') ||
+                              item.item.toLowerCase().contains('surcharge');
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Expanded(
+                                  child: Row(
+                                    children: [
+                                      if (isUrgency) ...[
+                                        const Icon(Icons.bolt, size: 14, color: Color(0xFFF59E0B)),
+                                        const SizedBox(width: 4),
+                                      ],
+                                      Flexible(
+                                        child: Text(
+                                          item.item,
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: isUrgency ? FontWeight.w700 : FontWeight.w500,
+                                            color: isUrgency ? const Color(0xFFD97706) : AppColors.textSecondary,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  '${isUrgency && item.price > 0 ? "+" : ""}Rs. ${currencyFmt.format(item.price)}',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: isUrgency ? FontWeight.w700 : FontWeight.w600,
+                                    color: isUrgency ? const Color(0xFFD97706) : AppColors.textPrimary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }),
                         const SizedBox(height: 6),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text('Platform & Booking Fee:', style: TextStyle(fontSize: 13, color: AppColors.textSecondary)),
-                            Text('Rs. ${currencyFmt.format(invoice.platformFee)}', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-                          ],
-                        ),
-                        const SizedBox(height: 10),
                         const Divider(height: 1),
                         const SizedBox(height: 10),
                         Row(

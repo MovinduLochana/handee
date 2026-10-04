@@ -449,6 +449,7 @@ class PricingAndInvoicingAgent:
             urgency=input_data.urgency,
             budget_min=input_data.budget_min,
             budget_max=input_data.budget_max,
+            urgency_multipliers=input_data.urgency_multipliers,
         )
         pricing_output = estimate_price_tool(price_input)
         step_logs.append({

@@ -16,11 +16,13 @@ public record InvoiceResponseDto(
     string? LineItemsJson,
     DateTimeOffset? DueAt,
     DateTimeOffset? PaidAt,
-    DateTimeOffset CreatedAt
+    DateTimeOffset CreatedAt,
+    decimal UrgencySurcharge = 0
 )
 {
     public DateTimeOffset IssuedAt => CreatedAt;
     public string? LineItems => LineItemsJson;
+    public decimal UrgencyFee => UrgencySurcharge;
 }
 
 

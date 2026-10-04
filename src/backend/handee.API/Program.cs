@@ -15,6 +15,9 @@ using Microsoft.IdentityModel.Tokens;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using StackExchange.Redis;
+using dotenv.net;
+
+DotEnv.Load();
 
 
 
@@ -195,6 +198,7 @@ builder.Services.AddHostedService<BookingExpirationWorker>();
 builder.Services.AddScoped<IServiceCategoryService, ServiceCategoryService>();
 builder.Services.AddScoped<IServiceListingService, ServiceListingService>();
 builder.Services.AddScoped<IProviderAvailabilityService, ProviderAvailabilityService>();
+builder.Services.AddScoped<IPricingConfigService, PricingConfigService>();
 
 // Provider Verification & Profiles
 builder.Services.AddScoped<IProviderProfileRepository, ProviderProfileRepository>();

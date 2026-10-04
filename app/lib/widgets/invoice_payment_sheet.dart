@@ -154,17 +154,27 @@ class _InvoicePaymentSheetState extends State<InvoicePaymentSheet> {
           ),
           child: Column(
             children: [
-              _buildBreakdownRow(
-                'Service Labor (85%)',
-                'Rs. ${currencyFormat.format(widget.invoice.baseAmount)}',
-                subtitle: 'Disbursed directly to tradesperson upon completion',
-              ),
-              const SizedBox(height: 12),
-              _buildBreakdownRow(
-                'Platform Trust & Safety Fee (15%)',
-                'Rs. ${currencyFormat.format(widget.invoice.platformFee)}',
-                subtitle: 'Covers background vetting, guarantee & support',
-              ),
+              ...widget.invoice.lineItems.map((item) {
+                final isUrgency = item.type?.toLowerCase() == 'urgency' ||
+                    item.item.toLowerCase().contains('priority') ||
+                    item.item.toLowerCase().contains('surcharge');
+                final isFee = item.type?.toLowerCase() == 'fee';
+                String subtitle = 'Disbursed directly to tradesperson upon completion';
+                if (isUrgency) {
+                  subtitle = 'Priority dispatch rush compensation for immediate service';
+                } else if (isFee) {
+                  subtitle = 'Covers background vetting, guarantee & support';
+                }
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: _buildBreakdownRow(
+                    item.item,
+                    '${isUrgency && item.price > 0 ? "+" : ""}Rs. ${currencyFormat.format(item.price)}',
+                    subtitle: subtitle,
+                    isUrgency: isUrgency,
+                  ),
+                );
+              }),
               const Divider(color: AppColors.border, height: 24),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -347,27 +357,35 @@ class _InvoicePaymentSheetState extends State<InvoicePaymentSheet> {
     );
   }
 
-  Widget _buildBreakdownRow(String title, String amount, {String? subtitle}) {
+  Widget _buildBreakdownRow(String title, String amount, {String? subtitle, bool isUrgency = false}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
-              ),
+            Row(
+              children: [
+                if (isUrgency) ...[
+                  const Icon(Icons.bolt, size: 14, color: Color(0xFFF59E0B)),
+                  const SizedBox(width: 4),
+                ],
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: isUrgency ? FontWeight.w700 : FontWeight.w600,
+                    color: isUrgency ? const Color(0xFFD97706) : AppColors.textPrimary,
+                  ),
+                ),
+              ],
             ),
             Text(
               amount,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary,
+                color: isUrgency ? const Color(0xFFD97706) : AppColors.textPrimary,
               ),
             ),
           ],

@@ -37,8 +37,8 @@ public class InvoiceConfiguration : IEntityTypeConfiguration<Invoice>
             .IsRequired();
 
         builder.HasOne(i => i.Booking)
-            .WithMany()
-            .HasForeignKey(i => i.BookingId)
+            .WithOne(b => b.Invoice)
+            .HasForeignKey<Invoice>(i => i.BookingId)
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasOne(i => i.Customer)

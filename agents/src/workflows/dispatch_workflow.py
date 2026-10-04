@@ -71,6 +71,7 @@ async def domain_analysis_node(state: AgentWorkflowState) -> Dict[str, Any]:
         description,
         urgency=urgency,
         category_is_ambiguous=classification.is_ambiguous,
+        urgency_multipliers=state.get("urgency_multipliers"),
     )
     classification_data = classification.model_dump()
     scope_data = scope.model_dump()
@@ -126,6 +127,7 @@ async def action_tool_node(state: AgentWorkflowState) -> Dict[str, Any]:
         urgency=urgency,
         budget_min=budget_min,
         budget_max=budget_max,
+        urgency_multipliers=state.get("urgency_multipliers"),
     )
     detailed_price = estimate_price_detailed(price_input)
     price = detailed_price.estimated_price
@@ -139,10 +141,20 @@ async def action_tool_node(state: AgentWorkflowState) -> Dict[str, Any]:
         "output_data": {
             "candidates_found": len(candidates),
             "selected_provider": selected_provider.get("fullName") if selected_provider else None,
+            "pricing_tool": "estimate_price_detailed",
+            "base_benchmark": detailed_price.base_benchmark,
+            "complexity_multiplier": detailed_price.complexity_multiplier,
+            "urgency_multiplier": detailed_price.urgency_multiplier,
             "estimated_price": price,
             "price_breakdown": detailed_price.breakdown.model_dump(),
             "confidence_score": detailed_price.confidence_score,
             "is_budget_constrained": detailed_price.is_budget_constrained,
+            "approval_to_payment_handoff": {
+                "labor_amount": detailed_price.breakdown.service_labor,
+                "platform_fee": detailed_price.breakdown.platform_fee,
+                "fee_split": "85% Provider Labor / 15% Platform Commission",
+                "ready_for_invoice_generation": True,
+            },
         },
         "duration_ms": duration_ms,
         "timestamp": time.time()
@@ -308,6 +320,7 @@ async def run_dispatch_workflow(request: JobDispatchRequest) -> AgentWorkflowSta
         "category": request.category,
         "location": request.location,
         "urgency": request.urgency.value,
+        "urgency_multipliers": request.urgency_multipliers,
         "budget_min": b_min,
         "budget_max": b_max,
         "classification": None,

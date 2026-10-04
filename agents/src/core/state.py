@@ -12,6 +12,7 @@ class AgentWorkflowState(TypedDict, total=False):
     # From the JobDispatchRequest
     location: Optional[str]
     urgency: Optional[str]  # JobUrgency value: Low | Medium | High | Emergency
+    urgency_multipliers: Optional[Dict[str, float]]
     budget_min: Optional[float]
     budget_max: Optional[float]
     # Domain Analysis output

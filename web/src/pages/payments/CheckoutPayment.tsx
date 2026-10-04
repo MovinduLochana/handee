@@ -460,12 +460,44 @@ export default function CheckoutPayment() {
             </CardHeader>
             <CardContent className="space-y-4 text-sm">
               <div className="space-y-2">
-                <div className="flex justify-between text-muted-foreground">
-                  <span>Service Base Charge:</span>
-                  <span className="font-semibold text-foreground">
-                    LKR {invoice.baseAmount.toLocaleString()}
-                  </span>
-                </div>
+                {(() => {
+                  let urgencySurcharge = 0;
+                  let standardLabor = invoice.baseAmount;
+                  if (invoice.lineItemsJson) {
+                    try {
+                      const items = JSON.parse(invoice.lineItemsJson);
+                      if (Array.isArray(items)) {
+                        const urg = items.find(
+                          (i: any) =>
+                            i.type?.toLowerCase() === "urgency" ||
+                            i.item?.toLowerCase().includes("priority") ||
+                            i.item?.toLowerCase().includes("surcharge"),
+                        );
+                        if (urg && urg.price) {
+                          urgencySurcharge = urg.price;
+                          standardLabor = Math.max(0, invoice.baseAmount - urgencySurcharge);
+                        }
+                      }
+                    } catch {}
+                  }
+
+                  return (
+                    <>
+                      <div className="flex justify-between text-muted-foreground">
+                        <span>Standard Service Labor:</span>
+                        <span className="font-semibold text-foreground">
+                          LKR {standardLabor.toLocaleString()}
+                        </span>
+                      </div>
+                      {urgencySurcharge > 0 && (
+                        <div className="flex justify-between text-amber-600 dark:text-amber-400 font-medium">
+                          <span>Priority Dispatch Surcharge:</span>
+                          <span>+LKR {urgencySurcharge.toLocaleString()}</span>
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
                 <div className="flex justify-between text-muted-foreground">
                   <span>Platform Trust Fee (15%):</span>
                   <span>LKR {invoice.platformFee.toLocaleString()}</span>

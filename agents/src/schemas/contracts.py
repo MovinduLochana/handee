@@ -73,6 +73,7 @@ class JobDispatchRequest(BaseModel):
     budget_range: Optional[str] = Field(None, description="Customer budget range (e.g. 3000-5000)")
     budget_min: Optional[float] = Field(None, description="Minimum budget if specified")
     budget_max: Optional[float] = Field(None, description="Maximum budget if specified")
+    urgency_multipliers: Optional[Dict[str, float]] = Field(None, description="Dynamic urgency multipliers from backend config")
 
 
 # Customer data query
@@ -180,6 +181,7 @@ class EstimateScopeOutput(BaseModel):
     # Equal when the job is confidently understood; apart when it's ambiguous.
     price_multiplier_min: float = Field(gt=0)
     price_multiplier_max: float = Field(gt=0)
+    urgency_multiplier: float = 1.0
     is_emergency: bool
     ambiguity_flag: bool
     ambiguity_reasons: List[str] = Field(default_factory=list)
@@ -206,6 +208,7 @@ class PriceEstimationInput(BaseModel):
     urgency: str = "normal"
     budget_min: Optional[float] = None
     budget_max: Optional[float] = None
+    urgency_multipliers: Optional[Dict[str, float]] = None
 
 
 class PriceEstimationOutput(BaseModel):
@@ -245,6 +248,7 @@ class PricingAgentInput(BaseModel):
     budget_max: Optional[float] = Field(None, description="Customer maximum budget")
     provider_id: Optional[str] = Field(None, description="Assigned or candidate provider ID")
     customer_id: Optional[str] = Field(None, description="Requesting customer ID")
+    urgency_multipliers: Optional[Dict[str, float]] = None
 
 
 class PricingAgentResult(BaseModel):
