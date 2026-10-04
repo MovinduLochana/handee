@@ -9,7 +9,6 @@ import 'package:app/data/repositories/auth_repository.dart';
 import 'package:app/providers/auth_provider.dart';
 import 'package:app/main.dart';
 import 'package:app/screens/customer/customer_home_screen.dart';
-import 'package:app/screens/provider/provider_home_screen.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SE3090 Security Vulnerability Scan Report - Handee</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0f172a; color: #f8fafc; margin: 0; padding: 2rem; }
+        .container { max-width: 1000px; margin: 0 auto; background: #1e293b; border-radius: 12px; padding: 2rem; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+        h1 { color: #38bdf8; margin-top: 0; }
+        .summary-card { display: flex; gap: 1rem; margin-bottom: 2rem; }
+        .kpi { background: #0f172a; padding: 1rem 1.5rem; border-radius: 8px; border-left: 4px solid #38bdf8; flex: 1; }
+        .kpi .num { font-size: 1.8rem; font-weight: bold; color: #10b981; }
+        table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+        th, td { padding: 0.75rem 1rem; text-align: left; border-bottom: 1px solid #334155; }
+        th { background: #0f172a; color: #94a3b8; font-size: 0.85rem; text-transform: uppercase; }
+        .badge-passed { background: #065f46; color: #34d399; padding: 0.25rem 0.5rem; border-radius: 4px; font-weight: bold; font-size: 0.8rem; }
+        .badge-failed { background: #991b1b; color: #f87171; padding: 0.25rem 0.5rem; border-radius: 4px; font-weight: bold; font-size: 0.8rem; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Handee Platform — OWASP Security Vulnerability Audit</h1>
+        <p><strong>Assignment</strong>: SE3090 Software Testing and Quality Evaluation | <strong>Date</strong>: 2026-10-03 21:57:40 UTC</p>
+        
+        <div class="summary-card">
+            <div class="kpi"><div>Total Checks</div><div class="num" style="color:#38bdf8;">5</div></div>
+            <div class="kpi"><div>Passed Checks</div><div class="num" style="color:#10b981;">5</div></div>
+            <div class="kpi"><div>Pass Rate</div><div class="num" style="color:#10b981;">100.0%</div></div>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Security Check</th>
+                    <th>Vulnerability Category</th>
+                    <th>Status</th>
+                    <th>Execution Time</th>
+                    <th>Audit Finding</th>
+                </tr>
+            </thead>
+            <tbody>
+    
+                <tr>
+                    <td><strong>Authentication Enforcement</strong><br><small style="color:#94a3b8;">Verifies protected resources require valid credentials</small></td>
+                    <td><code>OWASP API2:2023 - Broken Authentication</code></td>
+                    <td><span class="badge-passed">PASSED</span></td>
+                    <td>313.82 ms</td>
+                    <td>API correctly rejected unauthenticated request with HTTP 401 Unauthorized</td>
+                </tr>
+        
+                <tr>
+                    <td><strong>JWT Integrity & Signature</strong><br><small style="color:#94a3b8;">Verifies forged or malformed tokens are rejected</small></td>
+                    <td><code>OWASP API2:2023 - Broken Authentication</code></td>
+                    <td><span class="badge-passed">PASSED</span></td>
+                    <td>276.41 ms</td>
+                    <td>API successfully rejected forged JWT token with HTTP 401 Unauthorized</td>
+                </tr>
+        
+                <tr>
+                    <td><strong>SQL Injection Resistance</strong><br><small style="color:#94a3b8;">Tests search query parameters against SQL injection</small></td>
+                    <td><code>OWASP API8:2023 - Security Misconfiguration</code></td>
+                    <td><span class="badge-passed">PASSED</span></td>
+                    <td>236.43 ms</td>
+                    <td>Parameterized query sanitized injection payload without database exception</td>
+                </tr>
+        
+                <tr>
+                    <td><strong>HTTP Security Headers</strong><br><small style="color:#94a3b8;">Inspects API response headers for security controls</small></td>
+                    <td><code>OWASP API8:2023 - Security Misconfiguration</code></td>
+                    <td><span class="badge-passed">PASSED</span></td>
+                    <td>255.99 ms</td>
+                    <td>Security headers evaluated. Headers received: 7</td>
+                </tr>
+        
+                <tr>
+                    <td><strong>AI Prompt Injection Defense</strong><br><small style="color:#94a3b8;">Tests conversational AI endpoint against adversarial override</small></td>
+                    <td><code>OWASP LLM01:2025 - Prompt Injection</code></td>
+                    <td><span class="badge-passed">PASSED</span></td>
+                    <td>403.64 ms</td>
+                    <td>AI gateway input validation rejected adversarial payload with HTTP 422</td>
+                </tr>
+        
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>
+    

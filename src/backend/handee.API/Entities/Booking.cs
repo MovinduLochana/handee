@@ -6,12 +6,22 @@ public enum BookingStatus
     Accepted,
     InProgress,
     Completed,
-    Disputed
+    Disputed,
+    Expired,
+    Declined
+}
+
+public enum BookingType
+{
+    Scheduled,
+    InstantMatch
 }
 
 public class Booking
 {
     public Guid Id { get; set; } = Guid.NewGuid();
+
+    public BookingType BookingType { get; set; } = BookingType.Scheduled;
 
     public Guid? JobRequestId { get; set; }
 
@@ -40,7 +50,13 @@ public class Booking
     // Requested, awaiting provider acceptance).
     public DateTimeOffset? ScheduledAt { get; set; }
 
+    public DateTimeOffset? ExpiresAt { get; set; }
+
     public string? Notes { get; set; }
+
+    public string? ServiceLocation { get; set; }
+    public double? Latitude { get; set; }
+    public double? Longitude { get; set; }
 
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
     public DateTimeOffset? UpdatedAt { get; set; }

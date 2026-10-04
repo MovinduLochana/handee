@@ -21,11 +21,17 @@ class FakeBookingRepository implements BookingRepository {
   Future<BookingModel> createBookingFromListing({
     required String serviceListingId,
     required DateTime scheduledAt,
+    String? serviceLocation,
+    double? latitude,
+    double? longitude,
     String? notes,
   }) async {
     lastCallParams = {
       'serviceListingId': serviceListingId,
       'scheduledAt': scheduledAt,
+      'serviceLocation': serviceLocation,
+      'latitude': latitude,
+      'longitude': longitude,
       'notes': notes,
     };
 
@@ -64,6 +70,19 @@ class FakeBookingRepository implements BookingRepository {
 
   @override
   Future<BookingModel> updateBookingStatus(String bookingId, String newStatus) async {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<List<BookingModel>> getProviderBookingRequests() async => [];
+
+  @override
+  Future<BookingModel> confirmBooking(String bookingId) async {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<BookingModel> declineBooking(String bookingId, {String? reason}) async {
     throw UnimplementedError();
   }
 }
@@ -149,6 +168,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Tap Confirm & Book without selecting any slot
+    await tester.ensureVisible(find.text('Confirm & Book'));
     await tester.tap(find.text('Confirm & Book'));
     await tester.pumpAndSettle();
 

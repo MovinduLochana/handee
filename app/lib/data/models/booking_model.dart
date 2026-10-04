@@ -17,6 +17,8 @@ class BookingModel {
   final String? customerPhone;
   final String? providerName;
   final String? serviceLocation;
+  final double? latitude;
+  final double? longitude;
   final double? price;
 
   /// Flat fields on BookingResponseDto, resolved server-side from the linked
@@ -26,6 +28,9 @@ class BookingModel {
   final String? description;
   final String? notes;
   final int durationHours;
+  final String bookingType;
+  final DateTime? expiresAt;
+  final int? remainingSeconds;
 
   BookingModel({
     required this.id,
@@ -43,11 +48,16 @@ class BookingModel {
     this.customerPhone,
     this.providerName,
     this.serviceLocation,
+    this.latitude,
+    this.longitude,
     this.price,
     this.category,
     this.description,
     this.notes,
     this.durationHours = 1,
+    this.bookingType = 'Scheduled',
+    this.expiresAt,
+    this.remainingSeconds,
   });
 
   bool get isRequested => status.toLowerCase() == 'requested';
@@ -55,6 +65,43 @@ class BookingModel {
   bool get isInProgress => status.toLowerCase() == 'inprogress' || status.toLowerCase() == 'in_progress';
   bool get isCompleted => status.toLowerCase() == 'completed';
   bool get isDisputed => status.toLowerCase() == 'disputed';
+  bool get isExpired => status.toLowerCase() == 'expired';
+  bool get isDeclined =>
+      status.toLowerCase() == 'declined' ||
+      status.toLowerCase() == 'rejected' ||
+      status.toLowerCase() == 'cancelled' ||
+      status.toLowerCase() == 'canceled';
+  bool get isRejected => isDeclined;
+
+  DateTime? get calculatedEndTime {
+    if (scheduledAt == null) return null;
+    final duration = durationHours > 0 ? durationHours : 1;
+    return scheduledAt!.add(Duration(hours: duration));
+  }
+
+  bool overlapsWith(BookingModel other, {Duration buffer = Duration.zero}) {
+    if (isDeclined || isExpired || status.toLowerCase() == 'cancelled' || status.toLowerCase() == 'canceled') return false;
+    if (other.isDeclined || other.isExpired || other.status.toLowerCase() == 'cancelled' || other.status.toLowerCase() == 'canceled') return false;
+    if (scheduledAt == null || other.scheduledAt == null) return false;
+
+    final thisStart = scheduledAt!;
+    final thisEnd = calculatedEndTime!;
+    final otherStart = other.scheduledAt!;
+    final otherEnd = other.calculatedEndTime!;
+
+    final effectiveThisStart = thisStart.subtract(buffer);
+    final effectiveThisEnd = thisEnd.add(buffer);
+
+    return effectiveThisStart.isBefore(otherEnd) && effectiveThisEnd.isAfter(otherStart);
+  }
+
+  bool get isInstantMatch {
+    final type = bookingType.toLowerCase();
+    if (type == 'instantmatch' || type == 'instant_match') return true;
+    if (type == 'scheduled') return false;
+    return serviceListingId == null && jobRequestId != null && scheduledAt == null;
+  }
+  bool get isScheduled => !isInstantMatch;
 
   String get displayStatus {
     switch (status.toLowerCase()) {
@@ -69,45 +116,88 @@ class BookingModel {
         return 'Completed';
       case 'disputed':
         return 'Disputed';
+      case 'expired':
+        return 'Expired';
+      case 'declined':
+        return 'Declined';
+      case 'rejected':
+        return 'Rejected';
+      case 'cancelled':
+      case 'canceled':
+        return 'Cancelled';
       default:
         return status;
     }
   }
 
   factory BookingModel.fromJson(Map<String, dynamic> json) {
+    final rawBookingType = json['bookingType']?.toString() ?? json['BookingType']?.toString();
+    final rawServiceListingId = json['serviceListingId']?.toString() ?? json['ServiceListingId']?.toString();
+    final rawJobRequestId = json['jobRequestId']?.toString() ?? json['JobRequestId']?.toString();
+    final resolvedBookingType = rawBookingType ??
+        (rawServiceListingId != null
+            ? 'Scheduled'
+            : (rawJobRequestId != null ? 'InstantMatch' : 'Scheduled'));
+
     return BookingModel(
-      id: json['id']?.toString() ?? '',
-      jobRequestId: json['jobRequestId']?.toString(),
-      serviceListingId: json['serviceListingId']?.toString(),
-      providerId: json['providerId']?.toString() ?? '',
-      customerId: json['customerId']?.toString() ?? '',
-      status: json['status']?.toString() ?? 'Requested',
-      scheduledAt: json['scheduledAt'] != null
-          ? DateTime.tryParse(json['scheduledAt'].toString())
+      id: json['id']?.toString() ?? json['Id']?.toString() ?? '',
+      jobRequestId: rawJobRequestId,
+      serviceListingId: rawServiceListingId,
+      providerId: json['providerId']?.toString() ?? json['ProviderId']?.toString() ?? '',
+      customerId: json['customerId']?.toString() ?? json['CustomerId']?.toString() ?? '',
+      status: json['status']?.toString() ?? json['Status']?.toString() ?? 'Requested',
+      scheduledAt: (json['scheduledAt'] != null || json['ScheduledAt'] != null)
+          ? DateTime.tryParse((json['scheduledAt'] ?? json['ScheduledAt']).toString())
           : null,
-      createdAt: json['createdAt'] != null
-          ? DateTime.tryParse(json['createdAt'].toString()) ?? DateTime.now()
+      createdAt: (json['createdAt'] != null || json['CreatedAt'] != null)
+          ? DateTime.tryParse((json['createdAt'] ?? json['CreatedAt']).toString()) ?? DateTime.now()
           : DateTime.now(),
-      updatedAt: json['updatedAt'] != null
-          ? DateTime.tryParse(json['updatedAt'].toString())
+      updatedAt: (json['updatedAt'] != null || json['UpdatedAt'] != null)
+          ? DateTime.tryParse((json['updatedAt'] ?? json['UpdatedAt']).toString())
           : null,
-      jobRequest: json['jobRequest'] != null
-          ? JobRequestModel.fromJson(json['jobRequest'] as Map<String, dynamic>)
+      jobRequest: (json['jobRequest'] ?? json['JobRequest']) != null
+          ? JobRequestModel.fromJson((json['jobRequest'] ?? json['JobRequest']) as Map<String, dynamic>)
           : null,
-      provider: json['provider'] != null
-          ? ProviderProfileModel.fromJson(json['provider'] as Map<String, dynamic>)
+      provider: (json['provider'] ?? json['Provider']) != null
+          ? ProviderProfileModel.fromJson((json['provider'] ?? json['Provider']) as Map<String, dynamic>)
           : null,
-      customerName: json['customerName']?.toString(),
-      customerPhone: json['customerPhone']?.toString(),
-      providerName: json['providerName']?.toString(),
-      serviceLocation: json['serviceLocation']?.toString(),
-      price: (json['price'] as num?)?.toDouble(),
-      category: json['category']?.toString(),
-      description: json['description']?.toString(),
-      notes: json['notes']?.toString(),
+      customerName: json['customerName']?.toString() ?? json['CustomerName']?.toString(),
+      customerPhone: json['customerPhone']?.toString() ?? json['CustomerPhone']?.toString(),
+      providerName: json['providerName']?.toString() ?? json['ProviderName']?.toString(),
+      serviceLocation: () {
+        final raw = json['serviceLocation']?.toString() ?? json['ServiceLocation']?.toString();
+        if (raw == null) return null;
+        return raw.replaceAll(RegExp(r'\s*\[\s*-?\d+(?:\.\d+)?\s*,\s*-?\d+(?:\.\d+)?\s*\]'), '').trim();
+      }(),
+      latitude: (json['latitude'] as num?)?.toDouble() ??
+          (json['Latitude'] as num?)?.toDouble() ??
+          () {
+            final raw = json['serviceLocation']?.toString() ?? json['ServiceLocation']?.toString();
+            if (raw == null) return null;
+            final m = RegExp(r'\[\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*\]').firstMatch(raw);
+            return m != null ? double.tryParse(m.group(1)!) : null;
+          }(),
+      longitude: (json['longitude'] as num?)?.toDouble() ??
+          (json['Longitude'] as num?)?.toDouble() ??
+          () {
+            final raw = json['serviceLocation']?.toString() ?? json['ServiceLocation']?.toString();
+            if (raw == null) return null;
+            final m = RegExp(r'\[\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*\]').firstMatch(raw);
+            return m != null ? double.tryParse(m.group(2)!) : null;
+          }(),
+      price: (json['price'] as num?)?.toDouble() ?? (json['Price'] as num?)?.toDouble(),
+      category: json['category']?.toString() ?? json['Category']?.toString(),
+      description: json['description']?.toString() ?? json['Description']?.toString(),
+      notes: json['notes']?.toString() ?? json['Notes']?.toString(),
       durationHours: (json['durationHours'] as num?)?.toInt() ??
           (json['DurationHours'] as num?)?.toInt() ??
           1,
+      bookingType: resolvedBookingType,
+      expiresAt: (json['expiresAt'] != null || json['ExpiresAt'] != null)
+          ? DateTime.tryParse((json['expiresAt'] ?? json['ExpiresAt']).toString())
+          : null,
+      remainingSeconds: (json['remainingSeconds'] as num?)?.toInt() ??
+          (json['RemainingSeconds'] as num?)?.toInt(),
     );
   }
 
@@ -126,11 +216,16 @@ class BookingModel {
       'customerPhone': customerPhone,
       'providerName': providerName,
       'serviceLocation': serviceLocation,
+      'latitude': latitude,
+      'longitude': longitude,
       'price': price,
       'category': category,
       'description': description,
       'notes': notes,
       'durationHours': durationHours,
+      'bookingType': bookingType,
+      'expiresAt': expiresAt?.toIso8601String(),
+      'remainingSeconds': remainingSeconds,
     };
   }
 
@@ -150,11 +245,16 @@ class BookingModel {
     String? customerPhone,
     String? providerName,
     String? serviceLocation,
+    double? latitude,
+    double? longitude,
     double? price,
     String? category,
     String? description,
     String? notes,
     int? durationHours,
+    String? bookingType,
+    DateTime? expiresAt,
+    int? remainingSeconds,
   }) {
     return BookingModel(
       id: id ?? this.id,
@@ -172,11 +272,16 @@ class BookingModel {
       customerPhone: customerPhone ?? this.customerPhone,
       providerName: providerName ?? this.providerName,
       serviceLocation: serviceLocation ?? this.serviceLocation,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
       price: price ?? this.price,
       category: category ?? this.category,
       description: description ?? this.description,
       notes: notes ?? this.notes,
       durationHours: durationHours ?? this.durationHours,
+      bookingType: bookingType ?? this.bookingType,
+      expiresAt: expiresAt ?? this.expiresAt,
+      remainingSeconds: remainingSeconds ?? this.remainingSeconds,
     );
   }
 }

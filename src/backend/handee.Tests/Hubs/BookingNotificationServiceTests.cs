@@ -99,4 +99,27 @@ public class BookingNotificationServiceTests
             c => c.ReceiveNewJobDispatch(bookingId, jobRequestId, category, price),
             Times.Once);
     }
+
+    [Fact]
+    public async Task NotifyScheduledBookingRequestedAsync_SendsReceiveScheduledBookingRequestToProviderGroup()
+    {
+        // Arrange
+        var providerId = Guid.NewGuid();
+        var bookingId = Guid.NewGuid();
+        var category = "Carpentry";
+        var scheduledAt = DateTimeOffset.UtcNow.AddDays(2);
+        var price = 4500m;
+        var remainingSeconds = 86400;
+
+        _mockClients.Setup(c => c.Group($"Provider_{providerId}")).Returns(_mockProviderGroup.Object);
+
+        // Act
+        await _service.NotifyScheduledBookingRequestedAsync(
+            providerId, bookingId, category, scheduledAt, price, remainingSeconds);
+
+        // Assert
+        _mockProviderGroup.Verify(
+            c => c.ReceiveScheduledBookingRequest(bookingId, category, scheduledAt, price, remainingSeconds),
+            Times.Once);
+    }
 }

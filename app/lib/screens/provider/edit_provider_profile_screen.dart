@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/colors.dart';
+import '../../data/models/provider_profile_model.dart';
 import '../../providers/service_category_provider.dart';
 import '../../providers/service_directory_provider.dart';
 import '../../widgets/custom_button.dart';
@@ -33,34 +34,67 @@ class _EditProviderProfileScreenState extends State<EditProviderProfileScreen> {
     final profile = dirProvider.myProfile;
 
     _headlineController = TextEditingController(
-      text: profile?.headline ?? 'Master Plumber & AC Repair Specialist',
+      text: profile?.headline ?? '',
     );
     _experienceController = TextEditingController(
-      text: (profile?.yearsOfExperience ?? 10).toString(),
+      text: (profile != null && profile.yearsOfExperience > 0)
+          ? profile.yearsOfExperience.toString()
+          : '',
     );
     _rateController = TextEditingController(
-      text: (profile?.hourlyRate ?? 2500).toInt().toString(),
+      text: (profile?.hourlyRate != null && profile!.hourlyRate! > 0)
+          ? profile.hourlyRate!.toInt().toString()
+          : '',
     );
     _cityController = TextEditingController(
-      text: profile?.serviceArea ?? 'Colombo & Western Province',
+      text: profile?.serviceArea ?? '',
     );
     _bioController = TextEditingController(
-      text: profile?.bio ??
-          'Certified technician with 10+ years of hands-on experience in residential and commercial maintenance across Colombo.',
+      text: profile?.bio ?? '',
     );
 
     if (profile != null) {
       _selectedCategories.addAll(profile.skillCategories);
       _selectedLanguages.addAll(profile.languages);
       _isAvailable = profile.isOnline;
-    } else {
-      _selectedCategories.addAll(['Plumbing', 'AC Repair']);
     }
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<ServiceDirectoryProvider>().loadMyProviderProfile();
-      context.read<ServiceCategoryProvider>().fetchCategories();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await context.read<ServiceDirectoryProvider>().loadMyProviderProfile();
+      if (mounted) {
+        context.read<ServiceCategoryProvider>().fetchCategories();
+        _populateFromProfile(context.read<ServiceDirectoryProvider>().myProfile);
+      }
     });
+  }
+
+  void _populateFromProfile(ProviderProfileModel? profile) {
+    if (profile == null) return;
+    if (_headlineController.text.isEmpty && profile.headline != null) {
+      _headlineController.text = profile.headline!;
+    }
+    if (_experienceController.text.isEmpty && profile.yearsOfExperience > 0) {
+      _experienceController.text = profile.yearsOfExperience.toString();
+    }
+    if (_rateController.text.isEmpty && profile.hourlyRate != null && profile.hourlyRate! > 0) {
+      _rateController.text = profile.hourlyRate!.toInt().toString();
+    }
+    if (_cityController.text.isEmpty && profile.serviceArea.isNotEmpty) {
+      _cityController.text = profile.serviceArea;
+    }
+    if (_bioController.text.isEmpty && profile.bio != null) {
+      _bioController.text = profile.bio!;
+    }
+    if (_selectedCategories.isEmpty && profile.skillCategories.isNotEmpty) {
+      _selectedCategories.addAll(profile.skillCategories);
+    }
+    if (_selectedLanguages.isEmpty && profile.languages.isNotEmpty) {
+      _selectedLanguages.addAll(profile.languages);
+    }
+    _isAvailable = profile.isOnline;
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   @override

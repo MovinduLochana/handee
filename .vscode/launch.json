@@ -1,0 +1,51 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Backend (.NET - Local Database)",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build",
+      "program": "${workspaceFolder}/src/backend/Handee.Api/bin/Debug/net10.0/handee.API.dll",
+      "args": ["--urls", "http://0.0.0.0:5057;http://0.0.0.0:5000"],
+      "cwd": "${workspaceFolder}/src/backend/Handee.Api",
+      "stopAtEntry": false,
+      "env": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "USE_CLOUD_DB": "false"
+      }
+    },
+    {
+      "name": "Backend (.NET - Cloud Neon DB)",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build",
+      "program": "${workspaceFolder}/src/backend/Handee.Api/bin/Debug/net10.0/handee.API.dll",
+      "args": ["--urls", "http://0.0.0.0:5057;http://0.0.0.0:5000"],
+      "cwd": "${workspaceFolder}/src/backend/Handee.Api",
+      "stopAtEntry": false,
+      "env": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "USE_CLOUD_DB": "true"
+      }
+    },
+    {
+      "name": "Flutter Mobile (Local Backend)",
+      "cwd": "app",
+      "request": "launch",
+      "type": "dart",
+      "toolArgs": [
+        "--dart-define=USE_LOCAL=true"
+      ]
+    },
+    {
+      "name": "Flutter Mobile (Cloud Azure Backend)",
+      "cwd": "app",
+      "request": "launch",
+      "type": "dart",
+      "toolArgs": [
+        "--dart-define=USE_LOCAL=false"
+      ]
+    }
+  ]
+}
