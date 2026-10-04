@@ -293,57 +293,67 @@ export default function CheckoutPayment() {
             <CardContent className="space-y-4">
               {/* List of Synchronized Saved Cards */}
               <div className="space-y-2.5">
-                {methods.map((card) => {
-                  const isSelected = activeCard?.id === card.id;
-                  return (
-                    <div
-                      key={card.id}
-                      onClick={() => setSelectedId(card.id)}
-                      className={`flex items-center justify-between p-3.5 rounded border transition-colors cursor-pointer ${
-                        isSelected
-                          ? "border-primary bg-primary/5 ring-1 ring-primary"
-                          : "border-border hover:bg-muted/50"
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div
-                          className={`h-4 w-4 rounded-full border flex items-center justify-center ${
-                            isSelected ? "border-primary bg-primary" : "border-border"
-                          }`}
-                        >
-                          {isSelected && (
-                            <div className="h-1.5 w-1.5 rounded-full bg-primary-foreground" />
-                          )}
-                        </div>
-                        <div>
-                          <div className="font-semibold text-foreground text-sm flex items-center gap-2">
-                            {card.name || `${card.brand} •••• ${card.last4}`}
-                            {card.isDefault && (
-                              <Badge
-                                variant="outline"
-                                className="border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] px-1.5 py-0"
-                              >
-                                Default
-                              </Badge>
+                {methods.length === 0 ? (
+                  <div className="text-center py-6 space-y-2">
+                    <CreditCard className="h-8 w-8 text-muted-foreground mx-auto" />
+                    <p className="text-sm text-muted-foreground">No saved cards yet.</p>
+                    <p className="text-xs text-muted-foreground">
+                      Add a card below to complete your payment.
+                    </p>
+                  </div>
+                ) : (
+                  methods.map((card) => {
+                    const isSelected = activeCard?.id === card.id;
+                    return (
+                      <div
+                        key={card.id}
+                        onClick={() => setSelectedId(card.id)}
+                        className={`flex items-center justify-between p-3.5 rounded border transition-colors cursor-pointer ${
+                          isSelected
+                            ? "border-primary bg-primary/5 ring-1 ring-primary"
+                            : "border-border hover:bg-muted/50"
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div
+                            className={`h-4 w-4 rounded-full border flex items-center justify-center ${
+                              isSelected ? "border-primary bg-primary" : "border-border"
+                            }`}
+                          >
+                            {isSelected && (
+                              <div className="h-1.5 w-1.5 rounded-full bg-primary-foreground" />
                             )}
                           </div>
-                          <div className="text-xs text-muted-foreground font-mono">
-                            •••• •••• •••• {card.last4}
+                          <div>
+                            <div className="font-semibold text-foreground text-sm flex items-center gap-2">
+                              {card.name || `${card.brand} •••• ${card.last4}`}
+                              {card.isDefault && (
+                                <Badge
+                                  variant="outline"
+                                  className="border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] px-1.5 py-0"
+                                >
+                                  Default
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="text-xs text-muted-foreground font-mono">
+                              •••• •••• •••• {card.last4}
+                            </div>
                           </div>
                         </div>
+                        <div className="text-right">
+                          <span className="text-xs font-medium text-muted-foreground block">
+                            Exp {String(card.expiryMonth).padStart(2, "0")}/
+                            {String(card.expiryYear).slice(-2)}
+                          </span>
+                          <span className="text-[11px] text-muted-foreground font-mono">
+                            {card.brand}
+                          </span>
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <span className="text-xs font-medium text-muted-foreground block">
-                          Exp {String(card.expiryMonth).padStart(2, "0")}/
-                          {String(card.expiryYear).slice(-2)}
-                        </span>
-                        <span className="text-[11px] text-muted-foreground font-mono">
-                          {card.brand}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })
+                )}
               </div>
 
               {/* Quick Add Card Toggle */}
