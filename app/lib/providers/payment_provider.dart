@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/network/api_client.dart';
 import '../data/models/invoice_model.dart';
 import '../data/models/payment_model.dart';
 import '../data/repositories/invoice_repository.dart';
@@ -152,7 +153,7 @@ class PaymentProvider extends ChangeNotifier {
           status: 'Succeeded',
           cardLast4: cardLast4,
           createdAt: DateTime.now(),
-          paidAt: DateTime.now(),
+          settledAt: DateTime.now(),
         );
 
         final currentInvoice = _invoicesByBooking[bookingId];
