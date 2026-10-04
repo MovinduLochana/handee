@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../core/network/api_client.dart';
 import '../data/models/invoice_model.dart';
 import '../data/models/payment_model.dart';
 import '../data/repositories/invoice_repository.dart';
@@ -18,10 +17,7 @@ class PaymentProvider extends ChangeNotifier {
   String? _errorMessage;
   PaymentModel? _lastPaymentResult;
 
-  PaymentProvider({
-    required this.invoiceRepo,
-    required this.paymentRepo,
-  });
+  PaymentProvider({required this.invoiceRepo, required this.paymentRepo});
 
   bool get isLoading => _isLoading;
   bool get isProcessing => _isProcessing;
@@ -31,7 +27,8 @@ class PaymentProvider extends ChangeNotifier {
   List<InvoiceModel> get myInvoices => _myInvoices;
   List<PaymentModel> get myPayments => _myPayments;
 
-  InvoiceModel? getInvoiceForBooking(String bookingId) => _invoicesByBooking[bookingId];
+  InvoiceModel? getInvoiceForBooking(String bookingId) =>
+      _invoicesByBooking[bookingId];
 
   Future<InvoiceModel?> fetchInvoiceForBooking(String bookingId) async {
     _isLoading = true;
@@ -114,8 +111,6 @@ class PaymentProvider extends ChangeNotifier {
     try {
       String effectiveInvoiceId = invoiceId;
 
-      // If the invoiceId is a mock/placeholder (e.g. 'inv-...') and not a valid GUID,
-      // attempt to resolve the actual backend invoice GUID or create one.
       if (!_isValidGuid(effectiveInvoiceId)) {
         final cached = _invoicesByBooking[bookingId];
         if (cached != null && _isValidGuid(cached.id)) {
@@ -144,8 +139,6 @@ class PaymentProvider extends ChangeNotifier {
         }
       }
 
-      // If still not a valid GUID (e.g., pure mock/sandbox scenario with non-GUID IDs),
-      // complete the sandbox payment gracefully without firing a malformed request to the backend.
       if (!_isValidGuid(effectiveInvoiceId)) {
         final mockPayment = PaymentModel(
           id: 'pay-sandbox-${DateTime.now().millisecondsSinceEpoch}',
@@ -154,11 +147,12 @@ class PaymentProvider extends ChangeNotifier {
           amount: _invoicesByBooking[bookingId]?.totalAmount ?? 4500.0,
           currency: 'LKR',
           gatewayProvider: gatewayProvider,
-          transactionReference: 'ch_sbx_${DateTime.now().millisecondsSinceEpoch}',
+          transactionReference:
+              'ch_sbx_${DateTime.now().millisecondsSinceEpoch}',
           status: 'Succeeded',
           cardLast4: cardLast4,
           createdAt: DateTime.now(),
-          settledAt: DateTime.now(),
+          paidAt: DateTime.now(),
         );
 
         final currentInvoice = _invoicesByBooking[bookingId];
@@ -227,7 +221,8 @@ class PaymentProvider extends ChangeNotifier {
       notifyListeners();
       return payment;
     } catch (e) {
-      if (e is ApiException && e.message.toLowerCase().contains('already been paid')) {
+      if (e is ApiException &&
+          e.message.toLowerCase().contains('already been paid')) {
         final currentInvoice = _invoicesByBooking[bookingId];
         if (currentInvoice != null) {
           _invoicesByBooking[bookingId] = InvoiceModel(
