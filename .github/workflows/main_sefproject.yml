@@ -30,6 +30,34 @@ jobs:
         run: dotnet publish -c Release -o ./publish --no-build
         working-directory: src/backend/Handee.Api
 
+      - name: Generate .env file
+        shell: pwsh
+        run: |
+          @"
+          # DB
+          ConnectionStrings__DefaultConnection=${{ secrets.DEFAULT_CONNECTION }}
+          ConnectionStrings__Redis=${{ secrets.REDIS }}
+          # JWT
+          Jwt__Issuer=Handee
+          Jwt__Audience=Web
+          Jwt__SecretKey=${{ secrets.JWT_SECRET_KEY }}
+          # Maps
+          GoogleMaps__ApiKey=${{ secrets.GOOGLE_MAPS_API_KEY }}
+          # SMTP
+          EmailSettings__SmtpHost=${{ vars.SMTP_HOST }}
+          EmailSettings__SmtpPort=${{ vars.SMTP_PORT }}
+          EmailSettings__SmtpUser=${{ secrets.SMTP_USER }}
+          EmailSettings__SmtpPass=${{ secrets.SMTP_PASSWORD }}
+          # APIs
+          InternalApi__SharedSecret=${{ secrets.INTERNAL_API_KEY }}
+          AgentService__BaseUrl=${{ vars.AGENT_URL}}
+          # Seeding
+          Seeding__AdminEmail=${{ secrets.ADMIN_MAIL }}
+          Seeding__AdminPassword=${{ secrets.ADMIN_PASS}}
+          "@ | Out-File -FilePath src/backend/Handee.Api/publish/.env -Encoding utf8
+
+
+
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
