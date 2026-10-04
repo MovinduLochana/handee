@@ -9,7 +9,6 @@ import { extractApiError } from "../../lib/api";
 import BookingStatusBadge from "../../components/booking/BookingStatusBadge";
 import BookingStatusControl from "../../components/booking/BookingStatusControl";
 import LoadError from "../../components/booking/LoadError";
-import { Badge } from "@/components/ui/badge";
 import {
   formatDateTime,
   formatMoney,
@@ -240,7 +239,8 @@ export default function BookingDetail() {
                     ];
                   }
                   return items.map((line, idx) => {
-                    const isUrgency = line.type?.toLowerCase() === "urgency" ||
+                    const isUrgency =
+                      line.type?.toLowerCase() === "urgency" ||
                       line.item.toLowerCase().includes("priority") ||
                       line.item.toLowerCase().includes("surcharge");
                     return (

@@ -21,18 +21,18 @@ export const pricingConfigApi = {
   //Get current system urgency multiplier configuration
   getUrgencyMultipliers: async (): Promise<UrgencyMultiplierConfigDto> => {
     const response = await api.get<UrgencyMultiplierConfigDto>(
-      "/api/admin/pricing-config/urgency-multipliers"
+      "/api/admin/pricing-config/urgency-multipliers",
     );
     return response.data;
   },
 
   //Update system urgency multiplier configuration
   updateUrgencyMultipliers: async (
-    dto: UpdateUrgencyMultiplierConfigDto
+    dto: UpdateUrgencyMultiplierConfigDto,
   ): Promise<UrgencyMultiplierConfigDto> => {
     const response = await api.put<UrgencyMultiplierConfigDto>(
       "/api/admin/pricing-config/urgency-multipliers",
-      dto
+      dto,
     );
     return response.data;
   },

@@ -6,7 +6,6 @@ import {
   RotateCcw,
   CheckCircle2,
   AlertCircle,
-  HelpCircle,
   TrendingUp,
   ShieldCheck,
   ChevronDown,
@@ -26,10 +25,10 @@ import {
 
 const DEFAULT_MULTIPLIERS: UpdateUrgencyMultiplierConfigDto = {
   low: 0.95,
-  normal: 1.00,
+  normal: 1.0,
   medium: 1.05,
-  high: 1.20,
-  emergency: 1.40,
+  high: 1.2,
+  emergency: 1.4,
 };
 
 export default function UrgencyMultipliersConfig() {
@@ -65,17 +64,14 @@ export default function UrgencyMultipliersConfig() {
       setErrorMsg(
         err?.response?.data?.error ||
           err?.message ||
-          "Failed to load dynamic pricing configuration. Showing defaults."
+          "Failed to load dynamic pricing configuration. Showing defaults.",
       );
     } finally {
       setLoading(false);
     }
   };
 
-  const handleMultiplierChange = (
-    field: keyof UpdateUrgencyMultiplierConfigDto,
-    value: string
-  ) => {
+  const handleMultiplierChange = (field: keyof UpdateUrgencyMultiplierConfigDto, value: string) => {
     const num = parseFloat(value);
     if (!isNaN(num)) {
       setConfig((prev) => ({ ...prev, [field]: num }));
@@ -88,7 +84,7 @@ export default function UrgencyMultipliersConfig() {
     if (config.normal > config.medium) return "Normal multiplier cannot exceed Medium.";
     if (config.medium > config.high) return "Medium multiplier cannot exceed High.";
     if (config.high > config.emergency) return "High multiplier cannot exceed Emergency.";
-    if (config.emergency < 1.20 || config.emergency > 3.00)
+    if (config.emergency < 1.2 || config.emergency > 3.0)
       return "Emergency multiplier must be between 1.20 and 3.00.";
     return null;
   };
@@ -117,13 +113,11 @@ export default function UrgencyMultipliersConfig() {
       });
       setLastUpdated(updated.lastUpdatedAt || new Date().toISOString());
       setSuccessMsg(
-        "Urgency multipliers saved successfully! The Python AI dispatch agent and booking engine will use these values immediately."
+        "Urgency multipliers saved successfully! The Python AI dispatch agent and booking engine will use these values immediately.",
       );
     } catch (err: any) {
       setErrorMsg(
-        err?.response?.data?.error ||
-          err?.message ||
-          "Failed to save urgency multipliers."
+        err?.response?.data?.error || err?.message || "Failed to save urgency multipliers.",
       );
     } finally {
       setSaving(false);
@@ -152,8 +146,8 @@ export default function UrgencyMultipliersConfig() {
       sublabel: "Non-urgent / Flexible slot",
       badgeColor: "bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/30",
       description: "Discounted rate for customers flexible with timing.",
-      min: 0.70,
-      max: 1.10,
+      min: 0.7,
+      max: 1.1,
       step: 0.01,
     },
     {
@@ -172,8 +166,8 @@ export default function UrgencyMultipliersConfig() {
       sublabel: "Standard dispatch",
       badgeColor: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30",
       description: "Default customer urgency tier for standard booking.",
-      min: 1.00,
-      max: 1.40,
+      min: 1.0,
+      max: 1.4,
       step: 0.01,
     },
     {
@@ -182,8 +176,8 @@ export default function UrgencyMultipliersConfig() {
       sublabel: "Same-day priority",
       badgeColor: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30",
       description: "Prioritized scheduling for same-day requests.",
-      min: 1.10,
-      max: 1.80,
+      min: 1.1,
+      max: 1.8,
       step: 0.01,
     },
     {
@@ -192,8 +186,8 @@ export default function UrgencyMultipliersConfig() {
       sublabel: "Immediate response (< 60m)",
       badgeColor: "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/30",
       description: "Instant match dispatch for urgent domestic breakdowns.",
-      min: 1.20,
-      max: 3.00,
+      min: 1.2,
+      max: 3.0,
       step: 0.01,
     },
   ];
@@ -210,12 +204,16 @@ export default function UrgencyMultipliersConfig() {
               <CardTitle className="text-base sm:text-lg font-bold">
                 Urgency Multipliers & Dynamic Pricing Engine
               </CardTitle>
-              <Badge variant="outline" className="border-emerald-500/30 bg-emerald-500/10 text-emerald-600 text-xs">
+              <Badge
+                variant="outline"
+                className="border-emerald-500/30 bg-emerald-500/10 text-emerald-600 text-xs"
+              >
                 Live AI Synced
               </Badge>
             </div>
             <CardDescription className="text-xs sm:text-sm mt-0.5">
-              Configures surge multipliers without hardcoding. Multipliers scale customer price and reward rush providers.
+              Configures surge multipliers without hardcoding. Multipliers scale customer price and
+              reward rush providers.
             </CardDescription>
           </div>
         </div>
@@ -227,11 +225,7 @@ export default function UrgencyMultipliersConfig() {
             onClick={() => setIsExpanded(!isExpanded)}
             className="text-muted-foreground hover:text-foreground"
           >
-            {isExpanded ? (
-              <ChevronUp className="h-4 w-4" />
-            ) : (
-              <ChevronDown className="h-4 w-4" />
-            )}
+            {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
           </Button>
         </div>
       </CardHeader>
@@ -248,7 +242,9 @@ export default function UrgencyMultipliersConfig() {
           {successMsg && (
             <Alert className="border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 py-2.5">
               <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-              <AlertDescription className="text-xs sm:text-sm font-medium">{successMsg}</AlertDescription>
+              <AlertDescription className="text-xs sm:text-sm font-medium">
+                {successMsg}
+              </AlertDescription>
             </Alert>
           )}
 
@@ -276,18 +272,19 @@ export default function UrgencyMultipliersConfig() {
                   <div className="flex items-center justify-between">
                     <span className="font-semibold text-sm text-foreground">{t.label}</span>
                     <Badge variant="outline" className={`text-[11px] font-mono ${t.badgeColor}`}>
-                      {sign}{pctDiff}%
+                      {sign}
+                      {pctDiff}%
                     </Badge>
                   </div>
 
-                  <p className="text-xs text-muted-foreground line-clamp-2 h-8">
-                    {t.description}
-                  </p>
+                  <p className="text-xs text-muted-foreground line-clamp-2 h-8">{t.description}</p>
 
                   <div className="space-y-1.5 pt-1">
                     <div className="flex items-center justify-between text-xs text-muted-foreground">
                       <span>Multiplier (x)</span>
-                      <span className="font-mono font-medium text-foreground">{currentVal.toFixed(2)}x</span>
+                      <span className="font-mono font-medium text-foreground">
+                        {currentVal.toFixed(2)}x
+                      </span>
                     </div>
 
                     <Input
@@ -328,7 +325,10 @@ export default function UrgencyMultipliersConfig() {
               </div>
 
               <div className="flex items-center gap-2">
-                <Label htmlFor="sample-price" className="text-xs text-muted-foreground whitespace-nowrap">
+                <Label
+                  htmlFor="sample-price"
+                  className="text-xs text-muted-foreground whitespace-nowrap"
+                >
                   Benchmark Base Price:
                 </Label>
                 <div className="relative w-32">
@@ -349,8 +349,9 @@ export default function UrgencyMultipliersConfig() {
             </div>
 
             <p className="text-xs text-muted-foreground">
-              Fair Marketplace Guarantee: Customer is charged an urgency surcharge for high/emergency priority.
-              The provider earns 85% of total value (including rush compensation) and is never penalized for speed.
+              Fair Marketplace Guarantee: Customer is charged an urgency surcharge for
+              high/emergency priority. The provider earns 85% of total value (including rush
+              compensation) and is never penalized for speed.
             </p>
 
             {/* Matrix Table */}
@@ -379,18 +380,26 @@ export default function UrgencyMultipliersConfig() {
                     return (
                       <tr
                         key={t.key}
-                        className={isHighlight ? "bg-primary/5 font-semibold text-foreground" : "hover:bg-muted/30"}
+                        className={
+                          isHighlight
+                            ? "bg-primary/5 font-semibold text-foreground"
+                            : "hover:bg-muted/30"
+                        }
                       >
                         <td className="py-2 px-3 font-sans flex items-center gap-1.5">
                           {isHighlight && <Zap className="h-3 w-3 text-rose-500 fill-rose-500" />}
                           {t.label}
                         </td>
-                        <td className="py-2 px-3 text-right text-muted-foreground">{mult.toFixed(2)}x</td>
+                        <td className="py-2 px-3 text-right text-muted-foreground">
+                          {mult.toFixed(2)}x
+                        </td>
                         <td className="py-2 px-3 text-right text-foreground font-bold">
                           Rs. {customerTotal.toLocaleString()}
                         </td>
                         <td className="py-2 px-3 text-right text-amber-600 dark:text-amber-400">
-                          {urgencySurcharge > 0 ? `+Rs. ${urgencySurcharge.toLocaleString()}` : "Rs. 0"}
+                          {urgencySurcharge > 0
+                            ? `+Rs. ${urgencySurcharge.toLocaleString()}`
+                            : "Rs. 0"}
                         </td>
                         <td className="py-2 px-3 text-right text-emerald-600 dark:text-emerald-400">
                           Rs. {providerPayout.toLocaleString()}

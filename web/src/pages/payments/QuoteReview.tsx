@@ -141,29 +141,46 @@ export default function QuoteReview() {
                   </TableHeader>
                   <TableBody>
                     {parsedItems.map((line, idx) => {
-                      const isUrgency = line.type?.toLowerCase() === "urgency" ||
+                      const isUrgency =
+                        line.type?.toLowerCase() === "urgency" ||
                         line.item.toLowerCase().includes("priority") ||
                         line.item.toLowerCase().includes("surcharge");
                       return (
-                        <TableRow key={idx} className={isUrgency ? "bg-amber-500/5 font-medium" : undefined}>
-                          <TableCell className={`text-sm ${isUrgency ? "text-amber-600 dark:text-amber-400 font-bold" : "font-medium"}`}>
+                        <TableRow
+                          key={idx}
+                          className={isUrgency ? "bg-amber-500/5 font-medium" : undefined}
+                        >
+                          <TableCell
+                            className={`text-sm ${isUrgency ? "text-amber-600 dark:text-amber-400 font-bold" : "font-medium"}`}
+                          >
                             {line.item}
                           </TableCell>
                           <TableCell>
                             <Badge
                               variant={isUrgency ? "default" : "secondary"}
-                              className={isUrgency ? "bg-amber-500 hover:bg-amber-600 text-white text-xs" : "text-xs"}
+                              className={
+                                isUrgency
+                                  ? "bg-amber-500 hover:bg-amber-600 text-white text-xs"
+                                  : "text-xs"
+                              }
                             >
                               {line.type || (isUrgency ? "Priority" : "Service")}
                             </Badge>
                           </TableCell>
-                          <TableCell className={`text-right text-sm ${isUrgency ? "text-amber-600 dark:text-amber-400 font-bold" : "font-semibold"}`}>
-                            {isUrgency && line.price > 0 ? "+" : ""}{line.price.toLocaleString()}
+                          <TableCell
+                            className={`text-right text-sm ${isUrgency ? "text-amber-600 dark:text-amber-400 font-bold" : "font-semibold"}`}
+                          >
+                            {isUrgency && line.price > 0 ? "+" : ""}
+                            {line.price.toLocaleString()}
                           </TableCell>
                         </TableRow>
                       );
                     })}
-                    {!parsedItems.some((i) => i.type?.toLowerCase() === "fee" || i.item.toLowerCase().includes("platform")) && (
+                    {!parsedItems.some(
+                      (i) =>
+                        i.type?.toLowerCase() === "fee" ||
+                        i.item.toLowerCase().includes("platform"),
+                    ) && (
                       <TableRow>
                         <TableCell className="text-muted-foreground text-xs">
                           Platform Trust & Safety Fee
@@ -192,9 +209,10 @@ export default function QuoteReview() {
                 </div>
                 {(() => {
                   const urgencyItem = parsedItems.find(
-                    (i) => i.type?.toLowerCase() === "urgency" ||
-                           i.item.toLowerCase().includes("priority") ||
-                           i.item.toLowerCase().includes("surcharge")
+                    (i) =>
+                      i.type?.toLowerCase() === "urgency" ||
+                      i.item.toLowerCase().includes("priority") ||
+                      i.item.toLowerCase().includes("surcharge"),
                   );
                   return urgencyItem && urgencyItem.price > 0 ? (
                     <div className="flex justify-between w-full max-w-xs text-amber-600 dark:text-amber-400 font-semibold">

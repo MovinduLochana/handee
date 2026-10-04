@@ -468,9 +468,10 @@ export default function CheckoutPayment() {
                       const items = JSON.parse(invoice.lineItemsJson);
                       if (Array.isArray(items)) {
                         const urg = items.find(
-                          (i: any) => i.type?.toLowerCase() === "urgency" ||
-                                     i.item?.toLowerCase().includes("priority") ||
-                                     i.item?.toLowerCase().includes("surcharge")
+                          (i: any) =>
+                            i.type?.toLowerCase() === "urgency" ||
+                            i.item?.toLowerCase().includes("priority") ||
+                            i.item?.toLowerCase().includes("surcharge"),
                         );
                         if (urg && urg.price) {
                           urgencySurcharge = urg.price;
