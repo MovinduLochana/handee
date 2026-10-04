@@ -187,7 +187,7 @@ export default function CheckoutPayment() {
             <div>
               <h2 className="text-2xl font-bold text-foreground">Payment Successful!</h2>
               <p className="text-muted-foreground text-sm mt-1">
-                Settlement authorized via {activeCard?.brand || "Sandbox Card"} (
+                Settlement authorized via {activeCard?.brand || "Payment Card"} (
                 {activeCard?.last4 || "4242"})
               </p>
             </div>
@@ -209,8 +209,8 @@ export default function CheckoutPayment() {
                 <span className="text-muted-foreground">Gateway:</span>
                 <span className="text-foreground">
                   {activeCard?.brand === "PayHere"
-                    ? "PayHere Sandbox"
-                    : "Stripe Sandbox (Polly Resilient)"}
+                    ? "PayHere"
+                    : "Stripe"}
                 </span>
               </div>
             </div>
@@ -241,7 +241,7 @@ export default function CheckoutPayment() {
               variant="outline"
               className="border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 gap-1 text-xs"
             >
-              <Lock className="h-3 w-3" /> Sandbox Payment Gateway
+              <Lock className="h-3 w-3" /> Secure Payment Gateway
             </Badge>
           </div>
           <h1 className="text-3xl font-bold tracking-tight text-foreground">Secure Checkout</h1>
@@ -264,7 +264,7 @@ export default function CheckoutPayment() {
             <strong>Payment Failed:</strong>{" "}
             {(payMutation.error as any)?.response?.data?.message ||
               (payMutation.error as Error)?.message ||
-              "Sandbox card declined. Please try again."}
+              "Payment card declined. Please try again."}
           </AlertDescription>
         </Alert>
       )}
@@ -277,7 +277,7 @@ export default function CheckoutPayment() {
               <div className="flex justify-between items-center">
                 <CardTitle className="text-base font-bold flex items-center gap-2">
                   <CreditCard className="h-4 w-4 text-primary" />
-                  Choose Sandbox Payment Card
+                  Choose Payment Card
                 </CardTitle>
                 <Link
                   to="/account/payment-methods"
@@ -455,7 +455,7 @@ export default function CheckoutPayment() {
               >
                 <Lock className="h-4 w-4" />
                 {payMutation.isPending
-                  ? "Simulating Gateway Processing..."
+                  ? "Processing Payment..."
                   : `Authorize & Pay LKR ${invoice.totalAmount.toLocaleString()}`}
               </Button>
             </CardContent>
@@ -523,7 +523,7 @@ export default function CheckoutPayment() {
               <div className="bg-muted p-3.5 rounded space-y-1.5 text-xs text-muted-foreground">
                 <div className="flex items-center gap-1.5 font-semibold text-foreground">
                   <ShieldCheck className="h-4 w-4 text-emerald-500" />
-                  Escrow Protected Payment
+                  Secure Payment
                 </div>
                 <p>
                   Platform retains funds until service completion is confirmed. The provider is

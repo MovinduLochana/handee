@@ -205,7 +205,7 @@ class _InvoicePaymentSheetState extends State<InvoicePaymentSheet> {
 
         // Sandbox Payment Gateway Selector
         const Text(
-          'Sandbox Payment Method',
+          'Payment Method',
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w700,
@@ -237,7 +237,7 @@ class _InvoicePaymentSheetState extends State<InvoicePaymentSheet> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Visa Sandbox Test Card',
+                      'Visa Card',
                       style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
                     ),
                     SizedBox(height: 2),
@@ -288,7 +288,7 @@ class _InvoicePaymentSheetState extends State<InvoicePaymentSheet> {
         const SizedBox(height: 10),
         const Center(
           child: Text(
-            'Sandbox Gateway • Protected by Polly Exponential Retry Policy',
+            'Secured by Stripe',
             style: TextStyle(fontSize: 11, color: AppColors.textMuted),
           ),
         ),

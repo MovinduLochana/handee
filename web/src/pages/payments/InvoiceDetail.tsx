@@ -262,7 +262,7 @@ export default function InvoiceDetail() {
                   <TableCell className="text-muted-foreground text-xs">
                     Platform Protection & Guarantee (15%)
                   </TableCell>
-                  <TableCell className="text-muted-foreground text-xs">Escrow Fee</TableCell>
+                  <TableCell className="text-muted-foreground text-xs">Trust Fee</TableCell>
                   <TableCell className="text-right text-muted-foreground text-xs">
                     {invoice.platformFee.toLocaleString()}
                   </TableCell>
@@ -312,7 +312,7 @@ export default function InvoiceDetail() {
             <ShieldCheck className="h-7 w-7 text-emerald-600 dark:text-emerald-400 shrink-0" />
             <div>
               <div className="font-bold text-emerald-800 dark:text-emerald-300 text-sm">
-                Paid & Verified via Sandbox Payment Gateway
+                Paid & Verified via Secure Gateway
               </div>
               <div className="text-xs text-emerald-700/80 dark:text-emerald-400/80 mt-0.5">
                 Funds transferred securely. Provider payout ledger credited with 85% net earnings.

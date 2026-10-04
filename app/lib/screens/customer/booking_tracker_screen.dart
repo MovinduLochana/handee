@@ -657,7 +657,7 @@ class _BookingTrackerScreenState extends State<BookingTrackerScreen> {
                                     onPaymentSuccess: () {
                                       ScaffoldMessenger.of(context).showSnackBar(
                                         const SnackBar(
-                                          content: Text('Payment processed successfully via sandbox!'),
+                                          content: Text('Payment processed successfully!'),
                                           backgroundColor: AppColors.success,
                                         ),
                                       );
