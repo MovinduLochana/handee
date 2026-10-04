@@ -1,13 +1,15 @@
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Zap, Receipt } from "lucide-react";
 import { bookingApi } from "../../api/bookings";
+import { paymentsApi } from "../../api/payments";
 import type { BookingResponseDto } from "../../api/types";
 import { extractApiError } from "../../lib/api";
 import BookingStatusBadge from "../../components/booking/BookingStatusBadge";
 import BookingStatusControl from "../../components/booking/BookingStatusControl";
 import LoadError from "../../components/booking/LoadError";
+import { Badge } from "@/components/ui/badge";
 import {
   formatDateTime,
   formatMoney,
@@ -94,6 +96,13 @@ export default function BookingDetail() {
     queryFn: () => bookingApi.getById(id!),
     enabled: !!id,
     retry: retryUnlessClientError,
+  });
+
+  const { data: invoice } = useQuery({
+    queryKey: ["bookingInvoice", id],
+    queryFn: () => paymentsApi.getInvoiceByBookingId(id!),
+    enabled: !!id,
+    retry: 1,
   });
 
   const backLink = (
@@ -203,6 +212,60 @@ export default function BookingDetail() {
               <span className="text-muted-foreground">Price:</span>
               <span className="font-semibold text-foreground">{formatMoney(booking.price)}</span>
             </div>
+            {invoice && (
+              <div className="py-2 border-b border-border bg-muted/20 px-2 rounded space-y-1.5 my-1">
+                <div className="flex items-center justify-between text-xs font-semibold text-foreground">
+                  <span className="flex items-center gap-1">
+                    <Receipt className="h-3 w-3 text-primary" /> Invoice Breakdown:
+                  </span>
+                  <Link
+                    to={`/invoices/${invoice.id}`}
+                    className="text-[11px] text-primary hover:underline font-mono"
+                  >
+                    #{invoice.id.slice(0, 8)}
+                  </Link>
+                </div>
+                {(() => {
+                  let items: Array<{ item: string; price: number; type?: string }> = [];
+                  if (invoice.lineItemsJson) {
+                    try {
+                      const parsed = JSON.parse(invoice.lineItemsJson);
+                      if (Array.isArray(parsed)) items = parsed;
+                    } catch {}
+                  }
+                  if (items.length === 0) {
+                    items = [
+                      { item: "Service Labor (85%)", price: invoice.baseAmount, type: "Labor" },
+                      { item: "Platform Trust Fee (15%)", price: invoice.platformFee, type: "Fee" },
+                    ];
+                  }
+                  return items.map((line, idx) => {
+                    const isUrgency = line.type?.toLowerCase() === "urgency" ||
+                      line.item.toLowerCase().includes("priority") ||
+                      line.item.toLowerCase().includes("surcharge");
+                    return (
+                      <div
+                        key={idx}
+                        className={`flex justify-between text-[11px] ${
+                          isUrgency
+                            ? "text-amber-600 dark:text-amber-400 font-semibold"
+                            : "text-muted-foreground"
+                        }`}
+                      >
+                        <span className="flex items-center gap-1">
+                          {isUrgency && <Zap className="h-2.5 w-2.5 fill-current" />}
+                          {line.item}
+                        </span>
+                        <span>
+                          {isUrgency && line.price > 0 ? "+" : ""}
+                          {formatMoney(line.price)}
+                        </span>
+                      </div>
+                    );
+                  });
+                })()}
+              </div>
+            )}
             <div className="flex justify-between py-1 border-b border-border">
               <span className="text-muted-foreground">Job request:</span>
               <span>

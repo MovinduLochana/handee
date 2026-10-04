@@ -14,6 +14,16 @@ public interface IInvoiceService
         QuoteApprovalStatus approvalStatus,
         string? category = null,
         CancellationToken ct = default);
+    Task<InvoiceResponseDto> CreateInvoiceForBookingAsync(
+        Guid bookingId,
+        Guid customerId,
+        Guid providerId,
+        decimal estimatedPrice,
+        QuoteApprovalStatus approvalStatus,
+        string? category,
+        decimal? urgencyMultiplier,
+        string? urgencyLevel = null,
+        CancellationToken ct = default);
     Task<InvoiceResponseDto?> GetInvoiceByIdAsync(Guid id);
     Task<InvoiceResponseDto?> GetInvoiceByBookingIdAsync(Guid bookingId);
     Task<List<InvoiceResponseDto>> GetCustomerInvoicesAsync(Guid customerId);

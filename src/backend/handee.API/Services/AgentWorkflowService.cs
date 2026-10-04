@@ -100,6 +100,16 @@ public class AgentWorkflowService : IAgentWorkflowService
             budget_max = jobRequest.BudgetMax
         };
 
+        var urgencyMultiplier = (decimal)(_pricingConfigService?.GetMultiplierForUrgency(jobRequest.Urgency, urgencyConfig)
+            ?? (jobRequest.Urgency switch
+            {
+                JobUrgency.Low => 0.95,
+                JobUrgency.Medium => 1.05,
+                JobUrgency.High => 1.20,
+                JobUrgency.Emergency => 1.40,
+                _ => 1.0
+            }));
+
         AgentWorkflow workflow;
 
         try
@@ -113,24 +123,14 @@ public class AgentWorkflowService : IAgentWorkflowService
             else
             {
                 _logger.LogWarning("Agent service returned status {StatusCode}. Using fallback heuristic dispatch.", response.StatusCode);
-                workflow = CreateFallbackWorkflow(jobRequest);
+                workflow = CreateFallbackWorkflow(jobRequest, urgencyMultiplier);
             }
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Failed to reach Agent service. Using fallback heuristic dispatch.");
-            workflow = CreateFallbackWorkflow(jobRequest);
+            workflow = CreateFallbackWorkflow(jobRequest, urgencyMultiplier);
         }
-
-        var urgencyMultiplier = (decimal)(_pricingConfigService?.GetMultiplierForUrgency(jobRequest.Urgency, urgencyConfig)
-            ?? (jobRequest.Urgency switch
-            {
-                JobUrgency.Low => 0.95,
-                JobUrgency.Medium => 1.05,
-                JobUrgency.High => 1.20,
-                JobUrgency.Emergency => 1.40,
-                _ => 1.0
-            }));
 
         ServiceListing? serviceListing = null;
         if (workflow.SelectedServiceListingId.HasValue)
@@ -140,10 +140,6 @@ public class AgentWorkflowService : IAgentWorkflowService
             {
                 workflow.SelectedProviderId = serviceListing.ProviderId;
                 if (!workflow.EstimatedPrice.HasValue || workflow.EstimatedPrice <= 0)
-                {
-                    workflow.EstimatedPrice = Math.Round(serviceListing.FixedPrice * urgencyMultiplier, 2);
-                }
-                else if (urgencyMultiplier > 1.0m && workflow.EstimatedPrice == serviceListing.FixedPrice)
                 {
                     workflow.EstimatedPrice = Math.Round(serviceListing.FixedPrice * urgencyMultiplier, 2);
                 }
@@ -164,10 +160,6 @@ public class AgentWorkflowService : IAgentWorkflowService
                 workflow.SelectedProviderId = listing.ProviderId;
                 workflow.SelectedServiceListingId = listing.Id;
                 if (!workflow.EstimatedPrice.HasValue || workflow.EstimatedPrice <= 0)
-                {
-                    workflow.EstimatedPrice = Math.Round(listing.FixedPrice * urgencyMultiplier, 2);
-                }
-                else if (urgencyMultiplier > 1.0m && workflow.EstimatedPrice == listing.FixedPrice)
                 {
                     workflow.EstimatedPrice = Math.Round(listing.FixedPrice * urgencyMultiplier, 2);
                 }
@@ -208,7 +200,7 @@ public class AgentWorkflowService : IAgentWorkflowService
                 workflow.SelectedServiceListingId = serviceListing.Id;
                 if (!workflow.EstimatedPrice.HasValue || workflow.EstimatedPrice <= 0)
                 {
-                    workflow.EstimatedPrice = urgencyMultiplier > 1.0m
+                    workflow.EstimatedPrice = urgencyMultiplier != 1.0m
                         ? Math.Round(serviceListing.FixedPrice * urgencyMultiplier, 2)
                         : serviceListing.FixedPrice;
                 }
@@ -419,13 +411,37 @@ public class AgentWorkflowService : IAgentWorkflowService
             if (booking == null && workflow.SelectedProviderId.HasValue)
             {
                 int durationHours = 1;
+                decimal urgencyMultiplier = 1.0m;
+                if (workflow.JobRequest != null)
+                {
+                    var urgencyConfig = _pricingConfigService != null 
+                        ? await _pricingConfigService.GetUrgencyMultipliersAsync(ct)
+                        : new UrgencyMultiplierConfigDto(0.95, 1.00, 1.05, 1.20, 1.40);
+                    urgencyMultiplier = (decimal)(_pricingConfigService?.GetMultiplierForUrgency(workflow.JobRequest.Urgency, urgencyConfig)
+                        ?? (workflow.JobRequest.Urgency switch
+                        {
+                            JobUrgency.Low => 0.95,
+                            JobUrgency.Medium => 1.05,
+                            JobUrgency.High => 1.20,
+                            JobUrgency.Emergency => 1.40,
+                            _ => 1.0
+                        }));
+                }
+
                 if (workflow.SelectedServiceListingId.HasValue)
                 {
                     var listing = await _db.ServiceListings.FirstOrDefaultAsync(l => l.Id == workflow.SelectedServiceListingId.Value, ct);
                     if (listing != null)
                     {
                         durationHours = listing.DurationHours;
-                        workflow.EstimatedPrice = listing.FixedPrice;
+                        if (!workflow.EstimatedPrice.HasValue || workflow.EstimatedPrice <= 0)
+                        {
+                            workflow.EstimatedPrice = Math.Round(listing.FixedPrice * urgencyMultiplier, 2);
+                        }
+                        else if (urgencyMultiplier != 1.0m && workflow.EstimatedPrice == listing.FixedPrice)
+                        {
+                            workflow.EstimatedPrice = Math.Round(listing.FixedPrice * urgencyMultiplier, 2);
+                        }
                     }
                 }
                 else
@@ -437,8 +453,15 @@ public class AgentWorkflowService : IAgentWorkflowService
                     if (fallbackListing != null)
                     {
                         workflow.SelectedServiceListingId = fallbackListing.Id;
-                        workflow.EstimatedPrice = fallbackListing.FixedPrice;
                         durationHours = fallbackListing.DurationHours;
+                        if (!workflow.EstimatedPrice.HasValue || workflow.EstimatedPrice <= 0)
+                        {
+                            workflow.EstimatedPrice = Math.Round(fallbackListing.FixedPrice * urgencyMultiplier, 2);
+                        }
+                        else if (urgencyMultiplier != 1.0m && workflow.EstimatedPrice == fallbackListing.FixedPrice)
+                        {
+                            workflow.EstimatedPrice = Math.Round(fallbackListing.FixedPrice * urgencyMultiplier, 2);
+                        }
                     }
                 }
 
@@ -474,6 +497,15 @@ public class AgentWorkflowService : IAgentWorkflowService
             {
                 var estimatedPrice = workflow.EstimatedPrice ?? 3500m;
                 var categoryName = workflow.JobRequest?.ServiceCategory?.Name ?? "General Maintenance";
+                decimal urgencyMultiplier = 1.0m;
+                if (workflow.JobRequest != null)
+                {
+                    var urgencyConfig = _pricingConfigService != null 
+                        ? await _pricingConfigService.GetUrgencyMultipliersAsync(ct)
+                        : new UrgencyMultiplierConfigDto(0.95, 1.00, 1.05, 1.20, 1.40);
+                    urgencyMultiplier = (decimal)(_pricingConfigService?.GetMultiplierForUrgency(workflow.JobRequest.Urgency, urgencyConfig)
+                        ?? 1.0);
+                }
 
                 try
                 {
@@ -611,9 +643,10 @@ public class AgentWorkflowService : IAgentWorkflowService
         return workflow;
     }
 
-    private static AgentWorkflow CreateFallbackWorkflow(JobRequest jobRequest)
+    private static AgentWorkflow CreateFallbackWorkflow(JobRequest jobRequest, decimal urgencyMultiplier = 1.0m)
     {
-        var price = jobRequest.BudgetMax ?? jobRequest.BudgetMin ?? 3500m;
+        var rawPrice = jobRequest.BudgetMax ?? jobRequest.BudgetMin ?? 3500m;
+        var price = Math.Round(rawPrice * (urgencyMultiplier > 0 ? urgencyMultiplier : 1.0m), 2);
         var workflow = new AgentWorkflow
         {
             JobRequestId = jobRequest.Id,
@@ -812,6 +845,23 @@ public class AgentWorkflowService : IAgentWorkflowService
 
         _db.Bookings.Add(newBooking);
         await _db.SaveChangesAsync(ct);
+
+        try
+        {
+            await _invoiceService.CreateInvoiceForBookingAsync(
+                newBooking.Id,
+                newBooking.CustomerId,
+                newBooking.ProviderId,
+                price,
+                QuoteApprovalStatus.AutoApproved,
+                categoryName,
+                ct
+            );
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to create invoice during redispatch for booking {BookingId}", newBooking.Id);
+        }
 
         if (_notificationService != null)
         {

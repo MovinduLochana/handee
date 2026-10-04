@@ -38,6 +38,7 @@ class InvoiceModel {
   final double baseAmount;
   final double platformFee;
   final double totalAmount;
+  final double urgencySurcharge;
   final String currency;
   final String status; // "Issued", "Paid", "Overdue", "Cancelled"
   final String adminApprovalStatus; // "AutoApproved", "Approved", "PendingReview"
@@ -56,6 +57,7 @@ class InvoiceModel {
     required this.baseAmount,
     required this.platformFee,
     required this.totalAmount,
+    this.urgencySurcharge = 0.0,
     this.currency = 'LKR',
     required this.status,
     this.adminApprovalStatus = 'AutoApproved',
@@ -90,21 +92,37 @@ class InvoiceModel {
   /// Calculates platform fee portion as percentage of total (should be ~15%)
   double get feePercentage => totalAmount > 0 ? (platformFee / totalAmount) * 100 : 15.0;
 
+  double get urgencyFee {
+    if (urgencySurcharge > 0) return urgencySurcharge;
+    for (final item in lineItems) {
+      if (item.type?.toLowerCase() == 'urgency' ||
+          item.item.toLowerCase().contains('priority') ||
+          item.item.toLowerCase().contains('surcharge')) {
+        return item.price;
+      }
+    }
+    return 0.0;
+  }
+
   List<InvoiceLineItem> get lineItems {
-    if (lineItemsJson == null || lineItemsJson!.trim().isEmpty) {
+    if (lineItemsJson != null && lineItemsJson!.trim().isNotEmpty) {
+      try {
+        final decoded = jsonDecode(lineItemsJson!);
+        if (decoded is List) {
+          return decoded
+              .map((item) => InvoiceLineItem.fromJson(item as Map<String, dynamic>))
+              .toList();
+        }
+      } catch (_) {}
+    }
+    if (urgencySurcharge > 0) {
+      final baseLabor = (baseAmount - urgencySurcharge).clamp(0.0, baseAmount);
       return [
-        InvoiceLineItem(item: 'Service Labor (85%)', price: baseAmount, type: 'Labor'),
+        InvoiceLineItem(item: 'Standard Service Labor', price: baseLabor, type: 'Labor'),
+        InvoiceLineItem(item: 'Priority Dispatch Surcharge', price: urgencySurcharge, type: 'Urgency'),
         InvoiceLineItem(item: 'Platform Trust & Safety Fee (15%)', price: platformFee, type: 'Fee'),
       ];
     }
-    try {
-      final decoded = jsonDecode(lineItemsJson!);
-      if (decoded is List) {
-        return decoded
-            .map((item) => InvoiceLineItem.fromJson(item as Map<String, dynamic>))
-            .toList();
-      }
-    } catch (_) {}
     return [
       InvoiceLineItem(item: 'Service Labor (85%)', price: baseAmount, type: 'Labor'),
       InvoiceLineItem(item: 'Platform Trust & Safety Fee (15%)', price: platformFee, type: 'Fee'),
@@ -112,6 +130,17 @@ class InvoiceModel {
   }
 
   factory InvoiceModel.fromJson(Map<String, dynamic> json) {
+    String? lineItemsRaw;
+    if (json['lineItemsJson'] != null) {
+      lineItemsRaw = json['lineItemsJson'] is List
+          ? jsonEncode(json['lineItemsJson'])
+          : json['lineItemsJson'].toString();
+    } else if (json['lineItems'] != null) {
+      lineItemsRaw = json['lineItems'] is List
+          ? jsonEncode(json['lineItems'])
+          : json['lineItems'].toString();
+    }
+
     return InvoiceModel(
       id: json['id']?.toString() ?? '',
       bookingId: json['bookingId']?.toString() ?? '',
@@ -122,10 +151,11 @@ class InvoiceModel {
       baseAmount: (json['baseAmount'] as num?)?.toDouble() ?? 0.0,
       platformFee: (json['platformFee'] as num?)?.toDouble() ?? 0.0,
       totalAmount: (json['totalAmount'] as num?)?.toDouble() ?? 0.0,
+      urgencySurcharge: (json['urgencySurcharge'] as num?)?.toDouble() ?? 0.0,
       currency: json['currency']?.toString() ?? 'LKR',
       status: json['status']?.toString() ?? 'Issued',
       adminApprovalStatus: json['adminApprovalStatus']?.toString() ?? 'AutoApproved',
-      lineItemsJson: json['lineItemsJson']?.toString() ?? json['lineItems']?.toString(),
+      lineItemsJson: lineItemsRaw,
       dueAt: json['dueAt'] != null ? DateTime.tryParse(json['dueAt'].toString()) : null,
       paidAt: json['paidAt'] != null ? DateTime.tryParse(json['paidAt'].toString()) : null,
       createdAt: json['createdAt'] != null

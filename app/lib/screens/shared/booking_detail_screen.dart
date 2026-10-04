@@ -719,9 +719,19 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
           ),
           child: Column(
             children: [
-              _buildPriceRow('Service Labor (85%)', 'Rs. ${currencyFormat.format(invoice.baseAmount)}'),
-              const SizedBox(height: 10),
-              _buildPriceRow('Platform Trust & Safety Fee (15%)', 'Rs. ${currencyFormat.format(invoice.platformFee)}'),
+              ...invoice.lineItems.map((item) {
+                final isUrgency = item.type?.toLowerCase() == 'urgency' ||
+                    item.item.toLowerCase().contains('priority') ||
+                    item.item.toLowerCase().contains('surcharge');
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: _buildPriceRow(
+                    item.item,
+                    '${isUrgency && item.price > 0 ? "+" : ""}Rs. ${currencyFormat.format(item.price)}',
+                    isUrgency: isUrgency,
+                  ),
+                );
+              }),
               const Divider(color: AppColors.borderLight, height: 24),
               _buildPriceRow(
                 'Total Approved Amount',
@@ -810,24 +820,36 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
     );
   }
 
-  Widget _buildPriceRow(String title, String value, {bool isTotal = false}) {
+  Widget _buildPriceRow(String title, String value, {bool isTotal = false, bool isUrgency = false}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          title,
-          style: TextStyle(
-            fontSize: isTotal ? 14 : 13,
-            fontWeight: isTotal ? FontWeight.w800 : FontWeight.w500,
-            color: isTotal ? AppColors.textPrimary : AppColors.textSecondary,
-          ),
+        Row(
+          children: [
+            if (isUrgency) ...[
+              const Icon(Icons.bolt, size: 14, color: Color(0xFFF59E0B)),
+              const SizedBox(width: 4),
+            ],
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: isTotal ? 14 : 13,
+                fontWeight: isTotal || isUrgency ? FontWeight.w800 : FontWeight.w500,
+                color: isTotal
+                    ? AppColors.textPrimary
+                    : (isUrgency ? const Color(0xFFD97706) : AppColors.textSecondary),
+              ),
+            ),
+          ],
         ),
         Text(
           value,
           style: TextStyle(
             fontSize: isTotal ? 16 : 13,
-            fontWeight: isTotal ? FontWeight.w800 : FontWeight.w600,
-            color: isTotal ? AppColors.primary : AppColors.textPrimary,
+            fontWeight: isTotal || isUrgency ? FontWeight.w800 : FontWeight.w600,
+            color: isTotal
+                ? AppColors.primary
+                : (isUrgency ? const Color(0xFFD97706) : AppColors.textPrimary),
           ),
         ),
       ],
