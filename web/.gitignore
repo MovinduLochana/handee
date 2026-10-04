@@ -24,3 +24,8 @@ dist-ssr
 *.sw?
 web/.agent
 
+.env
+.env.cloud
+.env.development
+!.env.example
+!.env.*.example

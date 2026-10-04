@@ -1,2 +1,8 @@
 /.agent
+
 .handee-pids.json
+.env
+!.env.examples
+!.env.*.example
+.env*
+*.env*
