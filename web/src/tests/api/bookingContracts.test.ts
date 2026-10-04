@@ -57,6 +57,11 @@ const BOOKING_KEYS = exactKeys<BookingResponseDto>()([
   "description",
   "notes",
   "durationHours",
+  "bookingType",
+  "expiresAt",
+  "remainingSeconds",
+  "latitude",
+  "longitude",
 ]);
 
 const JOB_REQUEST_KEYS = exactKeys<JobRequestResponseDto>()([
@@ -93,6 +98,9 @@ const CREATE_LISTING_BOOKING_DTO_KEYS = exactKeys<CreateListingBookingDto>()([
   "serviceListingId",
   "scheduledAt",
   "notes",
+  "serviceLocation",
+  "latitude",
+  "longitude",
 ]);
 
 // ─── Runtime: compare against the real C# source ────────────────────────────
@@ -107,10 +115,17 @@ function source(relativePath: string): string {
 
 /** Positional-record parameters, camel-cased the way the API serializes them. */
 function recordFields(csharp: string): string[] {
-  const params = csharp.slice(csharp.indexOf("(") + 1, csharp.lastIndexOf(")"));
-  return params
+  const recordMatch = csharp.match(
+    /public\s+record\s+\w+(?:<[^>]+>)?\s*\(([\s\S]*?)\)\s*(?:;|:|\{)/,
+  );
+  const rawParams = recordMatch
+    ? recordMatch[1]
+    : csharp.slice(csharp.indexOf("(") + 1, csharp.lastIndexOf(")"));
+  const stripped = rawParams.replace(/\[[^\]]*\]/g, "");
+  return stripped
     .split(",")
     .map((p) => p.split("=")[0].trim().split(/\s+/).pop()!)
+    .filter(Boolean)
     .map((name) => name[0].toLowerCase() + name.slice(1));
 }
 
@@ -237,5 +252,28 @@ describe("parsing real-shaped API responses", () => {
 
     expect(api.post).toHaveBeenCalledWith("/bookings", payload);
     expect(res).toEqual(booking);
+  });
+
+  it("provider methods call correct endpoints for scheduled requests, mine, confirm, and decline", async () => {
+    vi.mocked(api.get).mockResolvedValue({ data: [booking] });
+    vi.mocked(api.post).mockResolvedValue({ data: booking });
+
+    const requests = await bookingApi.getProviderScheduledRequests();
+    expect(api.get).toHaveBeenCalledWith("/api/provider/booking-requests");
+    expect(requests).toEqual([booking]);
+
+    const mine = await bookingApi.getProviderBookings();
+    expect(api.get).toHaveBeenCalledWith("/api/provider/bookings");
+    expect(mine).toEqual([booking]);
+
+    const confirmed = await bookingApi.confirmBooking(booking.id);
+    expect(api.post).toHaveBeenCalledWith(`/api/provider/bookings/${booking.id}/confirm`);
+    expect(confirmed).toEqual(booking);
+
+    const declined = await bookingApi.declineBooking(booking.id, "Fully booked");
+    expect(api.post).toHaveBeenCalledWith(`/api/provider/bookings/${booking.id}/decline`, {
+      reason: "Fully booked",
+    });
+    expect(declined).toEqual(booking);
   });
 });

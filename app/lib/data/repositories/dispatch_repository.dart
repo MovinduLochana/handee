@@ -21,14 +21,25 @@ class DispatchRepository {
   /// model.
   Future<List<BookingModel>> getIncomingOffers() async {
     try {
-      final response = await apiClient.get('/bookings/provider-offers');
+      final response = await apiClient.get(ApiEndpoints.providerInstantOffers);
       if (response is List) {
         return response
             .map((b) => BookingModel.fromJson(b as Map<String, dynamic>))
+            .where((b) => b.isInstantMatch)
             .toList();
       }
     } catch (e) {
-      debugPrint('Error fetching incoming provider offers: $e');
+      debugPrint('Error fetching incoming provider instant offers: $e');
+      // Graceful fallback to legacy endpoint if /api/provider/instant-offers is not deployed
+      try {
+        final legacyResponse = await apiClient.get('/bookings/provider-offers');
+        if (legacyResponse is List) {
+          return legacyResponse
+              .map((b) => BookingModel.fromJson(b as Map<String, dynamic>))
+              .where((b) => b.isInstantMatch)
+              .toList();
+        }
+      } catch (_) {}
     }
     return [];
   }
@@ -41,8 +52,14 @@ class DispatchRepository {
   }
 
   Future<void> declineOffer(String bookingId) async {
-    // Optionally flag or update
-    debugPrint('Declining offer for booking: $bookingId');
+    try {
+      await apiClient.put(
+        ApiEndpoints.updateBookingStatus(bookingId),
+        body: {'status': 'Declined'},
+      );
+    } catch (e) {
+      debugPrint('Error declining offer for booking $bookingId: $e');
+    }
   }
 
   Future<ProviderProfileModel> getProviderProfile() async {
@@ -61,10 +78,12 @@ class DispatchRepository {
       id: userId,
       userId: userId,
       fullName: name,
-      skillCategories: ['Plumbing', 'Electrical'],
-      serviceArea: 'Colombo',
-      isVerified: true,
-      rating: 4.8,
+      skillCategories: [],
+      serviceArea: '',
+      isVerified: false,
+      rating: 0.0,
+      totalReviews: 0,
+      completedJobs: 0,
     );
   }
 }

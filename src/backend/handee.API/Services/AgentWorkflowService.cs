@@ -167,6 +167,7 @@ public class AgentWorkflowService : IAgentWorkflowService
                 var durationHours = serviceListing?.DurationHours ?? 1;
                 var scheduledAt = await FindNextAvailableSlotAsync(workflow.SelectedProviderId.Value, durationHours, ct);
 
+                var now = DateTimeOffset.UtcNow;
                 var booking = new Booking
                 {
                     JobRequestId = jobRequest.Id,
@@ -174,7 +175,10 @@ public class AgentWorkflowService : IAgentWorkflowService
                     CustomerId = jobRequest.CustomerId,
                     ProviderId = workflow.SelectedProviderId.Value,
                     Status = BookingStatus.Requested,
-                    ScheduledAt = scheduledAt
+                    BookingType = BookingType.InstantMatch,
+                    ExpiresAt = now.AddSeconds(90),
+                    ScheduledAt = scheduledAt,
+                    CreatedAt = now
                 };
                 _db.Bookings.Add(booking);
                 await _db.SaveChangesAsync(ct);
@@ -213,6 +217,15 @@ public class AgentWorkflowService : IAgentWorkflowService
                             jobRequest.Id,
                             categoryName,
                             estimatedPrice,
+                            ct);
+
+                        await _notificationService.NotifyInstantJobDispatchedAsync(
+                            workflow.SelectedProviderId.Value,
+                            booking.Id,
+                            jobRequest.Id,
+                            categoryName,
+                            estimatedPrice,
+                            90,
                             ct);
                     }
                     catch (Exception ex)
@@ -370,6 +383,8 @@ public class AgentWorkflowService : IAgentWorkflowService
 
                 var scheduledAt = await FindNextAvailableSlotAsync(workflow.SelectedProviderId.Value, durationHours, ct);
 
+                var (cleanLocation, locLat, locLng) = ParseLocationCoordinates(workflow.JobRequest.Location);
+                var now = DateTimeOffset.UtcNow;
                 booking = new Booking
                 {
                     JobRequestId = workflow.JobRequestId,
@@ -377,7 +392,13 @@ public class AgentWorkflowService : IAgentWorkflowService
                     CustomerId = workflow.JobRequest.CustomerId,
                     ProviderId = workflow.SelectedProviderId.Value,
                     Status = BookingStatus.Requested,
-                    ScheduledAt = scheduledAt
+                    BookingType = BookingType.InstantMatch,
+                    ExpiresAt = now.AddSeconds(90),
+                    ScheduledAt = scheduledAt,
+                    CreatedAt = now,
+                    ServiceLocation = cleanLocation,
+                    Latitude = locLat,
+                    Longitude = locLng
                 };
                 _db.Bookings.Add(booking);
                 await _db.SaveChangesAsync(ct);
@@ -420,6 +441,15 @@ public class AgentWorkflowService : IAgentWorkflowService
                             workflow.JobRequestId,
                             categoryName,
                             estimatedPrice,
+                            ct);
+
+                        await _notificationService.NotifyInstantJobDispatchedAsync(
+                            workflow.SelectedProviderId.Value,
+                            booking.Id,
+                            workflow.JobRequestId,
+                            categoryName,
+                            estimatedPrice,
+                            90,
                             ct);
                     }
                     catch (Exception ex)
@@ -634,5 +664,142 @@ public class AgentWorkflowService : IAgentWorkflowService
             .FirstOrDefaultAsync(s => s.ProviderId == providerId && s.DayOfWeek == tomorrow.DayOfWeek && s.IsActive, ct);
         var hour = sched != null ? sched.StartTime.Hours : 9;
         return new DateTimeOffset(tomorrow.Year, tomorrow.Month, tomorrow.Day, hour, 0, 0, TimeSpan.Zero);
+    }
+
+    public async Task<bool> RedispatchInstantMatchAsync(Guid expiredBookingId, CancellationToken ct = default)
+    {
+        var expiredBooking = await _db.Bookings
+            .Include(b => b.JobRequest)
+                .ThenInclude(j => j!.ServiceCategory)
+            .Include(b => b.ServiceListing)
+            .FirstOrDefaultAsync(b => b.Id == expiredBookingId, ct);
+
+        if (expiredBooking == null || expiredBooking.JobRequestId == null || expiredBooking.JobRequest == null)
+            return false;
+
+        var jobRequest = expiredBooking.JobRequest;
+
+        // Query all providers who already received an offer for this job request
+        var previousProviderIds = await _db.Bookings
+            .Where(b => b.JobRequestId == jobRequest.Id)
+            .Select(b => b.ProviderId)
+            .Distinct()
+            .ToListAsync(ct);
+
+        // Find next candidate provider with active listing in category
+        var nextListing = await _db.ServiceListings
+            .Include(l => l.Category)
+            .Include(l => l.Provider)
+            .Where(l => l.IsActive
+                        && (jobRequest.ServiceCategoryId == Guid.Empty || l.ServiceCategoryId == jobRequest.ServiceCategoryId)
+                        && !previousProviderIds.Contains(l.ProviderId))
+            .FirstOrDefaultAsync(ct);
+
+        Guid nextProviderId = Guid.Empty;
+        Guid? nextListingId = null;
+        decimal price = expiredBooking.ServiceListing?.FixedPrice ?? 3500m;
+        string categoryName = jobRequest.ServiceCategory?.Name ?? expiredBooking.ServiceListing?.Category?.Name ?? "Service";
+        int durationHours = 1;
+
+        if (nextListing != null)
+        {
+            nextProviderId = nextListing.ProviderId;
+            nextListingId = nextListing.Id;
+            price = nextListing.FixedPrice;
+            categoryName = nextListing.Category?.Name ?? categoryName;
+            durationHours = nextListing.DurationHours > 0 ? nextListing.DurationHours : 1;
+        }
+        else
+        {
+            // Fallback: any verified provider not in previousProviderIds
+            var verifiedProvider = await _db.ProviderProfiles
+                .Where(p => p.VerificationStatus == VerificationStatus.Verified && !previousProviderIds.Contains(p.UserId))
+                .Select(p => p.UserId)
+                .FirstOrDefaultAsync(ct);
+
+            if (verifiedProvider != Guid.Empty)
+            {
+                nextProviderId = verifiedProvider;
+            }
+        }
+
+        if (nextProviderId == Guid.Empty)
+        {
+            _logger.LogInformation("No further provider candidates available for redispatching JobRequest {JobRequestId}", jobRequest.Id);
+            return false;
+        }
+
+        var scheduledAt = await FindNextAvailableSlotAsync(nextProviderId, durationHours, ct);
+        var now = DateTimeOffset.UtcNow;
+
+        var (cleanLocation, locLat, locLng) = ParseLocationCoordinates(jobRequest.Location);
+        var newBooking = new Booking
+        {
+            JobRequestId = jobRequest.Id,
+            ServiceListingId = nextListingId,
+            CustomerId = jobRequest.CustomerId,
+            ProviderId = nextProviderId,
+            Status = BookingStatus.Requested,
+            BookingType = BookingType.InstantMatch,
+            ExpiresAt = now.AddSeconds(90),
+            ScheduledAt = scheduledAt,
+            CreatedAt = now,
+            ServiceLocation = cleanLocation,
+            Latitude = locLat,
+            Longitude = locLng
+        };
+
+        _db.Bookings.Add(newBooking);
+        await _db.SaveChangesAsync(ct);
+
+        if (_notificationService != null)
+        {
+            try
+            {
+                await _notificationService.NotifyJobDispatchedAsync(
+                    nextProviderId,
+                    newBooking.Id,
+                    jobRequest.Id,
+                    categoryName,
+                    price,
+                    ct);
+
+                await _notificationService.NotifyInstantJobDispatchedAsync(
+                    nextProviderId,
+                    newBooking.Id,
+                    jobRequest.Id,
+                    categoryName,
+                    price,
+                    90,
+                    ct);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to send redispatch notification for booking {BookingId}", newBooking.Id);
+            }
+        }
+
+        return true;
+    }
+
+    private static (string? cleanLocation, double? latitude, double? longitude) ParseLocationCoordinates(string? rawLocation)
+    {
+        if (string.IsNullOrWhiteSpace(rawLocation)) return (null, null, null);
+
+        var match = System.Text.RegularExpressions.Regex.Match(rawLocation, @"\[\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*\]");
+        if (match.Success)
+        {
+            double? lat = null;
+            double? lng = null;
+            if (double.TryParse(match.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture, out var parsedLat))
+                lat = parsedLat;
+            if (double.TryParse(match.Groups[2].Value, System.Globalization.CultureInfo.InvariantCulture, out var parsedLng))
+                lng = parsedLng;
+
+            var clean = System.Text.RegularExpressions.Regex.Replace(rawLocation, @"\s*\[\s*-?\d+(?:\.\d+)?\s*,\s*-?\d+(?:\.\d+)?\s*\]", "").Trim();
+            return (clean, lat, lng);
+        }
+
+        return (rawLocation.Trim(), null, null);
     }
 }

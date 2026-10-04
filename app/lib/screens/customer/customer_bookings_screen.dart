@@ -19,7 +19,7 @@ class _CustomerBookingsScreenState extends State<CustomerBookingsScreen> with Si
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 5, vsync: this);
   }
 
   @override
@@ -42,9 +42,13 @@ class _CustomerBookingsScreenState extends State<CustomerBookingsScreen> with Si
           unselectedLabelColor: AppColors.textSecondary,
           indicatorColor: AppColors.primary,
           indicatorWeight: 3,
+          isScrollable: true,
+          tabAlignment: TabAlignment.start,
           tabs: [
             Tab(text: 'Active (${provider.activeBookings.length})'),
+            Tab(text: 'Pending (${provider.pendingBookings.length})'),
             Tab(text: 'Completed (${provider.completedBookings.length})'),
+            Tab(text: 'Declined (${provider.declinedBookings.length})'),
             Tab(text: 'All (${provider.bookings.length})'),
           ],
         ),
@@ -55,7 +59,9 @@ class _CustomerBookingsScreenState extends State<CustomerBookingsScreen> with Si
           controller: _tabController,
           children: [
             _buildList(provider.activeBookings, 'No active bookings currently.'),
+            _buildList(provider.pendingBookings, 'No pending booking requests awaiting provider.'),
             _buildList(provider.completedBookings, 'No completed bookings yet.'),
+            _buildList(provider.declinedBookings, 'No declined or rejected bookings.'),
             _buildList(provider.bookings, 'No bookings found.'),
           ],
         ),

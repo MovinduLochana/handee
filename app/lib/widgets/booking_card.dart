@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../core/constants/colors.dart';
+import '../core/utils/external_launcher_helper.dart';
 import '../data/models/booking_model.dart';
 import 'status_badge.dart';
 
@@ -65,81 +66,155 @@ class BookingCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 1. Header: Category Title + Status Badge
+            // 1. Header: Workflow Badge + Category Title + Status Badge
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Expanded(
-                  child: Text(
-                    categoryTitle,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: booking.isInstantMatch ? AppColors.warningLight : AppColors.primaryUltraLight,
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(
+                      color: booking.isInstantMatch
+                          ? AppColors.warning.withOpacity(0.4)
+                          : AppColors.primaryLight.withOpacity(0.4),
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        booking.isInstantMatch ? Icons.flash_on : Icons.calendar_today,
+                        size: 11,
+                        color: booking.isInstantMatch ? const Color(0xFFB45309) : AppColors.primary,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        booking.isInstantMatch ? '⚡ INSTANT DISPATCH' : '📅 SCHEDULED',
+                        style: TextStyle(
+                          fontSize: 9.5,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.3,
+                          color: booking.isInstantMatch ? const Color(0xFFB45309) : AppColors.primary,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(width: 8),
                 StatusBadge(status: booking.status),
               ],
             ),
+            const SizedBox(height: 6),
+            Text(
+              categoryTitle,
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
             const SizedBox(height: 10),
 
-            // 2. Schedule Window Banner
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-              decoration: BoxDecoration(
-                color: scheduledAt != null ? const Color(0xFFF8FAFC) : const Color(0xFFFFFBEB),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(
-                  color: scheduledAt != null ? const Color(0xFFE2E8F0) : const Color(0xFFFDE68A),
+            // 2. Contextual Timing Banner
+            if (booking.isInstantMatch)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFFBEB),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: const Color(0xFFFDE68A)),
                 ),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    scheduledAt != null ? Icons.calendar_today_rounded : Icons.schedule_rounded,
-                    size: 14,
-                    color: scheduledAt != null ? AppColors.primary : Colors.amber.shade800,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      scheduledAt != null
-                          ? '${DateFormat('EEE, dd MMM').format(scheduledAt)} • ${DateFormat('hh:mm a').format(scheduledAt)} – ${DateFormat('hh:mm a').format(endTime!)}'
-                          : 'Not scheduled yet',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: scheduledAt != null ? AppColors.textPrimary : Colors.amber.shade900,
+                child: Row(
+                  children: [
+                    const Icon(Icons.flash_on_rounded, size: 14, color: Color(0xFFD97706)),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Dispatched: ${DateFormat('EEE, dd MMM • h:mm a').format(booking.createdAt.toLocal())}',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF92400E),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
-                  if (scheduledAt != null) ...[
-                    const SizedBox(width: 6),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
-                        color: AppColors.primaryUltraLight,
+                        color: Colors.white,
                         borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: const Color(0xFFFDE68A)),
                       ),
-                      child: Text(
-                        '$durationHours ${durationHours == 1 ? 'hr' : 'hrs'}',
-                        style: const TextStyle(
+                      child: const Text(
+                        'On-Demand',
+                        style: TextStyle(
                           fontSize: 10,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.primary,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFFB45309),
                         ),
                       ),
                     ),
                   ],
-                ],
+                ),
+              )
+            else
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                decoration: BoxDecoration(
+                  color: scheduledAt != null ? const Color(0xFFF8FAFC) : const Color(0xFFFFFBEB),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: scheduledAt != null ? const Color(0xFFE2E8F0) : const Color(0xFFFDE68A),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      scheduledAt != null ? Icons.calendar_today_rounded : Icons.schedule_rounded,
+                      size: 14,
+                      color: scheduledAt != null ? AppColors.primary : Colors.amber.shade800,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        scheduledAt != null
+                            ? '${DateFormat('EEE, dd MMM').format(scheduledAt)} • ${DateFormat('hh:mm a').format(scheduledAt)} – ${DateFormat('hh:mm a').format(endTime!)}'
+                            : 'Not scheduled yet',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: scheduledAt != null ? AppColors.textPrimary : Colors.amber.shade900,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    if (scheduledAt != null) ...[
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: AppColors.primaryUltraLight,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          '$durationHours ${durationHours == 1 ? 'hr' : 'hrs'}',
+                          style: const TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
               ),
-            ),
             const SizedBox(height: 10),
 
             // 3. Service Scope / Description
@@ -244,6 +319,29 @@ class BookingCard extends StatelessWidget {
                     ],
                   ),
                 ),
+                if (isProviderView && (booking.customerPhone?.isNotEmpty == true || booking.serviceLocation?.isNotEmpty == true)) ...[
+                  if (booking.customerPhone?.isNotEmpty == true)
+                    IconButton(
+                      key: Key('card_quick_call_${booking.id}'),
+                      icon: const Icon(Icons.phone_outlined, size: 18, color: AppColors.primary),
+                      tooltip: 'Call Customer',
+                      visualDensity: VisualDensity.compact,
+                      onPressed: () => ExternalLauncherHelper.launchPhoneCall(context, booking.customerPhone),
+                    ),
+                  if (booking.serviceLocation?.isNotEmpty == true)
+                    IconButton(
+                      key: Key('card_quick_map_${booking.id}'),
+                      icon: const Icon(Icons.directions_outlined, size: 18, color: AppColors.primary),
+                      tooltip: 'Directions',
+                      visualDensity: VisualDensity.compact,
+                      onPressed: () => ExternalLauncherHelper.launchMapNavigation(
+                        context,
+                        booking.serviceLocation,
+                        latitude: booking.latitude,
+                        longitude: booking.longitude,
+                      ),
+                    ),
+                ],
                 if (booking.price != null) ...[
                   const SizedBox(width: 8),
                   Text(

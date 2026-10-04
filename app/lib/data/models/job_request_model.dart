@@ -65,6 +65,9 @@ class JobRequestModel {
     }
   }
 
+  String get cleanLocation =>
+      location.replaceAll(RegExp(r'\s*\[\s*-?\d+(?:\.\d+)?\s*,\s*-?\d+(?:\.\d+)?\s*\]'), '').trim();
+
   factory JobRequestModel.fromJson(Map<String, dynamic> json) {
     return JobRequestModel(
       id: json['id']?.toString() ?? '',

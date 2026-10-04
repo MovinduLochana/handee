@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/colors.dart';
+import '../../core/utils/external_launcher_helper.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/booking_provider.dart';
 import '../../providers/dispatch_provider.dart';
+import '../../providers/payment_provider.dart';
 import '../../widgets/status_badge.dart';
+import 'active_job_screen.dart';
 import 'dispatch_queue_screen.dart';
 import 'edit_provider_profile_screen.dart';
 import 'provider_jobs_screen.dart';
@@ -29,6 +33,8 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
       context.read<DispatchProvider>().fetchOffers();
       context.read<BookingProvider>().fetchProviderBookings();
       context.read<ServiceDirectoryProvider>().loadMyProviderProfile();
+      final paymentProv = Provider.of<PaymentProvider?>(context, listen: false);
+      paymentProv?.fetchProviderEarningsSummary();
     });
   }
 
@@ -42,7 +48,9 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
     ];
 
     final dispatch = context.watch<DispatchProvider>();
+    final bookingProvider = context.watch<BookingProvider>();
     final pendingOffers = dispatch.incomingOffers.length;
+    final pendingRequests = bookingProvider.pendingRequests.length;
 
     return Scaffold(
       body: screens[_currentIndex],
@@ -51,46 +59,57 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
           color: Colors.white,
           border: Border(top: BorderSide(color: AppColors.borderLight, width: 1)),
         ),
-        child: BottomNavigationBar(
-          currentIndex: _currentIndex,
-          onTap: (index) => setState(() => _currentIndex = index),
-          type: BottomNavigationBarType.fixed,
-          backgroundColor: Colors.white,
-          selectedItemColor: AppColors.primary,
-          unselectedItemColor: AppColors.textMuted,
-          selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
-          unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 12),
-          elevation: 0,
-          items: [
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.dashboard_outlined),
-              activeIcon: Icon(Icons.dashboard),
-              label: 'Dashboard',
-            ),
-            BottomNavigationBarItem(
-              icon: Badge(
-                isLabelVisible: pendingOffers > 0,
-                label: Text(pendingOffers.toString()),
-                child: const Icon(Icons.flash_on_outlined),
+        child: SafeArea(
+          top: false,
+          child: BottomNavigationBar(
+            currentIndex: _currentIndex,
+            onTap: (index) => setState(() => _currentIndex = index),
+            type: BottomNavigationBarType.fixed,
+            backgroundColor: Colors.white,
+            selectedItemColor: AppColors.primary,
+            unselectedItemColor: AppColors.textMuted,
+            selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+            unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 12),
+            elevation: 0,
+            items: [
+              const BottomNavigationBarItem(
+                icon: Icon(Icons.dashboard_outlined),
+                activeIcon: Icon(Icons.dashboard),
+                label: 'Dashboard',
               ),
-              activeIcon: Badge(
-                isLabelVisible: pendingOffers > 0,
-                label: Text(pendingOffers.toString()),
-                child: const Icon(Icons.flash_on),
+              BottomNavigationBarItem(
+                icon: Badge(
+                  isLabelVisible: pendingOffers > 0,
+                  label: Text(pendingOffers.toString()),
+                  child: const Icon(Icons.flash_on_outlined),
+                ),
+                activeIcon: Badge(
+                  isLabelVisible: pendingOffers > 0,
+                  label: Text(pendingOffers.toString()),
+                  child: const Icon(Icons.flash_on),
+                ),
+                label: 'Dispatch',
               ),
-              label: 'Dispatch',
-            ),
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.work_outline),
-              activeIcon: Icon(Icons.work),
-              label: 'My Jobs',
-            ),
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.person_outline),
-              activeIcon: Icon(Icons.person),
-              label: 'Profile',
-            ),
-          ],
+              BottomNavigationBarItem(
+                icon: Badge(
+                  isLabelVisible: pendingRequests > 0,
+                  label: Text(pendingRequests.toString()),
+                  child: const Icon(Icons.work_outline),
+                ),
+                activeIcon: Badge(
+                  isLabelVisible: pendingRequests > 0,
+                  label: Text(pendingRequests.toString()),
+                  child: const Icon(Icons.work),
+                ),
+                label: 'My Jobs',
+              ),
+              const BottomNavigationBarItem(
+                icon: Icon(Icons.person_outline),
+                activeIcon: Icon(Icons.person),
+                label: 'Profile',
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -106,6 +125,8 @@ class _ProviderDashboardTab extends StatelessWidget {
     final dispatch = context.watch<DispatchProvider>();
     final bookingProvider = context.watch<BookingProvider>();
     final dir = context.watch<ServiceDirectoryProvider>();
+    final payment = Provider.of<PaymentProvider?>(context);
+    final currencyFormat = NumberFormat('#,##0', 'en_US');
 
     final user = auth.currentUser;
     final isOnline = dispatch.isOnline;
@@ -114,6 +135,31 @@ class _ProviderDashboardTab extends StatelessWidget {
     final myProfile = dir.myProfile;
     final verificationStatus = myProfile?.verificationStatus ?? 'Pending';
     final isVerified = verificationStatus.toLowerCase() == 'verified';
+
+    // ─── Real KPI Financials & Performance Metrics ───
+    final summary = payment?.providerEarningsSummary;
+    final completedBookings = bookingProvider.completedBookings;
+    final completedGross = completedBookings.fold<double>(
+      0.0,
+      (sum, b) => sum + (b.price ?? 0.0),
+    );
+    final netBookingsShare = completedGross * 0.85; // 85% provider share
+    final totalEarnings = summary != null && summary.totalEarnings > 0
+        ? summary.totalEarnings
+        : (summary != null && summary.availableBalance > 0
+            ? summary.availableBalance
+            : netBookingsShare);
+
+    final completedCount = (summary != null && summary.completedJobsCount > 0)
+        ? summary.completedJobsCount
+        : completedBookings.length;
+
+    final ratingVal = myProfile?.rating ?? 0.0;
+    final reviewCount = myProfile?.totalReviews ?? 0;
+    final ratingDisplay = reviewCount > 0
+        ? '${ratingVal.toStringAsFixed(1)} ★'
+        : (ratingVal > 0 ? '${ratingVal.toStringAsFixed(1)} ★' : 'New ★');
+    final ratingTitle = reviewCount > 0 ? 'Rating ($reviewCount)' : 'Rating';
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -126,7 +172,11 @@ class _ProviderDashboardTab extends StatelessWidget {
               style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
             ),
             Text(
-              myProfile?.headline ?? 'Professional Tradesperson',
+              myProfile?.headline?.isNotEmpty == true
+                  ? myProfile!.headline!
+                  : (myProfile?.skillCategories.isNotEmpty == true
+                      ? '${myProfile!.skillCategories.first} Specialist'
+                      : 'Professional Tradesperson'),
               style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
             ),
           ],
@@ -137,9 +187,22 @@ class _ProviderDashboardTab extends StatelessWidget {
           final dispatchProv = context.read<DispatchProvider>();
           final bookingsProv = context.read<BookingProvider>();
           final dirProv = context.read<ServiceDirectoryProvider>();
-          await dispatchProv.fetchOffers();
-          await bookingsProv.fetchProviderBookings();
-          await dirProv.loadMyProviderProfile();
+          final paymentProv = Provider.of<PaymentProvider?>(context, listen: false);
+          await Future.wait([
+            dispatchProv.fetchOffers().catchError((e) {
+              debugPrint('Error refreshing dispatch offers: $e');
+            }),
+            bookingsProv.fetchProviderBookings().catchError((e) {
+              debugPrint('Error refreshing provider bookings: $e');
+            }),
+            dirProv.loadMyProviderProfile().catchError((e) {
+              debugPrint('Error refreshing provider profile: $e');
+            }),
+            if (paymentProv != null)
+              paymentProv.fetchProviderEarningsSummary().catchError((e) {
+                debugPrint('Error refreshing earnings summary: $e');
+              }),
+          ]);
         },
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
@@ -228,38 +291,47 @@ class _ProviderDashboardTab extends StatelessWidget {
                   ),
                 ),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Row(
-                      children: [
-                        Container(
-                          width: 12,
-                          height: 12,
-                          decoration: BoxDecoration(
-                            color: isOnline ? AppColors.success : AppColors.textMuted,
-                            shape: BoxShape.circle,
+                    Expanded(
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 12,
+                            height: 12,
+                            decoration: BoxDecoration(
+                              color: isOnline ? AppColors.success : AppColors.textMuted,
+                              shape: BoxShape.circle,
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 10),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              isOnline ? 'You are Online' : 'You are Offline',
-                              style: TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w700,
-                                color: isOnline ? AppColors.success : AppColors.textSecondary,
-                              ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  isOnline ? 'You are Online' : 'You are Offline',
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w700,
+                                    color: isOnline ? AppColors.success : AppColors.textSecondary,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  isOnline
+                                      ? 'Instant Match Radar Active (90s dispatches)'
+                                      : 'Instant Radar Paused (Listing slots still bookable)',
+                                  style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
                             ),
-                            Text(
-                              isOnline ? 'Receiving Instant Match dispatches' : 'Turn on to accept incoming requests',
-                              style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
-                            ),
-                          ],
-                        ),
-                      ],
+                          ),
+                        ],
+                      ),
                     ),
+                    const SizedBox(width: 8),
                     Switch(
                       value: isOnline,
                       activeThumbColor: AppColors.success,
@@ -336,26 +408,91 @@ class _ProviderDashboardTab extends StatelessWidget {
                 const SizedBox(height: 20),
               ],
 
+              // Incoming Scheduled Booking Requests Banner (if any)
+              if (bookingProvider.pendingRequests.isNotEmpty) ...[
+                GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const ProviderJobsScreen()),
+                    );
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF1E3A8A), Color(0xFF2563EB)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.primary.withOpacity(0.25),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.event_available, color: Colors.white, size: 24),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '${bookingProvider.pendingRequests.length} Scheduled Booking Request${bookingProvider.pendingRequests.length > 1 ? 's' : ''} Pending',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              const Text(
+                                'Tap to review customer notes and lock in your schedule.',
+                                style: TextStyle(color: Colors.white70, fontSize: 12),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Icon(Icons.arrow_forward_ios, color: Colors.white, size: 16),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+              ],
+
               // KPI Metrics
               Row(
                 children: [
                   _buildMetricCard(
-                    title: "Today's Payout",
-                    value: 'Rs. 9,700',
+                    title: 'Net Earnings',
+                    value: 'Rs. ${currencyFormat.format(totalEarnings)}',
                     icon: Icons.payments_outlined,
                     color: AppColors.primary,
                   ),
                   const SizedBox(width: 12),
                   _buildMetricCard(
                     title: 'Completed',
-                    value: '62 Jobs',
+                    value: '$completedCount ${completedCount == 1 ? 'Job' : 'Jobs'}',
                     icon: Icons.task_alt,
                     color: AppColors.success,
                   ),
                   const SizedBox(width: 12),
                   _buildMetricCard(
-                    title: 'Rating',
-                    value: '4.9 ★',
+                    title: ratingTitle,
+                    value: ratingDisplay,
                     icon: Icons.star_outline,
                     color: AppColors.warning,
                   ),
@@ -385,27 +522,84 @@ class _ProviderDashboardTab extends StatelessWidget {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
-                            activeBooking.jobRequest?.categoryName ?? 'Plumbing Repair',
-                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                          Expanded(
+                            child: Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: activeBooking.isInstantMatch
+                                        ? Colors.amber.shade100
+                                        : AppColors.primaryUltraLight,
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Text(
+                                    activeBooking.isInstantMatch ? '⚡ INSTANT' : '📅 SCHEDULED',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w700,
+                                      color: activeBooking.isInstantMatch
+                                          ? Colors.amber.shade900
+                                          : AppColors.primary,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    activeBooking.category?.isNotEmpty == true
+                                        ? activeBooking.category!
+                                        : (activeBooking.jobRequest?.categoryName ?? 'Field Service'),
+                                    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                           StatusBadge(status: activeBooking.status),
                         ],
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        activeBooking.jobRequest?.description ?? 'Bathroom pipe repair at site',
+                        activeBooking.description?.isNotEmpty == true
+                            ? activeBooking.description!
+                            : (activeBooking.jobRequest?.description ?? 'Service in progress'),
                         style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 10),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(Icons.person_outline, size: 15, color: AppColors.textSecondary),
+                              const SizedBox(width: 4),
+                              Text(
+                                activeBooking.customerName ?? 'Customer',
+                                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+                              ),
+                            ],
+                          ),
+                          if (activeBooking.price != null)
+                            Text(
+                              'Rs. ${currencyFormat.format(activeBooking.price)}',
+                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.primary),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
                       Row(
                         children: [
-                          const Icon(Icons.place, size: 16, color: AppColors.primary),
+                          const Icon(Icons.place_outlined, size: 15, color: AppColors.primary),
                           const SizedBox(width: 4),
                           Expanded(
                             child: Text(
-                              activeBooking.serviceLocation ?? 'No. 42, Flower Road, Colombo 07',
-                              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                              activeBooking.serviceLocation?.isNotEmpty == true
+                                  ? activeBooking.serviceLocation!
+                                  : 'Service location not specified',
+                              style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                         ],
@@ -413,16 +607,48 @@ class _ProviderDashboardTab extends StatelessWidget {
                       const SizedBox(height: 14),
                       Row(
                         children: [
+                          if (activeBooking.customerPhone?.isNotEmpty == true) ...[
+                            IconButton(
+                              key: const Key('dashboard_quick_call_button'),
+                              tooltip: 'Call Customer',
+                              icon: const Icon(Icons.phone_outlined, size: 18, color: AppColors.primary),
+                              style: IconButton.styleFrom(
+                                backgroundColor: AppColors.primaryUltraLight,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              ),
+                              onPressed: () => ExternalLauncherHelper.launchPhoneCall(context, activeBooking.customerPhone),
+                            ),
+                            const SizedBox(width: 8),
+                          ],
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              key: const Key('dashboard_navigate_button'),
+                              onPressed: () => ExternalLauncherHelper.launchMapNavigation(
+                                context,
+                                activeBooking.serviceLocation,
+                                latitude: activeBooking.latitude,
+                                longitude: activeBooking.longitude,
+                              ),
+                              icon: const Icon(Icons.navigation_outlined, size: 16),
+                              label: const Text('Directions'),
+                              style: OutlinedButton.styleFrom(
+                                minimumSize: const Size.fromHeight(42),
+                                textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
                           Expanded(
                             child: ElevatedButton.icon(
+                              key: const Key('dashboard_update_status_button'),
                               onPressed: () {
                                 Navigator.push(
                                   context,
-                                  MaterialPageRoute(builder: (_) => const ProviderJobsScreen()),
+                                  MaterialPageRoute(builder: (_) => ActiveJobScreen(booking: activeBooking)),
                                 );
                               },
-                              icon: const Icon(Icons.navigation_outlined, size: 16),
-                              label: const Text('Update Field Status'),
+                              icon: const Icon(Icons.edit_note, size: 16),
+                              label: const Text('Update Status'),
                               style: ElevatedButton.styleFrom(
                                 minimumSize: const Size.fromHeight(42),
                                 textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
@@ -467,15 +693,20 @@ class _ProviderDashboardTab extends StatelessWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Row(
-                          children: [
-                            Icon(Icons.badge, size: 18, color: AppColors.primary),
-                            SizedBox(width: 8),
-                            Text(
-                              'Trade Profile & Rates',
-                              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
-                            ),
-                          ],
+                        const Expanded(
+                          child: Row(
+                            children: [
+                              Icon(Icons.badge, size: 18, color: AppColors.primary),
+                              SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Trade Profile & Rates',
+                                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                         TextButton.icon(
                           onPressed: () {
@@ -495,19 +726,27 @@ class _ProviderDashboardTab extends StatelessWidget {
                         final p = dir.myProfile;
                         final skills = p?.skillCategories.isNotEmpty == true
                             ? p!.skillCategories.join(' · ')
-                            : 'Plumbing · Electrical · AC Repair';
-                        final rate = p?.hourlyRate != null
-                            ? 'Rs. ${p!.hourlyRate!.toInt()} / hr'
-                            : 'Rs. 2,500 / hr';
+                            : (p?.servicesOffered.isNotEmpty == true
+                                ? p!.servicesOffered.join(' · ')
+                                : 'Categories not set');
+                        final hourlyRate = p?.hourlyRate;
+                        final rate = hourlyRate != null && hourlyRate > 0
+                            ? 'Rs. ${hourlyRate.toInt()} / hr'
+                            : (p != null ? 'Custom Job Quotes' : 'Rate not set');
                         final exp = p != null && p.yearsOfExperience > 0
                             ? '${p.yearsOfExperience} yrs exp'
-                            : '10 yrs exp';
+                            : 'Experience not set';
+                        final headline = p?.headline?.isNotEmpty == true
+                            ? p!.headline!
+                            : (p?.fullName != null
+                                ? '${p!.fullName} • Verified Trade Specialist'
+                                : 'Add your trade headline');
 
                         return Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              p?.headline ?? 'Master Plumber & AC Repair Specialist',
+                              headline,
                               style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
                             ),
                             const SizedBox(height: 4),

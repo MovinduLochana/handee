@@ -18,5 +18,10 @@ public record BookingResponseDto(
     string? Category = null,
     string? Description = null,
     string? Notes = null,
-    int DurationHours = 1
+    int DurationHours = 1,
+    string? BookingType = null,
+    DateTimeOffset? ExpiresAt = null,
+    int? RemainingSeconds = null,
+    double? Latitude = null,
+    double? Longitude = null
 );

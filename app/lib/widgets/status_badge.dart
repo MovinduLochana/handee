@@ -60,6 +60,23 @@ class StatusBadge extends StatelessWidget {
         text = AppColors.error;
         label = 'Disputed';
         break;
+      case 'declined':
+      case 'rejected':
+        bg = AppColors.errorLight;
+        text = AppColors.error;
+        label = status.toLowerCase() == 'rejected' ? 'Rejected' : 'Declined';
+        break;
+      case 'cancelled':
+      case 'canceled':
+        bg = AppColors.errorLight;
+        text = AppColors.error;
+        label = 'Cancelled';
+        break;
+      case 'expired':
+        bg = AppColors.borderLight;
+        text = AppColors.textSecondary;
+        label = 'Expired';
+        break;
       default:
         bg = AppColors.borderLight;
         text = AppColors.textSecondary;

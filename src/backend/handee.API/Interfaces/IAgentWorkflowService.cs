@@ -11,4 +11,5 @@ public interface IAgentWorkflowService
     Task<AgentWorkflowResponseDto?> GetByJobRequestIdAsync(Guid jobRequestId, CancellationToken ct = default);
     Task<List<AgentWorkflowResponseDto>> GetAllAsync(string? tier = null, string? status = null, CancellationToken ct = default);
     Task<AgentWorkflowResponseDto> MakeDecisionAsync(Guid workflowId, Guid adminId, AdminWorkflowDecisionDto dto, CancellationToken ct = default);
+    Task<bool> RedispatchInstantMatchAsync(Guid expiredBookingId, CancellationToken ct = default);
 }

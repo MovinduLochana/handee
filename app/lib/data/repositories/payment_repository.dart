@@ -1,6 +1,8 @@
+import 'package:flutter/foundation.dart';
 import '../../core/constants/api_endpoints.dart';
 import '../../core/network/api_client.dart';
 import '../models/payment_model.dart';
+import '../models/payout_model.dart';
 
 class PaymentRepository {
   final ApiClient apiClient;
@@ -62,5 +64,35 @@ class PaymentRepository {
           .toList();
     }
     return [];
+  }
+
+  /// Fetches earnings summary for the authenticated provider.
+  Future<ProviderEarningsSummaryModel?> getProviderEarningsSummary() async {
+    try {
+      final response = await apiClient.get(ApiEndpoints.providerPayoutSummary);
+      if (response is Map<String, dynamic>) {
+        return ProviderEarningsSummaryModel.fromJson(response);
+      }
+      return null;
+    } catch (e) {
+      debugPrint('Error fetching provider earnings summary: $e');
+      return null;
+    }
+  }
+
+  /// Fetches payout disbursement history for the authenticated provider.
+  Future<List<PayoutModel>> getProviderPayoutHistory() async {
+    try {
+      final response = await apiClient.get(ApiEndpoints.providerPayouts);
+      if (response is List) {
+        return response
+            .map((e) => PayoutModel.fromJson(e as Map<String, dynamic>))
+            .toList();
+      }
+      return [];
+    } catch (e) {
+      debugPrint('Error fetching provider payout history: $e');
+      return [];
+    }
   }
 }

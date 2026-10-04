@@ -34,6 +34,9 @@ class MockBookingRepository implements BookingRepository {
   Future<BookingModel> createBookingFromListing({
     required String serviceListingId,
     required DateTime scheduledAt,
+    String? serviceLocation,
+    double? latitude,
+    double? longitude,
     String? notes,
   }) async => booking;
 
@@ -70,6 +73,15 @@ class MockBookingRepository implements BookingRepository {
 
   @override
   Future<BookingModel> updateBookingStatus(String bookingId, String newStatus) async => booking;
+
+  @override
+  Future<List<BookingModel>> getProviderBookingRequests() async => [booking];
+
+  @override
+  Future<BookingModel> confirmBooking(String bookingId) async => booking;
+
+  @override
+  Future<BookingModel> declineBooking(String bookingId, {String? reason}) async => booking;
 }
 
 void main() {

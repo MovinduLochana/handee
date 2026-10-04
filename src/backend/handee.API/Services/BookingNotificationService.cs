@@ -58,4 +58,30 @@ public class BookingNotificationService : IBookingNotificationService
         await _hubContext.Clients.Group($"Provider_{providerId}")
             .ReceiveNewJobDispatch(bookingId, jobRequestId, category, estimatedPrice);
     }
+
+    public async Task NotifyInstantJobDispatchedAsync(
+        Guid providerId,
+        Guid bookingId,
+        Guid jobRequestId,
+        string category,
+        decimal? estimatedPrice,
+        int expiresAtSeconds,
+        CancellationToken ct = default)
+    {
+        await _hubContext.Clients.Group($"Provider_{providerId}")
+            .ReceiveInstantJobOffer(bookingId, jobRequestId, category, estimatedPrice, expiresAtSeconds);
+    }
+
+    public async Task NotifyScheduledBookingRequestedAsync(
+        Guid providerId,
+        Guid bookingId,
+        string categoryName,
+        DateTimeOffset scheduledAt,
+        decimal price,
+        int remainingSeconds,
+        CancellationToken ct = default)
+    {
+        await _hubContext.Clients.Group($"Provider_{providerId}")
+            .ReceiveScheduledBookingRequest(bookingId, categoryName, scheduledAt, price, remainingSeconds);
+    }
 }

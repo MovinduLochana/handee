@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, TargetPlatform;
+import 'package:flutter/foundation.dart' show debugPrint, kIsWeb, defaultTargetPlatform, TargetPlatform;
 
 /// Centralized API Endpoints for Handee ASP.NET Core Backend.
 /// Matches the exact routes implemented in Handee.Api controllers.
@@ -17,7 +17,7 @@ class ApiEndpoints {
   static const String customApiUrl = String.fromEnvironment('API_URL', defaultValue: '');
   static const bool useLocal = bool.fromEnvironment('USE_LOCAL', defaultValue: false);
   static const bool usePhysicalDevice = bool.fromEnvironment('DEVICE', defaultValue: false);
-  static const String physicalDeviceIp = '192.168.1.3';
+  static const String physicalDeviceIp = '192.168.1.2';
 
   static String get defaultHost {
     if (kIsWeb) return 'localhost';
@@ -32,6 +32,31 @@ class ApiEndpoints {
     if (customApiUrl.isNotEmpty) return customApiUrl;
     if (useLocal) return 'http://$defaultHost:$defaultPort';
     return liveBackendUrl;
+  }
+
+  /// Logs a prominent diagnostic banner on application spin-up
+  static void logStartupConfiguration() {
+    final activeUrl = baseUrl;
+    final isLocal = activeUrl.contains('localhost') ||
+                    activeUrl.contains('10.0.2.2') ||
+                    (usePhysicalDevice && activeUrl.contains(physicalDeviceIp));
+    final targetLabel = isLocal ? '[LOCAL BACKEND]' : '[DEPLOYED AZURE CLOUD]';
+
+    debugPrint('================================================================');
+    debugPrint('📱  HANDEE FLUTTER MOBILE APP STARTING UP');
+    debugPrint('================================================================');
+    debugPrint(' 🎯 Target Backend : $targetLabel $activeUrl');
+    debugPrint(' ⚙️  Flags          : USE_LOCAL=$useLocal | DEVICE=$usePhysicalDevice');
+    if (isLocal) {
+      debugPrint(' 🌐 Host Routing   : $defaultHost:$defaultPort');
+      if (defaultTargetPlatform == TargetPlatform.android && !usePhysicalDevice) {
+        debugPrint(' 🤖 Android Note   : 10.0.2.2 routes to host machine localhost:5057');
+      }
+    } else {
+      debugPrint(' ☁️  Cloud Note     : Connected to Azure Web App & Neon Tech PostgreSQL');
+    }
+    debugPrint(' 💡 Run local via  : flutter run --dart-define=USE_LOCAL=true');
+    debugPrint('================================================================');
   }
 
   // Auth endpoints (AuthController)
@@ -55,9 +80,13 @@ class ApiEndpoints {
   static const String bookings = '/bookings';
   static const String customerBookings = '/bookings/mine';
   static const String providerBookings = '/bookings/provider-mine';
+  static const String providerInstantOffers = '/api/provider/instant-offers';
+  static const String providerBookingRequests = '/api/provider/booking-requests';
   static String bookingById(String id) => '/bookings/$id';
   static String updateBookingStatus(String id) => '/bookings/$id/status';
   static String updateBookingSchedule(String id) => '/bookings/$id/schedule';
+  static String confirmBooking(String id) => '/api/provider/bookings/$id/confirm';
+  static String declineBooking(String id) => '/api/provider/bookings/$id/decline';
 
   // AI Assistant (backend-mediated endpoint per Single Public Backend rule)
   static const String assistantQuery = '/assistant/query';
@@ -85,6 +114,8 @@ class ApiEndpoints {
   static String paymentById(String id) => '/payments/$id';
   static String paymentByInvoiceId(String invoiceId) => '/payments/invoice/$invoiceId';
 
-  static const String providerPayouts = '/payouts/provider';
-  static const String providerPayoutSummary = '/payouts/provider/summary';
+  static const String providerPayouts = '/api/payouts/history';
+  static const String providerPayoutSummary = '/api/payouts/summary';
+  static String providerPayoutsByProvider(String providerId) => '/api/payouts/provider/$providerId';
+  static String providerPayoutSummaryByProvider(String providerId) => '/api/payouts/provider/$providerId/summary';
 }

@@ -25,6 +25,7 @@ class ProviderProfileModel {
   final String? description;
   final int yearsOfExperience;
   final List<String> languages;
+  final List<String> servicesOffered;
   final double? hourlyRate;
   final bool isOnline;
 
@@ -45,6 +46,7 @@ class ProviderProfileModel {
     this.description,
     this.yearsOfExperience = 0,
     this.languages = const [],
+    this.servicesOffered = const [],
     this.hourlyRate,
     this.isOnline = true,
   });
@@ -58,6 +60,9 @@ class ProviderProfileModel {
     
     final rawLangs = json['languages'] as List<dynamic>?;
     final langsList = rawLangs?.map((e) => e.toString()).toList() ?? [];
+
+    final rawServices = json['servicesOffered'] as List<dynamic>?;
+    final servicesList = rawServices?.map((e) => e.toString()).toList() ?? [];
 
     final rawRating = json['rating'] ?? json['ratingAggregate'];
     final rawReviews = json['totalReviews'] ?? json['totalReviewCount'];
@@ -73,7 +78,7 @@ class ProviderProfileModel {
       profilePhotoUrl: rawPhoto?.toString(),
       skillCategories: skills,
       serviceArea: rawArea?.toString() ?? 'Colombo',
-      rating: (rawRating as num?)?.toDouble() ?? 4.8,
+      rating: rawRating != null ? (rawRating as num).toDouble() : 4.8,
       totalReviews: (rawReviews as num?)?.toInt() ?? 0,
       completedJobs: (json['completedJobs'] as num?)?.toInt() ?? 0,
       isVerified: json['isVerified'] as bool? ?? (statusStr.toLowerCase() == 'verified'),
@@ -83,6 +88,7 @@ class ProviderProfileModel {
       description: json['description']?.toString(),
       yearsOfExperience: (json['yearsOfExperience'] as num?)?.toInt() ?? 0,
       languages: langsList,
+      servicesOffered: servicesList,
       hourlyRate: (json['hourlyRate'] as num?)?.toDouble(),
       isOnline: rawOnline as bool? ?? true,
     );

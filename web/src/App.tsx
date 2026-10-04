@@ -28,6 +28,7 @@ import VerificationStatusTracker from "./pages/provider/VerificationStatus";
 import ProviderProfile from "./pages/provider/ProviderProfile";
 import ProviderServiceListings from "./pages/provider/ProviderServiceListings";
 import ProviderReviews from "./pages/provider/ProviderReviews";
+import ProviderBookings from "./pages/provider/ProviderBookings";
 import PublicProviderProfile from "./pages/public/PublicProviderProfile";
 import ProviderSearch from "./pages/public/ProviderSearch";
 
@@ -100,6 +101,7 @@ function App() {
                 <Route path="/provider/status" element={<VerificationStatusTracker />} />
                 <Route path="/provider/profile" element={<ProviderProfile />} />
                 <Route path="/provider/service-listings" element={<ProviderServiceListings />} />
+                <Route path="/provider/bookings" element={<ProviderBookings />} />
                 <Route path="/provider/reviews" element={<ProviderReviews />} />
                 <Route path="/provider/payouts" element={<ProviderPayoutDashboard />} />
                 <Route path="/provider/payouts/history" element={<ProviderPayoutHistory />} />
