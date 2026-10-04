@@ -113,7 +113,7 @@ class AssistantRepository {
             })
             .map((sug) {
               if (sug.toLowerCase().startsWith('book ')) {
-                return 'View ' + sug.substring(5);
+                return 'View ${sug.substring(5)}';
               }
               return sug;
             })
