@@ -766,7 +766,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                 ),
               ] else ...[
                 CustomButton(
-                  text: 'Pay Invoice (Sandbox Card)',
+                  text: 'Pay Invoice (Card)',
                   icon: Icons.credit_card,
                   onPressed: () {
                     InvoicePaymentSheet.show(

@@ -187,7 +187,7 @@ export default function CheckoutPayment() {
             <div>
               <h2 className="text-2xl font-bold text-foreground">Payment Successful!</h2>
               <p className="text-muted-foreground text-sm mt-1">
-                Settlement authorized via {activeCard?.brand || "Sandbox Card"} (
+                Settlement authorized via {activeCard?.brand || "Payment Card"} (
                 {activeCard?.last4 || "4242"})
               </p>
             </div>
@@ -208,9 +208,7 @@ export default function CheckoutPayment() {
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Gateway:</span>
                 <span className="text-foreground">
-                  {activeCard?.brand === "PayHere"
-                    ? "PayHere Sandbox"
-                    : "Stripe Sandbox (Polly Resilient)"}
+                  {activeCard?.brand === "PayHere" ? "PayHere" : "Stripe"}
                 </span>
               </div>
             </div>
@@ -241,7 +239,7 @@ export default function CheckoutPayment() {
               variant="outline"
               className="border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 gap-1 text-xs"
             >
-              <Lock className="h-3 w-3" /> Sandbox Payment Gateway
+              <Lock className="h-3 w-3" /> Secure Payment Gateway
             </Badge>
           </div>
           <h1 className="text-3xl font-bold tracking-tight text-foreground">Secure Checkout</h1>
@@ -264,7 +262,7 @@ export default function CheckoutPayment() {
             <strong>Payment Failed:</strong>{" "}
             {(payMutation.error as any)?.response?.data?.message ||
               (payMutation.error as Error)?.message ||
-              "Sandbox card declined. Please try again."}
+              "Payment card declined. Please try again."}
           </AlertDescription>
         </Alert>
       )}
@@ -277,7 +275,7 @@ export default function CheckoutPayment() {
               <div className="flex justify-between items-center">
                 <CardTitle className="text-base font-bold flex items-center gap-2">
                   <CreditCard className="h-4 w-4 text-primary" />
-                  Choose Sandbox Payment Card
+                  Choose Payment Card
                 </CardTitle>
                 <Link
                   to="/account/payment-methods"
@@ -293,57 +291,67 @@ export default function CheckoutPayment() {
             <CardContent className="space-y-4">
               {/* List of Synchronized Saved Cards */}
               <div className="space-y-2.5">
-                {methods.map((card) => {
-                  const isSelected = activeCard?.id === card.id;
-                  return (
-                    <div
-                      key={card.id}
-                      onClick={() => setSelectedId(card.id)}
-                      className={`flex items-center justify-between p-3.5 rounded border transition-colors cursor-pointer ${
-                        isSelected
-                          ? "border-primary bg-primary/5 ring-1 ring-primary"
-                          : "border-border hover:bg-muted/50"
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div
-                          className={`h-4 w-4 rounded-full border flex items-center justify-center ${
-                            isSelected ? "border-primary bg-primary" : "border-border"
-                          }`}
-                        >
-                          {isSelected && (
-                            <div className="h-1.5 w-1.5 rounded-full bg-primary-foreground" />
-                          )}
-                        </div>
-                        <div>
-                          <div className="font-semibold text-foreground text-sm flex items-center gap-2">
-                            {card.name || `${card.brand} •••• ${card.last4}`}
-                            {card.isDefault && (
-                              <Badge
-                                variant="outline"
-                                className="border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] px-1.5 py-0"
-                              >
-                                Default
-                              </Badge>
+                {methods.length === 0 ? (
+                  <div className="text-center py-6 space-y-2">
+                    <CreditCard className="h-8 w-8 text-muted-foreground mx-auto" />
+                    <p className="text-sm text-muted-foreground">No saved cards yet.</p>
+                    <p className="text-xs text-muted-foreground">
+                      Add a card below to complete your payment.
+                    </p>
+                  </div>
+                ) : (
+                  methods.map((card) => {
+                    const isSelected = activeCard?.id === card.id;
+                    return (
+                      <div
+                        key={card.id}
+                        onClick={() => setSelectedId(card.id)}
+                        className={`flex items-center justify-between p-3.5 rounded border transition-colors cursor-pointer ${
+                          isSelected
+                            ? "border-primary bg-primary/5 ring-1 ring-primary"
+                            : "border-border hover:bg-muted/50"
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div
+                            className={`h-4 w-4 rounded-full border flex items-center justify-center ${
+                              isSelected ? "border-primary bg-primary" : "border-border"
+                            }`}
+                          >
+                            {isSelected && (
+                              <div className="h-1.5 w-1.5 rounded-full bg-primary-foreground" />
                             )}
                           </div>
-                          <div className="text-xs text-muted-foreground font-mono">
-                            •••• •••• •••• {card.last4}
+                          <div>
+                            <div className="font-semibold text-foreground text-sm flex items-center gap-2">
+                              {card.name || `${card.brand} •••• ${card.last4}`}
+                              {card.isDefault && (
+                                <Badge
+                                  variant="outline"
+                                  className="border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] px-1.5 py-0"
+                                >
+                                  Default
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="text-xs text-muted-foreground font-mono">
+                              •••• •••• •••• {card.last4}
+                            </div>
                           </div>
                         </div>
+                        <div className="text-right">
+                          <span className="text-xs font-medium text-muted-foreground block">
+                            Exp {String(card.expiryMonth).padStart(2, "0")}/
+                            {String(card.expiryYear).slice(-2)}
+                          </span>
+                          <span className="text-[11px] text-muted-foreground font-mono">
+                            {card.brand}
+                          </span>
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <span className="text-xs font-medium text-muted-foreground block">
-                          Exp {String(card.expiryMonth).padStart(2, "0")}/
-                          {String(card.expiryYear).slice(-2)}
-                        </span>
-                        <span className="text-[11px] text-muted-foreground font-mono">
-                          {card.brand}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })
+                )}
               </div>
 
               {/* Quick Add Card Toggle */}
@@ -445,7 +453,7 @@ export default function CheckoutPayment() {
               >
                 <Lock className="h-4 w-4" />
                 {payMutation.isPending
-                  ? "Simulating Gateway Processing..."
+                  ? "Processing Payment..."
                   : `Authorize & Pay LKR ${invoice.totalAmount.toLocaleString()}`}
               </Button>
             </CardContent>
@@ -513,7 +521,7 @@ export default function CheckoutPayment() {
               <div className="bg-muted p-3.5 rounded space-y-1.5 text-xs text-muted-foreground">
                 <div className="flex items-center gap-1.5 font-semibold text-foreground">
                   <ShieldCheck className="h-4 w-4 text-emerald-500" />
-                  Escrow Protected Payment
+                  Secure Payment
                 </div>
                 <p>
                   Platform retains funds until service completion is confirmed. The provider is

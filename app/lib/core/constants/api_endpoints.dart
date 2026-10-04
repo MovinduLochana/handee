@@ -34,6 +34,16 @@ class ApiEndpoints {
     return liveBackendUrl;
   }
 
+  /// Live deployed Python AI Agent Service URL (matches React Web client)
+  static const String liveAgentServiceUrl = 'https://handee-production.up.railway.app';
+  static const String customAgentUrl = String.fromEnvironment('AGENT_URL', defaultValue: '');
+
+  static String get agentBaseUrl {
+    if (customAgentUrl.isNotEmpty) return customAgentUrl;
+    if (useLocal) return 'http://$defaultHost:8000';
+    return liveAgentServiceUrl;
+  }
+
   /// Logs a prominent diagnostic banner on application spin-up
   static void logStartupConfiguration() {
     final activeUrl = baseUrl;

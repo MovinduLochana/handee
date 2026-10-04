@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { X, Send, Sparkles, Bot, User, Star, CheckCircle, ChevronRight } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "react-router-dom";
 import { agentsApi, type AssistantQueryResponse } from "../../api/agents";
 import { usersApi } from "../../api/users";
 import { Button } from "@/components/ui/button";
@@ -84,7 +85,7 @@ export default function AiAssistantWidget() {
   };
 
   const starterPrompts = [
-    "Emergency plumbing pipe leak in Colombo",
+    "Plumbing pipe leak in Colombo",
     "Find AC Repair technicians with 4.5+ rating",
     "How much does electrical switchboard repair cost?",
   ];
@@ -176,42 +177,99 @@ export default function AiAssistantWidget() {
                       <span className="text-[11px] font-bold text-muted-foreground block">
                         Recommended Verified Specialists:
                       </span>
-                      {m.data.suggested_providers.map((p) => (
-                        <div
-                          key={p.id}
-                          className="bg-card border border-border rounded p-2.5 text-xs space-y-1"
-                        >
-                          <div className="flex justify-between items-center">
-                            <div className="flex items-center gap-1 font-semibold text-foreground">
-                              {p.fullName}
-                              {p.isVerified && <CheckCircle className="h-3 w-3 text-emerald-500" />}
+                      {m.data.suggested_providers.map((p) => {
+                        const targetId = p.id || p.userId;
+                        return (
+                          <div
+                            key={p.id || p.userId}
+                            className="bg-card border border-border rounded p-2.5 text-xs space-y-1.5"
+                          >
+                            <div className="flex justify-between items-center">
+                              <div className="flex items-center gap-1 font-semibold text-foreground">
+                                {p.fullName}
+                                {p.isVerified && (
+                                  <CheckCircle className="h-3 w-3 text-emerald-500" />
+                                )}
+                              </div>
+                              <span className="text-amber-500 flex items-center gap-0.5 font-semibold text-[11px]">
+                                <Star className="h-3 w-3 fill-amber-500" /> {p.rating || 4.9}
+                              </span>
                             </div>
-                            <span className="text-amber-500 flex items-center gap-0.5 font-semibold text-[11px]">
-                              <Star className="h-3 w-3 fill-amber-500" /> {p.rating || 4.9}
-                            </span>
+                            <div className="text-[11px] text-muted-foreground">
+                              Area: {p.serviceArea || "Colombo"} · Rate: Rs.{" "}
+                              {p.hourlyRate?.toLocaleString() || "3,500"}/hr
+                            </div>
+                            {targetId && (
+                              <div className="pt-1 flex justify-end">
+                                <Link
+                                  to={`/providers/${targetId}`}
+                                  className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary hover:underline bg-primary/10 px-2.5 py-1 rounded"
+                                >
+                                  <span>View Profile</span>
+                                  <ChevronRight className="h-3 w-3" />
+                                </Link>
+                              </div>
+                            )}
                           </div>
-                          <div className="text-[11px] text-muted-foreground">
-                            Area: {p.serviceArea || "Colombo"} · Rate: Rs.{" "}
-                            {p.hourlyRate?.toLocaleString() || "3,500"}/hr
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* Suggested Listings Cards */}
+                  {m.data?.suggested_listings && m.data.suggested_listings.length > 0 && (
+                    <div className="space-y-1.5">
+                      <span className="text-[11px] font-bold text-muted-foreground block">
+                        Recommended Fixed-Price Services:
+                      </span>
+                      {m.data.suggested_listings.map((l: any, idx: number) => {
+                        const targetProviderId = l.providerId;
+                        return (
+                          <div
+                            key={l.id || idx}
+                            className="bg-card border border-border rounded p-2.5 text-xs space-y-1.5"
+                          >
+                            <div className="font-semibold text-foreground">{l.title}</div>
+                            <div className="text-[11px] text-muted-foreground flex justify-between items-center">
+                              <span>By {l.providerName || "Verified Provider"}</span>
+                              <span className="font-medium text-foreground">
+                                Rs. {Number(l.price || 0).toLocaleString()}
+                              </span>
+                            </div>
+                            <div className="pt-1 flex justify-end">
+                              <Link
+                                to={
+                                  targetProviderId
+                                    ? `/providers/${targetProviderId}`
+                                    : `/providers?search=${encodeURIComponent(l.title)}`
+                                }
+                                className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary hover:underline bg-primary/10 px-2.5 py-1 rounded"
+                              >
+                                <span>View Provider / Service</span>
+                                <ChevronRight className="h-3 w-3" />
+                              </Link>
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
 
                   {/* Suggestion Quick Chips */}
                   {m.data?.suggestions && m.data.suggestions.length > 0 && (
                     <div className="flex flex-wrap gap-1 mt-1">
-                      {m.data.suggestions.map((sugg, idx) => (
-                        <button
-                          key={idx}
-                          type="button"
-                          onClick={() => handleSend(sugg)}
-                          className="text-[11px] px-2.5 py-1 rounded-full border border-primary/30 text-primary hover:bg-primary/10 transition-colors text-left"
-                        >
-                          {sugg}
-                        </button>
-                      ))}
+                      {m.data.suggestions
+                        .filter((sugg) => !/instant\s*match|priority\s*book|^book\s/i.test(sugg))
+                        .map((sugg, idx) => (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => handleSend(sugg)}
+                            className="text-[11px] px-2.5 py-1 rounded-full border border-primary/30 text-primary hover:bg-primary/10 transition-colors text-left"
+                          >
+                            {sugg}
+                          </button>
+                        ))}
                     </div>
                   )}
                 </div>

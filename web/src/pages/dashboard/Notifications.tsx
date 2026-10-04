@@ -3,7 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 
 export default function Notifications() {
   const notifications: any[] = [
-    // Simulating an empty state for the delight workflow experience!
+    // Empty state for no notifications
   ];
 
   return (

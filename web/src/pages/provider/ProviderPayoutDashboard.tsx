@@ -57,7 +57,7 @@ export default function ProviderPayoutDashboard() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-foreground">Earnings & Payouts</h1>
           <p className="text-muted-foreground text-sm mt-0.5">
-            Track your net earnings, escrow clearances, and automated bank deposits
+            Track your net earnings, clearances, and automated bank deposits
           </p>
         </div>
         <div className="flex gap-2.5 flex-wrap">
@@ -106,7 +106,7 @@ export default function ProviderPayoutDashboard() {
         <Card>
           <CardHeader className="p-4 pb-2">
             <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center justify-between">
-              Pending Escrow Settlement
+              Pending Settlement
               <Clock className="h-4 w-4 text-amber-500" />
             </CardTitle>
           </CardHeader>

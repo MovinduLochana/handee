@@ -125,6 +125,42 @@ SERVICE_LISTINGS: List[Dict[str, Any]] = [
         "providerName": "Kamal Fernando",
         "providerId": "22222222-2222-2222-2222-222222222222",
         "rating": 4.8,
+    },
+    {
+        "id": "list-painting-walls",
+        "title": "Interior Wall Painting & Touch-up",
+        "category": "Painting",
+        "price": 3500.0,
+        "providerName": "Nimal Jayasinghe",
+        "providerId": "33333333-3333-3333-3333-333333333333",
+        "rating": 4.7,
+    },
+    {
+        "id": "list-carpentry-repair",
+        "title": "Door Hinge, Lock & Woodwork Repair",
+        "category": "Carpentry",
+        "price": 3800.0,
+        "providerName": "Nimal Jayasinghe",
+        "providerId": "33333333-3333-3333-3333-333333333333",
+        "rating": 4.7,
+    },
+    {
+        "id": "list-house-cleaning",
+        "title": "Full House Deep Cleaning & Sanitization",
+        "category": "Cleaning",
+        "price": 2800.0,
+        "providerName": "Sunil Perera",
+        "providerId": "11111111-1111-1111-1111-111111111111",
+        "rating": 4.9,
+    },
+    {
+        "id": "list-general-handyman",
+        "title": "General Handyman & Home Fixture Maintenance",
+        "category": "General Maintenance",
+        "price": 3200.0,
+        "providerName": "Sunil Perera",
+        "providerId": "11111111-1111-1111-1111-111111111111",
+        "rating": 4.9,
     }
 ]
 
@@ -198,35 +234,6 @@ async def search_providers(
     except Exception as e:
         logger.info(f"Listing provider lookup error: {e}")
 
-    # If category filter had no results, query all active platform providers
-    if not providers:
-        try:
-            async with httpx.AsyncClient(timeout=4.0) as client:
-                resp = await client.get(backend_url, params={"pageSize": 10})
-                if resp.status_code == 200:
-                    data = resp.json()
-                    items = data.get("items", []) if isinstance(data, dict) else (data if isinstance(data, list) else [])
-                    for item in items:
-                        raw_categories = item.get("serviceCategories") or item.get("skillCategories") or []
-                        cat_names = [
-                            s.get("name") if isinstance(s, dict) else str(s)
-                            for s in raw_categories
-                        ]
-                        providers.append({
-                            "id": str(item.get("id")),
-                            "userId": str(item.get("userId", item.get("id"))),
-                            "fullName": item.get("fullName", "Unknown Provider"),
-                            "skillCategories": cat_names,
-                            "serviceArea": item.get("serviceAreaDisplayName") or item.get("city") or "Sri Lanka",
-                            "rating": float(item.get("ratingAggregate", 0.0) or item.get("rating", 4.5)),
-                            "totalReviews": int(item.get("totalReviewCount", 0)),
-                            "isVerified": item.get("verificationStatus") == "Verified",
-                            "verificationStatus": item.get("verificationStatus", "Pending"),
-                            "hourlyRate": float(item.get("hourlyRate", 3500.0)),
-                        })
-        except Exception:
-            pass
-
     if not providers:
         # Filter candidate pool by category matching
         cat_lower = category.lower()
@@ -234,7 +241,14 @@ async def search_providers(
             p for p in SEED_PROVIDERS
             if any(cat_lower in skill.lower() for skill in p["skillCategories"])
         ]
-        providers = matched if matched else SEED_PROVIDERS[:3]
+        if matched:
+            providers = matched
+        else:
+            # Fallback to general maintenance specialists if trade is generic
+            providers = [
+                p for p in SEED_PROVIDERS
+                if any("general" in s.lower() for s in p["skillCategories"])
+            ] or SEED_PROVIDERS[:2]
 
     # Rank providers by verification first, then rating descending
     providers.sort(key=lambda p: (1 if p.get("isVerified") else 0, p.get("rating", 0.0)), reverse=True)
@@ -408,34 +422,17 @@ async def search_service_listings(query: str, category: Optional[str] = None) ->
             pass
 
     if not listings:
-        try:
-            async with httpx.AsyncClient(timeout=4.0) as client:
-                resp = await client.get(backend_url)
-                if resp.status_code == 200:
-                    items = resp.json()
-                    if isinstance(items, list) and items:
-                        for item in items:
-                            listings.append({
-                                "id": str(item.get("id")),
-                                "title": item.get("title", "Service Listing"),
-                                "category": item.get("serviceCategoryName") or category or "General",
-                                "price": float(item.get("fixedPrice", 0.0)),
-                                "providerName": item.get("providerFullName") or "Verified Provider",
-                                "providerId": str(item.get("providerId")),
-                                "rating": 4.9,
-                            })
-        except Exception:
-            pass
-
-    if not listings:
-        # Fallback to offline seed listings for unit tests or offline dev
-        q = query.lower()
+        # Fallback to seed listings matching category or query
+        cat_lower = (category or "").lower()
+        q_lower = query.lower()
+        matched_seed = []
         for item in SERVICE_LISTINGS:
-            if category and category.lower() in item["category"].lower():
-                listings.append(item)
-            elif q in item["title"].lower() or q in item["category"].lower():
-                listings.append(item)
-        if not listings:
-            listings = SERVICE_LISTINGS[:2]
+            item_cat_lower = item["category"].lower()
+            item_title_lower = item["title"].lower()
+            if cat_lower and cat_lower in item_cat_lower:
+                matched_seed.append(item)
+            elif any(word in item_title_lower or word in item_cat_lower for word in q_lower.split() if len(word) >= 4):
+                matched_seed.append(item)
+        listings = matched_seed
 
     return listings

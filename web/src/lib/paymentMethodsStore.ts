@@ -55,11 +55,11 @@ function getStorageKey(userId?: string): string {
 
 /**
  * Loads saved cards for the given user from localStorage.
- * Seeds initial sandbox cards if the user doesn't have any yet.
+ * Returns an empty array if no cards have been saved yet.
  */
 export function getSavedPaymentMethods(
   userId?: string,
-  defaultHolderName?: string,
+  _defaultHolderName?: string,
 ): PaymentMethodItem[] {
   const key = getStorageKey(userId);
   try {
@@ -74,16 +74,8 @@ export function getSavedPaymentMethods(
     console.warn("Failed to read payment methods from localStorage", err);
   }
 
-  // Seed default methods for this user
-  const defaults = getDefaultPaymentMethods(defaultHolderName);
-  try {
-    if (typeof window !== "undefined") {
-      localStorage.setItem(key, JSON.stringify(defaults));
-    }
-  } catch {
-    // ignore in restricted environments
-  }
-  return defaults;
+  // No cards saved yet — return empty list (no auto-seeding)
+  return [];
 }
 
 /**

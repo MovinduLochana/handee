@@ -127,6 +127,28 @@ describe("Payments & Invoicing Pages", () => {
   });
 
   it("renders CheckoutPayment and submits sandbox card payment", async () => {
+    const mockUser = {
+      id: "cust-1",
+      fullName: "Test Customer",
+      email: "test@handee.com",
+      roles: ["Customer"],
+    };
+    vi.mocked(usersApi.getProfile).mockResolvedValue(mockUser as any);
+
+    savePaymentMethod(
+      {
+        type: "card",
+        brand: "Visa",
+        name: "Visa •••• 4242",
+        last4: "4242",
+        expiryMonth: 12,
+        expiryYear: 2028,
+        isDefault: true,
+        holderName: "Test Customer",
+      },
+      "cust-1",
+    );
+
     const mockInvoice: InvoiceDto = {
       id: "inv-checkout-1",
       bookingId: "book-300",
@@ -301,6 +323,20 @@ describe("Payments & Invoicing Pages", () => {
     };
     vi.mocked(usersApi.getProfile).mockResolvedValue(mockUser as any);
 
+    savePaymentMethod(
+      {
+        type: "card",
+        brand: "Visa",
+        name: "Sync Test Visa",
+        last4: "4242",
+        expiryMonth: 12,
+        expiryYear: 2028,
+        isDefault: true,
+        holderName: "Sync Test User",
+      },
+      "cust-sync-test",
+    );
+
     const { unmount } = render(
       <QueryClientProvider client={queryClient}>
         <MemoryRouter initialEntries={["/account/payment-methods"]}>
@@ -312,12 +348,10 @@ describe("Payments & Invoicing Pages", () => {
     );
 
     expect(screen.getByText("Saved Payment Methods")).toBeInTheDocument();
-    expect(screen.getByText("Live Checkout Sync:")).toBeInTheDocument();
+    expect(screen.getAllByText("Secure Vault:").length).toBeGreaterThanOrEqual(1);
 
     await waitFor(() => {
       expect(screen.getByText(/4242/)).toBeInTheDocument();
-      expect(screen.getByText(/5555/)).toBeInTheDocument();
-      expect(screen.getByText(/7777/)).toBeInTheDocument();
     });
 
     unmount();
@@ -383,7 +417,7 @@ describe("Payments & Invoicing Pages", () => {
 
     await waitFor(() => {
       expect(screen.getByText("Saviru Corporate Amex")).toBeInTheDocument();
-      expect(screen.getByText(/1001/)).toBeInTheDocument();
+      expect(screen.getAllByText(/1001/).length).toBeGreaterThanOrEqual(1);
     });
 
     fireEvent.click(screen.getByText("Saviru Corporate Amex"));

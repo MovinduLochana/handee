@@ -175,6 +175,21 @@ if ($CloudDb) {
 Write-Host " Working Directory: $RootDir" -ForegroundColor DarkGray
 Write-Host "-----------------------------------------------------------------" -ForegroundColor Cyan
 
+# Terminate lingering processes on platform ports (5057, 5000, 8000, 5173) to prevent socket conflicts
+$TargetPorts = @(5057, 5000, 8000, 5173)
+foreach ($port in $TargetPorts) {
+    try {
+        $conns = Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue
+        if ($conns) {
+            foreach ($conn in $conns) {
+                if ($conn.OwningProcess -gt 4) {
+                    taskkill.exe /F /T /PID $conn.OwningProcess 2>$null | Out-Null
+                }
+            }
+        }
+    } catch {}
+}
+
 # Terminate any lingering backend process to prevent .exe file locking during dotnet build
 Get-Process -Name "handee.API", "Handee.Api" -ErrorAction SilentlyContinue | ForEach-Object {
     Stop-Process -Id $_.Id -Force -ErrorAction SilentlyContinue

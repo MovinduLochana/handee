@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace handee.API.DTO;
 
 public record AgentStepLogDto(
@@ -40,9 +42,16 @@ public record AssistantQueryRequestDto(
 );
 
 public record AssistantQueryResponseDto(
-    string Reply,
-    string? Category,
-    List<object> SuggestedProviders,
-    List<object> SuggestedListings,
-    List<string> Suggestions
-);
+    [property: JsonPropertyName("reply")] string Reply,
+    [property: JsonPropertyName("category")] string? Category,
+    [property: JsonPropertyName("suggested_providers")] List<object>? SuggestedProviders,
+    [property: JsonPropertyName("suggested_listings")] List<object>? SuggestedListings,
+    [property: JsonPropertyName("suggestions")] List<string> Suggestions
+)
+{
+    [JsonPropertyName("suggestedProviders")]
+    public List<object>? SuggestedProvidersCamel => SuggestedProviders;
+
+    [JsonPropertyName("suggestedListings")]
+    public List<object>? SuggestedListingsCamel => SuggestedListings;
+}

@@ -67,8 +67,7 @@ export default function PaymentMethods() {
               Saved Payment Methods
             </h1>
             <p className="text-muted-foreground text-sm mt-0.5">
-              Manage your sandbox payment cards and digital wallets — seamlessly synced with
-              checkout
+              Manage your saved payment cards and digital wallets.
             </p>
           </div>
         </div>
@@ -91,16 +90,8 @@ export default function PaymentMethods() {
         <CardContent className="p-4 flex items-center gap-3 text-sm">
           <Sparkles className="h-5 w-5 text-primary shrink-0" />
           <div className="text-foreground">
-            <strong className="text-foreground">Live Checkout Sync:</strong> All cards in this vault
-            automatically appear on the Secure Checkout screen for instant settlement.
-            {userProfile && (
-              <span className="ml-2 text-muted-foreground">
-                Vault attached to{" "}
-                <strong className="text-foreground">
-                  {userProfile.fullName || userProfile.email}
-                </strong>
-              </span>
-            )}
+            <strong className="text-foreground">Secure Vault:</strong> Your saved cards will appear
+            securely during checkout.
           </div>
         </CardContent>
       </Card>
@@ -109,7 +100,7 @@ export default function PaymentMethods() {
         <Card className="max-w-xl">
           <CardHeader className="pb-3 flex flex-row items-center justify-between">
             <CardTitle className="text-base font-bold flex items-center gap-2">
-              <CreditCard className="h-4 w-4" /> Add Sandbox Card
+              <CreditCard className="h-4 w-4" /> Add Card
             </CardTitle>
             <Button
               variant="ghost"
@@ -224,7 +215,7 @@ export default function PaymentMethods() {
               </div>
 
               <Button type="submit" className="w-full">
-                Save Sandbox Method
+                Save Card
               </Button>
             </form>
           </CardContent>
@@ -237,10 +228,10 @@ export default function PaymentMethods() {
             <CreditCard className="h-12 w-12 text-muted-foreground mx-auto" />
             <h3 className="text-lg font-bold text-foreground">No Payment Methods Saved</h3>
             <p className="text-muted-foreground text-sm">
-              Add a sandbox test card to complete settlements quickly.
+              Add a payment card to complete settlements quickly.
             </p>
             <Button onClick={() => setShowAddForm(true)} className="gap-2">
-              <Plus className="h-4 w-4" /> Add Test Card
+              <Plus className="h-4 w-4" /> Add Card
             </Button>
           </CardContent>
         </Card>
@@ -315,9 +306,8 @@ export default function PaymentMethods() {
         <CardContent className="p-4 flex items-center gap-3 text-xs text-muted-foreground">
           <ShieldCheck className="h-6 w-6 text-primary shrink-0" />
           <div>
-            <strong className="text-foreground">Sandbox Security Vault:</strong> All card details
-            are stored in simulated vault storage for grading and testing. No actual financial
-            charges are incurred.
+            <strong className="text-foreground">Secure Vault:</strong> All card details are securely
+            encrypted and stored.
           </div>
         </CardContent>
       </Card>

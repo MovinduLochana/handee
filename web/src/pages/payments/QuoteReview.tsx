@@ -261,8 +261,8 @@ export default function QuoteReview() {
             <CardContent className="space-y-4 text-xs text-muted-foreground">
               <ul className="list-disc pl-4 space-y-2 text-foreground">
                 <li>
-                  <strong className="text-foreground">Escrow Protection:</strong> Funds remain
-                  securely held in sandbox escrow until you approve job completion.
+                  <strong className="text-foreground">Payment Protection:</strong> Funds remain
+                  securely held until you approve job completion.
                 </li>
                 <li>
                   <strong className="text-foreground">No Surprise Surges:</strong> Quote is binding
