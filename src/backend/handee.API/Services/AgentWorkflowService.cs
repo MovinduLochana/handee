@@ -16,13 +16,14 @@ public class AgentWorkflowService : IAgentWorkflowService
     private readonly ILogger<AgentWorkflowService> _logger;
     private readonly IBookingNotificationService? _notificationService;
     private readonly IProviderAvailabilityService? _availabilityService;
+    private readonly IPricingConfigService? _pricingConfigService;
 
     public AgentWorkflowService(
         AppDbContext db,
         IHttpClientFactory httpClientFactory,
         IInvoiceService invoiceService,
         ILogger<AgentWorkflowService> logger)
-        : this(db, httpClientFactory, invoiceService, logger, null, null)
+        : this(db, httpClientFactory, invoiceService, logger, null, null, null)
     {
     }
 
@@ -32,7 +33,7 @@ public class AgentWorkflowService : IAgentWorkflowService
         IInvoiceService invoiceService,
         ILogger<AgentWorkflowService> logger,
         IBookingNotificationService? notificationService)
-        : this(db, httpClientFactory, invoiceService, logger, notificationService, null)
+        : this(db, httpClientFactory, invoiceService, logger, notificationService, null, null)
     {
     }
 
@@ -43,6 +44,18 @@ public class AgentWorkflowService : IAgentWorkflowService
         ILogger<AgentWorkflowService> logger,
         IBookingNotificationService? notificationService,
         IProviderAvailabilityService? availabilityService)
+        : this(db, httpClientFactory, invoiceService, logger, notificationService, availabilityService, null)
+    {
+    }
+
+    public AgentWorkflowService(
+        AppDbContext db,
+        IHttpClientFactory httpClientFactory,
+        IInvoiceService invoiceService,
+        ILogger<AgentWorkflowService> logger,
+        IBookingNotificationService? notificationService,
+        IProviderAvailabilityService? availabilityService,
+        IPricingConfigService? pricingConfigService)
     {
         _db = db;
         _httpClientFactory = httpClientFactory;
@@ -50,12 +63,23 @@ public class AgentWorkflowService : IAgentWorkflowService
         _logger = logger;
         _notificationService = notificationService;
         _availabilityService = availabilityService;
+        _pricingConfigService = pricingConfigService;
     }
 
 
     public async Task<AgentWorkflow> DispatchWorkflowAsync(JobRequest jobRequest, CancellationToken ct = default)
     {
         var client = _httpClientFactory.CreateClient("AgentService");
+
+        UrgencyMultiplierConfigDto urgencyConfig;
+        if (_pricingConfigService != null)
+        {
+            urgencyConfig = await _pricingConfigService.GetUrgencyMultipliersAsync(ct);
+        }
+        else
+        {
+            urgencyConfig = new UrgencyMultiplierConfigDto(0.95, 1.00, 1.05, 1.20, 1.40);
+        }
 
         var payload = new
         {
@@ -64,6 +88,14 @@ public class AgentWorkflowService : IAgentWorkflowService
             description = jobRequest.Description,
             location = jobRequest.Location,
             urgency = jobRequest.Urgency.ToString().ToLower(),
+            urgency_multipliers = new
+            {
+                low = urgencyConfig.Low,
+                normal = urgencyConfig.Normal,
+                medium = urgencyConfig.Medium,
+                high = urgencyConfig.High,
+                emergency = urgencyConfig.Emergency
+            },
             budget_min = jobRequest.BudgetMin,
             budget_max = jobRequest.BudgetMax
         };
@@ -90,6 +122,16 @@ public class AgentWorkflowService : IAgentWorkflowService
             workflow = CreateFallbackWorkflow(jobRequest);
         }
 
+        var urgencyMultiplier = (decimal)(_pricingConfigService?.GetMultiplierForUrgency(jobRequest.Urgency, urgencyConfig)
+            ?? (jobRequest.Urgency switch
+            {
+                JobUrgency.Low => 0.95,
+                JobUrgency.Medium => 1.05,
+                JobUrgency.High => 1.20,
+                JobUrgency.Emergency => 1.40,
+                _ => 1.0
+            }));
+
         ServiceListing? serviceListing = null;
         if (workflow.SelectedServiceListingId.HasValue)
         {
@@ -97,7 +139,14 @@ public class AgentWorkflowService : IAgentWorkflowService
             if (serviceListing != null)
             {
                 workflow.SelectedProviderId = serviceListing.ProviderId;
-                workflow.EstimatedPrice = serviceListing.FixedPrice;
+                if (!workflow.EstimatedPrice.HasValue || workflow.EstimatedPrice <= 0)
+                {
+                    workflow.EstimatedPrice = Math.Round(serviceListing.FixedPrice * urgencyMultiplier, 2);
+                }
+                else if (urgencyMultiplier > 1.0m && workflow.EstimatedPrice == serviceListing.FixedPrice)
+                {
+                    workflow.EstimatedPrice = Math.Round(serviceListing.FixedPrice * urgencyMultiplier, 2);
+                }
             }
         }
 
@@ -114,7 +163,14 @@ public class AgentWorkflowService : IAgentWorkflowService
             {
                 workflow.SelectedProviderId = listing.ProviderId;
                 workflow.SelectedServiceListingId = listing.Id;
-                workflow.EstimatedPrice = listing.FixedPrice;
+                if (!workflow.EstimatedPrice.HasValue || workflow.EstimatedPrice <= 0)
+                {
+                    workflow.EstimatedPrice = Math.Round(listing.FixedPrice * urgencyMultiplier, 2);
+                }
+                else if (urgencyMultiplier > 1.0m && workflow.EstimatedPrice == listing.FixedPrice)
+                {
+                    workflow.EstimatedPrice = Math.Round(listing.FixedPrice * urgencyMultiplier, 2);
+                }
                 serviceListing = listing;
             }
             else
@@ -150,7 +206,12 @@ public class AgentWorkflowService : IAgentWorkflowService
             if (serviceListing != null)
             {
                 workflow.SelectedServiceListingId = serviceListing.Id;
-                workflow.EstimatedPrice = serviceListing.FixedPrice;
+                if (!workflow.EstimatedPrice.HasValue || workflow.EstimatedPrice <= 0)
+                {
+                    workflow.EstimatedPrice = urgencyMultiplier > 1.0m
+                        ? Math.Round(serviceListing.FixedPrice * urgencyMultiplier, 2)
+                        : serviceListing.FixedPrice;
+                }
             }
         }
 

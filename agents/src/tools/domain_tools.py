@@ -258,12 +258,14 @@ def estimate_scope(
     description: str,
     urgency: Optional[str] = None,  # JobUrgency value, any casing; a JobUrgency is a str too
     category_is_ambiguous: bool = False,
+    urgency_multipliers: Optional[Dict[str, float]] = None,
 ) -> EstimateScopeOutput:
     """Estimates job size and a price multiplier range.
 
     Complexity: High if any high-complexity term matches, else Medium if any
     medium term does, else Low. Duration and base multiplier come from
-    _COMPLEXITY_LADDER; urgency then scales the multiplier by _URGENCY_FACTOR.
+    _COMPLEXITY_LADDER; urgency then scales the multiplier by _URGENCY_FACTOR
+    or dynamic urgency_multipliers if provided.
     None means unspecified and takes the backend default (Medium).
 
     Price range. There are two independent reasons to doubt the estimate:
@@ -307,7 +309,12 @@ def estimate_scope(
     reasons += scope_reasons
     spread = int(params.category_is_ambiguous) + int(bool(scope_reasons))
 
-    factor = _URGENCY_FACTOR[params.urgency]
+    if urgency_multipliers and params.urgency.value.lower() in {k.lower(): v for k, v in urgency_multipliers.items()}:
+        normalized = {k.lower(): float(v) for k, v in urgency_multipliers.items()}
+        factor = normalized[params.urgency.value.lower()]
+    else:
+        factor = _URGENCY_FACTOR[params.urgency]
+
     name, _, hours = _COMPLEXITY_LADDER[tier]
     low_tier = _COMPLEXITY_LADDER[max(0, tier - spread)]
     high_tier = _COMPLEXITY_LADDER[min(len(_COMPLEXITY_LADDER) - 1, tier + spread)]
@@ -325,6 +332,7 @@ def estimate_scope(
         estimated_duration_hours=hours,
         price_multiplier_min=multiplier_min,
         price_multiplier_max=multiplier_max,
+        urgency_multiplier=factor,
         is_emergency=params.urgency is JobUrgency.EMERGENCY,
         ambiguity_flag=bool(reasons),
         ambiguity_reasons=reasons,

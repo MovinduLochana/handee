@@ -66,4 +66,5 @@ public class Booking
     public ServiceListing? ServiceListing { get; set; }
     public ApplicationUser Provider { get; set; } = default!;
     public ApplicationUser Customer { get; set; } = default!;
+    public Invoice? Invoice { get; set; }
 }

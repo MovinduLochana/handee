@@ -87,6 +87,7 @@ public class BookingService : IBookingService
         var booking = await _db.Bookings
             .Include(b => b.Customer)
             .Include(b => b.Provider)
+            .Include(b => b.Invoice)
             .Include(b => b.JobRequest)
                 .ThenInclude(j => j!.ServiceCategory)
             .Include(b => b.ServiceListing)
@@ -108,6 +109,7 @@ public class BookingService : IBookingService
         return _db.Bookings
             .Include(b => b.Customer)
             .Include(b => b.Provider)
+            .Include(b => b.Invoice)
             .Include(b => b.JobRequest)
                 .ThenInclude(j => j!.ServiceCategory)
             .Include(b => b.ServiceListing)
@@ -657,7 +659,7 @@ public class BookingService : IBookingService
             CustomerPhone: b.Customer?.PhoneNumber,
             ProviderName: b.Provider?.FullName,
             ServiceLocation: cleanLocation,
-            Price: b.ServiceListing?.FixedPrice ?? b.JobRequest?.BudgetMax ?? b.JobRequest?.BudgetMin ?? 3500m,
+            Price: b.Invoice?.TotalAmount ?? b.ServiceListing?.FixedPrice ?? b.JobRequest?.BudgetMax ?? b.JobRequest?.BudgetMin ?? 3500m,
             Category: b.JobRequest?.ServiceCategory?.Name ?? b.ServiceListing?.Category?.Name,
             Description: b.JobRequest?.Description ?? b.ServiceListing?.Title ?? b.ServiceListing?.Description,
             Notes: b.Notes,

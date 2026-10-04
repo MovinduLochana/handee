@@ -71,6 +71,7 @@ async def domain_analysis_node(state: AgentWorkflowState) -> Dict[str, Any]:
         description,
         urgency=urgency,
         category_is_ambiguous=classification.is_ambiguous,
+        urgency_multipliers=state.get("urgency_multipliers"),
     )
     classification_data = classification.model_dump()
     scope_data = scope.model_dump()
@@ -126,6 +127,7 @@ async def action_tool_node(state: AgentWorkflowState) -> Dict[str, Any]:
         urgency=urgency,
         budget_min=budget_min,
         budget_max=budget_max,
+        urgency_multipliers=state.get("urgency_multipliers"),
     )
     detailed_price = estimate_price_detailed(price_input)
     price = detailed_price.estimated_price
@@ -318,6 +320,7 @@ async def run_dispatch_workflow(request: JobDispatchRequest) -> AgentWorkflowSta
         "category": request.category,
         "location": request.location,
         "urgency": request.urgency.value,
+        "urgency_multipliers": request.urgency_multipliers,
         "budget_min": b_min,
         "budget_max": b_max,
         "classification": None,

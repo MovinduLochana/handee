@@ -105,3 +105,29 @@ def test_pydantic_schema_validation_contract():
     assert "service_labor" in dumped["breakdown"]
     assert "platform_fee" in dumped["breakdown"]
     assert dumped["currency"] == "LKR"
+
+
+def test_estimate_price_dynamic_urgency_multipliers_from_config():
+    # Simulate custom Admin dashboard configuration: emergency = 1.50 (instead of default 1.40)
+    custom_multipliers = {
+        "low": 0.90,
+        "normal": 1.00,
+        "medium": 1.10,
+        "high": 1.25,
+        "emergency": 1.50,
+    }
+    input_data = PriceEstimationInput(
+        category="Electrical",
+        scope={"complexity": "Medium", "price_multiplier": 1.2},
+        urgency="emergency",
+        urgency_multipliers=custom_multipliers,
+    )
+    result = estimate_price_detailed(input_data)
+
+    # 4000.0 (Electrical benchmark) * 1.2 * 1.50 = 7200.0
+    assert result.urgency_multiplier == 1.50
+    assert result.estimated_price == 7200.0
+    assert result.breakdown.urgency_surcharge == 4000.0 * 1.2 * (1.50 - 1.0)
+    assert result.breakdown.service_labor == round(7200.0 * 0.85, 2)
+    assert result.breakdown.platform_fee == round(7200.0 - result.breakdown.service_labor, 2)
+
