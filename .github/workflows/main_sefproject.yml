@@ -54,6 +54,8 @@ jobs:
           # Seeding
           Seeding__AdminEmail=${{ secrets.ADMIN_MAIL }}
           Seeding__AdminPassword=${{ secrets.ADMIN_PASS}}
+          PayHere__MerchantId=${{ secrets.PAYHERE__MERCHANTID }}
+          PayHere__MerchantSecret=${{ secrets.PAYHERE__MERCHANTSECRET }}
           "@ | Out-File -FilePath src/backend/Handee.Api/publish/.env -Encoding utf8
 
 
