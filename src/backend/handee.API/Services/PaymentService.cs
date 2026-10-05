@@ -156,9 +156,9 @@ public class PaymentService : IPaymentService
             .OrderByDescending(p => p.CreatedAt)
             .ToListAsync();
 
-        var totalEarnings = payouts.Where(p => p.Status == PayoutStatus.Completed).Sum(p => p.NetAmount);
-        var availableBalance = payouts.Where(p => p.Status == PayoutStatus.Pending).Sum(p => p.NetAmount);
-        var pendingPayouts = payouts.Where(p => p.Status == PayoutStatus.Processing).Sum(p => p.NetAmount);
+        var totalEarnings = payouts.Where(p => p.Status == PayoutStatus.Completed || p.Status == PayoutStatus.Withdrawn).Sum(p => p.NetAmount);
+        var availableBalance = payouts.Where(p => p.Status == PayoutStatus.Completed).Sum(p => p.NetAmount);
+        var pendingPayouts = payouts.Where(p => p.Status == PayoutStatus.Pending).Sum(p => p.NetAmount);
         var completedJobsCount = payouts.Count;
 
         var bookingIds = payouts
@@ -172,10 +172,15 @@ public class PaymentService : IPaymentService
             .Select(i => new { i.BookingId, i.Id })
             .ToDictionaryAsync(i => i.BookingId, i => i.Id);
 
-        var recentPayoutDtos = payouts.Take(10).Select(p => MapPayoutToDto(
+        var recentPayoutDtos = payouts
+            .Where(p => p.Status == PayoutStatus.Completed || p.Status == PayoutStatus.Withdrawn)
+            .Take(10)
+            .Select(p => MapPayoutToDto(
             p,
             p.BookingId.HasValue && invoiceMap.TryGetValue(p.BookingId.Value, out var invId) ? invId : null
         )).ToList();
+
+        var bankAccount = await GetProviderBankAccountAsync(providerId);
 
         return new ProviderEarningsSummaryDto(
             providerId,
@@ -183,7 +188,8 @@ public class PaymentService : IPaymentService
             availableBalance,
             pendingPayouts,
             completedJobsCount,
-            recentPayoutDtos
+            recentPayoutDtos,
+            bankAccount
         );
     }
 
@@ -210,8 +216,8 @@ public class PaymentService : IPaymentService
 
         var totalGrossVolume = payouts.Sum(p => p.GrossAmount);
         var totalPlatformFees = payouts.Sum(p => p.PlatformFeeDeducted);
-        var totalPaidOut = payouts.Where(p => p.Status == PayoutStatus.Completed).Sum(p => p.NetAmount);
-        var pendingPayoutCount = payouts.Count(p => p.Status == PayoutStatus.Pending || p.Status == PayoutStatus.Processing);
+        var totalPaidOut = payouts.Where(p => p.Status == PayoutStatus.Completed || p.Status == PayoutStatus.Withdrawn).Sum(p => p.NetAmount);
+        var pendingPayoutCount = payouts.Count(p => p.Status == PayoutStatus.Pending);
 
         var bookingIds = payouts
             .Where(p => p.BookingId.HasValue)
@@ -264,11 +270,21 @@ public class PaymentService : IPaymentService
         return MapPayoutToDto(payout, invoiceId);
     }
 
-    public async Task<List<PayoutResponseDto>> GetProviderPayoutsAsync(Guid providerId)
+    public async Task<List<PayoutResponseDto>> GetProviderPayoutsAsync(Guid providerId, string? status = null)
     {
-        var payouts = await _context.Payouts
+        var query = _context.Payouts
             .Include(p => p.Provider)
-            .Where(p => p.ProviderId == providerId)
+            .Where(p => p.ProviderId == providerId);
+
+        if (!string.IsNullOrWhiteSpace(status) && !status.Equals("all", StringComparison.OrdinalIgnoreCase))
+        {
+            if (Enum.TryParse<PayoutStatus>(status, true, out var parsedStatus))
+            {
+                query = query.Where(p => p.Status == parsedStatus);
+            }
+        }
+
+        var payouts = await query
             .OrderByDescending(p => p.CreatedAt)
             .ToListAsync();
 
@@ -461,6 +477,117 @@ public class PaymentService : IPaymentService
 
         await _context.SaveChangesAsync();
         return true;
+    }
+
+    public async Task<ProviderBankAccountDto?> GetProviderBankAccountAsync(Guid providerId)
+    {
+        var key = $"provider_bank_{providerId}";
+        var setting = await _context.SystemSettings.FirstOrDefaultAsync(s => s.Key == key);
+        if (setting == null || string.IsNullOrWhiteSpace(setting.ValueJson))
+        {
+            return null;
+        }
+
+        try
+        {
+            return System.Text.Json.JsonSerializer.Deserialize<ProviderBankAccountDto>(setting.ValueJson, new System.Text.Json.JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    public async Task<ProviderBankAccountDto> SaveProviderBankAccountAsync(Guid providerId, ProviderBankAccountDto dto)
+    {
+        if (string.IsNullOrWhiteSpace(dto.BankName))
+            throw new ArgumentException("Bank name is required.");
+        if (string.IsNullOrWhiteSpace(dto.AccountNumber))
+            throw new ArgumentException("Account number is required.");
+        if (string.IsNullOrWhiteSpace(dto.AccountHolderName))
+            throw new ArgumentException("Account holder name is required.");
+
+        var key = $"provider_bank_{providerId}";
+        var setting = await _context.SystemSettings.FirstOrDefaultAsync(s => s.Key == key);
+
+        var updatedDto = dto with { UpdatedAt = DateTimeOffset.UtcNow };
+        var json = System.Text.Json.JsonSerializer.Serialize(updatedDto);
+
+        if (setting == null)
+        {
+            setting = new SystemSetting
+            {
+                Key = key,
+                ValueJson = json,
+                Description = $"Bank account details for provider {providerId}",
+                UpdatedAt = DateTimeOffset.UtcNow
+            };
+            _context.SystemSettings.Add(setting);
+        }
+        else
+        {
+            setting.ValueJson = json;
+            setting.UpdatedAt = DateTimeOffset.UtcNow;
+        }
+
+        await _context.SaveChangesAsync();
+        return updatedDto;
+    }
+
+    public async Task<WithdrawalResponseDto> RequestWithdrawalAsync(Guid providerId, decimal? requestedAmount = null)
+    {
+        var bankAccount = await GetProviderBankAccountAsync(providerId);
+        if (bankAccount == null || string.IsNullOrWhiteSpace(bankAccount.AccountNumber))
+        {
+            throw new InvalidOperationException("Please save and verify your bank account details before requesting a withdrawal.");
+        }
+
+        var completedPayouts = await _context.Payouts
+            .Where(p => p.ProviderId == providerId && p.Status == PayoutStatus.Completed)
+            .OrderBy(p => p.CreatedAt)
+            .ToListAsync();
+
+        var totalAvailable = completedPayouts.Sum(p => p.NetAmount);
+        if (totalAvailable <= 0)
+        {
+            throw new InvalidOperationException("You do not have any completed payout balance available to withdraw.");
+        }
+
+        if (requestedAmount.HasValue && requestedAmount.Value > totalAvailable)
+        {
+            throw new InvalidOperationException($"Requested withdrawal amount of LKR {requestedAmount.Value:N2} exceeds available completed balance of LKR {totalAvailable:N2}.");
+        }
+
+        var amountToWithdraw = requestedAmount.HasValue && requestedAmount.Value > 0
+            ? Math.Min(requestedAmount.Value, totalAvailable)
+            : totalAvailable;
+
+        var batchRef = $"WTH-{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString("N")[..6].ToUpper()}";
+        decimal accumulated = 0;
+        int count = 0;
+
+        foreach (var payout in completedPayouts)
+        {
+            if (accumulated >= amountToWithdraw) break;
+
+            payout.Status = PayoutStatus.Withdrawn;
+            payout.PayoutBatchId = batchRef;
+            accumulated += payout.NetAmount;
+            count++;
+        }
+
+        await _context.SaveChangesAsync();
+
+        return new WithdrawalResponseDto(
+            true,
+            $"Withdrawal request of LKR {accumulated:N2} submitted successfully to {bankAccount.BankName} ({bankAccount.AccountNumber}).",
+            accumulated,
+            batchRef,
+            count
+        );
     }
 
     private static PaymentResponseDto MapPaymentToDto(Payment p) =>

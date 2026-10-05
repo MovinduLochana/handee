@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/table";
 
 export default function ProviderPayoutHistory() {
-  const [filter, setFilter] = useState<string>("ALL");
+  const [filter, setFilter] = useState<string>("Withdrawn");
 
   const { data: userProfile } = useQuery({
     queryKey: ["userProfile"],
@@ -86,7 +86,7 @@ export default function ProviderPayoutHistory() {
 
       {/* Filter Tabs */}
       <div className="flex gap-2 border-b border-border pb-3 flex-wrap">
-        {["ALL", "Pending", "Processing", "Completed", "Failed"].map((status) => (
+        {["Completed", "Withdrawn", "Pending", "ALL"].map((status) => (
           <Button
             key={status}
             variant={filter === status ? "default" : "outline"}
@@ -143,7 +143,18 @@ export default function ProviderPayoutHistory() {
                       LKR {p.netAmount.toLocaleString()}
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline" className="text-xs">
+                      <Badge
+                        variant="outline"
+                        className={
+                          p.status === "Completed"
+                            ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs"
+                            : p.status === "Withdrawn"
+                            ? "border-violet-500/30 bg-violet-500/10 text-violet-600 dark:text-violet-400 text-xs"
+                            : p.status === "Pending"
+                            ? "border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 text-xs"
+                            : "text-xs"
+                        }
+                      >
                         {p.status}
                       </Badge>
                     </TableCell>

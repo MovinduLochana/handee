@@ -135,6 +135,8 @@ class ApiEndpoints {
 
   static const String providerPayouts = '/api/payouts/history';
   static const String providerPayoutSummary = '/api/payouts/summary';
+  static const String providerBankAccount = '/api/payouts/bank-account';
+  static const String requestWithdrawal = '/api/payouts/request-withdrawal';
   static String providerPayoutsByProvider(String providerId) => '/api/payouts/provider/$providerId';
   static String providerPayoutSummaryByProvider(String providerId) => '/api/payouts/provider/$providerId/summary';
 }

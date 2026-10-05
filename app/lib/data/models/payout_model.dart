@@ -73,6 +73,7 @@ class ProviderEarningsSummaryModel {
   final double pendingPayouts;
   final int completedJobsCount;
   final List<PayoutModel> recentPayouts;
+  final ProviderBankAccountModel? bankAccount;
 
   ProviderEarningsSummaryModel({
     required this.providerId,
@@ -81,6 +82,7 @@ class ProviderEarningsSummaryModel {
     required this.pendingPayouts,
     required this.completedJobsCount,
     this.recentPayouts = const [],
+    this.bankAccount,
   });
 
   factory ProviderEarningsSummaryModel.fromJson(Map<String, dynamic> json) {
@@ -89,6 +91,8 @@ class ProviderEarningsSummaryModel {
             .toList() ??
         [];
 
+    final bankJson = json['bankAccount'] as Map<String, dynamic>?;
+
     return ProviderEarningsSummaryModel(
       providerId: json['providerId']?.toString() ?? '',
       totalEarnings: (json['totalEarnings'] as num?)?.toDouble() ?? 0.0,
@@ -96,6 +100,7 @@ class ProviderEarningsSummaryModel {
       pendingPayouts: (json['pendingPayouts'] as num?)?.toDouble() ?? 0.0,
       completedJobsCount: (json['completedJobsCount'] as num?)?.toInt() ?? 0,
       recentPayouts: recentList,
+      bankAccount: bankJson != null ? ProviderBankAccountModel.fromJson(bankJson) : null,
     );
   }
 
@@ -107,6 +112,87 @@ class ProviderEarningsSummaryModel {
       'pendingPayouts': pendingPayouts,
       'completedJobsCount': completedJobsCount,
       'recentPayouts': recentPayouts.map((e) => e.toJson()).toList(),
+      if (bankAccount != null) 'bankAccount': bankAccount!.toJson(),
+    };
+  }
+}
+
+class ProviderBankAccountModel {
+  final String bankName;
+  final String branchName;
+  final String? branchCode;
+  final String accountNumber;
+  final String accountHolderName;
+  final DateTime? updatedAt;
+
+  ProviderBankAccountModel({
+    required this.bankName,
+    required this.branchName,
+    this.branchCode,
+    required this.accountNumber,
+    required this.accountHolderName,
+    this.updatedAt,
+  });
+
+  factory ProviderBankAccountModel.fromJson(Map<String, dynamic> json) {
+    return ProviderBankAccountModel(
+      bankName: json['bankName']?.toString() ?? '',
+      branchName: json['branchName']?.toString() ?? '',
+      branchCode: json['branchCode']?.toString(),
+      accountNumber: json['accountNumber']?.toString() ?? '',
+      accountHolderName: json['accountHolderName']?.toString() ?? '',
+      updatedAt: json['updatedAt'] != null
+          ? DateTime.tryParse(json['updatedAt'].toString())
+          : null,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'bankName': bankName,
+      'branchName': branchName,
+      'branchCode': branchCode,
+      'accountNumber': accountNumber,
+      'accountHolderName': accountHolderName,
+      if (updatedAt != null) 'updatedAt': updatedAt!.toIso8601String(),
+    };
+  }
+}
+
+class WithdrawalResponseModel {
+  final String batchReference;
+  final double amountRequested;
+  final int payoutsCount;
+  final String status;
+  final DateTime requestedAt;
+
+  WithdrawalResponseModel({
+    required this.batchReference,
+    required this.amountRequested,
+    required this.payoutsCount,
+    required this.status,
+    required this.requestedAt,
+  });
+
+  factory WithdrawalResponseModel.fromJson(Map<String, dynamic> json) {
+    return WithdrawalResponseModel(
+      batchReference: json['batchReference']?.toString() ?? '',
+      amountRequested: (json['amountRequested'] as num?)?.toDouble() ?? 0.0,
+      payoutsCount: (json['payoutsCount'] as num?)?.toInt() ?? 0,
+      status: json['status']?.toString() ?? 'Processing',
+      requestedAt: json['requestedAt'] != null
+          ? DateTime.tryParse(json['requestedAt'].toString()) ?? DateTime.now()
+          : DateTime.now(),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'batchReference': batchReference,
+      'amountRequested': amountRequested,
+      'payoutsCount': payoutsCount,
+      'status': status,
+      'requestedAt': requestedAt.toIso8601String(),
     };
   }
 }

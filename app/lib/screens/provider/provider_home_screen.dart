@@ -12,6 +12,7 @@ import 'active_job_screen.dart';
 import 'dispatch_queue_screen.dart';
 import 'edit_provider_profile_screen.dart';
 import 'provider_jobs_screen.dart';
+import 'provider_payout_management_screen.dart';
 import 'provider_verification_screen.dart';
 import '../shared/profile_screen.dart';
 import '../../providers/service_directory_provider.dart';
@@ -481,6 +482,14 @@ class _ProviderDashboardTab extends StatelessWidget {
                     value: 'Rs. ${currencyFormat.format(totalEarnings)}',
                     icon: Icons.payments_outlined,
                     color: AppColors.primary,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const ProviderPayoutManagementScreen(),
+                        ),
+                      );
+                    },
                   ),
                   const SizedBox(width: 12),
                   _buildMetricCard(
@@ -498,7 +507,6 @@ class _ProviderDashboardTab extends StatelessWidget {
                   ),
                 ],
               ),
-
               const SizedBox(height: 24),
 
               // Active Job Section
@@ -679,6 +687,61 @@ class _ProviderDashboardTab extends StatelessWidget {
 
               const SizedBox(height: 20),
 
+              // Bank Details & Withdrawal Action Card
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const ProviderPayoutManagementScreen(),
+                      ),
+                    );
+                  },
+                  borderRadius: BorderRadius.circular(14),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: AppColors.primaryUltraLight,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(Icons.account_balance, color: AppColors.primary, size: 20),
+                        ),
+                        const SizedBox(width: 12),
+                        const Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Bank Details & Withdrawals',
+                                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                              ),
+                              Text(
+                                'Direct CEFT bank transfers for cleared earnings',
+                                style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Icon(Icons.arrow_forward_ios, size: 14, color: AppColors.primary),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 20),
+
               // Trade Profile & Qualifications Card
               Container(
                 padding: const EdgeInsets.all(16),
@@ -775,30 +838,38 @@ class _ProviderDashboardTab extends StatelessWidget {
     required String value,
     required IconData icon,
     required Color color,
+    VoidCallback? onTap,
   }) {
     return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
-        decoration: BoxDecoration(
-          color: Colors.white,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.borderLight),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(icon, size: 20, color: color),
-            const SizedBox(height: 8),
-            Text(
-              value,
-              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: AppColors.borderLight),
             ),
-            const SizedBox(height: 2),
-            Text(
-              title,
-              style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(icon, size: 20, color: color),
+                const SizedBox(height: 8),
+                Text(
+                  value,
+                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  title,
+                  style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );

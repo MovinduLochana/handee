@@ -17,6 +17,7 @@ class PaymentProvider extends ChangeNotifier {
   List<PaymentModel> _myPayments = [];
   ProviderEarningsSummaryModel? _providerEarningsSummary;
   List<PayoutModel> _providerPayouts = [];
+  ProviderBankAccountModel? _bankAccount;
 
   bool _isLoading = false;
   bool _isProcessing = false;
@@ -34,6 +35,8 @@ class PaymentProvider extends ChangeNotifier {
   List<PaymentModel> get myPayments => _myPayments;
   ProviderEarningsSummaryModel? get providerEarningsSummary => _providerEarningsSummary;
   List<PayoutModel> get providerPayouts => _providerPayouts;
+  ProviderBankAccountModel? get bankAccount =>
+      _bankAccount ?? _providerEarningsSummary?.bankAccount;
 
   InvoiceModel? getInvoiceForBooking(String bookingId) =>
       _invoicesByBooking[bookingId];
@@ -488,6 +491,88 @@ class PaymentProvider extends ChangeNotifier {
       _errorMessage = e.toString();
       _isLoading = false;
       notifyListeners();
+    }
+  }
+
+  /// Fetches saved bank account details for the authenticated provider.
+  Future<ProviderBankAccountModel?> fetchBankAccount() async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final bank = await paymentRepo.getProviderBankAccount();
+      if (bank != null) {
+        _bankAccount = bank;
+      }
+      _isLoading = false;
+      notifyListeners();
+      return bank;
+    } catch (e) {
+      _errorMessage = e.toString();
+      _isLoading = false;
+      notifyListeners();
+      return null;
+    }
+  }
+
+  /// Saves or updates provider's Sri Lankan bank account details.
+  Future<bool> saveBankAccount({
+    required String bankName,
+    required String branchName,
+    String? branchCode,
+    required String accountNumber,
+    required String accountHolderName,
+  }) async {
+    _isProcessing = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final updatedBank = await paymentRepo.saveProviderBankAccount(
+        bankName: bankName,
+        branchName: branchName,
+        branchCode: branchCode,
+        accountNumber: accountNumber,
+        accountHolderName: accountHolderName,
+      );
+
+      _bankAccount = updatedBank;
+      _isProcessing = false;
+      notifyListeners();
+
+      // Refresh summary to reflect updated bank details
+      await fetchProviderEarningsSummary();
+      return true;
+    } catch (e) {
+      _errorMessage = e is ApiException ? e.message : e.toString();
+      _isProcessing = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Submits a withdrawal request for available balance or specified amount.
+  Future<WithdrawalResponseModel?> requestWithdrawal({double? amount}) async {
+    _isProcessing = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final response = await paymentRepo.requestWithdrawal(amount: amount);
+      _isProcessing = false;
+      notifyListeners();
+
+      // Refresh summary and payout history after withdrawal request
+      await fetchProviderEarningsSummary();
+      await fetchProviderPayouts();
+
+      return response;
+    } catch (e) {
+      _errorMessage = e is ApiException ? e.message : e.toString();
+      _isProcessing = false;
+      notifyListeners();
+      return null;
     }
   }
 }

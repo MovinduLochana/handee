@@ -63,11 +63,33 @@ export interface PayoutDto {
   payoutReference?: string;
 }
 
+export interface ProviderBankAccountDto {
+  bankName: string;
+  branchName: string;
+  branchCode?: string;
+  accountNumber: string;
+  accountHolderName: string;
+  updatedAt?: string;
+}
+
+export interface WithdrawalRequestDto {
+  amount?: number;
+}
+
+export interface WithdrawalResponseDto {
+  success: boolean;
+  message: string;
+  amountRequested: number;
+  batchReference: string;
+  payoutsProcessed: number;
+}
+
 export interface ProviderEarningsSummaryDto {
   totalEarnings: number;
   availableBalance: number;
   pendingPayouts: number;
   completedJobsCount: number;
+  bankAccount?: ProviderBankAccountDto;
 }
 
 export interface AdminPayoutsOverviewDto {
@@ -171,6 +193,21 @@ export const paymentsApi = {
 
   resetInvoice: async (invoiceId: string): Promise<void> => {
     await api.post(`/api/payments/${invoiceId}/reset`);
+  },
+
+  getProviderBankAccount: async (): Promise<ProviderBankAccountDto | null> => {
+    const res = await api.get<ProviderBankAccountDto | null>("/api/payouts/bank-account");
+    return res.data;
+  },
+
+  saveProviderBankAccount: async (dto: ProviderBankAccountDto): Promise<ProviderBankAccountDto> => {
+    const res = await api.post<ProviderBankAccountDto>("/api/payouts/bank-account", dto);
+    return res.data;
+  },
+
+  requestWithdrawal: async (amount?: number): Promise<WithdrawalResponseDto> => {
+    const res = await api.post<WithdrawalResponseDto>("/api/payouts/request-withdrawal", { amount });
+    return res.data;
   },
 };
 

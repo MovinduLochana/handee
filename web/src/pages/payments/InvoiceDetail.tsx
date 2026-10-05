@@ -1,6 +1,7 @@
 import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { paymentsApi } from "../../api/payments";
+import { usersApi } from "../../api/users";
 import { Printer, CreditCard, ArrowLeft, ShieldCheck, CheckCircle } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -48,6 +49,16 @@ export default function InvoiceDetail() {
     queryFn: () => paymentsApi.getPaymentByInvoiceId(invoiceId),
     enabled: !!invoiceId && invoice?.status === "Paid",
   });
+
+  const { data: userProfile } = useQuery({
+    queryKey: ["userProfile"],
+    queryFn: usersApi.getProfile,
+  });
+
+  // Providers should never see a Pay button — they receive money, not pay it
+  const isProvider = userProfile?.roles?.some(
+    (r) => r.toLowerCase() === "provider"
+  ) ?? false;
 
   const handlePrint = () => {
     window.print();
@@ -155,7 +166,7 @@ export default function InvoiceDetail() {
           <Button variant="outline" onClick={handlePrint} className="gap-2">
             <Printer className="h-4 w-4" /> Print Receipt
           </Button>
-          {invoice.status === "Issued" && (
+          {invoice.status === "Issued" && !isProvider && (
             <Link
               to={`/invoices/${invoice.id}/pay`}
               className={buttonVariants({ variant: "default" })}

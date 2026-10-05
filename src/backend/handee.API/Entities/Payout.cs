@@ -5,7 +5,8 @@ public enum PayoutStatus
     Pending,
     Processing,
     Completed,
-    Failed
+    Failed,
+    Withdrawn
 }
 
 public class Payout

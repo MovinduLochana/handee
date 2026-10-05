@@ -20,13 +20,35 @@ public record PayoutResponseDto(
     public string? PayoutReference => PayoutBatchId;
 }
 
+public record ProviderBankAccountDto(
+    string BankName,
+    string BranchName,
+    string? BranchCode,
+    string AccountNumber,
+    string AccountHolderName,
+    DateTimeOffset? UpdatedAt = null
+);
+
+public record WithdrawalRequestDto(
+    decimal? Amount = null
+);
+
+public record WithdrawalResponseDto(
+    bool Success,
+    string Message,
+    decimal AmountRequested,
+    string BatchReference,
+    int PayoutsProcessed
+);
+
 public record ProviderEarningsSummaryDto(
     Guid ProviderId,
     decimal TotalEarnings,
     decimal AvailableBalance,
     decimal PendingPayouts,
     int CompletedJobsCount,
-    List<PayoutResponseDto> RecentPayouts
+    List<PayoutResponseDto> RecentPayouts,
+    ProviderBankAccountDto? BankAccount = null
 );
 
 public record AdminPayoutsOverviewDto(

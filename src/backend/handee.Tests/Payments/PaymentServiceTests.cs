@@ -128,9 +128,9 @@ public class PaymentServiceTests
         var sut = new PaymentService(db);
         var summary = await sut.GetProviderEarningsSummaryAsync(providerId);
 
-        Assert.Equal(3000m, summary.TotalEarnings);
-        Assert.Equal(4000m, summary.AvailableBalance);
-        Assert.Equal(1500m, summary.PendingPayouts);
+        Assert.Equal(4500m, summary.TotalEarnings);
+        Assert.Equal(3000m, summary.AvailableBalance);
+        Assert.Equal(5500m, summary.PendingPayouts);
         Assert.Equal(3, summary.CompletedJobsCount);
     }
 
@@ -261,6 +261,121 @@ public class PaymentServiceTests
         var updatedInvoice = await test.Db.Invoices.FindAsync(test.Invoice.Id);
         Assert.NotNull(updatedInvoice);
         Assert.Equal(InvoiceStatus.Paid, updatedInvoice.Status);
+    }
+
+    [Fact]
+    public async Task Save_And_Get_ProviderBankAccount_Saves_And_Retrieves_Details()
+    {
+        using var db = CreateContext();
+        var providerId = Guid.NewGuid();
+        var sut = new PaymentService(db);
+
+        var dto = new ProviderBankAccountDto(
+            "Commercial Bank of Ceylon",
+            "Kollupitiya",
+            "042",
+            "8123456789",
+            "Nimal Jayawardena"
+        );
+
+        var saved = await sut.SaveProviderBankAccountAsync(providerId, dto);
+        Assert.NotNull(saved);
+        Assert.Equal("Commercial Bank of Ceylon", saved.BankName);
+        Assert.Equal("8123456789", saved.AccountNumber);
+
+        var retrieved = await sut.GetProviderBankAccountAsync(providerId);
+        Assert.NotNull(retrieved);
+        Assert.Equal("Commercial Bank of Ceylon", retrieved.BankName);
+        Assert.Equal("Kollupitiya", retrieved.BranchName);
+        Assert.Equal("8123456789", retrieved.AccountNumber);
+        Assert.Equal("Nimal Jayawardena", retrieved.AccountHolderName);
+    }
+
+    [Fact]
+    public async Task RequestWithdrawalAsync_Moves_Completed_Payouts_To_Withdrawn_With_BatchRef()
+    {
+        using var db = CreateContext();
+        var providerId = Guid.NewGuid();
+        var sut = new PaymentService(db);
+
+        // Save bank account first
+        await sut.SaveProviderBankAccountAsync(providerId, new ProviderBankAccountDto(
+            "Sampath Bank",
+            "Bambalapitiya",
+            "015",
+            "100234567890",
+            "Kamal Perera"
+        ));
+
+        // Add 2 completed payouts
+        db.Payouts.AddRange(
+            new Payout { ProviderId = providerId, GrossAmount = 5000m, PlatformFeeDeducted = 750m, NetAmount = 4250m, Status = PayoutStatus.Completed },
+            new Payout { ProviderId = providerId, GrossAmount = 3000m, PlatformFeeDeducted = 450m, NetAmount = 2550m, Status = PayoutStatus.Completed }
+        );
+        await db.SaveChangesAsync();
+
+        var withdrawal = await sut.RequestWithdrawalAsync(providerId);
+
+        Assert.True(withdrawal.Success);
+        Assert.Equal(6800m, withdrawal.AmountRequested);
+        Assert.StartsWith("WTH-", withdrawal.BatchReference);
+        Assert.Equal(2, withdrawal.PayoutsProcessed);
+
+        var summary = await sut.GetProviderEarningsSummaryAsync(providerId);
+        Assert.Equal(0m, summary.AvailableBalance);
+        Assert.Equal(0m, summary.PendingPayouts);   // Withdrawn payouts are no longer "pending"
+        Assert.Equal(6800m, summary.TotalEarnings); // Withdrawn payouts count toward total earnings
+        Assert.NotNull(summary.BankAccount);
+        Assert.Equal("Sampath Bank", summary.BankAccount.BankName);
+    }
+
+    [Fact]
+    public async Task RequestWithdrawalAsync_Throws_When_Only_Pending_Payouts_Exist()
+    {
+        using var db = CreateContext();
+        var providerId = Guid.NewGuid();
+        var sut = new PaymentService(db);
+
+        await sut.SaveProviderBankAccountAsync(providerId, new ProviderBankAccountDto(
+            "Commercial Bank",
+            "Colombo",
+            "001",
+            "8101234567",
+            "Test Provider"
+        ));
+
+        db.Payouts.Add(new Payout
+        {
+            ProviderId = providerId,
+            GrossAmount = 5000m,
+            PlatformFeeDeducted = 750m,
+            NetAmount = 4250m,
+            Status = PayoutStatus.Pending
+        });
+        await db.SaveChangesAsync();
+
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => sut.RequestWithdrawalAsync(providerId));
+        Assert.Contains("completed payout balance", ex.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task RequestWithdrawalAsync_Throws_When_No_Bank_Account_Saved()
+    {
+        using var db = CreateContext();
+        var providerId = Guid.NewGuid();
+        var sut = new PaymentService(db);
+
+        db.Payouts.Add(new Payout
+        {
+            ProviderId = providerId,
+            GrossAmount = 5000m,
+            PlatformFeeDeducted = 750m,
+            NetAmount = 4250m,
+            Status = PayoutStatus.Completed
+        });
+        await db.SaveChangesAsync();
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => sut.RequestWithdrawalAsync(providerId));
     }
 }
 

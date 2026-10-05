@@ -27,6 +27,9 @@ vi.mock("../../../api/payments", () => ({
     getProviderEarningsSummary: vi.fn(),
     processPayout: vi.fn(),
     getAdminPayoutsOverview: vi.fn(),
+    getProviderBankAccount: vi.fn(),
+    saveProviderBankAccount: vi.fn(),
+    requestWithdrawal: vi.fn(),
   },
 }));
 
@@ -253,9 +256,17 @@ describe("Payments & Invoicing Pages", () => {
       completedJobsCount: 15,
     };
 
-    vi.mocked(usersApi.getProfile).mockResolvedValueOnce(mockUser as any);
-    vi.mocked(paymentsApi.getProviderEarningsSummary).mockResolvedValueOnce(mockSummary);
-    vi.mocked(paymentsApi.getProviderPayouts).mockResolvedValueOnce([
+    const mockBank = {
+      bankName: "Commercial Bank of Ceylon",
+      branchName: "Kollupitiya",
+      accountNumber: "8123456789",
+      accountHolderName: "Sam Provider",
+    };
+
+    vi.mocked(usersApi.getProfile).mockResolvedValue(mockUser as any);
+    vi.mocked(paymentsApi.getProviderEarningsSummary).mockResolvedValue(mockSummary);
+    vi.mocked(paymentsApi.getProviderBankAccount).mockResolvedValue(mockBank);
+    vi.mocked(paymentsApi.getProviderPayouts).mockResolvedValue([
       {
         id: "payout-1",
         providerId: "prov-1",
@@ -279,6 +290,9 @@ describe("Payments & Invoicing Pages", () => {
       expect(screen.getByText("LKR 85,000")).toBeInTheDocument();
       expect(screen.getByText("LKR 25,000")).toBeInTheDocument();
       expect(screen.getByText("85% Net Provider Revenue Share")).toBeInTheDocument();
+      expect(screen.getByText("Commercial Bank of Ceylon")).toBeInTheDocument();
+      expect(screen.getAllByText("Edit Bank Details")[0]).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /withdraw to bank/i })).toBeInTheDocument();
       const invoiceLink = screen.getByText("View Invoice").closest("a");
       expect(invoiceLink).toHaveAttribute("href", "/invoices/inv-test-123");
     });
