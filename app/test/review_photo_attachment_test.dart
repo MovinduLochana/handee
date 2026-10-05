@@ -10,6 +10,7 @@ import 'package:app/widgets/write_review_bottom_sheet.dart';
 
 class StubReviewRepository extends Fake implements ReviewRepository {
   final List<String> uploadedPaths = [];
+  ReviewModel? lastUpdated;
 
   @override
   Future<ReviewModel> addReview({
@@ -27,6 +28,25 @@ class StubReviewRepository extends Fake implements ReviewRepository {
       photoUrls: [],
       createdAt: DateTime.now(),
     );
+  }
+
+  @override
+  Future<ReviewModel> updateReview({
+    required String reviewId,
+    required int rating,
+    String? comment,
+  }) async {
+    lastUpdated = ReviewModel(
+      id: reviewId,
+      providerProfileId: 'prov-test',
+      customerId: 'cust-1',
+      customerName: 'Test Customer',
+      rating: rating,
+      comment: comment,
+      photoUrls: [],
+      createdAt: DateTime.now(),
+    );
+    return lastUpdated!;
   }
 
   @override
@@ -139,5 +159,50 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(InteractiveViewer), findsNothing);
+  });
+
+  testWidgets('WriteReviewBottomSheet in edit mode uploads attached photos sequentially on submit', (tester) async {
+    final stubRepo = StubReviewRepository();
+    final reviewProvider = ReviewProvider(reviewRepo: stubRepo);
+    final fakeFile = XFile('/mock/path/edit-photo.jpg');
+
+    final existingReview = ReviewModel(
+      id: 'rev-existing-123',
+      providerProfileId: 'prov-test',
+      customerId: 'cust-1',
+      customerName: 'Test Customer',
+      rating: 4,
+      comment: 'Initial comment',
+      createdAt: DateTime.now(),
+    );
+
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider<ReviewProvider>.value(value: reviewProvider),
+        ],
+        child: MaterialApp(
+          home: Scaffold(
+            body: WriteReviewBottomSheet(
+              providerId: 'prov-test',
+              providerName: 'Sunil Perera',
+              existingReview: existingReview,
+              initialPhotos: [fakeFile],
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Edit Your Review'), findsOneWidget);
+    expect(find.text('Attach Photos (1/5)'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('submit_review_button')));
+    await tester.pumpAndSettle();
+
+    expect(stubRepo.lastUpdated, isNotNull);
+    expect(stubRepo.lastUpdated!.id, 'rev-existing-123');
+    expect(stubRepo.uploadedPaths, contains('/mock/path/edit-photo.jpg'));
   });
 }

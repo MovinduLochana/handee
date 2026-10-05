@@ -130,10 +130,11 @@ class _WriteReviewBottomSheetState extends State<WriteReviewBottomSheet> {
       final reviewProv = Provider.of<ReviewProvider?>(context, listen: false);
       if (reviewProv != null) {
         if (isEditing) {
-          await reviewProv.updateReview(
+          await reviewProv.updateReviewWithPhotos(
             reviewId: widget.existingReview!.id,
             rating: _rating,
             comment: _commentController.text.trim(),
+            photoPaths: _selectedPhotos.map((p) => p.path).toList(),
           );
         } else {
           await reviewProv.addReviewWithPhotos(

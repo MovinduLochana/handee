@@ -33,7 +33,10 @@ class ReviewModel {
         customerProfilePictureUrl!.startsWith('https://')) {
       return customerProfilePictureUrl;
     }
-    return '${ApiEndpoints.baseUrl}$customerProfilePictureUrl';
+    final cleanPath = customerProfilePictureUrl!.startsWith('/')
+        ? customerProfilePictureUrl!
+        : '/$customerProfilePictureUrl';
+    return '${ApiEndpoints.baseUrl}$cleanPath';
   }
 
   factory ReviewModel.fromJson(Map<String, dynamic> json) {

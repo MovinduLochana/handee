@@ -307,5 +307,58 @@ void main() {
     expect(result.photoUrls, contains('https://example.com/p1.jpg'));
     expect(provider.reviewsFor('prov-600').first.photoUrls, contains('https://example.com/p1.jpg'));
   });
+
+  test('ReviewProvider.updateReviewWithPhotos updates review and uploads attached photos sequentially', () async {
+    final baseReview = ReviewModel(
+      id: 'rev-edit-photo',
+      providerProfileId: 'prov-700',
+      customerId: 'cust-1',
+      customerName: 'Alice',
+      rating: 3,
+      comment: 'Initial',
+      createdAt: DateTime.now(),
+    );
+    final updatedReview = ReviewModel(
+      id: 'rev-edit-photo',
+      providerProfileId: 'prov-700',
+      customerId: 'cust-1',
+      customerName: 'Alice',
+      rating: 5,
+      comment: 'Updated with photos',
+      createdAt: DateTime.now(),
+    );
+    final reviewWithPhoto1 = ReviewModel(
+      id: 'rev-edit-photo',
+      providerProfileId: 'prov-700',
+      customerId: 'cust-1',
+      customerName: 'Alice',
+      rating: 5,
+      comment: 'Updated with photos',
+      photoUrls: ['https://example.com/p2.jpg'],
+      createdAt: DateTime.now(),
+    );
+
+    final fakeRepo = FakeReviewRepository(
+      stubbedReviews: [baseReview],
+      totalCount: 1,
+    );
+    final provider = ReviewProvider(reviewRepo: fakeRepo);
+    await provider.fetchReviews('prov-700');
+
+    fakeRepo.nextUpdateReviewResult = updatedReview;
+    fakeRepo.nextUploadPhotoResult = reviewWithPhoto1;
+
+    final result = await provider.updateReviewWithPhotos(
+      reviewId: 'rev-edit-photo',
+      rating: 5,
+      comment: 'Updated with photos',
+      photoPaths: ['/tmp/p2.jpg'],
+    );
+
+    expect(result.rating, 5);
+    expect(result.comment, 'Updated with photos');
+    expect(result.photoUrls, contains('https://example.com/p2.jpg'));
+    expect(provider.reviewsFor('prov-700').first.photoUrls, contains('https://example.com/p2.jpg'));
+  });
 }
 

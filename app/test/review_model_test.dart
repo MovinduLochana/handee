@@ -55,6 +55,21 @@ void main() {
       expect(model.fullCustomerPhotoUrl, contains('/uploads/profiles/kamal.jpg'));
     });
 
+    test('guarantees single leading slash for relative customer profile picture URL without leading slash', () {
+      final json = realReviewJson();
+      json['customerProfilePictureUrl'] = 'uploads/profiles/kamal.jpg';
+      final model = ReviewModel.fromJson(json);
+      expect(model.fullCustomerPhotoUrl, contains('/uploads/profiles/kamal.jpg'));
+      expect(model.fullCustomerPhotoUrl, isNot(contains('netuploads/profiles/kamal.jpg')));
+    });
+
+    test('preserves absolute URL for customer profile picture', () {
+      final json = realReviewJson();
+      json['customerProfilePictureUrl'] = 'https://cdn.example.com/avatar.jpg';
+      final model = ReviewModel.fromJson(json);
+      expect(model.fullCustomerPhotoUrl, 'https://cdn.example.com/avatar.jpg');
+    });
+
     test('parses PagedReviewResponse correctly', () {
       final pagedJson = {
         'items': [realReviewJson()],

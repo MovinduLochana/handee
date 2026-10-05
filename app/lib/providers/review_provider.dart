@@ -178,6 +178,35 @@ class ReviewProvider extends ChangeNotifier {
     }
   }
 
+  Future<ReviewModel> updateReviewWithPhotos({
+    required String reviewId,
+    required int rating,
+    String? comment,
+    List<String> photoPaths = const [],
+  }) async {
+    final updated = await updateReview(
+      reviewId: reviewId,
+      rating: rating,
+      comment: comment,
+    );
+
+    ReviewModel currentReview = updated;
+    if (photoPaths.isNotEmpty) {
+      for (final path in photoPaths) {
+        try {
+          currentReview = await uploadReviewPhoto(
+            reviewId: currentReview.id,
+            filePath: path,
+          );
+        } catch (err) {
+          debugPrint('Error uploading photo in review update: $err');
+        }
+      }
+    }
+
+    return currentReview;
+  }
+
   Future<void> deleteReview({
     required String providerId,
     required String reviewId,
