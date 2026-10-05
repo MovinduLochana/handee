@@ -268,8 +268,14 @@ public class PaymentService : IPaymentService
         if (invoice.Status == InvoiceStatus.Paid)
             throw new InvalidOperationException("This invoice has already been paid.");
 
-        var merchantId = _configuration?["PayHere:MerchantId"] ?? "1211149";
-        var merchantSecret = _configuration?["PayHere:MerchantSecret"] ?? "4Tuxxxxxxxxxxxxxxxx";
+        var merchantId = _configuration?["PayHere:MerchantId"]
+            ?? Environment.GetEnvironmentVariable("PayHere__MerchantId")
+            ?? "1238506";
+
+        var merchantSecret = _configuration?["PayHere:MerchantSecret"]
+            ?? Environment.GetEnvironmentVariable("PayHere__MerchantSecret")
+            ?? "MTEwNDM5MzQzMTEzMTk4MzUwOTYzOTY5NjgyNjM2MjgyMTk3NjgxNw==";
+
         var isSandbox = bool.Parse(_configuration?["PayHere:IsSandbox"] ?? "true");
         var formattedAmount = invoice.TotalAmount.ToString("0.00", CultureInfo.InvariantCulture);
 
@@ -393,6 +399,31 @@ public class PaymentService : IPaymentService
         await _context.SaveChangesAsync();
 
         return MapPaymentToDto(payment);
+    }
+
+    public async Task<bool> ResetInvoiceForTestingAsync(Guid invoiceId)
+    {
+        var invoice = await _context.Invoices.FirstOrDefaultAsync(i => i.Id == invoiceId);
+        if (invoice == null) return false;
+
+        invoice.Status = InvoiceStatus.Issued;
+        invoice.PaidAt = null;
+        invoice.UpdatedAt = DateTimeOffset.UtcNow;
+
+        var existingPayments = await _context.Payments.Where(p => p.InvoiceId == invoiceId).ToListAsync();
+        if (existingPayments.Count > 0)
+        {
+            _context.Payments.RemoveRange(existingPayments);
+        }
+
+        var existingPayouts = await _context.Payouts.Where(p => p.BookingId == invoice.BookingId).ToListAsync();
+        if (existingPayouts.Count > 0)
+        {
+            _context.Payouts.RemoveRange(existingPayouts);
+        }
+
+        await _context.SaveChangesAsync();
+        return true;
     }
 
     private static PaymentResponseDto MapPaymentToDto(Payment p) =>

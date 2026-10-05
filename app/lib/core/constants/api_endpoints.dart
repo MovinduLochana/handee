@@ -124,8 +124,14 @@ class ApiEndpoints {
   static String paymentById(String id) => '/payments/$id';
   static String paymentByInvoiceId(String invoiceId) => '/payments/invoice/$invoiceId';
   static String payHereParams(String invoiceId) => '/api/payments/$invoiceId/payhere-params';
-  static String payHereCheckoutHtml(String invoiceId) => '$baseUrl/api/payments/$invoiceId/payhere-checkout-html';
+  static String payHereCheckoutHtml(String invoiceId) {
+    if (useLocal) {
+      return 'http://localhost:$defaultPort/api/payments/$invoiceId/payhere-checkout-html';
+    }
+    return '$baseUrl/api/payments/$invoiceId/payhere-checkout-html';
+  }
   static const String payHereConfirm = '/api/payments/payhere-confirm';
+  static String resetInvoice(String invoiceId) => '/api/payments/$invoiceId/reset';
 
   static const String providerPayouts = '/api/payouts/history';
   static const String providerPayoutSummary = '/api/payouts/summary';

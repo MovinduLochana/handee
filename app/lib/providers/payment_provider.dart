@@ -262,7 +262,9 @@ class PaymentProvider extends ChangeNotifier {
 
   /// Initiates PayHere Sandbox checkout for an invoice.
   /// Launches the hosted PayHere checkout HTML form with MD5 signature validation.
-  Future<PaymentModel?> processPayHerePayment({
+  /// Launches the PayHere Sandbox checkout page in an in-app browser or external browser.
+  /// Does NOT confirm the payment automatically, giving the customer time to complete the transaction.
+  Future<bool> launchPayHereCheckout({
     required String invoiceId,
     required String bookingId,
   }) async {
@@ -279,34 +281,51 @@ class PaymentProvider extends ChangeNotifier {
         }
       }
 
-      // Fetch parameters and hash from backend if GUID is valid
-      Map<String, dynamic>? params;
-      if (_isValidGuid(effectiveInvoiceId)) {
-        params = await paymentRepo.getPayHereParams(effectiveInvoiceId);
-        final checkoutUrl = ApiEndpoints.payHereCheckoutHtml(effectiveInvoiceId);
+      final checkoutUrl = ApiEndpoints.payHereCheckoutHtml(effectiveInvoiceId);
+      final uri = Uri.parse(checkoutUrl);
 
-        try {
-          final uri = Uri.parse(checkoutUrl);
-          final launched = await launchUrl(uri, mode: LaunchMode.inAppBrowserView);
-          if (!launched) {
-            await launchUrl(uri, mode: LaunchMode.externalApplication);
-          }
-        } catch (launchErr) {
-          debugPrint('Error launching PayHere URL: $launchErr');
+      final launched = await launchUrl(uri, mode: LaunchMode.inAppBrowserView);
+      if (!launched) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      }
+
+      _isProcessing = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString();
+      _isProcessing = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Verifies and confirms the PayHere payment once the customer has completed checkout.
+  Future<PaymentModel?> confirmPayHerePayment({
+    required String invoiceId,
+    required String bookingId,
+  }) async {
+    _isProcessing = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      String effectiveInvoiceId = invoiceId;
+      if (!_isValidGuid(effectiveInvoiceId)) {
+        final cached = _invoicesByBooking[bookingId];
+        if (cached != null && _isValidGuid(cached.id)) {
+          effectiveInvoiceId = cached.id;
         }
       }
 
-      // Finalize and confirm payment record
       PaymentModel? payment;
       if (_isValidGuid(effectiveInvoiceId)) {
         payment = await paymentRepo.confirmPayHerePayment(
           invoiceId: effectiveInvoiceId,
           paymentId: 'ph_sbx_${DateTime.now().millisecondsSinceEpoch}',
           orderId: effectiveInvoiceId,
-          amount: params != null && params['amount'] != null
-              ? (params['amount'] as num).toDouble()
-              : (_invoicesByBooking[bookingId]?.totalAmount ?? 4500.0),
-          currency: params != null ? params['currency']?.toString() : 'LKR',
+          amount: _invoicesByBooking[bookingId]?.totalAmount ?? 4500.0,
+          currency: 'LKR',
           cardLast4: '4242',
           method: 'PAYHERE_SANDBOX',
         );
@@ -358,6 +377,62 @@ class PaymentProvider extends ChangeNotifier {
       _isProcessing = false;
       notifyListeners();
       return null;
+    }
+  }
+
+  /// Legacy helper for automated tests
+  Future<PaymentModel?> processPayHerePayment({
+    required String invoiceId,
+    required String bookingId,
+  }) async {
+    await launchPayHereCheckout(invoiceId: invoiceId, bookingId: bookingId);
+    return await confirmPayHerePayment(invoiceId: invoiceId, bookingId: bookingId);
+  }
+
+  /// Resets an invoice for testing PayHere sandbox again.
+  Future<bool> resetInvoiceForTesting({
+    required String invoiceId,
+    required String bookingId,
+  }) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      if (_isValidGuid(invoiceId)) {
+        await paymentRepo.resetInvoice(invoiceId);
+      }
+
+      final currentInvoice = _invoicesByBooking[bookingId];
+      if (currentInvoice != null) {
+        _invoicesByBooking[bookingId] = InvoiceModel(
+          id: currentInvoice.id,
+          bookingId: currentInvoice.bookingId,
+          customerId: currentInvoice.customerId,
+          customerName: currentInvoice.customerName,
+          providerId: currentInvoice.providerId,
+          providerName: currentInvoice.providerName,
+          baseAmount: currentInvoice.baseAmount,
+          platformFee: currentInvoice.platformFee,
+          totalAmount: currentInvoice.totalAmount,
+          currency: currentInvoice.currency,
+          status: 'Issued',
+          adminApprovalStatus: currentInvoice.adminApprovalStatus,
+          lineItemsJson: currentInvoice.lineItemsJson,
+          dueAt: currentInvoice.dueAt,
+          paidAt: null,
+          createdAt: currentInvoice.createdAt,
+        );
+      }
+
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString();
+      _isLoading = false;
+      notifyListeners();
+      return false;
     }
   }
 

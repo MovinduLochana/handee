@@ -64,6 +64,7 @@ export default function CheckoutPayment() {
 
   const [payError, setPayError] = useState<string | null>(null);
   const [isPayHereLoading, setIsPayHereLoading] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
 
   const [prevUserId, setPrevUserId] = useState<string | undefined>(userProfile?.id);
 
@@ -112,85 +113,112 @@ export default function CheckoutPayment() {
         currency: data.currency,
       });
     },
+    onError: (err: any) => {
+      setPayError(err?.response?.data?.message || "Payment authorization failed.");
+    },
   });
+
+  const handleResetForTesting = async () => {
+    if (!invoice) return;
+    try {
+      setIsResetting(true);
+      await paymentsApi.resetInvoice(invoice.id);
+      await queryClient.invalidateQueries({ queryKey: ["invoice", id] });
+      await queryClient.invalidateQueries({ queryKey: ["customerInvoices"] });
+      setPaymentSuccess(null);
+      setPayError(null);
+    } catch (e: any) {
+      setPayError(e?.response?.data?.message || "Failed to reset invoice.");
+    } finally {
+      setIsResetting(false);
+    }
+  };
 
   const handlePay = async () => {
     if (!invoice || !activeCard) return;
     setPayError(null);
 
-    // If PayHere brand selected and window.payhere is loaded, open PayHere interactive checkout modal!
-    if (activeCard.brand === "PayHere" && typeof window !== "undefined" && window.payhere) {
+    // If PayHere selected: route through PayHere Gateway exclusively
+    if (activeCard.brand === "PayHere") {
       try {
         setIsPayHereLoading(true);
-        const params = await paymentsApi.getPayHereParams(invoice.id);
 
-        window.payhere.onCompleted = async (orderId: string) => {
-          setIsPayHereLoading(false);
-          try {
-            const confirmed = await paymentsApi.confirmPayHerePayment({
-              invoiceId: invoice.id,
-              orderId: orderId,
-              paymentId: `ph_sbx_${Date.now()}`,
-              amount: params.amount,
-              currency: params.currency,
-              cardLast4: "4242",
-              method: "PAYHERE_SANDBOX",
-            });
-            queryClient.invalidateQueries({ queryKey: ["invoice", id] });
-            queryClient.invalidateQueries({ queryKey: ["customerInvoices"] });
-            setPaymentSuccess({
-              reference: confirmed.transactionReference,
-              amount: confirmed.amount,
-              currency: confirmed.currency,
-            });
-          } catch (e: unknown) {
-            const err = e as { response?: { data?: { message?: string } } };
-            setPayError(err?.response?.data?.message || "Failed to confirm PayHere payment status.");
-          }
-        };
+        if (typeof window !== "undefined" && window.payhere) {
+          const params = await paymentsApi.getPayHereParams(invoice.id);
 
-        window.payhere.onDismissed = () => {
-          setIsPayHereLoading(false);
-        };
+          window.payhere.onCompleted = async (orderId: string) => {
+            setIsPayHereLoading(false);
+            try {
+              const confirmed = await paymentsApi.confirmPayHerePayment({
+                invoiceId: invoice.id,
+                orderId: orderId,
+                paymentId: `ph_sbx_${Date.now()}`,
+                amount: params.amount,
+                currency: params.currency,
+                cardLast4: "4242",
+                method: "PAYHERE_SANDBOX",
+              });
+              queryClient.invalidateQueries({ queryKey: ["invoice", id] });
+              queryClient.invalidateQueries({ queryKey: ["customerInvoices"] });
+              setPaymentSuccess({
+                reference: confirmed.transactionReference,
+                amount: confirmed.amount,
+                currency: confirmed.currency,
+              });
+            } catch (e: unknown) {
+              const err = e as { response?: { data?: { message?: string } } };
+              setPayError(err?.response?.data?.message || "Failed to confirm PayHere payment status.");
+            }
+          };
 
-        window.payhere.onError = (error: string) => {
-          setIsPayHereLoading(false);
-          setPayError(`PayHere Gateway Error: ${error}`);
-        };
+          window.payhere.onDismissed = () => {
+            setIsPayHereLoading(false);
+          };
 
-        window.payhere.startPayment({
-          sandbox: params.sandbox,
-          merchant_id: params.merchantId,
-          return_url: params.returnUrl,
-          cancel_url: params.cancelUrl,
-          notify_url: params.notifyUrl,
-          order_id: params.orderId,
-          items: params.items,
-          amount: params.amountFormatted,
-          currency: params.currency,
-          hash: params.hash,
-          first_name: params.firstName || userProfile?.fullName?.split(" ")[0] || "Customer",
-          last_name: params.lastName || "User",
-          email: params.email || userProfile?.email || "customer@handee.lk",
-          phone: params.phone || "0771234567",
-          address: params.address || "Colombo",
-          city: params.city || "Colombo",
-          country: params.country || "Sri Lanka",
-        });
+          window.payhere.onError = (errorMsg: string) => {
+            setIsPayHereLoading(false);
+            setPayError(`PayHere Gateway Error: ${errorMsg}`);
+          };
+
+          window.payhere.startPayment({
+            sandbox: params.sandbox,
+            merchant_id: params.merchantId,
+            return_url: params.returnUrl,
+            cancel_url: params.cancelUrl,
+            notify_url: params.notifyUrl,
+            order_id: params.orderId,
+            items: params.items,
+            amount: params.amountFormatted,
+            currency: params.currency,
+            hash: params.hash,
+            first_name: params.firstName || userProfile?.fullName?.split(" ")[0] || "Customer",
+            last_name: params.lastName || "User",
+            email: params.email || userProfile?.email || "customer@handee.lk",
+            phone: params.phone || "0771234567",
+            address: params.address || "Colombo",
+            city: params.city || "Colombo",
+            country: params.country || "Sri Lanka",
+          });
+          return;
+        }
+
+        // If window.payhere is not available, launch full-screen PayHere checkout directly
+        window.location.href = `/api/payments/${invoice.id}/payhere-checkout-html`;
         return;
-      } catch (err) {
+      } catch (err: any) {
         setIsPayHereLoading(false);
-        console.warn("PayHere modal launch failed, falling back to simulated sandbox:", err);
+        setPayError(err?.response?.data?.message || "Failed to initiate PayHere Sandbox checkout.");
+        return;
       }
     }
 
-    // Default simulated gateway or fallback
+    // Default simulated card (Stripe test card)
     payMutation.mutate({
       invoiceId: invoice.id,
       paymentMethod: "card",
       paymentToken: activeCard.token || `tok_${activeCard.brand.toLowerCase()}_sandbox`,
       last4: activeCard.last4,
-      gatewayProvider: activeCard.brand === "PayHere" ? "PayHere-Sandbox" : "Stripe-Sandbox",
+      gatewayProvider: "Stripe-Sandbox",
     });
   };
 
@@ -248,11 +276,21 @@ export default function CheckoutPayment() {
             <CheckCircle2 className="h-12 w-12 text-emerald-500 mx-auto" />
             <h2 className="text-xl font-bold text-foreground">Invoice Already Settled</h2>
             <p className="text-muted-foreground text-sm">
-              This invoice has already been paid successfully.
+              This invoice has already been paid successfully. You can view the receipt or reset it to test the PayHere Sandbox gateway.
             </p>
-            <Link to={`/invoices/${invoice.id}`} className={buttonVariants({ variant: "default" })}>
-              View Receipt
-            </Link>
+            <div className="flex flex-col gap-2 pt-2">
+              <Link to={`/invoices/${invoice.id}`} className={buttonVariants({ variant: "default" })}>
+                View Receipt
+              </Link>
+              <Button
+                variant="outline"
+                onClick={handleResetForTesting}
+                disabled={isResetting}
+                className="text-xs"
+              >
+                {isResetting ? "Resetting Invoice..." : "Reset to Unpaid & Test PayHere Gateway"}
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -500,34 +538,60 @@ export default function CheckoutPayment() {
                 )}
               </div>
 
-              {/* Card Simulator Display */}
-              <div className="bg-gradient-to-br from-slate-900 to-slate-950 text-white rounded-lg p-5 h-44 flex flex-col justify-between shadow-lg relative overflow-hidden border border-slate-800">
-                <div className="flex justify-between items-center">
-                  <div className="w-10 h-7 rounded bg-gradient-to-tr from-amber-400 to-amber-600" />
-                  <span className="font-bold tracking-wider text-sm">
-                    {activeCard?.brand || "Visa"}
-                  </span>
-                </div>
-                <div className="font-mono text-lg tracking-widest">
-                  {`•••• •••• •••• ${activeCard?.last4 || "4242"}`}
-                </div>
-                <div className="flex justify-between text-xs tracking-wider uppercase opacity-80">
-                  <div>
-                    <div className="text-[9px] opacity-60">Card Holder</div>
-                    <div className="font-semibold">
-                      {activeCard?.holderName || userProfile?.fullName || "TEST CUSTOMER"}
+              {/* Card / Gateway Display */}
+              {activeCard?.brand === "PayHere" ? (
+                <div className="bg-gradient-to-br from-sky-900 via-sky-950 to-slate-950 text-white rounded-lg p-5 h-44 flex flex-col justify-between shadow-lg relative overflow-hidden border border-sky-700/60">
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                      <span className="bg-amber-400 text-slate-950 text-[11px] font-black px-2 py-0.5 rounded tracking-wider">
+                        PAYHERE
+                      </span>
+                      <span className="text-xs text-sky-200 font-semibold">Sandbox Payment Gateway</span>
                     </div>
+                    <Badge variant="outline" className="text-emerald-400 border-emerald-500/40 text-[10px] bg-emerald-950/40">
+                      MD5 Checksum Verified
+                    </Badge>
                   </div>
                   <div>
-                    <div className="text-[9px] opacity-60">Expires</div>
-                    <div className="font-semibold">
-                      {activeCard
-                        ? `${String(activeCard.expiryMonth).padStart(2, "0")}/${String(activeCard.expiryYear).slice(-2)}`
-                        : "12/28"}
+                    <div className="text-[11px] uppercase tracking-wider text-sky-300 font-medium">Sri Lanka National Gateway</div>
+                    <div className="text-base font-bold text-white mt-0.5">
+                      Direct Sandbox Checkout
+                    </div>
+                  </div>
+                  <div className="flex justify-between text-[11px] opacity-80 border-t border-sky-800/60 pt-2 font-mono">
+                    <span>Currency: LKR</span>
+                    <span>Cards • Wallets • Online Banking</span>
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-gradient-to-br from-slate-900 to-slate-950 text-white rounded-lg p-5 h-44 flex flex-col justify-between shadow-lg relative overflow-hidden border border-slate-800">
+                  <div className="flex justify-between items-center">
+                    <div className="w-10 h-7 rounded bg-gradient-to-tr from-amber-400 to-amber-600" />
+                    <span className="font-bold tracking-wider text-sm">
+                      {activeCard?.brand || "Visa"}
+                    </span>
+                  </div>
+                  <div className="font-mono text-lg tracking-widest">
+                    {`•••• •••• •••• ${activeCard?.last4 || "4242"}`}
+                  </div>
+                  <div className="flex justify-between text-xs tracking-wider uppercase opacity-80">
+                    <div>
+                      <div className="text-[9px] opacity-60">Card Holder</div>
+                      <div className="font-semibold">
+                        {activeCard?.holderName || userProfile?.fullName || "TEST CUSTOMER"}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-[9px] opacity-60">Expires</div>
+                      <div className="font-semibold">
+                        {activeCard
+                          ? `${String(activeCard.expiryMonth).padStart(2, "0")}/${String(activeCard.expiryYear).slice(-2)}`
+                          : "12/28"}
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
+              )}
 
               {payError && (
                 <Alert variant="destructive">
@@ -543,7 +607,7 @@ export default function CheckoutPayment() {
                     PayHere Sandbox Gateway Active
                   </div>
                   <p className="opacity-90">
-                    Clicking Authorize will open the PayHere payment modal with MD5 security checksum validation.
+                    Clicking the button below opens the PayHere secure payment modal with official LKR checksum validation.
                   </p>
                   <a
                     href={`/api/payments/${invoice.id}/payhere-checkout-html`}
@@ -568,7 +632,9 @@ export default function CheckoutPayment() {
                   ? "Opening PayHere Sandbox..."
                   : payMutation.isPending
                     ? "Processing Payment..."
-                    : `Authorize & Pay LKR ${invoice.totalAmount.toLocaleString()}`}
+                    : activeCard?.brand === "PayHere"
+                      ? `Pay via PayHere Gateway (LKR ${invoice.totalAmount.toLocaleString()})`
+                      : `Authorize & Pay LKR ${invoice.totalAmount.toLocaleString()}`}
               </Button>
             </CardContent>
           </Card>

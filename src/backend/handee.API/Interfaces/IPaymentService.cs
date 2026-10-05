@@ -15,5 +15,6 @@ public interface IPaymentService
     Task<PayoutResponseDto?> ProcessPayoutAsync(Guid payoutId);
     Task<PayHereCheckoutParamsDto> GetPayHereParamsAsync(Guid invoiceId, Guid? customerId = null);
     Task<PaymentResponseDto> ConfirmPayHerePaymentAsync(Guid invoiceId, string? paymentId, decimal? amount, string? currency, string? cardNo, string? method);
+    Task<bool> ResetInvoiceForTestingAsync(Guid invoiceId);
 }
 

@@ -138,5 +138,16 @@ class PaymentRepository {
     }
     return null;
   }
+
+  /// Resets an invoice to Unpaid/Issued for sandbox re-testing.
+  Future<bool> resetInvoice(String invoiceId) async {
+    try {
+      await apiClient.post(ApiEndpoints.resetInvoice(invoiceId));
+      return true;
+    } catch (e) {
+      debugPrint('Error resetting invoice: $e');
+      return false;
+    }
+  }
 }
 

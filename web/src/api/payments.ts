@@ -167,6 +167,10 @@ export const paymentsApi = {
     const res = await api.post<PaymentDto>("/api/payments/payhere-confirm", dto);
     return res.data;
   },
+
+  resetInvoice: async (invoiceId: string): Promise<void> => {
+    await api.post(`/api/payments/${invoiceId}/reset`);
+  },
 };
 
 export interface PayHereCheckoutParamsDto {

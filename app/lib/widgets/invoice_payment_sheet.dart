@@ -39,13 +39,24 @@ class InvoicePaymentSheet extends StatefulWidget {
 
 class _InvoicePaymentSheetState extends State<InvoicePaymentSheet> {
   String _selectedMethod = 'payhere'; // 'payhere' or 'card'
-  String get _selectedGateway => _selectedMethod == 'payhere' ? 'PayHere Sandbox' : 'Stripe Sandbox';
+  String get _selectedGateway =>
+      _selectedMethod == 'payhere' ? 'PayHere Sandbox' : 'Stripe Sandbox';
+
   bool _isProcessing = false;
+  bool _isResetting = false;
+  bool _isWaitingForPayHere = false;
   bool _isSuccess = false;
+  late bool _isAlreadyPaid;
   String? _transactionRef;
   String? _errorMessage;
 
   final currencyFormat = NumberFormat('#,##0.00', 'en_US');
+
+  @override
+  void initState() {
+    super.initState();
+    _isAlreadyPaid = widget.invoice.isPaid;
+  }
 
   Future<void> _handlePayment() async {
     setState(() {
@@ -54,23 +65,75 @@ class _InvoicePaymentSheetState extends State<InvoicePaymentSheet> {
     });
 
     final provider = context.read<PaymentProvider>();
-    final payment = _selectedMethod == 'payhere'
-        ? await provider.processPayHerePayment(
-            invoiceId: widget.invoice.id,
-            bookingId: widget.invoice.bookingId,
-          )
-        : await provider.processSandboxPayment(
-            invoiceId: widget.invoice.id,
-            bookingId: widget.invoice.bookingId,
-            gatewayProvider: 'Stripe Sandbox',
-            cardLast4: '4242',
-          );
+
+    if (_selectedMethod == 'payhere') {
+      // Launch PayHere Sandbox checkout in browser.
+      // Do NOT confirm immediately! Transition to waiting state so user can enter credentials in PayHere.
+      final launched = await provider.launchPayHereCheckout(
+        invoiceId: widget.invoice.id,
+        bookingId: widget.invoice.bookingId,
+      );
+
+      if (!mounted) return;
+
+      if (launched) {
+        setState(() {
+          _isProcessing = false;
+          _isWaitingForPayHere = true;
+        });
+      } else {
+        setState(() {
+          _isProcessing = false;
+          _errorMessage =
+              provider.errorMessage ?? 'Could not open PayHere checkout. Please try again.';
+        });
+      }
+    } else {
+      // Instant card mock simulation
+      final payment = await provider.processSandboxPayment(
+        invoiceId: widget.invoice.id,
+        bookingId: widget.invoice.bookingId,
+        gatewayProvider: 'Stripe Sandbox',
+        cardLast4: '4242',
+      );
+
+      if (!mounted) return;
+
+      if (payment != null && payment.isSucceeded) {
+        setState(() {
+          _isProcessing = false;
+          _isSuccess = true;
+          _transactionRef = payment.transactionReference;
+        });
+        widget.onPaymentSuccess?.call();
+      } else {
+        setState(() {
+          _isProcessing = false;
+          _errorMessage =
+              provider.errorMessage ?? 'Payment failed. Please try again.';
+        });
+      }
+    }
+  }
+
+  Future<void> _handleConfirmPayHere() async {
+    setState(() {
+      _isProcessing = true;
+      _errorMessage = null;
+    });
+
+    final provider = context.read<PaymentProvider>();
+    final payment = await provider.confirmPayHerePayment(
+      invoiceId: widget.invoice.id,
+      bookingId: widget.invoice.bookingId,
+    );
 
     if (!mounted) return;
 
     if (payment != null && payment.isSucceeded) {
       setState(() {
         _isProcessing = false;
+        _isWaitingForPayHere = false;
         _isSuccess = true;
         _transactionRef = payment.transactionReference;
       });
@@ -78,7 +141,47 @@ class _InvoicePaymentSheetState extends State<InvoicePaymentSheet> {
     } else {
       setState(() {
         _isProcessing = false;
-        _errorMessage = provider.errorMessage ?? 'Payment failed. Please try again.';
+        _errorMessage = provider.errorMessage ??
+            'Could not verify PayHere payment. Please make sure payment is completed.';
+      });
+    }
+  }
+
+  Future<void> _handleResetInvoice() async {
+    setState(() {
+      _isResetting = true;
+      _errorMessage = null;
+    });
+
+    final provider = context.read<PaymentProvider>();
+    final success = await provider.resetInvoiceForTesting(
+      invoiceId: widget.invoice.id,
+      bookingId: widget.invoice.bookingId,
+    );
+
+    if (!mounted) return;
+
+    setState(() {
+      _isResetting = false;
+    });
+
+    if (success) {
+      setState(() {
+        _isAlreadyPaid = false;
+        _isWaitingForPayHere = false;
+        _isSuccess = false;
+        _errorMessage = null;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+              'Invoice reset to Unpaid. You can now test the PayHere gateway again!'),
+          backgroundColor: AppColors.success,
+        ),
+      );
+    } else {
+      setState(() {
+        _errorMessage = provider.errorMessage ?? 'Failed to reset invoice.';
       });
     }
   }
@@ -116,12 +219,197 @@ class _InvoicePaymentSheetState extends State<InvoicePaymentSheet> {
 
             if (_isSuccess) ...[
               _buildSuccessView(),
+            ] else if (_isAlreadyPaid) ...[
+              _buildAlreadyPaidView(),
+            ] else if (_isWaitingForPayHere) ...[
+              _buildWaitingForPayHereView(),
             ] else ...[
               _buildCheckoutView(),
             ],
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildAlreadyPaidView() {
+    return Column(
+      children: [
+        const SizedBox(height: 12),
+        Container(
+          width: 64,
+          height: 64,
+          decoration: const BoxDecoration(
+            color: AppColors.successLight,
+            shape: BoxShape.circle,
+          ),
+          child: const Icon(Icons.check_circle_outline,
+              color: AppColors.success, size: 36),
+        ),
+        const SizedBox(height: 16),
+        const Text(
+          'Invoice Already Settled',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w800,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          'Invoice #${widget.invoice.id.length >= 8 ? widget.invoice.id.substring(0, 8).toUpperCase() : widget.invoice.id} is already marked as Paid.',
+          style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 20),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppColors.background,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.borderLight),
+          ),
+          child: Column(
+            children: [
+              _buildReceiptRow('Invoice Status', 'Paid (Settled)'),
+              const Divider(color: AppColors.borderLight, height: 16),
+              _buildReceiptRow('Total Amount',
+                  'Rs. ${currencyFormat.format(widget.invoice.totalAmount)}'),
+              const Divider(color: AppColors.borderLight, height: 16),
+              _buildReceiptRow('Environment', 'Sandbox / Testing'),
+            ],
+          ),
+        ),
+        const SizedBox(height: 20),
+        if (_errorMessage != null) ...[
+          Container(
+            padding: const EdgeInsets.all(10),
+            margin: const EdgeInsets.only(bottom: 12),
+            decoration: BoxDecoration(
+              color: AppColors.errorLight,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              _errorMessage!,
+              style: const TextStyle(color: AppColors.error, fontSize: 12),
+            ),
+          ),
+        ],
+        CustomButton(
+          text: 'Reset to Unpaid & Retest Gateway',
+          icon: Icons.refresh,
+          isLoading: _isResetting,
+          onPressed: _handleResetInvoice,
+        ),
+        const SizedBox(height: 10),
+        Center(
+          child: TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close',
+                style: TextStyle(color: AppColors.textSecondary)),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildWaitingForPayHereView() {
+    return Column(
+      children: [
+        const SizedBox(height: 12),
+        Container(
+          width: 64,
+          height: 64,
+          decoration: BoxDecoration(
+            color: AppColors.primaryUltraLight,
+            shape: BoxShape.circle,
+            border: Border.all(color: AppColors.primaryLight, width: 2),
+          ),
+          child: const Icon(Icons.open_in_browser,
+              color: AppColors.primary, size: 34),
+        ),
+        const SizedBox(height: 16),
+        const Text(
+          'PayHere Gateway Opened',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w800,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          'The PayHere sandbox checkout has opened in your browser.\nComplete payment with sandbox credentials, then return here to finalize.',
+          style: TextStyle(
+              fontSize: 13, color: AppColors.textSecondary, height: 1.4),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 20),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppColors.background,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.borderLight),
+          ),
+          child: Column(
+            children: [
+              _buildReceiptRow('Gateway', 'PayHere Sandbox (Sri Lanka)'),
+              const Divider(color: AppColors.borderLight, height: 16),
+              _buildReceiptRow('Amount Due',
+                  'Rs. ${currencyFormat.format(widget.invoice.totalAmount)}'),
+              const Divider(color: AppColors.borderLight, height: 16),
+              _buildReceiptRow('Status', 'Awaiting Customer Completion'),
+            ],
+          ),
+        ),
+        const SizedBox(height: 20),
+        if (_errorMessage != null) ...[
+          Container(
+            padding: const EdgeInsets.all(10),
+            margin: const EdgeInsets.only(bottom: 12),
+            decoration: BoxDecoration(
+              color: AppColors.errorLight,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              _errorMessage!,
+              style: const TextStyle(color: AppColors.error, fontSize: 12),
+            ),
+          ),
+        ],
+        CustomButton(
+          text: 'I Have Completed Payment',
+          icon: Icons.verified_user,
+          isLoading: _isProcessing,
+          onPressed: _handleConfirmPayHere,
+        ),
+        const SizedBox(height: 12),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            TextButton.icon(
+              onPressed: () {
+                final provider = context.read<PaymentProvider>();
+                provider.launchPayHereCheckout(
+                  invoiceId: widget.invoice.id,
+                  bookingId: widget.invoice.bookingId,
+                );
+              },
+              icon: const Icon(Icons.refresh, size: 16, color: AppColors.primary),
+              label: const Text('Re-open Gateway',
+                  style: TextStyle(color: AppColors.primary, fontSize: 13)),
+            ),
+            const SizedBox(width: 16),
+            TextButton(
+              onPressed: () => setState(() => _isWaitingForPayHere = false),
+              child: const Text('Cancel / Change Method',
+                  style: TextStyle(
+                      color: AppColors.textSecondary, fontSize: 13)),
+            ),
+          ],
+        ),
+      ],
     );
   }
 
@@ -145,7 +433,7 @@ class _InvoicePaymentSheetState extends State<InvoicePaymentSheet> {
         ),
         const SizedBox(height: 6),
         Text(
-          'Invoice #${widget.invoice.id.substring(0, 8).toUpperCase()}',
+          'Invoice #${widget.invoice.id.length >= 8 ? widget.invoice.id.substring(0, 8).toUpperCase() : widget.invoice.id}',
           style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
         ),
         const SizedBox(height: 16),
@@ -165,9 +453,11 @@ class _InvoicePaymentSheetState extends State<InvoicePaymentSheet> {
                     item.item.toLowerCase().contains('priority') ||
                     item.item.toLowerCase().contains('surcharge');
                 final isFee = item.type?.toLowerCase() == 'fee';
-                String subtitle = 'Disbursed directly to tradesperson upon completion';
+                String subtitle =
+                    'Disbursed directly to tradesperson upon completion';
                 if (isUrgency) {
-                  subtitle = 'Priority dispatch rush compensation for immediate service';
+                  subtitle =
+                      'Priority dispatch rush compensation for immediate service';
                 } else if (isFee) {
                   subtitle = 'Covers background vetting, guarantee & support';
                 }
@@ -209,7 +499,7 @@ class _InvoicePaymentSheetState extends State<InvoicePaymentSheet> {
 
         const SizedBox(height: 20),
 
-        // Sandbox Payment Gateway Selector
+        // Payment Method Selector
         const Text(
           'Payment Method',
           style: TextStyle(
@@ -220,17 +510,21 @@ class _InvoicePaymentSheetState extends State<InvoicePaymentSheet> {
         ),
         const SizedBox(height: 10),
 
-        // PayHere Gateway Option
+        // PayHere Gateway Option (Default)
         InkWell(
           onTap: () => setState(() => _selectedMethod = 'payhere'),
           borderRadius: BorderRadius.circular(14),
           child: Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: _selectedMethod == 'payhere' ? AppColors.primaryUltraLight : Colors.white,
+              color: _selectedMethod == 'payhere'
+                  ? AppColors.primaryUltraLight
+                  : Colors.white,
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
-                color: _selectedMethod == 'payhere' ? AppColors.primary : AppColors.border,
+                color: _selectedMethod == 'payhere'
+                    ? AppColors.primary
+                    : AppColors.border,
                 width: _selectedMethod == 'payhere' ? 1.5 : 1.0,
               ),
             ),
@@ -239,10 +533,13 @@ class _InvoicePaymentSheetState extends State<InvoicePaymentSheet> {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: _selectedMethod == 'payhere' ? Colors.white : AppColors.background,
+                    color: _selectedMethod == 'payhere'
+                        ? Colors.white
+                        : AppColors.background,
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Icon(Icons.account_balance_wallet, color: AppColors.primary, size: 24),
+                  child: const Icon(Icons.account_balance_wallet,
+                      color: AppColors.primary, size: 24),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -253,18 +550,23 @@ class _InvoicePaymentSheetState extends State<InvoicePaymentSheet> {
                         children: [
                           const Text(
                             'PayHere Sandbox',
-                            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                            style: TextStyle(
+                                fontWeight: FontWeight.w700, fontSize: 14),
                           ),
                           const SizedBox(width: 6),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(
                               color: AppColors.primary,
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: const Text(
-                              'VERIFIED',
-                              style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w800),
+                              'GATEWAY',
+                              style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w800),
                             ),
                           ),
                         ],
@@ -272,14 +574,19 @@ class _InvoicePaymentSheetState extends State<InvoicePaymentSheet> {
                       const SizedBox(height: 2),
                       const Text(
                         'Real LKR Checkout • MD5 Signature Verified',
-                        style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                        style: TextStyle(
+                            fontSize: 11, color: AppColors.textSecondary),
                       ),
                     ],
                   ),
                 ),
                 Icon(
-                  _selectedMethod == 'payhere' ? Icons.check_circle : Icons.radio_button_unchecked,
-                  color: _selectedMethod == 'payhere' ? AppColors.primary : AppColors.textMuted,
+                  _selectedMethod == 'payhere'
+                      ? Icons.check_circle
+                      : Icons.radio_button_unchecked,
+                  color: _selectedMethod == 'payhere'
+                      ? AppColors.primary
+                      : AppColors.textMuted,
                   size: 20,
                 ),
               ],
@@ -296,10 +603,14 @@ class _InvoicePaymentSheetState extends State<InvoicePaymentSheet> {
           child: Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: _selectedMethod == 'card' ? AppColors.primaryUltraLight : Colors.white,
+              color: _selectedMethod == 'card'
+                  ? AppColors.primaryUltraLight
+                  : Colors.white,
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
-                color: _selectedMethod == 'card' ? AppColors.primary : AppColors.border,
+                color: _selectedMethod == 'card'
+                    ? AppColors.primary
+                    : AppColors.border,
                 width: _selectedMethod == 'card' ? 1.5 : 1.0,
               ),
             ),
@@ -308,10 +619,13 @@ class _InvoicePaymentSheetState extends State<InvoicePaymentSheet> {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: _selectedMethod == 'card' ? Colors.white : AppColors.background,
+                    color: _selectedMethod == 'card'
+                        ? Colors.white
+                        : AppColors.background,
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Icon(Icons.credit_card, color: AppColors.textSecondary, size: 24),
+                  child: const Icon(Icons.credit_card,
+                      color: AppColors.textSecondary, size: 24),
                 ),
                 const SizedBox(width: 12),
                 const Expanded(
@@ -319,20 +633,26 @@ class _InvoicePaymentSheetState extends State<InvoicePaymentSheet> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Visa Test Card',
-                        style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                        'Instant Card Simulator',
+                        style: TextStyle(
+                            fontWeight: FontWeight.w700, fontSize: 14),
                       ),
                       SizedBox(height: 2),
                       Text(
-                        '•••• •••• •••• 4242 (Instant Sim)',
-                        style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                        '•••• 4242 (Direct mock approval)',
+                        style: TextStyle(
+                            fontSize: 11, color: AppColors.textSecondary),
                       ),
                     ],
                   ),
                 ),
                 Icon(
-                  _selectedMethod == 'card' ? Icons.check_circle : Icons.radio_button_unchecked,
-                  color: _selectedMethod == 'card' ? AppColors.primary : AppColors.textMuted,
+                  _selectedMethod == 'card'
+                      ? Icons.check_circle
+                      : Icons.radio_button_unchecked,
+                  color: _selectedMethod == 'card'
+                      ? AppColors.primary
+                      : AppColors.textMuted,
                   size: 20,
                 ),
               ],
@@ -343,21 +663,52 @@ class _InvoicePaymentSheetState extends State<InvoicePaymentSheet> {
         if (_errorMessage != null) ...[
           const SizedBox(height: 12),
           Container(
-            padding: const EdgeInsets.all(10),
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: AppColors.errorLight,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(10),
             ),
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(Icons.error_outline, color: AppColors.error, size: 16),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    _errorMessage!,
-                    style: const TextStyle(color: AppColors.error, fontSize: 12),
-                  ),
+                Row(
+                  children: [
+                    const Icon(Icons.error_outline,
+                        color: AppColors.error, size: 16),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        _errorMessage!,
+                        style: const TextStyle(
+                            color: AppColors.error,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ],
                 ),
+                if (_errorMessage!.toLowerCase().contains('already been paid') ||
+                    _errorMessage!.toLowerCase().contains('already paid')) ...[
+                  const SizedBox(height: 8),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton.icon(
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 4),
+                        backgroundColor: Colors.white,
+                      ),
+                      onPressed: _handleResetInvoice,
+                      icon: const Icon(Icons.refresh,
+                          size: 14, color: AppColors.error),
+                      label: const Text('Reset Invoice to Unpaid',
+                          style: TextStyle(
+                              fontSize: 12,
+                              color: AppColors.error,
+                              fontWeight: FontWeight.w700)),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -368,9 +719,11 @@ class _InvoicePaymentSheetState extends State<InvoicePaymentSheet> {
         // Action Button
         CustomButton(
           text: _selectedMethod == 'payhere'
-              ? 'Pay via PayHere (Rs. ${currencyFormat.format(widget.invoice.totalAmount)})'
-              : 'Authorize Payment (Rs. ${currencyFormat.format(widget.invoice.totalAmount)})',
-          icon: Icons.lock,
+              ? 'Proceed to PayHere Gateway (Rs. ${currencyFormat.format(widget.invoice.totalAmount)})'
+              : 'Authorize Mock Payment (Rs. ${currencyFormat.format(widget.invoice.totalAmount)})',
+          icon: _selectedMethod == 'payhere'
+              ? Icons.open_in_browser
+              : Icons.lock,
           isLoading: _isProcessing,
           onPressed: _handlePayment,
         ),
@@ -379,7 +732,7 @@ class _InvoicePaymentSheetState extends State<InvoicePaymentSheet> {
           child: Text(
             _selectedMethod == 'payhere'
                 ? 'Secured by PayHere Sandbox (Sri Lanka)'
-                : 'Secured by Stripe Sandbox',
+                : 'Simulated Sandbox Provider',
             style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
           ),
         ),
@@ -411,7 +764,7 @@ class _InvoicePaymentSheetState extends State<InvoicePaymentSheet> {
         ),
         const SizedBox(height: 6),
         Text(
-          'Invoice #${widget.invoice.id.substring(0, 8).toUpperCase()} has been settled in full.',
+          'Invoice #${widget.invoice.id.length >= 8 ? widget.invoice.id.substring(0, 8).toUpperCase() : widget.invoice.id} has been settled in full.',
           style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
           textAlign: TextAlign.center,
         ),
@@ -426,9 +779,11 @@ class _InvoicePaymentSheetState extends State<InvoicePaymentSheet> {
           ),
           child: Column(
             children: [
-              _buildReceiptRow('Transaction Ref', _transactionRef ?? 'ch_sbx_mock'),
+              _buildReceiptRow('Transaction Ref',
+                  _transactionRef ?? 'ph_sbx_mock'),
               const Divider(color: AppColors.borderLight, height: 16),
-              _buildReceiptRow('Amount Paid', 'Rs. ${currencyFormat.format(widget.invoice.totalAmount)}'),
+              _buildReceiptRow('Amount Paid',
+                  'Rs. ${currencyFormat.format(widget.invoice.totalAmount)}'),
               const Divider(color: AppColors.borderLight, height: 16),
               _buildReceiptRow('Payment Gateway', _selectedGateway),
               const Divider(color: AppColors.borderLight, height: 16),
@@ -448,7 +803,8 @@ class _InvoicePaymentSheetState extends State<InvoicePaymentSheet> {
     );
   }
 
-  Widget _buildBreakdownRow(String title, String amount, {String? subtitle, bool isUrgency = false}) {
+  Widget _buildBreakdownRow(String title, String amount,
+      {String? subtitle, bool isUrgency = false}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -466,7 +822,9 @@ class _InvoicePaymentSheetState extends State<InvoicePaymentSheet> {
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: isUrgency ? FontWeight.w700 : FontWeight.w600,
-                    color: isUrgency ? const Color(0xFFD97706) : AppColors.textPrimary,
+                    color: isUrgency
+                        ? const Color(0xFFD97706)
+                        : AppColors.textPrimary,
                   ),
                 ),
               ],
@@ -476,7 +834,9 @@ class _InvoicePaymentSheetState extends State<InvoicePaymentSheet> {
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w700,
-                color: isUrgency ? const Color(0xFFD97706) : AppColors.textPrimary,
+                color: isUrgency
+                    ? const Color(0xFFD97706)
+                    : AppColors.textPrimary,
               ),
             ),
           ],
@@ -502,7 +862,10 @@ class _InvoicePaymentSheetState extends State<InvoicePaymentSheet> {
         ),
         Text(
           value,
-          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+          style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary),
         ),
       ],
     );
