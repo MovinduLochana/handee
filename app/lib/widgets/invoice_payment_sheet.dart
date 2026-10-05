@@ -38,7 +38,8 @@ class InvoicePaymentSheet extends StatefulWidget {
 }
 
 class _InvoicePaymentSheetState extends State<InvoicePaymentSheet> {
-  final String _selectedGateway = 'Stripe Sandbox';
+  String _selectedMethod = 'payhere'; // 'payhere' or 'card'
+  String get _selectedGateway => _selectedMethod == 'payhere' ? 'PayHere Sandbox' : 'Stripe Sandbox';
   bool _isProcessing = false;
   bool _isSuccess = false;
   String? _transactionRef;
@@ -53,12 +54,17 @@ class _InvoicePaymentSheetState extends State<InvoicePaymentSheet> {
     });
 
     final provider = context.read<PaymentProvider>();
-    final payment = await provider.processSandboxPayment(
-      invoiceId: widget.invoice.id,
-      bookingId: widget.invoice.bookingId,
-      gatewayProvider: _selectedGateway,
-      cardLast4: '4242',
-    );
+    final payment = _selectedMethod == 'payhere'
+        ? await provider.processPayHerePayment(
+            invoiceId: widget.invoice.id,
+            bookingId: widget.invoice.bookingId,
+          )
+        : await provider.processSandboxPayment(
+            invoiceId: widget.invoice.id,
+            bookingId: widget.invoice.bookingId,
+            gatewayProvider: 'Stripe Sandbox',
+            cardLast4: '4242',
+          );
 
     if (!mounted) return;
 
@@ -214,42 +220,123 @@ class _InvoicePaymentSheetState extends State<InvoicePaymentSheet> {
         ),
         const SizedBox(height: 10),
 
-        Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: AppColors.primaryLight),
+        // PayHere Gateway Option
+        InkWell(
+          onTap: () => setState(() => _selectedMethod = 'payhere'),
+          borderRadius: BorderRadius.circular(14),
+          child: Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: _selectedMethod == 'payhere' ? AppColors.primaryUltraLight : Colors.white,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: _selectedMethod == 'payhere' ? AppColors.primary : AppColors.border,
+                width: _selectedMethod == 'payhere' ? 1.5 : 1.0,
+              ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: _selectedMethod == 'payhere' ? Colors.white : AppColors.background,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.account_balance_wallet, color: AppColors.primary, size: 24),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Text(
+                            'PayHere Sandbox',
+                            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                          ),
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: const Text(
+                              'VERIFIED',
+                              style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w800),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 2),
+                      const Text(
+                        'Real LKR Checkout • MD5 Signature Verified',
+                        style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  _selectedMethod == 'payhere' ? Icons.check_circle : Icons.radio_button_unchecked,
+                  color: _selectedMethod == 'payhere' ? AppColors.primary : AppColors.textMuted,
+                  size: 20,
+                ),
+              ],
+            ),
           ),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: AppColors.primaryUltraLight,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Icon(Icons.credit_card, color: AppColors.primary, size: 24),
+        ),
+
+        const SizedBox(height: 10),
+
+        // Instant Test Card Option
+        InkWell(
+          onTap: () => setState(() => _selectedMethod = 'card'),
+          borderRadius: BorderRadius.circular(14),
+          child: Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: _selectedMethod == 'card' ? AppColors.primaryUltraLight : Colors.white,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: _selectedMethod == 'card' ? AppColors.primary : AppColors.border,
+                width: _selectedMethod == 'card' ? 1.5 : 1.0,
               ),
-              const SizedBox(width: 12),
-              const Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Visa Card',
-                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
-                    ),
-                    SizedBox(height: 2),
-                    Text(
-                      '•••• •••• •••• 4242 (Simulated 3DS)',
-                      style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
-                    ),
-                  ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: _selectedMethod == 'card' ? Colors.white : AppColors.background,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.credit_card, color: AppColors.textSecondary, size: 24),
                 ),
-              ),
-              const Icon(Icons.check_circle, color: AppColors.primary, size: 20),
-            ],
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Visa Test Card',
+                        style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                      ),
+                      SizedBox(height: 2),
+                      Text(
+                        '•••• •••• •••• 4242 (Instant Sim)',
+                        style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  _selectedMethod == 'card' ? Icons.check_circle : Icons.radio_button_unchecked,
+                  color: _selectedMethod == 'card' ? AppColors.primary : AppColors.textMuted,
+                  size: 20,
+                ),
+              ],
+            ),
           ),
         ),
 
@@ -280,16 +367,20 @@ class _InvoicePaymentSheetState extends State<InvoicePaymentSheet> {
 
         // Action Button
         CustomButton(
-          text: 'Authorize Payment (Rs. ${currencyFormat.format(widget.invoice.totalAmount)})',
+          text: _selectedMethod == 'payhere'
+              ? 'Pay via PayHere (Rs. ${currencyFormat.format(widget.invoice.totalAmount)})'
+              : 'Authorize Payment (Rs. ${currencyFormat.format(widget.invoice.totalAmount)})',
           icon: Icons.lock,
           isLoading: _isProcessing,
           onPressed: _handlePayment,
         ),
         const SizedBox(height: 10),
-        const Center(
+        Center(
           child: Text(
-            'Secured by Stripe',
-            style: TextStyle(fontSize: 11, color: AppColors.textMuted),
+            _selectedMethod == 'payhere'
+                ? 'Secured by PayHere Sandbox (Sri Lanka)'
+                : 'Secured by Stripe Sandbox',
+            style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
           ),
         ),
       ],

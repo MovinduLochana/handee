@@ -95,4 +95,48 @@ class PaymentRepository {
       return [];
     }
   }
+
+  /// Fetches PayHere checkout parameters and MD5 hash for an invoice.
+  Future<Map<String, dynamic>?> getPayHereParams(String invoiceId) async {
+    try {
+      final response = await apiClient.get(ApiEndpoints.payHereParams(invoiceId));
+      if (response is Map<String, dynamic>) {
+        return response;
+      }
+      return null;
+    } catch (e) {
+      debugPrint('Error fetching PayHere params: $e');
+      return null;
+    }
+  }
+
+  /// Confirms PayHere payment upon checkout completion.
+  Future<PaymentModel?> confirmPayHerePayment({
+    required String invoiceId,
+    String? paymentId,
+    String? orderId,
+    double? amount,
+    String? currency,
+    String? cardLast4,
+    String? method,
+  }) async {
+    final response = await apiClient.post(
+      ApiEndpoints.payHereConfirm,
+      body: {
+        'invoiceId': invoiceId,
+        'paymentId': paymentId,
+        'orderId': orderId,
+        'amount': amount,
+        'currency': currency,
+        'cardLast4': cardLast4 ?? '4242',
+        'method': method ?? 'PAYHERE_SANDBOX',
+      },
+    );
+
+    if (response is Map<String, dynamic>) {
+      return PaymentModel.fromJson(response);
+    }
+    return null;
+  }
 }
+

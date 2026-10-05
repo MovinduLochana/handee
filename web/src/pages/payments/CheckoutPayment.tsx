@@ -13,12 +13,24 @@ import {
   ArrowRight,
   Plus,
   Sparkles,
+  ExternalLink,
 } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+
+declare global {
+  interface Window {
+    payhere?: {
+      startPayment: (paymentObject: Record<string, unknown>) => void;
+      onCompleted?: (orderId: string) => void;
+      onDismissed?: () => void;
+      onError?: (error: string) => void;
+    };
+  }
+}
 
 export default function CheckoutPayment() {
   const { id } = useParams<{ id: string }>();
@@ -49,6 +61,9 @@ export default function CheckoutPayment() {
     amount: number;
     currency: string;
   } | null>(null);
+
+  const [payError, setPayError] = useState<string | null>(null);
+  const [isPayHereLoading, setIsPayHereLoading] = useState(false);
 
   const [prevUserId, setPrevUserId] = useState<string | undefined>(userProfile?.id);
 
@@ -99,8 +114,77 @@ export default function CheckoutPayment() {
     },
   });
 
-  const handlePay = () => {
+  const handlePay = async () => {
     if (!invoice || !activeCard) return;
+    setPayError(null);
+
+    // If PayHere brand selected and window.payhere is loaded, open PayHere interactive checkout modal!
+    if (activeCard.brand === "PayHere" && typeof window !== "undefined" && window.payhere) {
+      try {
+        setIsPayHereLoading(true);
+        const params = await paymentsApi.getPayHereParams(invoice.id);
+
+        window.payhere.onCompleted = async (orderId: string) => {
+          setIsPayHereLoading(false);
+          try {
+            const confirmed = await paymentsApi.confirmPayHerePayment({
+              invoiceId: invoice.id,
+              orderId: orderId,
+              paymentId: `ph_sbx_${Date.now()}`,
+              amount: params.amount,
+              currency: params.currency,
+              cardLast4: "4242",
+              method: "PAYHERE_SANDBOX",
+            });
+            queryClient.invalidateQueries({ queryKey: ["invoice", id] });
+            queryClient.invalidateQueries({ queryKey: ["customerInvoices"] });
+            setPaymentSuccess({
+              reference: confirmed.transactionReference,
+              amount: confirmed.amount,
+              currency: confirmed.currency,
+            });
+          } catch (e: unknown) {
+            const err = e as { response?: { data?: { message?: string } } };
+            setPayError(err?.response?.data?.message || "Failed to confirm PayHere payment status.");
+          }
+        };
+
+        window.payhere.onDismissed = () => {
+          setIsPayHereLoading(false);
+        };
+
+        window.payhere.onError = (error: string) => {
+          setIsPayHereLoading(false);
+          setPayError(`PayHere Gateway Error: ${error}`);
+        };
+
+        window.payhere.startPayment({
+          sandbox: params.sandbox,
+          merchant_id: params.merchantId,
+          return_url: params.returnUrl,
+          cancel_url: params.cancelUrl,
+          notify_url: params.notifyUrl,
+          order_id: params.orderId,
+          items: params.items,
+          amount: params.amountFormatted,
+          currency: params.currency,
+          hash: params.hash,
+          first_name: params.firstName || userProfile?.fullName?.split(" ")[0] || "Customer",
+          last_name: params.lastName || "User",
+          email: params.email || userProfile?.email || "customer@handee.lk",
+          phone: params.phone || "0771234567",
+          address: params.address || "Colombo",
+          city: params.city || "Colombo",
+          country: params.country || "Sri Lanka",
+        });
+        return;
+      } catch (err) {
+        setIsPayHereLoading(false);
+        console.warn("PayHere modal launch failed, falling back to simulated sandbox:", err);
+      }
+    }
+
+    // Default simulated gateway or fallback
     payMutation.mutate({
       invoiceId: invoice.id,
       paymentMethod: "card",
@@ -445,16 +529,46 @@ export default function CheckoutPayment() {
                 </div>
               </div>
 
+              {payError && (
+                <Alert variant="destructive">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription>{payError}</AlertDescription>
+                </Alert>
+              )}
+
+              {activeCard?.brand === "PayHere" && (
+                <div className="bg-sky-500/10 border border-sky-500/20 rounded p-3 text-xs text-sky-800 dark:text-sky-300 space-y-1">
+                  <div className="flex items-center gap-1.5 font-semibold">
+                    <Sparkles className="h-3.5 w-3.5" />
+                    PayHere Sandbox Gateway Active
+                  </div>
+                  <p className="opacity-90">
+                    Clicking Authorize will open the PayHere payment modal with MD5 security checksum validation.
+                  </p>
+                  <a
+                    href={`/api/payments/${invoice.id}/payhere-checkout-html`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary underline mt-1 hover:opacity-80"
+                  >
+                    Open Full-Screen PayHere Checkout
+                    <ExternalLink className="h-3 w-3" />
+                  </a>
+                </div>
+              )}
+
               <Button
                 onClick={handlePay}
-                disabled={payMutation.isPending || !activeCard}
+                disabled={payMutation.isPending || isPayHereLoading || !activeCard}
                 className="w-full py-6 text-sm font-bold gap-2"
                 size="lg"
               >
                 <Lock className="h-4 w-4" />
-                {payMutation.isPending
-                  ? "Processing Payment..."
-                  : `Authorize & Pay LKR ${invoice.totalAmount.toLocaleString()}`}
+                {isPayHereLoading
+                  ? "Opening PayHere Sandbox..."
+                  : payMutation.isPending
+                    ? "Processing Payment..."
+                    : `Authorize & Pay LKR ${invoice.totalAmount.toLocaleString()}`}
               </Button>
             </CardContent>
           </Card>

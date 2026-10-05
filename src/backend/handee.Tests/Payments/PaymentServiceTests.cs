@@ -211,6 +211,57 @@ public class PaymentServiceTests
         Assert.NotNull(updated);
         Assert.Equal(PayoutStatus.Completed, updated.Status);
     }
+
+    [Fact]
+    public void PayHereSecurity_Generates_And_Verifies_Checksum_Successfully()
+    {
+        var merchantId = "1211149";
+        var orderId = "inv_test_123";
+        var amount = 5000.00m;
+        var currency = "LKR";
+        var secret = "secret_sandbox_key";
+
+        var hash = handee.API.Common.PayHereSecurity.GenerateCheckoutHash(
+            merchantId, orderId, amount, currency, secret);
+
+        Assert.NotNull(hash);
+        Assert.NotEmpty(hash);
+        Assert.Equal(32, hash.Length);
+
+        // Verification of IPN notification checksum
+        var isValid = handee.API.Common.PayHereSecurity.VerifyNotificationHash(
+            merchantId, orderId, "5000.00", currency, "2", secret,
+            handee.API.Common.PayHereSecurity.CreateMd5($"{merchantId}{orderId}5000.00{currency}2{handee.API.Common.PayHereSecurity.CreateMd5(secret)}")
+        );
+
+        Assert.True(isValid);
+    }
+
+    [Fact]
+    public async Task ConfirmPayHerePaymentAsync_Marks_Invoice_Paid_And_Sets_PayHere_Provider()
+    {
+        var test = await SeedInvoiceAsync(4500m);
+        using var db = test.Db;
+        var sut = new PaymentService(test.Db);
+
+        var result = await sut.ConfirmPayHerePaymentAsync(
+            test.Invoice.Id,
+            "ph_pay_998877",
+            5175m,
+            "LKR",
+            "************4242",
+            "VISA"
+        );
+
+        Assert.NotNull(result);
+        Assert.Equal("Succeeded", result.Status);
+        Assert.Equal("PayHere-Sandbox", result.GatewayProvider);
+        Assert.Equal("ph_pay_998877", result.TransactionReference);
+
+        var updatedInvoice = await test.Db.Invoices.FindAsync(test.Invoice.Id);
+        Assert.NotNull(updatedInvoice);
+        Assert.Equal(InvoiceStatus.Paid, updatedInvoice.Status);
+    }
 }
 
 

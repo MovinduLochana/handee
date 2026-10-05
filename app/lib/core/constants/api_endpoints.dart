@@ -123,9 +123,13 @@ class ApiEndpoints {
   static const String myPayments = '/payments/mine';
   static String paymentById(String id) => '/payments/$id';
   static String paymentByInvoiceId(String invoiceId) => '/payments/invoice/$invoiceId';
+  static String payHereParams(String invoiceId) => '/api/payments/$invoiceId/payhere-params';
+  static String payHereCheckoutHtml(String invoiceId) => '$baseUrl/api/payments/$invoiceId/payhere-checkout-html';
+  static const String payHereConfirm = '/api/payments/payhere-confirm';
 
   static const String providerPayouts = '/api/payouts/history';
   static const String providerPayoutSummary = '/api/payouts/summary';
   static String providerPayoutsByProvider(String providerId) => '/api/payouts/provider/$providerId';
   static String providerPayoutSummaryByProvider(String providerId) => '/api/payouts/provider/$providerId/summary';
 }
+
