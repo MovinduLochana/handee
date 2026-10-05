@@ -13,6 +13,7 @@ import '../../widgets/custom_button.dart';
 import '../../widgets/invoice_payment_sheet.dart';
 import '../../widgets/predefined_slot_picker.dart';
 import '../../widgets/status_badge.dart';
+import '../../widgets/write_review_bottom_sheet.dart';
 import '../customer/public_provider_profile_screen.dart';
 
 class BookingDetailScreen extends StatefulWidget {
@@ -30,6 +31,8 @@ class BookingDetailScreen extends StatefulWidget {
 }
 
 class _BookingDetailScreenState extends State<BookingDetailScreen> {
+  int? _submittedReviewRating;
+
   @override
   void initState() {
     super.initState();
@@ -251,6 +254,11 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
 
             // Pricing & Invoice Breakdown
             _buildPricingSection(context, booking, currencyFormat),
+
+            if (!isViewerProvider && booking.isCompleted) ...[
+              const SizedBox(height: 18),
+              _buildReviewPromptCard(context, booking),
+            ],
 
             const SizedBox(height: 24),
 
@@ -853,6 +861,154 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildReviewPromptCard(BuildContext context, BookingModel booking) {
+    if (_submittedReviewRating != null) {
+      return Container(
+        key: const Key('review_submitted_confirmation_card'),
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF0FDF4),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFFBBF7D0)),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x0A000000),
+              blurRadius: 10,
+              offset: Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: const BoxDecoration(
+                color: Color(0xFFDCFCE7),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.check_circle_rounded, color: AppColors.success, size: 28),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Review Submitted',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+                  ),
+                  const SizedBox(height: 2),
+                  const Text(
+                    'Thank you for rating your specialist!',
+                    style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: List.generate(
+                      5,
+                      (index) => Icon(
+                        index < _submittedReviewRating! ? Icons.star_rounded : Icons.star_outline_rounded,
+                        color: index < _submittedReviewRating! ? Colors.amber : AppColors.border,
+                        size: 16,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final providerId = booking.provider?.id ?? booking.providerId;
+    final providerName = booking.provider?.fullName ?? booking.providerName ?? 'Service Specialist';
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.amber.shade300),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0A000000),
+            blurRadius: 10,
+            offset: Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.amber.shade50,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.star_rounded, color: Colors.amber, size: 28),
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'How was your service?',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+                    ),
+                    SizedBox(height: 2),
+                    Text(
+                      'Leave verified feedback to help other customers.',
+                      style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          ElevatedButton.icon(
+            key: const Key('rate_specialist_button'),
+            onPressed: () async {
+              final submitted = await WriteReviewBottomSheet.show(
+                context,
+                providerId: providerId,
+                providerName: providerName,
+                onSubmitted: (rating) {
+                  if (mounted) {
+                    setState(() {
+                      _submittedReviewRating = rating;
+                    });
+                  }
+                },
+              );
+              if (submitted == true && mounted && _submittedReviewRating == null) {
+                setState(() {
+                  _submittedReviewRating = 5;
+                });
+              }
+            },
+            icon: const Icon(Icons.rate_review_outlined, size: 18),
+            label: const Text('Rate & Review Specialist'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              minimumSize: const Size(double.infinity, 48),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              elevation: 0,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

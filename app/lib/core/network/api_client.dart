@@ -196,6 +196,37 @@ class ApiClient {
     }
   }
 
+  Future<dynamic> delete(String path, {dynamic body}) async {
+    try {
+      final uri = _buildUri(path);
+      http.Response response = await _httpClient
+          .delete(
+            uri,
+            headers: _buildHeaders(),
+            body: body != null ? jsonEncode(body) : null,
+          )
+          .timeout(const Duration(seconds: 35));
+
+      if (response.statusCode == 401 && path != ApiEndpoints.login && path != ApiEndpoints.refresh) {
+        final refreshed = await _tryRefreshToken();
+        if (refreshed) {
+          response = await _httpClient
+              .delete(
+                uri,
+                headers: _buildHeaders(),
+                body: body != null ? jsonEncode(body) : null,
+              )
+              .timeout(const Duration(seconds: 35));
+        }
+      }
+
+      return _handleResponse(response);
+    } catch (e) {
+      debugPrint('ApiClient DELETE error on $path: $e');
+      rethrow;
+    }
+  }
+
   Future<dynamic> postMultipart(
     String path, {
     Map<String, String>? fields,

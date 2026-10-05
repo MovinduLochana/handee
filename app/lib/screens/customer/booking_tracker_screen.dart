@@ -14,6 +14,7 @@ import '../../widgets/custom_button.dart';
 import '../../widgets/invoice_payment_sheet.dart';
 import '../../widgets/status_badge.dart';
 import '../../widgets/urgency_badge.dart';
+import '../../widgets/write_review_bottom_sheet.dart';
 
 class BookingTrackerScreen extends StatefulWidget {
   const BookingTrackerScreen({super.key});
@@ -97,6 +98,7 @@ class _BookingTrackerScreenState extends State<BookingTrackerScreen> {
 
     final isProviderAccepted = matchingBooking != null && (matchingBooking.isAccepted || matchingBooking.isInProgress);
     final isProviderDeclined = matchingBooking != null && (matchingBooking.isDeclined || matchingBooking.isExpired);
+    final isProviderCompleted = matchingBooking != null && matchingBooking.isCompleted;
     final providerName = matchingBooking?.providerName ?? workflow?.selectedProviderName ?? 'Matched Provider';
 
     final isPendingReview = request.isPendingAiReview;
@@ -678,6 +680,61 @@ class _BookingTrackerScreenState extends State<BookingTrackerScreen> {
                 },
               ),
               const SizedBox(height: 24),
+            ],
+
+            if (isProviderCompleted) ...[
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryUltraLight,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.primaryLight),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.rate_review, color: AppColors.primary),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Rate your experience',
+                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.primary,
+                              ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Your job with $providerName is complete. Share your feedback to help others in the community.',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
+                    ),
+                    const SizedBox(height: 12),
+                    ElevatedButton.icon(
+                      key: const Key('tracker_rate_specialist_button'),
+                      icon: const Icon(Icons.star, size: 18),
+                      label: const Text('Rate Specialist'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                      ),
+                      onPressed: () {
+                        WriteReviewBottomSheet.show(
+                          context,
+                          providerId: matchingBooking.providerId,
+                          providerName: providerName,
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
             ],
 
             // Back to Dashboard Button

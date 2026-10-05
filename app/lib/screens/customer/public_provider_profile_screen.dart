@@ -2,18 +2,26 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/constants/colors.dart';
 import '../../../data/models/provider_profile_model.dart';
+import '../../../data/models/review_model.dart';
+import '../../../providers/auth_provider.dart';
+import '../../../providers/review_provider.dart';
 import '../../../providers/service_directory_provider.dart';
+import '../../../widgets/review_card.dart';
 import '../../../widgets/service_listing_card.dart';
+import '../../../widgets/write_review_bottom_sheet.dart';
+import '../provider/edit_provider_profile_screen.dart';
 import 'service_listing_details_screen.dart';
 
 class PublicProviderProfileScreen extends StatefulWidget {
   final String providerId;
   final ProviderProfileModel? initialProfile;
+  final bool isOwnProfile;
 
   const PublicProviderProfileScreen({
     super.key,
     required this.providerId,
     this.initialProfile,
+    this.isOwnProfile = false,
   });
 
   @override
@@ -28,6 +36,8 @@ class _PublicProviderProfileScreenState extends State<PublicProviderProfileScree
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<ServiceDirectoryProvider>().fetchProviderProfile(widget.providerId);
+      final reviewProv = Provider.of<ReviewProvider?>(context, listen: false);
+      reviewProv?.fetchReviews(widget.providerId);
     });
   }
 
@@ -35,6 +45,88 @@ class _PublicProviderProfileScreenState extends State<PublicProviderProfileScree
   void dispose() {
     _scrollController.dispose();
     super.dispose();
+  }
+
+  bool _isOwnProfile(ProviderProfileModel provider, AuthProvider? auth, ServiceDirectoryProvider providerData) {
+    if (widget.isOwnProfile) return true;
+    if (auth != null && auth.isProvider) {
+      final uid = auth.currentUser?.id;
+      if (uid != null && (uid == provider.userId || uid == provider.id)) {
+        return true;
+      }
+    }
+    final myProfile = providerData.myProfile;
+    if (myProfile != null) {
+      if (myProfile.id == provider.id || myProfile.userId == provider.userId) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+
+  Future<void> _handleEditReview(ReviewModel review, String providerName) async {
+    final updated = await WriteReviewBottomSheet.show(
+      context,
+      providerId: widget.providerId,
+      providerName: providerName,
+      existingReview: review,
+    );
+    if (!mounted) return;
+    if (updated == true) {
+      context.read<ServiceDirectoryProvider>().fetchProviderProfile(widget.providerId);
+    }
+  }
+
+  Future<void> _handleDeleteReview(ReviewModel review) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        title: const Text('Delete Review'),
+        content: const Text('Are you sure you want to delete your review? This action cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            key: const Key('confirm_delete_review_button'),
+            style: TextButton.styleFrom(foregroundColor: AppColors.error),
+            onPressed: () => Navigator.pop(dialogCtx, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (!mounted) return;
+    if (confirmed == true) {
+      final reviewProv = Provider.of<ReviewProvider?>(context, listen: false);
+      if (reviewProv != null) {
+        try {
+          await reviewProv.deleteReview(
+            providerId: widget.providerId,
+            reviewId: review.id,
+          );
+          if (!mounted) return;
+          context.read<ServiceDirectoryProvider>().fetchProviderProfile(widget.providerId);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Review deleted successfully.'),
+              backgroundColor: AppColors.success,
+            ),
+          );
+        } catch (e) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to delete review: $e'),
+              backgroundColor: AppColors.error,
+            ),
+          );
+        }
+      }
+    }
   }
 
   @override
@@ -88,12 +180,34 @@ class _PublicProviderProfileScreenState extends State<PublicProviderProfileScree
           final services = providerData.selectedProviderServices;
           final bannerHeight = MediaQuery.sizeOf(context).width;
 
+          final auth = Provider.of<AuthProvider?>(context);
+          final reviewProv = Provider.of<ReviewProvider?>(context);
+          final currentUserId = auth?.currentUser?.id ?? auth?.storage.getUserId();
+          final isOwn = _isOwnProfile(provider, auth, providerData);
+          final canWriteReview = !isOwn && ((auth == null) || (auth.isAuthenticated && auth.isCustomer));
+
           return CustomScrollView(
             controller: _scrollController,
             slivers: [
               SliverAppBar(
                 expandedHeight: bannerHeight,
                 pinned: true,
+                actions: [
+                  if (isOwn)
+                    IconButton(
+                      key: const Key('appbar_edit_provider_profile_button'),
+                      icon: const Icon(Icons.edit_outlined, color: Colors.white),
+                      tooltip: 'Edit Profile',
+                      onPressed: () async {
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const EditProviderProfileScreen()),
+                        );
+                        if (!context.mounted) return;
+                        context.read<ServiceDirectoryProvider>().fetchProviderProfile(widget.providerId);
+                      },
+                    ),
+                ],
                 flexibleSpace: FlexibleSpaceBar(
                   background: Stack(
                     fit: StackFit.expand,
@@ -330,6 +444,124 @@ class _PublicProviderProfileScreenState extends State<PublicProviderProfileScree
                             },
                           ),
                         ),
+                      const SizedBox(height: 14),
+                      const Divider(height: 1, thickness: 1, color: AppColors.borderLight),
+                      const SizedBox(height: 14),
+
+                      // Customer Reviews Section
+                      Row(
+                        children: [
+                          const Icon(Icons.star, size: 28, color: Colors.amber),
+                          const SizedBox(width: 8),
+                          const Text(
+                            'Customer Reviews',
+                            style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, letterSpacing: -1.0, color: AppColors.textPrimary),
+                          ),
+                          const Spacer(),
+                          if (canWriteReview)
+                            TextButton.icon(
+                              key: const Key('write_review_button'),
+                              onPressed: () async {
+                                final submitted = await WriteReviewBottomSheet.show(
+                                  context,
+                                  providerId: widget.providerId,
+                                  providerName: provider.fullName,
+                                );
+                                if (!context.mounted) return;
+                                if (submitted == true) {
+                                  context.read<ServiceDirectoryProvider>().fetchProviderProfile(widget.providerId);
+                                }
+                              },
+                              icon: const Icon(Icons.rate_review_outlined, size: 16, color: AppColors.primary),
+                              label: const Text(
+                                'Write a Review',
+                                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.primary),
+                              ),
+                            )
+                          else if (isOwn && reviewProv != null && reviewProv.totalReviewsFor(widget.providerId) > 0)
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: AppColors.primaryUltraLight,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                '${reviewProv.totalReviewsFor(widget.providerId)} reviews',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.primaryDark,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 14),
+                      if (reviewProv != null) ...[
+                        if (reviewProv.isLoading && reviewProv.reviewsFor(widget.providerId).isEmpty)
+                          const Center(
+                            child: Padding(
+                              padding: EdgeInsets.all(24.0),
+                              child: CircularProgressIndicator(),
+                            ),
+                          )
+                        else if (reviewProv.reviewsFor(widget.providerId).isEmpty)
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(20),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: AppColors.borderLight),
+                            ),
+                            child: Column(
+                              children: [
+                                const Icon(Icons.rate_review_outlined, size: 40, color: AppColors.textMuted),
+                                const SizedBox(height: 8),
+                                const Text(
+                                  'No Reviews Yet',
+                                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  '${provider.fullName} is new or has not received client reviews yet.',
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                                ),
+                                if (canWriteReview) ...[
+                                  const SizedBox(height: 14),
+                                  OutlinedButton.icon(
+                                    onPressed: () async {
+                                      final submitted = await WriteReviewBottomSheet.show(
+                                        context,
+                                        providerId: widget.providerId,
+                                        providerName: provider.fullName,
+                                      );
+                                      if (!context.mounted) return;
+                                      if (submitted == true) {
+                                        context.read<ServiceDirectoryProvider>().fetchProviderProfile(widget.providerId);
+                                      }
+                                    },
+                                    icon: const Icon(Icons.rate_review_outlined, size: 16),
+                                    label: const Text('Leave the First Review'),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          )
+                        else
+                          Column(
+                            children: reviewProv
+                                .reviewsFor(widget.providerId)
+                                .map((r) => ReviewCard(
+                                      review: r,
+                                      isOwnReview: currentUserId != null && r.customerId == currentUserId,
+                                      onEdit: () => _handleEditReview(r, provider.fullName),
+                                      onDelete: () => _handleDeleteReview(r),
+                                    ))
+                                .toList(),
+                          ),
+                      ],
                       const SizedBox(height: 90),
                     ],
                   ),
@@ -341,9 +573,13 @@ class _PublicProviderProfileScreenState extends State<PublicProviderProfileScree
       ),
       bottomSheet: Consumer<ServiceDirectoryProvider>(
         builder: (context, providerData, child) {
-           if (providerData.selectedProvider == null) return const SizedBox.shrink();
-           
-           return TweenAnimationBuilder<double>(
+          final provider = providerData.selectedProvider ?? widget.initialProfile;
+          if (provider == null) return const SizedBox.shrink();
+
+          final auth = Provider.of<AuthProvider?>(context);
+          final isOwn = _isOwnProfile(provider, auth, providerData);
+
+          return TweenAnimationBuilder<double>(
              tween: Tween<double>(begin: 150, end: 0),
              duration: const Duration(milliseconds: 800),
              curve: Curves.elasticOut,
@@ -377,46 +613,71 @@ class _PublicProviderProfileScreenState extends State<PublicProviderProfileScree
                       child: btnChild,
                     );
                   },
-                  child: ElevatedButton(
-                    onPressed: () {
-                      final services = providerData.selectedProviderServices;
-                      if (services.isNotEmpty) {
-                        if (_scrollController.hasClients) {
-                          _scrollController.animateTo(
-                            _scrollController.position.maxScrollExtent,
-                            duration: const Duration(milliseconds: 600),
-                            curve: Curves.easeOutCubic,
-                          );
-                        }
-                      } else {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text("This provider doesn't have any active service listings at the moment."),
-                            backgroundColor: AppColors.textPrimary,
+                  child: isOwn
+                      ? ElevatedButton.icon(
+                          key: const Key('provider_public_profile_edit_button'),
+                          onPressed: () async {
+                            await Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (_) => const EditProviderProfileScreen()),
+                            );
+                            if (!context.mounted) return;
+                            context.read<ServiceDirectoryProvider>().fetchProviderProfile(widget.providerId);
+                          },
+                          icon: const Icon(Icons.edit_outlined, size: 20),
+                          label: const Text(
+                            'Edit Profile',
+                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, letterSpacing: -0.5),
                           ),
-                        );
-                      }
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
-                      minimumSize: const Size(double.infinity, 64),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                    ),
-                    child: const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.calendar_month, size: 20),
-                        SizedBox(width: 8),
-                        Text(
-                          'Browse & Book Services',
-                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, letterSpacing: -0.5),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            foregroundColor: Colors.white,
+                            minimumSize: const Size(double.infinity, 64),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                          ),
+                        )
+                      : ElevatedButton(
+                          onPressed: () {
+                            final services = providerData.selectedProviderServices;
+                            if (services.isNotEmpty) {
+                              if (_scrollController.hasClients) {
+                                _scrollController.animateTo(
+                                  _scrollController.position.maxScrollExtent,
+                                  duration: const Duration(milliseconds: 600),
+                                  curve: Curves.easeOutCubic,
+                                );
+                              }
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text("This provider doesn't have any active service listings at the moment."),
+                                  backgroundColor: AppColors.textPrimary,
+                                ),
+                              );
+                            }
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            foregroundColor: Colors.white,
+                            minimumSize: const Size(double.infinity, 64),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                          ),
+                          child: const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.calendar_month, size: 20),
+                              SizedBox(width: 8),
+                              Text(
+                                'Browse & Book Services',
+                                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, letterSpacing: -0.5),
+                              ),
+                            ],
+                          ),
                         ),
-                      ],
-                    ),
-                  ),
                 ),
               ),
             ),
