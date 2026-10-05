@@ -36,7 +36,7 @@ class BookingProvider extends ChangeNotifier {
       _bookings.where((b) => b.isDisputed).toList();
 
   // -----------------------------------------------------------
-  // Instant Match Domain (⚡ On-Demand Dispatches)
+  // Instant Match Domain (On-Demand Dispatches)
   // -----------------------------------------------------------
   List<BookingModel> get instantJobs =>
       _bookings.where((b) => b.isInstantMatch).toList();
@@ -48,7 +48,7 @@ class BookingProvider extends ChangeNotifier {
       _bookings.where((b) => b.isInstantMatch && (b.isCompleted || b.isDisputed || b.isDeclined || b.isExpired)).toList();
 
   // -----------------------------------------------------------
-  // Scheduled Service Bookings Domain (📅 Calendar Appointments)
+  // Scheduled Service Bookings Domain (Calendar Appointments)
   // -----------------------------------------------------------
   List<BookingModel> get scheduledBookings =>
       _bookings.where((b) => b.isScheduled).toList();

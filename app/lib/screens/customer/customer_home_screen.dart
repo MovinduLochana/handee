@@ -53,7 +53,7 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
       body: screens[_currentIndex],
       bottomNavigationBar: Container(
         decoration: const BoxDecoration(
-          color: Colors.white,
+          color: AppColors.surface,
           border: Border(top: BorderSide(color: AppColors.borderLight, width: 1)),
         ),
         child: SafeArea(
@@ -62,7 +62,7 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
             currentIndex: _currentIndex,
             onTap: (index) => setState(() => _currentIndex = index),
             type: BottomNavigationBarType.fixed,
-            backgroundColor: Colors.white,
+            backgroundColor: AppColors.surface,
             selectedItemColor: AppColors.primary,
             unselectedItemColor: AppColors.textMuted,
             selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
@@ -182,14 +182,14 @@ class _CustomerHomeTab extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
-                    colors: [Color(0xFF0F172A), Color(0xFF2563EB)], // Slate 900 to Royal Blue
+                    colors: [AppColors.primaryDark, AppColors.primary], // Neutral blue-green brand gradient
                     begin: Alignment.bottomRight,
                     end: Alignment.topLeft,
                   ),
                   borderRadius: BorderRadius.circular(32),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF2563EB).withOpacity(0.4),
+                      color: AppColors.primaryDark.withOpacity(0.35),
                       blurRadius: 32,
                       offset: const Offset(0, 16),
                     ),
@@ -256,7 +256,7 @@ class _CustomerHomeTab extends StatelessWidget {
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.white,
-                        foregroundColor: const Color(0xFF0F172A),
+                        foregroundColor: AppColors.primaryDark,
                         elevation: 12,
                         shadowColor: Colors.black.withOpacity(0.5),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -415,19 +415,19 @@ class _CustomerHomeTab extends StatelessWidget {
                   child: Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: AppColors.surface,
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: const Color(0xFFFDE68A)),
+                      border: Border.all(color: AppColors.warning.withOpacity(0.3)),
                     ),
                     child: Row(
                       children: [
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: const BoxDecoration(
-                            color: Color(0xFFFFFBEB),
+                            color: AppColors.warningLight,
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(Icons.schedule, color: Color(0xFFD97706), size: 24),
+                          child: const Icon(Icons.schedule, color: AppColors.warning, size: 24),
                         ),
                         const SizedBox(width: 14),
                         Expanded(
@@ -471,17 +471,18 @@ class _CustomerHomeTab extends StatelessWidget {
                   child: Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFFF1F2),
+                      color: AppColors.errorLight,
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: const Color(0xFFFECDD3)),
+                      border: Border.all(color: AppColors.error.withOpacity(0.3)),
                     ),
                     child: Row(
                       children: [
                         Container(
                           padding: const EdgeInsets.all(12),
-                          decoration: const BoxDecoration(
-                            color: Color(0xFFFEE2E2),
+                          decoration: BoxDecoration(
+                            color: AppColors.surface,
                             shape: BoxShape.circle,
+                            border: Border.all(color: AppColors.error.withOpacity(0.2)),
                           ),
                           child: const Icon(Icons.cancel_outlined, color: AppColors.error, size: 24),
                         ),
@@ -499,7 +500,7 @@ class _CustomerHomeTab extends StatelessWidget {
                                 declinedBooking.notes != null && declinedBooking.notes!.toLowerCase().contains('declined reason:')
                                     ? declinedBooking.notes!
                                     : 'Provider declined this booking request. Tap to view or re-book.',
-                                style: const TextStyle(fontSize: 12, color: Color(0xFF9F1239)),
+                                style: const TextStyle(fontSize: 12, color: AppColors.error),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
@@ -767,10 +768,10 @@ class _CustomerHomeTab extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF0F172A),
+                  color: AppColors.primaryDark,
                   borderRadius: BorderRadius.circular(24),
                   boxShadow: [
-                    BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 20, offset: const Offset(0, 10)),
+                    BoxShadow(color: AppColors.primaryDark.withOpacity(0.25), blurRadius: 20, offset: const Offset(0, 10)),
                   ],
                 ),
                 child: Row(

@@ -208,11 +208,8 @@ class _ProviderRegisterScreenState extends State<ProviderRegisterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
       appBar: AppBar(
         title: const Text('Tradesperson Onboarding'),
-        backgroundColor: Colors.white,
-        elevation: 0,
       ),
       body: SafeArea(
         child: Column(
@@ -269,7 +266,7 @@ class _ProviderRegisterScreenState extends State<ProviderRegisterScreen> {
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: const BoxDecoration(
-            color: Colors.white,
+            color: AppColors.surface,
             border: Border(top: BorderSide(color: AppColors.borderLight)),
           ),
           child: Row(
@@ -633,7 +630,7 @@ class _ProviderRegisterScreenState extends State<ProviderRegisterScreen> {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppColors.surface,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: _nicFilePath != null ? AppColors.success : AppColors.border,
@@ -706,7 +703,7 @@ class _ProviderRegisterScreenState extends State<ProviderRegisterScreen> {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppColors.surface,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: _certFilePath != null ? AppColors.success : AppColors.border,

@@ -3,18 +3,20 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/colors.dart';
 import '../../core/utils/external_launcher_helper.dart';
+import '../../data/models/provider_profile_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/booking_provider.dart';
 import '../../providers/dispatch_provider.dart';
 import '../../providers/payment_provider.dart';
+import '../../providers/service_directory_provider.dart';
+import '../../widgets/provider_listing_card.dart';
 import '../../widgets/status_badge.dart';
+import '../customer/public_provider_profile_screen.dart';
+import '../shared/profile_screen.dart';
 import 'active_job_screen.dart';
 import 'dispatch_queue_screen.dart';
-import 'edit_provider_profile_screen.dart';
 import 'provider_jobs_screen.dart';
 import 'provider_verification_screen.dart';
-import '../shared/profile_screen.dart';
-import '../../providers/service_directory_provider.dart';
 
 class ProviderHomeScreen extends StatefulWidget {
   const ProviderHomeScreen({super.key});
@@ -56,7 +58,7 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
       body: screens[_currentIndex],
       bottomNavigationBar: Container(
         decoration: const BoxDecoration(
-          color: Colors.white,
+          color: AppColors.surface,
           border: Border(top: BorderSide(color: AppColors.borderLight, width: 1)),
         ),
         child: SafeArea(
@@ -65,7 +67,7 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
             currentIndex: _currentIndex,
             onTap: (index) => setState(() => _currentIndex = index),
             type: BottomNavigationBarType.fixed,
-            backgroundColor: Colors.white,
+            backgroundColor: AppColors.surface,
             selectedItemColor: AppColors.primary,
             unselectedItemColor: AppColors.textMuted,
             selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
@@ -355,15 +357,15 @@ class _ProviderDashboardTab extends StatelessWidget {
                   child: Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFFB45309), Color(0xFFF59E0B)],
+                      gradient: LinearGradient(
+                        colors: [AppColors.warning, AppColors.warning.withOpacity(0.85)],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.amber.withOpacity(0.3),
+                          color: AppColors.warning.withOpacity(0.25),
                           blurRadius: 10,
                           offset: const Offset(0, 4),
                         ),
@@ -421,14 +423,14 @@ class _ProviderDashboardTab extends StatelessWidget {
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
-                        colors: [Color(0xFF1E3A8A), Color(0xFF2563EB)],
+                        colors: [AppColors.primaryDark, AppColors.primary],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.primary.withOpacity(0.25),
+                          color: AppColors.primaryDark.withOpacity(0.25),
                           blurRadius: 10,
                           offset: const Offset(0, 4),
                         ),
@@ -529,17 +531,17 @@ class _ProviderDashboardTab extends StatelessWidget {
                                   padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                                   decoration: BoxDecoration(
                                     color: activeBooking.isInstantMatch
-                                        ? Colors.amber.shade100
+                                        ? AppColors.warningLight
                                         : AppColors.primaryUltraLight,
                                     borderRadius: BorderRadius.circular(6),
                                   ),
                                   child: Text(
-                                    activeBooking.isInstantMatch ? '⚡ INSTANT' : '📅 SCHEDULED',
+                                    activeBooking.isInstantMatch ? 'INSTANT' : 'SCHEDULED',
                                     style: TextStyle(
                                       fontSize: 10,
                                       fontWeight: FontWeight.w700,
                                       color: activeBooking.isInstantMatch
-                                          ? Colors.amber.shade900
+                                          ? AppColors.warning
                                           : AppColors.primary,
                                     ),
                                   ),
@@ -679,87 +681,82 @@ class _ProviderDashboardTab extends StatelessWidget {
 
               const SizedBox(height: 20),
 
-              // Trade Profile & Qualifications Card
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppColors.borderLight),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Expanded(
-                          child: Row(
-                            children: [
-                              Icon(Icons.badge, size: 18, color: AppColors.primary),
-                              SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  'Trade Profile & Rates',
-                                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
+              // Trade Profile & Rates Section
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Trade Profile & Rates',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                  ),
+                  TextButton.icon(
+                    key: const Key('dashboard_view_profile_header_button'),
+                    onPressed: () {
+                      final p = context.read<ServiceDirectoryProvider>().myProfile;
+                      final providerToView = p ?? ProviderProfileModel(
+                        id: auth.currentUser?.id ?? 'prov-me',
+                        userId: auth.currentUser?.id ?? 'prov-me',
+                        fullName: auth.currentUser?.fullName ?? 'Service Provider',
+                        skillCategories: const [],
+                        serviceArea: auth.currentUser?.address ?? 'Colombo',
+                        rating: 0.0,
+                        totalReviews: 0,
+                        completedJobs: 0,
+                        isVerified: isVerified,
+                        headline: null,
+                        yearsOfExperience: 0,
+                      );
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => PublicProviderProfileScreen(
+                            providerId: providerToView.id,
+                            initialProfile: providerToView,
+                            isOwnProfile: true,
                           ),
                         ),
-                        TextButton.icon(
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(builder: (_) => const EditProviderProfileScreen()),
-                            );
-                          },
-                          icon: const Icon(Icons.edit, size: 14),
-                          label: const Text('Edit Details', style: TextStyle(fontSize: 12)),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Consumer<ServiceDirectoryProvider>(
-                      builder: (context, dir, _) {
-                        final p = dir.myProfile;
-                        final skills = p?.skillCategories.isNotEmpty == true
-                            ? p!.skillCategories.join(' · ')
-                            : (p?.servicesOffered.isNotEmpty == true
-                                ? p!.servicesOffered.join(' · ')
-                                : 'Categories not set');
-                        final hourlyRate = p?.hourlyRate;
-                        final rate = hourlyRate != null && hourlyRate > 0
-                            ? 'Rs. ${hourlyRate.toInt()} / hr'
-                            : (p != null ? 'Custom Job Quotes' : 'Rate not set');
-                        final exp = p != null && p.yearsOfExperience > 0
-                            ? '${p.yearsOfExperience} yrs exp'
-                            : 'Experience not set';
-                        final headline = p?.headline?.isNotEmpty == true
-                            ? p!.headline!
-                            : (p?.fullName != null
-                                ? '${p!.fullName} • Verified Trade Specialist'
-                                : 'Add your trade headline');
+                      );
+                    },
+                    icon: const Icon(Icons.visibility_outlined, size: 14),
+                    label: const Text('View Profile', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
 
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              headline,
-                              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              '$skills  ·  $exp  ·  $rate',
-                              style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
-                            ),
-                          ],
-                        );
-                      },
-                    ),
-                  ],
-                ),
+              Consumer<ServiceDirectoryProvider>(
+                builder: (context, dir, _) {
+                  final p = dir.myProfile;
+                  final providerToDisplay = p ?? ProviderProfileModel(
+                    id: auth.currentUser?.id ?? 'prov-me',
+                    userId: auth.currentUser?.id ?? 'prov-me',
+                    fullName: auth.currentUser?.fullName ?? 'Service Provider',
+                    skillCategories: const [],
+                    serviceArea: auth.currentUser?.address ?? 'Colombo',
+                    rating: 0.0,
+                    totalReviews: 0,
+                    completedJobs: 0,
+                    isVerified: isVerified,
+                    headline: null,
+                    yearsOfExperience: 0,
+                  );
+
+                  return ProviderListingCard(
+                    provider: providerToDisplay,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => PublicProviderProfileScreen(
+                            providerId: providerToDisplay.id,
+                            initialProfile: providerToDisplay,
+                            isOwnProfile: true,
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                },
               ),
 
               const SizedBox(height: 24),

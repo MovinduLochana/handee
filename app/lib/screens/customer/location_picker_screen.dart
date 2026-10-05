@@ -240,7 +240,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
             )
           else
             Container(
-              color: Colors.grey.shade200,
+              color: AppColors.borderLight,
               alignment: Alignment.center,
               child: const Text('Map preview unavailable. Use address input below.'),
             ),
