@@ -10,11 +10,8 @@ class RegisterScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
       appBar: AppBar(
         title: const Text('Choose Account Type'),
-        backgroundColor: Colors.white,
-        elevation: 0,
       ),
       body: SafeArea(
         child: Padding(
@@ -62,7 +59,7 @@ class RegisterScreen extends StatelessWidget {
                 context: context,
                 title: 'Service Provider / Pro',
                 badge: 'Specialized Onboarding',
-                badgeColor: const Color(0xFFD97706),
+                badgeColor: AppColors.warning,
                 description:
                     'Register through our specialized onboarding flow where you specify trade categories, service radius, and upload identity/certification documents for admin verification.',
                 icon: Icons.handyman_outlined,
@@ -124,14 +121,14 @@ class RegisterScreen extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.surface,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.border, width: 1.5),
-          boxShadow: [
+          border: Border.all(color: AppColors.borderLight, width: 1.5),
+          boxShadow: const [
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: AppColors.cardShadow,
               blurRadius: 10,
-              offset: const Offset(0, 4),
+              offset: Offset(0, 4),
             ),
           ],
         ),

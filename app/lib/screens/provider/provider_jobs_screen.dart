@@ -71,21 +71,21 @@ class _ProviderJobsScreenState extends State<ProviderJobsScreen> with TickerProv
 
     switch (conflict.severity) {
       case ConflictSeverity.conflict:
-        bgColor = const Color(0xFFFFF1F2);
-        borderColor = const Color(0xFFFECDD3);
-        textColor = const Color(0xFF9F1239);
+        bgColor = AppColors.errorLight;
+        borderColor = AppColors.error.withOpacity(0.3);
+        textColor = AppColors.error;
         icon = Icons.warning_amber_rounded;
         break;
       case ConflictSeverity.tight:
-        bgColor = const Color(0xFFFFFBEB);
-        borderColor = const Color(0xFFFDE68A);
-        textColor = const Color(0xFF92400E);
+        bgColor = AppColors.warningLight;
+        borderColor = AppColors.warning.withOpacity(0.3);
+        textColor = AppColors.warning;
         icon = Icons.timelapse;
         break;
       case ConflictSeverity.clear:
-        bgColor = const Color(0xFFF0FDF4);
-        borderColor = const Color(0xFFDCFCE7);
-        textColor = const Color(0xFF166534);
+        bgColor = AppColors.successLight;
+        borderColor = AppColors.success.withOpacity(0.3);
+        textColor = AppColors.success;
         icon = Icons.check_circle_outline;
         break;
     }
@@ -552,10 +552,10 @@ class _ProviderJobsScreenState extends State<ProviderJobsScreen> with TickerProv
 
         return Card(
           elevation: 0,
-          color: Colors.white,
+          color: AppColors.surface,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
-            side: const BorderSide(color: Color(0xFFE2E8F0)),
+            side: const BorderSide(color: AppColors.borderLight),
           ),
           child: Padding(
             padding: const EdgeInsets.all(16),
@@ -580,21 +580,21 @@ class _ProviderJobsScreenState extends State<ProviderJobsScreen> with TickerProv
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFFFFBEB),
+                        color: AppColors.warningLight,
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: const Color(0xFFFDE68A)),
+                        border: Border.all(color: AppColors.warning.withOpacity(0.3)),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.timer_outlined, size: 12, color: Color(0xFF92400E)),
+                          const Icon(Icons.timer_outlined, size: 12, color: AppColors.warning),
                           const SizedBox(width: 4),
                           Text(
                             _formatExpiration(booking),
                             style: const TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w500,
-                              color: Color(0xFF92400E),
+                              color: AppColors.warning,
                             ),
                           ),
                         ],
@@ -621,9 +621,9 @@ class _ProviderJobsScreenState extends State<ProviderJobsScreen> with TickerProv
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFF8FAFC),
+                            color: AppColors.surfaceElevated,
                             borderRadius: BorderRadius.circular(6),
-                            border: Border.all(color: const Color(0xFFE2E8F0)),
+                            border: Border.all(color: AppColors.borderLight),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
@@ -643,7 +643,7 @@ class _ProviderJobsScreenState extends State<ProviderJobsScreen> with TickerProv
                 if (booking.scheduledAt != null) ...[
                   const SizedBox(height: 6),
                   Row(
-                    children: [
+                     children: [
                       const Icon(Icons.calendar_today_outlined, size: 14, color: AppColors.textSecondary),
                       const SizedBox(width: 6),
                       Text(
@@ -680,9 +680,9 @@ class _ProviderJobsScreenState extends State<ProviderJobsScreen> with TickerProv
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFF8FAFC),
+                            color: AppColors.surfaceElevated,
                             borderRadius: BorderRadius.circular(6),
-                            border: Border.all(color: const Color(0xFFE2E8F0)),
+                            border: Border.all(color: AppColors.borderLight),
                           ),
                           child: const Row(
                             mainAxisSize: MainAxisSize.min,
@@ -706,9 +706,9 @@ class _ProviderJobsScreenState extends State<ProviderJobsScreen> with TickerProv
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF8FAFC),
+                      color: AppColors.surfaceElevated,
                       borderRadius: BorderRadius.circular(8),
-                      border: const Border(left: BorderSide(color: Color(0xFFCBD5E1), width: 2.5)),
+                      border: const Border(left: BorderSide(color: AppColors.border, width: 2.5)),
                     ),
                     child: Text(
                       booking.notes!,
@@ -717,7 +717,7 @@ class _ProviderJobsScreenState extends State<ProviderJobsScreen> with TickerProv
                   ),
                 ],
                 const SizedBox(height: 12),
-                const Divider(height: 1, thickness: 1, color: Color(0xFFF1F5F9)),
+                const Divider(height: 1, thickness: 1, color: AppColors.borderLight),
                 const SizedBox(height: 12),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -735,7 +735,7 @@ class _ProviderJobsScreenState extends State<ProviderJobsScreen> with TickerProv
                           key: Key('decline_booking_${booking.id}'),
                           style: OutlinedButton.styleFrom(
                             foregroundColor: AppColors.textSecondary,
-                            side: const BorderSide(color: Color(0xFFCBD5E1)),
+                            side: const BorderSide(color: AppColors.border),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                             minimumSize: const Size(76, 36),
                             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),

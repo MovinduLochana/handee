@@ -51,6 +51,16 @@ class ProviderProfileModel {
     this.isOnline = true,
   });
 
+  bool isOwnedBy({String? userId, String? profileId}) {
+    if (userId != null && (userId == this.userId || userId == id)) {
+      return true;
+    }
+    if (profileId != null && (profileId == id || profileId == this.userId)) {
+      return true;
+    }
+    return false;
+  }
+
   factory ProviderProfileModel.fromJson(Map<String, dynamic> json) {
     final rawSkills = (json['serviceCategories'] as List<dynamic>?) ?? (json['skillCategories'] as List<dynamic>?);
     final skills = rawSkills?.map((e) {

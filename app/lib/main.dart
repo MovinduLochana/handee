@@ -15,6 +15,7 @@ import 'data/repositories/invoice_repository.dart';
 import 'data/repositories/payment_repository.dart';
 import 'data/repositories/provider_availability_repository.dart';
 import 'data/repositories/provider_repository.dart';
+import 'data/repositories/review_repository.dart';
 import 'data/repositories/service_category_repository.dart';
 import 'data/repositories/service_listing_repository.dart';
 import 'providers/assistant_provider.dart';
@@ -23,6 +24,7 @@ import 'providers/booking_provider.dart';
 import 'providers/dispatch_provider.dart';
 import 'providers/job_request_provider.dart';
 import 'providers/payment_provider.dart';
+import 'providers/review_provider.dart';
 import 'providers/service_category_provider.dart';
 import 'providers/service_directory_provider.dart';
 import 'screens/auth/splash_screen.dart';
@@ -80,6 +82,10 @@ Widget buildHandeeApp({
     apiClient: client,
   );
 
+  final reviewRepository = ReviewRepository(
+    apiClient: client,
+  );
+
   return MultiProvider(
     providers: [
       Provider<ApiClient>.value(value: client),
@@ -128,6 +134,12 @@ Widget buildHandeeApp({
       ChangeNotifierProvider<ServiceCategoryProvider>(
         create: (_) => ServiceCategoryProvider(
           repository: serviceCategoryRepository,
+        ),
+      ),
+      Provider<ReviewRepository>.value(value: reviewRepository),
+      ChangeNotifierProvider<ReviewProvider>(
+        create: (_) => ReviewProvider(
+          reviewRepo: reviewRepository,
         ),
       ),
     ],
