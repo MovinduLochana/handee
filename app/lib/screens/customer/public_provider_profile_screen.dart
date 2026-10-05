@@ -49,19 +49,11 @@ class _PublicProviderProfileScreenState extends State<PublicProviderProfileScree
 
   bool _isOwnProfile(ProviderProfileModel provider, AuthProvider? auth, ServiceDirectoryProvider providerData) {
     if (widget.isOwnProfile) return true;
-    if (auth != null && auth.isProvider) {
-      final uid = auth.currentUser?.id;
-      if (uid != null && (uid == provider.userId || uid == provider.id)) {
-        return true;
-      }
-    }
-    final myProfile = providerData.myProfile;
-    if (myProfile != null) {
-      if (myProfile.id == provider.id || myProfile.userId == provider.userId) {
-        return true;
-      }
-    }
-    return false;
+    final currentUserId = (auth?.isProvider == true) ? auth?.currentUser?.id : null;
+    return provider.isOwnedBy(
+      userId: currentUserId,
+      profileId: providerData.myProfile?.id,
+    );
   }
 
 

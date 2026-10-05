@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../core/constants/colors.dart';
+import '../core/network/api_client.dart';
 import '../data/models/review_model.dart';
 import '../providers/review_provider.dart';
 import 'star_rating_picker.dart';
@@ -156,11 +157,23 @@ class _WriteReviewBottomSheetState extends State<WriteReviewBottomSheet> {
           ),
         );
       }
+    } on ApiException catch (e) {
+      if (mounted) {
+        setState(() {
+          if (e.statusCode == 409 || e.message.contains('already reviewed')) {
+            _localError = 'You have already reviewed this provider.';
+          } else {
+            _localError = isEditing
+                ? 'Failed to update review. Please try again.'
+                : 'Failed to submit review. Please try again.';
+          }
+        });
+      }
     } catch (e) {
       if (mounted) {
         setState(() {
           final msg = e.toString();
-          if (msg.contains('already reviewed') || msg.contains('409')) {
+          if (msg.contains('already reviewed')) {
             _localError = 'You have already reviewed this provider.';
           } else {
             _localError = isEditing

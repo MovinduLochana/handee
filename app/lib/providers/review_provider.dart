@@ -22,12 +22,6 @@ class ReviewProvider extends ChangeNotifier {
   int totalReviewsFor(String providerId) =>
       _totalReviewsByProvider[providerId] ?? _reviewsByProvider[providerId]?.length ?? 0;
 
-  double averageRatingFor(String providerId) {
-    final list = _reviewsByProvider[providerId];
-    if (list == null || list.isEmpty) return 0.0;
-    final sum = list.fold<int>(0, (prev, r) => prev + r.rating);
-    return double.parse((sum / list.length).toStringAsFixed(1));
-  }
 
   Future<void> fetchReviews(String providerId, {bool refresh = false, int page = 1, int pageSize = 10}) async {
     if (!refresh && _reviewsByProvider.containsKey(providerId) && page == 1) {

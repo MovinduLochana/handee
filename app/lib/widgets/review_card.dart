@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../core/constants/colors.dart';
 import '../data/models/review_model.dart';
+import 'star_rating_display.dart';
 
 class ReviewCard extends StatelessWidget {
   final ReviewModel review;
@@ -92,21 +93,7 @@ class ReviewCard extends StatelessWidget {
                   ],
                 ),
               ),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: List.generate(5, (index) {
-                  final starIndex = index + 1;
-                  return Icon(
-                    starIndex <= review.rating
-                        ? Icons.star_rounded
-                        : Icons.star_outline_rounded,
-                    size: 18,
-                    color: starIndex <= review.rating
-                        ? Colors.amber
-                        : AppColors.border,
-                  );
-                }),
-              ),
+              StarRatingDisplay(rating: review.rating, size: 18),
               if (isOwnReview || onEdit != null || onDelete != null) ...[
                 const SizedBox(width: 4),
                 PopupMenuButton<String>(

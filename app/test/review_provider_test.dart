@@ -307,39 +307,5 @@ void main() {
     expect(result.photoUrls, contains('https://example.com/p1.jpg'));
     expect(provider.reviewsFor('prov-600').first.photoUrls, contains('https://example.com/p1.jpg'));
   });
-
-  test('ReviewProvider.averageRatingFor recalculates dynamic average after add, edit, and delete', () async {
-    final review1 = ReviewModel(
-      id: 'rev-avg-1',
-      providerProfileId: 'prov-700',
-      customerId: 'cust-1',
-      customerName: 'User 1',
-      rating: 3,
-      createdAt: DateTime(2026, 10, 1),
-    );
-    final review2 = ReviewModel(
-      id: 'rev-avg-2',
-      providerProfileId: 'prov-700',
-      customerId: 'cust-2',
-      customerName: 'User 2',
-      rating: 5,
-      createdAt: DateTime(2026, 10, 2),
-    );
-
-    final fakeRepo = FakeReviewRepository(
-      stubbedReviews: [review1, review2],
-      totalCount: 2,
-    );
-
-    final provider = ReviewProvider(reviewRepo: fakeRepo);
-    await provider.fetchReviews('prov-700');
-
-    // (3 + 5) / 2 = 4.0
-    expect(provider.averageRatingFor('prov-700'), 4.0);
-
-    // Delete review1 (rating 3) -> remaining review2 (rating 5) -> average 5.0
-    await provider.deleteReview(providerId: 'prov-700', reviewId: 'rev-avg-1');
-    expect(provider.averageRatingFor('prov-700'), 5.0);
-  });
 }
 

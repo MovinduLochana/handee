@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
+import 'package:app/core/network/api_client.dart';
 import 'package:app/data/models/review_model.dart';
 import 'package:app/data/repositories/review_repository.dart';
 import 'package:app/providers/review_provider.dart';
@@ -19,7 +20,7 @@ class StubReviewRepository extends Fake implements ReviewRepository {
     String? comment,
   }) async {
     if (shouldThrowConflict) {
-      throw Exception('Customer has already reviewed this provider.');
+      throw ApiException(statusCode: 409, message: 'Customer has already reviewed this provider.');
     }
     addedProviderId = providerId;
     addedRating = rating;
