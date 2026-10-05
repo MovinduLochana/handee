@@ -12,6 +12,7 @@ import '../../providers/payment_provider.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/invoice_payment_sheet.dart';
 import '../../widgets/predefined_slot_picker.dart';
+import '../../widgets/review_prompt_card.dart';
 import '../../widgets/status_badge.dart';
 import '../customer/public_provider_profile_screen.dart';
 
@@ -30,6 +31,8 @@ class BookingDetailScreen extends StatefulWidget {
 }
 
 class _BookingDetailScreenState extends State<BookingDetailScreen> {
+  int? _submittedReviewRating;
+
   @override
   void initState() {
     super.initState();
@@ -196,9 +199,9 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFFF1F2),
+                  color: AppColors.errorLight,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFFFECDD3)),
+                  border: Border.all(color: AppColors.error.withOpacity(0.3)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -218,7 +221,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                       booking.notes != null && booking.notes!.toLowerCase().contains('declined reason:')
                           ? booking.notes!
                           : 'The service provider declined this scheduled booking request. Your requested time slot has been released.',
-                      style: const TextStyle(fontSize: 13, color: Color(0xFF9F1239), height: 1.4),
+                      style: const TextStyle(fontSize: 13, color: AppColors.error, height: 1.4),
                     ),
                   ],
                 ),
@@ -251,6 +254,11 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
 
             // Pricing & Invoice Breakdown
             _buildPricingSection(context, booking, currencyFormat),
+
+            if (!isViewerProvider && booking.isCompleted) ...[
+              const SizedBox(height: 18),
+              _buildReviewPromptCard(context, booking),
+            ],
 
             const SizedBox(height: 24),
 
@@ -855,6 +863,24 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
       ],
     );
   }
+
+  Widget _buildReviewPromptCard(BuildContext context, BookingModel booking) {
+    final providerId = booking.provider?.id ?? booking.providerId;
+    final providerName = booking.provider?.fullName ?? booking.providerName ?? 'Service Specialist';
+
+    return ReviewPromptCard(
+      providerId: providerId,
+      providerName: providerName,
+      initialRating: _submittedReviewRating,
+      onSubmitted: (rating) {
+        if (mounted) {
+          setState(() {
+            _submittedReviewRating = rating;
+          });
+        }
+      },
+    );
+  }
 }
 
 /// Modern Rescheduling Bottom Sheet integrating PredefinedSlotPicker
@@ -949,7 +975,7 @@ class _RescheduleBottomSheetState extends State<_RescheduleBottomSheet> {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.grey.shade300,
+                color: AppColors.border,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),

@@ -157,7 +157,7 @@ void main() {
 
     // 2. Verify Active Field Assignment has real data
     expect(find.text('Active Field Assignment'), findsOneWidget);
-    expect(find.text('⚡ INSTANT'), findsOneWidget);
+    expect(find.text('INSTANT'), findsOneWidget);
     expect(find.text('Emergency Pipe Repair'), findsOneWidget);
     expect(find.text('Kasun Perera'), findsOneWidget);
     expect(find.text('Rs. 4,500'), findsOneWidget);

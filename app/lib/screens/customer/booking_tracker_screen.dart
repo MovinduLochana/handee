@@ -12,6 +12,7 @@ import '../../providers/job_request_provider.dart';
 import '../../providers/payment_provider.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/invoice_payment_sheet.dart';
+import '../../widgets/review_prompt_card.dart';
 import '../../widgets/status_badge.dart';
 import '../../widgets/urgency_badge.dart';
 
@@ -97,6 +98,7 @@ class _BookingTrackerScreenState extends State<BookingTrackerScreen> {
 
     final isProviderAccepted = matchingBooking != null && (matchingBooking.isAccepted || matchingBooking.isInProgress);
     final isProviderDeclined = matchingBooking != null && (matchingBooking.isDeclined || matchingBooking.isExpired);
+    final isProviderCompleted = matchingBooking != null && matchingBooking.isCompleted;
     final providerName = matchingBooking?.providerName ?? workflow?.selectedProviderName ?? 'Matched Provider';
 
     final isPendingReview = request.isPendingAiReview;
@@ -415,12 +417,16 @@ class _BookingTrackerScreenState extends State<BookingTrackerScreen> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: isProviderAccepted ? Colors.white : const Color(0xFFFFFBEB),
+                  color: isProviderAccepted
+                      ? AppColors.surface
+                      : (isProviderDeclined ? AppColors.errorLight : AppColors.warningLight),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
                     color: isProviderAccepted
                         ? AppColors.success.withOpacity(0.4)
-                        : (isProviderDeclined ? AppColors.error.withOpacity(0.4) : const Color(0xFFFDE68A)),
+                        : (isProviderDeclined
+                            ? AppColors.error.withOpacity(0.4)
+                            : AppColors.warning.withOpacity(0.4)),
                     width: 1.5,
                   ),
                 ),
@@ -432,7 +438,7 @@ class _BookingTrackerScreenState extends State<BookingTrackerScreen> {
                           : (isProviderDeclined ? Icons.error_outline : Icons.schedule_send_rounded),
                       color: isProviderAccepted
                           ? AppColors.success
-                          : (isProviderDeclined ? AppColors.error : const Color(0xFFD97706)),
+                          : (isProviderDeclined ? AppColors.error : AppColors.warning),
                       size: 24,
                     ),
                     const SizedBox(width: 12),
@@ -447,7 +453,7 @@ class _BookingTrackerScreenState extends State<BookingTrackerScreen> {
                           fontSize: 12,
                           color: isProviderAccepted
                               ? AppColors.textSecondary
-                              : (isProviderDeclined ? const Color(0xFF9F1239) : const Color(0xFF92400E)),
+                              : (isProviderDeclined ? AppColors.error : AppColors.warning),
                           height: 1.4,
                           fontWeight: isProviderAccepted ? FontWeight.normal : FontWeight.w500,
                         ),
@@ -626,18 +632,18 @@ class _BookingTrackerScreenState extends State<BookingTrackerScreen> {
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFFFFBEB),
+                                color: AppColors.warningLight,
                                 borderRadius: BorderRadius.circular(10),
-                                border: Border.all(color: const Color(0xFFFDE68A)),
+                                border: Border.all(color: AppColors.warning.withOpacity(0.3)),
                               ),
                               child: Row(
                                 children: [
-                                  const Icon(Icons.info_outline, size: 16, color: Color(0xFFD97706)),
+                                  const Icon(Icons.info_outline, size: 16, color: AppColors.warning),
                                   const SizedBox(width: 8),
                                   Expanded(
                                     child: Text(
                                       'Payment unlocks once $providerName accepts the booking request.',
-                                      style: const TextStyle(fontSize: 12, color: Color(0xFF92400E), fontWeight: FontWeight.w500),
+                                      style: const TextStyle(fontSize: 12, color: AppColors.warning, fontWeight: FontWeight.w500),
                                     ),
                                   ),
                                 ],
@@ -674,6 +680,16 @@ class _BookingTrackerScreenState extends State<BookingTrackerScreen> {
                 },
               ),
               const SizedBox(height: 24),
+            ],
+
+            if (isProviderCompleted) ...[
+              ReviewPromptCard(
+                providerId: matchingBooking.providerId,
+                providerName: providerName,
+                buttonKey: const Key('tracker_rate_specialist_button'),
+                buttonLabel: 'Rate Specialist',
+              ),
+              const SizedBox(height: 16),
             ],
 
             // Back to Dashboard Button

@@ -264,10 +264,10 @@ class _PredefinedSlotPickerState extends State<PredefinedSlotPicker> {
                   width: 50,
                   padding: const EdgeInsets.symmetric(vertical: 5),
                   decoration: BoxDecoration(
-                    color: isSelected ? AppColors.primary : Colors.white,
+                    color: isSelected ? AppColors.primary : AppColors.surface,
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(
-                      color: isSelected ? AppColors.primary : const Color(0xFFE2E8F0),
+                      color: isSelected ? AppColors.primary : AppColors.borderLight,
                       width: 1.0,
                     ),
                   ),
@@ -401,21 +401,21 @@ class _PredefinedSlotPickerState extends State<PredefinedSlotPicker> {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             decoration: BoxDecoration(
-              color: const Color(0xFFFFFBEB),
+              color: AppColors.warningLight,
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: const Color(0xFFFDE68A)),
+              border: Border.all(color: AppColors.warning.withOpacity(0.3)),
             ),
             child: Row(
               children: [
-                Icon(Icons.event_busy, color: Colors.amber.shade700, size: 18),
+                const Icon(Icons.event_busy, color: AppColors.warning, size: 18),
                 const SizedBox(width: 10),
-                Expanded(
+                const Expanded(
                   child: Text(
                     'Provider is closed on this day. Please select another date.',
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
-                      color: Colors.amber.shade900,
+                      color: AppColors.warning,
                     ),
                   ),
                 ),
@@ -447,7 +447,7 @@ class _PredefinedSlotPickerState extends State<PredefinedSlotPicker> {
     return Container(
       padding: const EdgeInsets.all(2),
       decoration: BoxDecoration(
-        color: const Color(0xFFF1F5F9),
+        color: AppColors.borderLight,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
@@ -489,10 +489,10 @@ class _PredefinedSlotPickerState extends State<PredefinedSlotPicker> {
           duration: const Duration(milliseconds: 140),
           padding: const EdgeInsets.symmetric(vertical: 6),
           decoration: BoxDecoration(
-            color: isSelected ? Colors.white : Colors.transparent,
+            color: isSelected ? AppColors.surface : Colors.transparent,
             borderRadius: BorderRadius.circular(6),
             border: isSelected
-                ? Border.all(color: const Color(0xFFE2E8F0), width: 1.0)
+                ? Border.all(color: AppColors.borderLight, width: 1.0)
                 : null,
           ),
           child: Row(
@@ -511,7 +511,7 @@ class _PredefinedSlotPickerState extends State<PredefinedSlotPicker> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                   decoration: BoxDecoration(
-                    color: isSelected ? AppColors.primaryUltraLight : const Color(0xFFE2E8F0),
+                    color: isSelected ? AppColors.primaryUltraLight : AppColors.borderLight,
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
@@ -542,9 +542,9 @@ class _PredefinedSlotPickerState extends State<PredefinedSlotPicker> {
         width: double.infinity,
         padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
         decoration: BoxDecoration(
-          color: const Color(0xFFF8FAFC),
+          color: AppColors.surfaceElevated,
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: const Color(0xFFE2E8F0)),
+          border: Border.all(color: AppColors.borderLight),
         ),
         child: Center(
           child: Text(
@@ -595,12 +595,12 @@ class _PredefinedSlotPickerState extends State<PredefinedSlotPicker> {
               decoration: BoxDecoration(
                 color: isSelected
                     ? AppColors.primaryUltraLight
-                    : (isAvailable ? Colors.white : const Color(0xFFF8FAFC)),
+                    : (isAvailable ? AppColors.surface : AppColors.surfaceElevated),
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
                   color: isSelected
                       ? AppColors.primary
-                      : (isAvailable ? const Color(0xFFE2E8F0) : const Color(0xFFEDEFEF)),
+                      : (isAvailable ? AppColors.borderLight : AppColors.borderLight.withOpacity(0.5)),
                   width: isSelected ? 1.4 : 1.0,
                 ),
               ),
@@ -614,7 +614,7 @@ class _PredefinedSlotPickerState extends State<PredefinedSlotPicker> {
                       fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
                       color: isSelected
                           ? AppColors.primaryDark
-                          : (isAvailable ? AppColors.textPrimary : const Color(0xFF94A3B8)),
+                          : (isAvailable ? AppColors.textPrimary : AppColors.textMuted),
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -635,7 +635,7 @@ class _PredefinedSlotPickerState extends State<PredefinedSlotPicker> {
                       style: const TextStyle(
                         fontSize: 9,
                         fontWeight: FontWeight.w500,
-                        color: Color(0xFF94A3B8),
+                        color: AppColors.textMuted,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -657,9 +657,9 @@ class _PredefinedSlotPickerState extends State<PredefinedSlotPicker> {
       margin: const EdgeInsets.only(top: 12),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
+        color: AppColors.surfaceElevated,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: AppColors.borderLight),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -697,9 +697,9 @@ class _PredefinedSlotPickerState extends State<PredefinedSlotPicker> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppColors.surface,
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: const Color(0xFFE2E8F0)),
+              border: Border.all(color: AppColors.borderLight),
             ),
             child: Row(
               children: [
@@ -755,7 +755,7 @@ class _PredefinedSlotPickerState extends State<PredefinedSlotPicker> {
                             Expanded(
                               child: Container(
                                 height: 1.5,
-                                color: const Color(0xFFCBD5E1),
+                                color: AppColors.border,
                               ),
                             ),
                             const Icon(

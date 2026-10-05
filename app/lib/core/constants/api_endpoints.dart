@@ -109,6 +109,11 @@ class ApiEndpoints {
   static const String predefinedSlots = '/api/provider-availability/slots';
   static String providerSchedule(String providerId) => '/api/provider-availability/$providerId/schedule';
 
+  // Reviews (ReviewController, ReviewActionController)
+  static String providerReviews(String providerId) => '/api/providers/$providerId/reviews';
+  static String reviewById(String id) => '/api/reviews/$id';
+  static String reviewPhotos(String id) => '/api/reviews/$id/photos';
+
   // Service Listings (ServiceListingsController)
   static const String serviceListings = '/api/service-listings';
   static String providerServiceListings(String providerId) => '/api/service-listings/provider/$providerId';

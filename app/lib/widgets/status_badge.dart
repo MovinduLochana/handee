@@ -33,7 +33,7 @@ class StatusBadge extends StatelessWidget {
         break;
       case 'inprogress':
       case 'in_progress':
-        bg = const Color(0xFFEFF6FF);
+        bg = AppColors.infoLight;
         text = AppColors.secondary;
         label = 'In Progress';
         break;
