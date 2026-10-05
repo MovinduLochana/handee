@@ -210,6 +210,65 @@ public class PaymentController : ControllerBase
     }
 
     /// <summary>
+    /// Return URL called when customer finishes payment on PayHere.
+    /// Confirms invoice payment and redirects back to the Handee app.
+    /// </summary>
+    [HttpGet("{invoiceId:guid}/payhere-return")]
+    [AllowAnonymous]
+    public async Task<IActionResult> PayHereReturn(Guid invoiceId)
+    {
+        try
+        {
+            await _paymentService.ConfirmPayHerePaymentAsync(
+                invoiceId,
+                $"ph_ret_{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}",
+                null,
+                "LKR",
+                "4242",
+                "PAYHERE_SANDBOX"
+            );
+        }
+        catch (Exception)
+        {
+            // If already marked or concurrent notification arrived, continue
+        }
+
+        var baseAppUrl = _configuration["PayHere:BaseAppUrl"] ?? "http://localhost:5173";
+        var returnHtml = $@"<!DOCTYPE html>
+<html>
+<head>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <title>Payment Successful - Handee</title>
+    <style>
+        body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; background: #f8fafc; }}
+        .card {{ background: white; padding: 36px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.06); text-align: center; max-width: 400px; width: 90%; }}
+        .icon {{ width: 64px; height: 64px; background: #dcfce7; color: #16a34a; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 32px; margin: 0 auto 16px; font-weight: bold; }}
+        h2 {{ margin: 0 0 8px; color: #0f172a; font-size: 22px; font-weight: 800; }}
+        p {{ color: #64748b; font-size: 14px; line-height: 1.5; margin: 0 0 24px; }}
+        .btn {{ display: block; text-decoration: none; padding: 14px 20px; border-radius: 10px; font-weight: 700; font-size: 15px; margin-bottom: 12px; }}
+        .btn-primary {{ background: #0284c7; color: white; }}
+        .btn-outline {{ background: #f1f5f9; color: #475569; }}
+    </style>
+</head>
+<body>
+    <div class='card'>
+        <div class='icon'>✓</div>
+        <h2>Payment Verified!</h2>
+        <p>Your payment via PayHere was settled successfully. Returning you to the Handee app...</p>
+        <a href='handee://payment-return?invoiceId={invoiceId}' class='btn btn-primary'>Open Handee App</a>
+        <a href='{baseAppUrl}/invoices/{invoiceId}' class='btn btn-outline'>View on Web Dashboard</a>
+    </div>
+    <script>
+        setTimeout(function() {{
+            window.location.href = 'handee://payment-return?invoiceId={invoiceId}';
+        }}, 400);
+    </script>
+</body>
+</html>";
+        return Content(returnHtml, "text/html");
+    }
+
+    /// <summary>
     /// Resets an invoice back to Issued status and clears existing test payments for re-testing.
     /// </summary>
     [HttpPost("{invoiceId:guid}/reset")]

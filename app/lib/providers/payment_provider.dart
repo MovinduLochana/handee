@@ -389,6 +389,24 @@ class PaymentProvider extends ChangeNotifier {
     return await confirmPayHerePayment(invoiceId: invoiceId, bookingId: bookingId);
   }
 
+  /// Checks whether an invoice has been settled in the backend and updates cache
+  Future<bool> checkAndVerifyInvoicePaid({
+    required String invoiceId,
+    required String bookingId,
+  }) async {
+    try {
+      final invoice = await invoiceRepo.getInvoiceById(invoiceId);
+      if (invoice != null && invoice.isPaid) {
+        _invoicesByBooking[bookingId] = invoice;
+        notifyListeners();
+        return true;
+      }
+      return false;
+    } catch (_) {
+      return false;
+    }
+  }
+
   /// Resets an invoice for testing PayHere sandbox again.
   Future<bool> resetInvoiceForTesting({
     required String invoiceId,

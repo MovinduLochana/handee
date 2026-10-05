@@ -290,7 +290,7 @@ public class PaymentService : IPaymentService
         var baseAppUrl = _configuration?["PayHere:BaseAppUrl"] ?? "http://localhost:5173";
         var apiBaseUrl = _configuration?["PayHere:ApiBaseUrl"] ?? "http://localhost:5057";
 
-        var returnUrl = $"{baseAppUrl}/invoices/{invoice.Id}?status=success";
+        var returnUrl = $"{apiBaseUrl}/api/payments/{invoice.Id}/payhere-return";
         var cancelUrl = $"{baseAppUrl}/invoices/{invoice.Id}/pay?status=cancelled";
         var notifyUrl = $"{apiBaseUrl}/api/payments/payhere-notify";
 
