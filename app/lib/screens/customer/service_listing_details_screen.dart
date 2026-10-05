@@ -34,7 +34,7 @@ class ServiceListingDetailsScreen extends StatelessWidget {
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      const Color(0xFF0F172A),
+                      AppColors.primaryDark,
                       AppColors.primary.withOpacity(0.9),
                     ],
                   ),

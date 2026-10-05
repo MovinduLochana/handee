@@ -196,9 +196,9 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFFF1F2),
+                  color: AppColors.errorLight,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFFFECDD3)),
+                  border: Border.all(color: AppColors.error.withOpacity(0.3)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -218,7 +218,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                       booking.notes != null && booking.notes!.toLowerCase().contains('declined reason:')
                           ? booking.notes!
                           : 'The service provider declined this scheduled booking request. Your requested time slot has been released.',
-                      style: const TextStyle(fontSize: 13, color: Color(0xFF9F1239), height: 1.4),
+                      style: const TextStyle(fontSize: 13, color: AppColors.error, height: 1.4),
                     ),
                   ],
                 ),
@@ -949,7 +949,7 @@ class _RescheduleBottomSheetState extends State<_RescheduleBottomSheet> {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.grey.shade300,
+                color: AppColors.border,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),

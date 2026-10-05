@@ -56,7 +56,7 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
       body: screens[_currentIndex],
       bottomNavigationBar: Container(
         decoration: const BoxDecoration(
-          color: Colors.white,
+          color: AppColors.surface,
           border: Border(top: BorderSide(color: AppColors.borderLight, width: 1)),
         ),
         child: SafeArea(
@@ -65,7 +65,7 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
             currentIndex: _currentIndex,
             onTap: (index) => setState(() => _currentIndex = index),
             type: BottomNavigationBarType.fixed,
-            backgroundColor: Colors.white,
+            backgroundColor: AppColors.surface,
             selectedItemColor: AppColors.primary,
             unselectedItemColor: AppColors.textMuted,
             selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
@@ -355,15 +355,15 @@ class _ProviderDashboardTab extends StatelessWidget {
                   child: Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFFB45309), Color(0xFFF59E0B)],
+                      gradient: LinearGradient(
+                        colors: [AppColors.warning, AppColors.warning.withOpacity(0.85)],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.amber.withOpacity(0.3),
+                          color: AppColors.warning.withOpacity(0.25),
                           blurRadius: 10,
                           offset: const Offset(0, 4),
                         ),
@@ -421,14 +421,14 @@ class _ProviderDashboardTab extends StatelessWidget {
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
-                        colors: [Color(0xFF1E3A8A), Color(0xFF2563EB)],
+                        colors: [AppColors.primaryDark, AppColors.primary],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.primary.withOpacity(0.25),
+                          color: AppColors.primaryDark.withOpacity(0.25),
                           blurRadius: 10,
                           offset: const Offset(0, 4),
                         ),
@@ -529,17 +529,17 @@ class _ProviderDashboardTab extends StatelessWidget {
                                   padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                                   decoration: BoxDecoration(
                                     color: activeBooking.isInstantMatch
-                                        ? Colors.amber.shade100
+                                        ? AppColors.warningLight
                                         : AppColors.primaryUltraLight,
                                     borderRadius: BorderRadius.circular(6),
                                   ),
                                   child: Text(
-                                    activeBooking.isInstantMatch ? '⚡ INSTANT' : '📅 SCHEDULED',
+                                    activeBooking.isInstantMatch ? '⚡ INSTANT' : 'SCHEDULED',
                                     style: TextStyle(
                                       fontSize: 10,
                                       fontWeight: FontWeight.w700,
                                       color: activeBooking.isInstantMatch
-                                          ? Colors.amber.shade900
+                                          ? AppColors.warning
                                           : AppColors.primary,
                                     ),
                                   ),

@@ -67,11 +67,8 @@ class _CustomerRegisterScreenState extends State<CustomerRegisterScreen> {
     final auth = context.watch<AuthProvider>();
 
     return Scaffold(
-      backgroundColor: Colors.white,
       appBar: AppBar(
         title: const Text('Customer Registration'),
-        backgroundColor: Colors.white,
-        elevation: 0,
       ),
       body: SafeArea(
         child: SingleChildScrollView(

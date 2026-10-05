@@ -52,14 +52,14 @@ class BookingCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.surface,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFFE2E8F0)),
-          boxShadow: [
+          border: Border.all(color: AppColors.borderLight),
+          boxShadow: const [
             BoxShadow(
-              color: Colors.black.withOpacity(0.02),
+              color: AppColors.cardShadow,
               blurRadius: 8,
-              offset: const Offset(0, 2),
+              offset: Offset(0, 2),
             ),
           ],
         ),
@@ -70,38 +70,45 @@ class BookingCard extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: booking.isInstantMatch ? AppColors.warningLight : AppColors.primaryUltraLight,
-                    borderRadius: BorderRadius.circular(6),
-                    border: Border.all(
-                      color: booking.isInstantMatch
-                          ? AppColors.warning.withOpacity(0.4)
-                          : AppColors.primaryLight.withOpacity(0.4),
+                Flexible(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: booking.isInstantMatch ? AppColors.warningLight : AppColors.primaryUltraLight,
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(
+                        color: booking.isInstantMatch
+                            ? AppColors.warning.withOpacity(0.4)
+                            : AppColors.primaryLight.withOpacity(0.4),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          booking.isInstantMatch ? Icons.flash_on : Icons.calendar_today,
+                          size: 11,
+                          color: booking.isInstantMatch ? AppColors.warning : AppColors.primary,
+                        ),
+                        const SizedBox(width: 4),
+                        Flexible(
+                          child: Text(
+                            booking.isInstantMatch ? 'INSTANT DISPATCH' : 'SCHEDULED',
+                            style: TextStyle(
+                              fontSize: 9.5,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.3,
+                              color: booking.isInstantMatch ? AppColors.warning : AppColors.primary,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        booking.isInstantMatch ? Icons.flash_on : Icons.calendar_today,
-                        size: 11,
-                        color: booking.isInstantMatch ? const Color(0xFFB45309) : AppColors.primary,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        booking.isInstantMatch ? '⚡ INSTANT DISPATCH' : '📅 SCHEDULED',
-                        style: TextStyle(
-                          fontSize: 9.5,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 0.3,
-                          color: booking.isInstantMatch ? const Color(0xFFB45309) : AppColors.primary,
-                        ),
-                      ),
-                    ],
-                  ),
                 ),
+                const SizedBox(width: 8),
                 StatusBadge(status: booking.status),
               ],
             ),
@@ -123,13 +130,13 @@ class BookingCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFFFBEB),
+                  color: AppColors.warningLight,
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: const Color(0xFFFDE68A)),
+                  border: Border.all(color: AppColors.warning.withOpacity(0.3)),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.flash_on_rounded, size: 14, color: Color(0xFFD97706)),
+                    const Icon(Icons.flash_on_rounded, size: 14, color: AppColors.warning),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
@@ -137,7 +144,7 @@ class BookingCard extends StatelessWidget {
                         style: const TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xFF92400E),
+                          color: AppColors.warning,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -146,16 +153,16 @@ class BookingCard extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: AppColors.surface,
                         borderRadius: BorderRadius.circular(6),
-                        border: Border.all(color: const Color(0xFFFDE68A)),
+                        border: Border.all(color: AppColors.warning.withOpacity(0.3)),
                       ),
                       child: const Text(
                         'On-Demand',
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w700,
-                          color: Color(0xFFB45309),
+                          color: AppColors.warning,
                         ),
                       ),
                     ),
@@ -166,10 +173,10 @@ class BookingCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                 decoration: BoxDecoration(
-                  color: scheduledAt != null ? const Color(0xFFF8FAFC) : const Color(0xFFFFFBEB),
+                  color: scheduledAt != null ? AppColors.surfaceElevated : AppColors.warningLight,
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
-                    color: scheduledAt != null ? const Color(0xFFE2E8F0) : const Color(0xFFFDE68A),
+                    color: scheduledAt != null ? AppColors.borderLight : AppColors.warning.withOpacity(0.3),
                   ),
                 ),
                 child: Row(
@@ -177,7 +184,7 @@ class BookingCard extends StatelessWidget {
                     Icon(
                       scheduledAt != null ? Icons.calendar_today_rounded : Icons.schedule_rounded,
                       size: 14,
-                      color: scheduledAt != null ? AppColors.primary : Colors.amber.shade800,
+                      color: scheduledAt != null ? AppColors.primary : AppColors.warning,
                     ),
                     const SizedBox(width: 8),
                     Expanded(
@@ -188,7 +195,7 @@ class BookingCard extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
-                          color: scheduledAt != null ? AppColors.textPrimary : Colors.amber.shade900,
+                          color: scheduledAt != null ? AppColors.textPrimary : AppColors.warning,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -272,7 +279,7 @@ class BookingCard extends StatelessWidget {
             ],
 
             const SizedBox(height: 12),
-            const Divider(height: 1, color: Color(0xFFF1F5F9)),
+            const Divider(height: 1, color: AppColors.borderLight),
             const SizedBox(height: 10),
 
             // 5. Footer: Assigned Party & Price

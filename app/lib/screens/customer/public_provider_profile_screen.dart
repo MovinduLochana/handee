@@ -150,7 +150,7 @@ class _PublicProviderProfileScreenState extends State<PublicProviderProfileScree
                                   ),
                                 ),
                                 const SizedBox(width: 8),
-                                const Icon(Icons.verified, color: Colors.blueAccent, size: 20),
+                                const Icon(Icons.verified, color: Colors.white, size: 20),
                               ],
                             ),
                             if (provider.headline != null && provider.headline!.isNotEmpty) ...[
