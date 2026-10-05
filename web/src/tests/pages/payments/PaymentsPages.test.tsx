@@ -255,7 +255,21 @@ describe("Payments & Invoicing Pages", () => {
 
     vi.mocked(usersApi.getProfile).mockResolvedValueOnce(mockUser as any);
     vi.mocked(paymentsApi.getProviderEarningsSummary).mockResolvedValueOnce(mockSummary);
-    vi.mocked(paymentsApi.getProviderPayouts).mockResolvedValueOnce([]);
+    vi.mocked(paymentsApi.getProviderPayouts).mockResolvedValueOnce([
+      {
+        id: "payout-1",
+        providerId: "prov-1",
+        bookingId: "book-1",
+        invoiceId: "inv-test-123",
+        grossAmount: 10000,
+        platformFeeDeducted: 1500,
+        netAmount: 8500,
+        currency: "LKR",
+        status: "Completed",
+        createdAt: new Date().toISOString(),
+        payoutReference: "PAY-001",
+      },
+    ]);
 
     renderWithProviders(<ProviderPayoutDashboard />);
 
@@ -265,6 +279,8 @@ describe("Payments & Invoicing Pages", () => {
       expect(screen.getByText("LKR 85,000")).toBeInTheDocument();
       expect(screen.getByText("LKR 25,000")).toBeInTheDocument();
       expect(screen.getByText("85% Net Provider Revenue Share")).toBeInTheDocument();
+      const invoiceLink = screen.getByText("View Invoice").closest("a");
+      expect(invoiceLink).toHaveAttribute("href", "/invoices/inv-test-123");
     });
   });
 

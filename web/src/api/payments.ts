@@ -52,6 +52,7 @@ export interface PayoutDto {
   providerId: string;
   providerName?: string;
   bookingId: string;
+  invoiceId?: string;
   grossAmount: number;
   platformFeeDeducted: number;
   netAmount: number;

@@ -161,19 +161,20 @@ public class PaymentService : IPaymentService
         var pendingPayouts = payouts.Where(p => p.Status == PayoutStatus.Processing).Sum(p => p.NetAmount);
         var completedJobsCount = payouts.Count;
 
-        var recentPayoutDtos = payouts.Take(10).Select(p => new PayoutResponseDto(
-            p.Id,
-            p.ProviderId,
-            null,
-            p.BookingId,
-            p.GrossAmount,
-            p.PlatformFeeDeducted,
-            p.NetAmount,
-            p.Currency,
-            p.Status.ToString(),
-            p.PayoutBatchId,
-            p.DisbursedAt,
-            p.CreatedAt
+        var bookingIds = payouts
+            .Where(p => p.BookingId.HasValue)
+            .Select(p => p.BookingId!.Value)
+            .Distinct()
+            .ToList();
+
+        var invoiceMap = await _context.Invoices
+            .Where(i => bookingIds.Contains(i.BookingId))
+            .Select(i => new { i.BookingId, i.Id })
+            .ToDictionaryAsync(i => i.BookingId, i => i.Id);
+
+        var recentPayoutDtos = payouts.Take(10).Select(p => MapPayoutToDto(
+            p,
+            p.BookingId.HasValue && invoiceMap.TryGetValue(p.BookingId.Value, out var invId) ? invId : null
         )).ToList();
 
         return new ProviderEarningsSummaryDto(
@@ -212,7 +213,21 @@ public class PaymentService : IPaymentService
         var totalPaidOut = payouts.Where(p => p.Status == PayoutStatus.Completed).Sum(p => p.NetAmount);
         var pendingPayoutCount = payouts.Count(p => p.Status == PayoutStatus.Pending || p.Status == PayoutStatus.Processing);
 
-        var recentPayoutDtos = payouts.Take(50).Select(MapPayoutToDto).ToList();
+        var bookingIds = payouts
+            .Where(p => p.BookingId.HasValue)
+            .Select(p => p.BookingId!.Value)
+            .Distinct()
+            .ToList();
+
+        var invoiceMap = await _context.Invoices
+            .Where(i => bookingIds.Contains(i.BookingId))
+            .Select(i => new { i.BookingId, i.Id })
+            .ToDictionaryAsync(i => i.BookingId, i => i.Id);
+
+        var recentPayoutDtos = payouts.Take(50).Select(p => MapPayoutToDto(
+            p,
+            p.BookingId.HasValue && invoiceMap.TryGetValue(p.BookingId.Value, out var invId) ? invId : null
+        )).ToList();
 
         return new AdminPayoutsOverviewDto(
             totalGrossVolume,
@@ -238,18 +253,40 @@ public class PaymentService : IPaymentService
             payout.PayoutBatchId = $"disb_{Guid.NewGuid():N}";
         }
 
+        Guid? invoiceId = null;
+        if (payout.BookingId.HasValue)
+        {
+            var invoice = await _context.Invoices.FirstOrDefaultAsync(i => i.BookingId == payout.BookingId.Value);
+            invoiceId = invoice?.Id;
+        }
+
         await _context.SaveChangesAsync();
-        return MapPayoutToDto(payout);
+        return MapPayoutToDto(payout, invoiceId);
     }
 
     public async Task<List<PayoutResponseDto>> GetProviderPayoutsAsync(Guid providerId)
     {
-        return await _context.Payouts
+        var payouts = await _context.Payouts
             .Include(p => p.Provider)
             .Where(p => p.ProviderId == providerId)
             .OrderByDescending(p => p.CreatedAt)
-            .Select(p => MapPayoutToDto(p))
             .ToListAsync();
+
+        var bookingIds = payouts
+            .Where(p => p.BookingId.HasValue)
+            .Select(p => p.BookingId!.Value)
+            .Distinct()
+            .ToList();
+
+        var invoiceMap = await _context.Invoices
+            .Where(i => bookingIds.Contains(i.BookingId))
+            .Select(i => new { i.BookingId, i.Id })
+            .ToDictionaryAsync(i => i.BookingId, i => i.Id);
+
+        return payouts.Select(p => MapPayoutToDto(
+            p,
+            p.BookingId.HasValue && invoiceMap.TryGetValue(p.BookingId.Value, out var invId) ? invId : null
+        )).ToList();
     }
 
     public async Task<PayHereCheckoutParamsDto> GetPayHereParamsAsync(Guid invoiceId, Guid? customerId = null)
@@ -442,7 +479,7 @@ public class PaymentService : IPaymentService
             p.SettledAt
         );
 
-    private static PayoutResponseDto MapPayoutToDto(Payout p) =>
+    private static PayoutResponseDto MapPayoutToDto(Payout p, Guid? invoiceId = null) =>
         new(
             p.Id,
             p.ProviderId,
@@ -455,7 +492,8 @@ public class PaymentService : IPaymentService
             p.Status.ToString(),
             p.PayoutBatchId,
             p.DisbursedAt,
-            p.CreatedAt
+            p.CreatedAt,
+            invoiceId
         );
 }
 

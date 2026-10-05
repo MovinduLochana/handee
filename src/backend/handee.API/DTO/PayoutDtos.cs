@@ -12,7 +12,8 @@ public record PayoutResponseDto(
     string Status,
     string? PayoutBatchId,
     DateTimeOffset? DisbursedAt,
-    DateTimeOffset CreatedAt
+    DateTimeOffset CreatedAt,
+    Guid? InvoiceId = null
 )
 {
     public DateTimeOffset? ProcessedAt => DisbursedAt;

@@ -218,7 +218,13 @@ export default function ProviderPayoutDashboard() {
                     </TableCell>
                     <TableCell className="text-right">
                       <Link
-                        to="/invoices"
+                        to={
+                          payout.invoiceId
+                            ? `/invoices/${payout.invoiceId}`
+                            : payout.bookingId
+                            ? `/invoices/booking/${payout.bookingId}`
+                            : "/invoices"
+                        }
                         className={buttonVariants({ variant: "outline", size: "xs" })}
                       >
                         <Receipt className="h-3 w-3 mr-1" /> View Invoice

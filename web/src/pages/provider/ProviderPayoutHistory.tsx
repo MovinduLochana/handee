@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { paymentsApi } from "../../api/payments";
 import { usersApi } from "../../api/users";
-import { Download, ArrowLeft } from "lucide-react";
+import { Download, ArrowLeft, Receipt } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -120,6 +120,7 @@ export default function ProviderPayoutHistory() {
                   <TableHead>15% Handee Fee</TableHead>
                   <TableHead>Net Deposited</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Invoice</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -145,6 +146,20 @@ export default function ProviderPayoutHistory() {
                       <Badge variant="outline" className="text-xs">
                         {p.status}
                       </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Link
+                        to={
+                          p.invoiceId
+                            ? `/invoices/${p.invoiceId}`
+                            : p.bookingId
+                            ? `/invoices/booking/${p.bookingId}`
+                            : "/invoices"
+                        }
+                        className={buttonVariants({ variant: "outline", size: "xs" })}
+                      >
+                        <Receipt className="h-3 w-3 mr-1" /> View Invoice
+                      </Link>
                     </TableCell>
                   </TableRow>
                 ))}

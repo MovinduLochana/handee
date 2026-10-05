@@ -9,6 +9,7 @@ class PayoutModel {
   final String currency;
   final String status;
   final String? payoutBatchId;
+  final String? invoiceId;
   final DateTime? disbursedAt;
   final DateTime createdAt;
 
@@ -17,6 +18,7 @@ class PayoutModel {
     required this.providerId,
     this.providerName,
     required this.bookingId,
+    this.invoiceId,
     required this.grossAmount,
     required this.platformFeeDeducted,
     required this.netAmount,
@@ -33,6 +35,7 @@ class PayoutModel {
       providerId: json['providerId']?.toString() ?? '',
       providerName: json['providerName']?.toString(),
       bookingId: json['bookingId']?.toString() ?? '',
+      invoiceId: json['invoiceId']?.toString(),
       grossAmount: (json['grossAmount'] as num?)?.toDouble() ?? 0.0,
       platformFeeDeducted: (json['platformFeeDeducted'] as num?)?.toDouble() ?? 0.0,
       netAmount: (json['netAmount'] as num?)?.toDouble() ?? 0.0,
@@ -50,6 +53,7 @@ class PayoutModel {
       'providerId': providerId,
       'providerName': providerName,
       'bookingId': bookingId,
+      'invoiceId': invoiceId,
       'grossAmount': grossAmount,
       'platformFeeDeducted': platformFeeDeducted,
       'netAmount': netAmount,
