@@ -144,20 +144,20 @@ export default function ProviderBookings() {
         </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="mb-4">
-          <TabsTrigger value="requests" className="gap-2">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full space-y-6">
+        <TabsList className="h-11 p-1 bg-muted/60 border border-border/60 rounded-xl inline-flex">
+          <TabsTrigger value="requests" className="gap-2 px-4 py-2 text-xs sm:text-sm font-medium">
             <span>Inquiries / Requests</span>
             {requests.length > 0 && (
-              <Badge variant="secondary" className="px-1.5 py-0.2 text-[10px] rounded-full">
+              <Badge variant="secondary" className="px-2 py-0.5 text-xs font-bold rounded-full">
                 {requests.length}
               </Badge>
             )}
           </TabsTrigger>
-          <TabsTrigger value="confirmed" className="gap-2">
+          <TabsTrigger value="confirmed" className="gap-2 px-4 py-2 text-xs sm:text-sm font-medium">
             <span>Confirmed Bookings</span>
             {confirmedBookings.length > 0 && (
-              <Badge variant="secondary" className="px-1.5 py-0.2 text-[10px] rounded-full">
+              <Badge variant="secondary" className="px-2 py-0.5 text-xs font-bold rounded-full">
                 {confirmedBookings.length}
               </Badge>
             )}

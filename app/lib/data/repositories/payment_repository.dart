@@ -95,4 +95,115 @@ class PaymentRepository {
       return [];
     }
   }
+
+  /// Fetches PayHere checkout parameters and MD5 hash for an invoice.
+  Future<Map<String, dynamic>?> getPayHereParams(String invoiceId) async {
+    try {
+      final response = await apiClient.get(ApiEndpoints.payHereParams(invoiceId));
+      if (response is Map<String, dynamic>) {
+        return response;
+      }
+      return null;
+    } catch (e) {
+      debugPrint('Error fetching PayHere params: $e');
+      return null;
+    }
+  }
+
+  /// Confirms PayHere payment upon checkout completion.
+  Future<PaymentModel?> confirmPayHerePayment({
+    required String invoiceId,
+    String? paymentId,
+    String? orderId,
+    double? amount,
+    String? currency,
+    String? cardLast4,
+    String? method,
+  }) async {
+    final response = await apiClient.post(
+      ApiEndpoints.payHereConfirm,
+      body: {
+        'invoiceId': invoiceId,
+        'paymentId': paymentId,
+        'orderId': orderId,
+        'amount': amount,
+        'currency': currency,
+        'cardLast4': cardLast4 ?? '4242',
+        'method': method ?? 'PAYHERE_SANDBOX',
+      },
+    );
+
+    if (response is Map<String, dynamic>) {
+      return PaymentModel.fromJson(response);
+    }
+    return null;
+  }
+
+  /// Resets an invoice to Unpaid/Issued for sandbox re-testing.
+  Future<bool> resetInvoice(String invoiceId) async {
+    try {
+      await apiClient.post(ApiEndpoints.resetInvoice(invoiceId));
+      return true;
+    } catch (e) {
+      debugPrint('Error resetting invoice: $e');
+      return false;
+    }
+  }
+
+  /// Fetches saved bank account details for the authenticated provider.
+  Future<ProviderBankAccountModel?> getProviderBankAccount() async {
+    try {
+      final response = await apiClient.get(ApiEndpoints.providerBankAccount);
+      if (response is Map<String, dynamic>) {
+        return ProviderBankAccountModel.fromJson(response);
+      }
+      return null;
+    } catch (e) {
+      debugPrint('Error fetching provider bank account: $e');
+      return null;
+    }
+  }
+
+  /// Saves or updates Sri Lankan bank account details for payouts.
+  Future<ProviderBankAccountModel> saveProviderBankAccount({
+    required String bankName,
+    required String branchName,
+    String? branchCode,
+    required String accountNumber,
+    required String accountHolderName,
+  }) async {
+    final response = await apiClient.post(
+      ApiEndpoints.providerBankAccount,
+      body: {
+        'bankName': bankName,
+        'branchName': branchName,
+        'branchCode': branchCode,
+        'accountNumber': accountNumber,
+        'accountHolderName': accountHolderName,
+      },
+    );
+
+    if (response is Map<String, dynamic>) {
+      return ProviderBankAccountModel.fromJson(response);
+    }
+
+    throw ApiException(statusCode: 500, message: 'Failed to save bank account details');
+  }
+
+  /// Requests payout withdrawal to provider's linked bank account.
+  Future<WithdrawalResponseModel> requestWithdrawal({double? amount}) async {
+    final response = await apiClient.post(
+      ApiEndpoints.requestWithdrawal,
+      body: {
+        if (amount != null) 'amount': amount,
+      },
+    );
+
+    if (response is Map<String, dynamic>) {
+      return WithdrawalResponseModel.fromJson(response);
+    }
+
+    throw ApiException(statusCode: 500, message: 'Failed to submit withdrawal request');
+  }
 }
+

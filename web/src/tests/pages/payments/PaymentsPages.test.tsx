@@ -27,6 +27,11 @@ vi.mock("../../../api/payments", () => ({
     getProviderEarningsSummary: vi.fn(),
     processPayout: vi.fn(),
     getAdminPayoutsOverview: vi.fn(),
+    getProviderBankAccount: vi.fn(),
+    saveProviderBankAccount: vi.fn(),
+    requestWithdrawal: vi.fn(),
+    getPayHereParams: vi.fn(),
+    confirmPayHerePayment: vi.fn(),
   },
 }));
 
@@ -126,7 +131,7 @@ describe("Payments & Invoicing Pages", () => {
     });
   });
 
-  it("renders CheckoutPayment and submits sandbox card payment", async () => {
+  it("renders CheckoutPayment and initiates PayHere checkout flow", async () => {
     const mockUser = {
       id: "cust-1",
       fullName: "Test Customer",
@@ -134,20 +139,6 @@ describe("Payments & Invoicing Pages", () => {
       roles: ["Customer"],
     };
     vi.mocked(usersApi.getProfile).mockResolvedValue(mockUser as any);
-
-    savePaymentMethod(
-      {
-        type: "card",
-        brand: "Visa",
-        name: "Visa •••• 4242",
-        last4: "4242",
-        expiryMonth: 12,
-        expiryYear: 2028,
-        isDefault: true,
-        holderName: "Test Customer",
-      },
-      "cust-1",
-    );
 
     const mockInvoice: InvoiceDto = {
       id: "inv-checkout-1",
@@ -163,16 +154,25 @@ describe("Payments & Invoicing Pages", () => {
     };
 
     vi.mocked(paymentsApi.getInvoiceById).mockResolvedValue(mockInvoice);
-    vi.mocked(paymentsApi.processPayment).mockResolvedValueOnce({
-      id: "pay-1",
-      invoiceId: "inv-checkout-1",
-      amount: 4600,
+    vi.mocked(paymentsApi.getPayHereParams).mockResolvedValueOnce({
+      merchantId: "1220000",
+      returnUrl: "http://localhost:5173",
+      cancelUrl: "http://localhost:5173",
+      notifyUrl: "http://localhost:5000",
+      orderId: "inv-checkout-1",
+      items: "Handee Service Invoice",
       currency: "LKR",
-      status: "Succeeded",
-      paymentMethod: "card",
-      transactionReference: "ch_sbx_test123",
-      gatewayProvider: "Stripe-Sandbox",
-      paidAt: new Date().toISOString(),
+      amount: 4600,
+      amountFormatted: "4600.00",
+      hash: "ABCDEF123456",
+      firstName: "Test",
+      lastName: "Customer",
+      email: "test@handee.com",
+      phone: "0771234567",
+      address: "Colombo",
+      city: "Colombo",
+      country: "Sri Lanka",
+      sandbox: true,
     });
 
     render(
@@ -186,22 +186,15 @@ describe("Payments & Invoicing Pages", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText("Secure Checkout")).toBeInTheDocument();
-      expect(screen.getByText("Authorize & Pay LKR 4,600")).toBeInTheDocument();
+      expect(screen.getByRole("heading", { name: "Secure Checkout" })).toBeInTheDocument();
+      expect(screen.getByText(/PayHere Secure Gateway/i)).toBeInTheDocument();
+      expect(screen.getByText(/Pay LKR 4,600 via PayHere/i)).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByText("Authorize & Pay LKR 4,600"));
+    fireEvent.click(screen.getByText(/Pay LKR 4,600 via PayHere/i));
 
     await waitFor(() => {
-      expect(paymentsApi.processPayment).toHaveBeenCalledWith(
-        expect.objectContaining({
-          invoiceId: "inv-checkout-1",
-          paymentMethod: "card",
-          last4: "4242",
-        }),
-      );
-      expect(screen.getByText("Payment Successful!")).toBeInTheDocument();
-      expect(screen.getByText("ch_sbx_test123")).toBeInTheDocument();
+      expect(paymentsApi.getPayHereParams).toHaveBeenCalledWith("inv-checkout-1");
     });
   });
 
@@ -253,9 +246,31 @@ describe("Payments & Invoicing Pages", () => {
       completedJobsCount: 15,
     };
 
-    vi.mocked(usersApi.getProfile).mockResolvedValueOnce(mockUser as any);
-    vi.mocked(paymentsApi.getProviderEarningsSummary).mockResolvedValueOnce(mockSummary);
-    vi.mocked(paymentsApi.getProviderPayouts).mockResolvedValueOnce([]);
+    const mockBank = {
+      bankName: "Commercial Bank of Ceylon",
+      branchName: "Kollupitiya",
+      accountNumber: "8123456789",
+      accountHolderName: "Sam Provider",
+    };
+
+    vi.mocked(usersApi.getProfile).mockResolvedValue(mockUser as any);
+    vi.mocked(paymentsApi.getProviderEarningsSummary).mockResolvedValue(mockSummary);
+    vi.mocked(paymentsApi.getProviderBankAccount).mockResolvedValue(mockBank);
+    vi.mocked(paymentsApi.getProviderPayouts).mockResolvedValue([
+      {
+        id: "payout-1",
+        providerId: "prov-1",
+        bookingId: "book-1",
+        invoiceId: "inv-test-123",
+        grossAmount: 10000,
+        platformFeeDeducted: 1500,
+        netAmount: 8500,
+        currency: "LKR",
+        status: "Completed",
+        createdAt: new Date().toISOString(),
+        payoutReference: "PAY-001",
+      },
+    ]);
 
     renderWithProviders(<ProviderPayoutDashboard />);
 
@@ -265,6 +280,11 @@ describe("Payments & Invoicing Pages", () => {
       expect(screen.getByText("LKR 85,000")).toBeInTheDocument();
       expect(screen.getByText("LKR 25,000")).toBeInTheDocument();
       expect(screen.getByText("85% Net Provider Revenue Share")).toBeInTheDocument();
+      expect(screen.getByText("Commercial Bank of Ceylon")).toBeInTheDocument();
+      expect(screen.getAllByText("Edit Bank Details")[0]).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /withdraw to bank/i })).toBeInTheDocument();
+      const invoiceLink = screen.getByText("View Invoice").closest("a");
+      expect(invoiceLink).toHaveAttribute("href", "/invoices/inv-test-123");
     });
   });
 
@@ -357,7 +377,7 @@ describe("Payments & Invoicing Pages", () => {
     unmount();
   });
 
-  it("updates checkout when a new card is added to the vault and selected", async () => {
+  it("renders CheckoutPayment with billing details and order breakdown", async () => {
     const mockInvoice: InvoiceDto = {
       id: "inv-sync-1",
       bookingId: "book-sync-1",
@@ -371,20 +391,6 @@ describe("Payments & Invoicing Pages", () => {
       issuedAt: new Date().toISOString(),
     };
 
-    savePaymentMethod(
-      {
-        type: "card",
-        brand: "Amex",
-        name: "Saviru Corporate Amex",
-        last4: "1001",
-        expiryMonth: 5,
-        expiryYear: 2030,
-        isDefault: true,
-        holderName: "Saviru Atapattu",
-      },
-      "cust-sync-2",
-    );
-
     const mockUser = {
       id: "cust-sync-2",
       fullName: "Saviru Atapattu",
@@ -393,17 +399,6 @@ describe("Payments & Invoicing Pages", () => {
     };
     vi.mocked(usersApi.getProfile).mockResolvedValue(mockUser as any);
     vi.mocked(paymentsApi.getInvoiceById).mockResolvedValue(mockInvoice);
-    vi.mocked(paymentsApi.processPayment).mockResolvedValueOnce({
-      id: "pay-sync",
-      invoiceId: "inv-sync-1",
-      amount: 5750,
-      currency: "LKR",
-      status: "Succeeded",
-      paymentMethod: "card",
-      transactionReference: "ch_amex_test1001",
-      gatewayProvider: "Stripe-Sandbox",
-      paidAt: new Date().toISOString(),
-    });
 
     render(
       <QueryClientProvider client={queryClient}>
@@ -416,21 +411,10 @@ describe("Payments & Invoicing Pages", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText("Saviru Corporate Amex")).toBeInTheDocument();
-      expect(screen.getAllByText(/1001/).length).toBeGreaterThanOrEqual(1);
-    });
-
-    fireEvent.click(screen.getByText("Saviru Corporate Amex"));
-    fireEvent.click(screen.getByText("Authorize & Pay LKR 5,750"));
-
-    await waitFor(() => {
-      expect(paymentsApi.processPayment).toHaveBeenCalledWith(
-        expect.objectContaining({
-          invoiceId: "inv-sync-1",
-          paymentMethod: "card",
-          last4: "1001",
-        }),
-      );
+      expect(screen.getByText("Saviru Atapattu")).toBeInTheDocument();
+      expect(screen.getByText("saviru@test.com")).toBeInTheDocument();
+      expect(screen.getByText("LKR 5,750")).toBeInTheDocument();
+      expect(screen.getByText("PayHere Secure Gateway")).toBeInTheDocument();
     });
   });
 });

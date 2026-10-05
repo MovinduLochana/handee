@@ -52,6 +52,7 @@ export interface PayoutDto {
   providerId: string;
   providerName?: string;
   bookingId: string;
+  invoiceId?: string;
   grossAmount: number;
   platformFeeDeducted: number;
   netAmount: number;
@@ -62,11 +63,33 @@ export interface PayoutDto {
   payoutReference?: string;
 }
 
+export interface ProviderBankAccountDto {
+  bankName: string;
+  branchName: string;
+  branchCode?: string;
+  accountNumber: string;
+  accountHolderName: string;
+  updatedAt?: string;
+}
+
+export interface WithdrawalRequestDto {
+  amount?: number;
+}
+
+export interface WithdrawalResponseDto {
+  success: boolean;
+  message: string;
+  amountRequested: number;
+  batchReference: string;
+  payoutsProcessed: number;
+}
+
 export interface ProviderEarningsSummaryDto {
   totalEarnings: number;
   availableBalance: number;
   pendingPayouts: number;
   completedJobsCount: number;
+  bankAccount?: ProviderBankAccountDto;
 }
 
 export interface AdminPayoutsOverviewDto {
@@ -157,4 +180,66 @@ export const paymentsApi = {
     const res = await api.get<AdminPayoutsOverviewDto>("/api/payouts/admin/overview");
     return res.data;
   },
+
+  getPayHereParams: async (invoiceId: string): Promise<PayHereCheckoutParamsDto> => {
+    const res = await api.get<PayHereCheckoutParamsDto>(`/api/payments/${invoiceId}/payhere-params`);
+    return res.data;
+  },
+
+  confirmPayHerePayment: async (dto: PayHereConfirmDto): Promise<PaymentDto> => {
+    const res = await api.post<PaymentDto>("/api/payments/payhere-confirm", dto);
+    return res.data;
+  },
+
+  resetInvoice: async (invoiceId: string): Promise<void> => {
+    await api.post(`/api/payments/${invoiceId}/reset`);
+  },
+
+  getProviderBankAccount: async (): Promise<ProviderBankAccountDto | null> => {
+    const res = await api.get<ProviderBankAccountDto | null>("/api/payouts/bank-account");
+    return res.data;
+  },
+
+  saveProviderBankAccount: async (dto: ProviderBankAccountDto): Promise<ProviderBankAccountDto> => {
+    const res = await api.post<ProviderBankAccountDto>("/api/payouts/bank-account", dto);
+    return res.data;
+  },
+
+  requestWithdrawal: async (amount?: number): Promise<WithdrawalResponseDto> => {
+    const res = await api.post<WithdrawalResponseDto>("/api/payouts/request-withdrawal", { amount });
+    return res.data;
+  },
 };
+
+export interface PayHereCheckoutParamsDto {
+  sandbox: boolean;
+  merchantId: string;
+  orderId: string;
+  items: string;
+  amount: number;
+  amountFormatted: string;
+  currency: string;
+  hash: string;
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  city?: string;
+  country: string;
+  returnUrl: string;
+  cancelUrl: string;
+  notifyUrl: string;
+  checkoutUrl: string;
+}
+
+export interface PayHereConfirmDto {
+  invoiceId: string;
+  paymentId?: string;
+  orderId?: string;
+  amount?: number;
+  currency?: string;
+  cardLast4?: string;
+  method?: string;
+}
+

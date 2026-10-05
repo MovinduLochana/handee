@@ -91,6 +91,7 @@ function App() {
               <Route path="/bookings/:id/quote" element={<QuoteReview />} />
               <Route path="/invoices" element={<InvoicesList />} />
               <Route path="/invoices/:id" element={<InvoiceDetail />} />
+              <Route path="/invoices/booking/:bookingId" element={<InvoiceDetail />} />
               <Route path="/invoices/:id/pay" element={<CheckoutPayment />} />
               <Route path="/account/payment-methods" element={<PaymentMethods />} />
               <Route path="/payment-methods" element={<PaymentMethods />} />

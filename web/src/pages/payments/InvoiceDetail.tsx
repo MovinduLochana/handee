@@ -1,6 +1,7 @@
 import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { paymentsApi } from "../../api/payments";
+import { usersApi } from "../../api/users";
 import { Printer, CreditCard, ArrowLeft, ShieldCheck, CheckCircle } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,23 +16,49 @@ import {
 } from "@/components/ui/table";
 
 export default function InvoiceDetail() {
-  const { id } = useParams<{ id: string }>();
+  const { id, bookingId } = useParams<{ id?: string; bookingId?: string }>();
+  const targetId = id || bookingId || "";
 
   const {
     data: invoice,
     isLoading,
     error,
   } = useQuery({
-    queryKey: ["invoice", id],
-    queryFn: () => paymentsApi.getInvoiceById(id || ""),
-    enabled: !!id,
+    queryKey: ["invoice", targetId, Boolean(bookingId)],
+    queryFn: async () => {
+      if (bookingId) {
+        return paymentsApi.getInvoiceByBooking(bookingId);
+      }
+      try {
+        return await paymentsApi.getInvoiceById(targetId);
+      } catch (err) {
+        try {
+          return await paymentsApi.getInvoiceByBooking(targetId);
+        } catch {
+          throw err;
+        }
+      }
+    },
+    enabled: !!targetId,
   });
 
+  const invoiceId = invoice?.id || id || "";
+
   const { data: payment } = useQuery({
-    queryKey: ["invoicePayment", id],
-    queryFn: () => paymentsApi.getPaymentByInvoiceId(id || ""),
-    enabled: !!id && invoice?.status === "Paid",
+    queryKey: ["invoicePayment", invoiceId],
+    queryFn: () => paymentsApi.getPaymentByInvoiceId(invoiceId),
+    enabled: !!invoiceId && invoice?.status === "Paid",
   });
+
+  const { data: userProfile } = useQuery({
+    queryKey: ["userProfile"],
+    queryFn: usersApi.getProfile,
+  });
+
+  // Providers should never see a Pay button — they receive money, not pay it
+  const isProvider = userProfile?.roles?.some(
+    (r) => r.toLowerCase() === "provider"
+  ) ?? false;
 
   const handlePrint = () => {
     window.print();
@@ -139,7 +166,7 @@ export default function InvoiceDetail() {
           <Button variant="outline" onClick={handlePrint} className="gap-2">
             <Printer className="h-4 w-4" /> Print Receipt
           </Button>
-          {invoice.status === "Issued" && (
+          {invoice.status === "Issued" && !isProvider && (
             <Link
               to={`/invoices/${invoice.id}/pay`}
               className={buttonVariants({ variant: "default" })}

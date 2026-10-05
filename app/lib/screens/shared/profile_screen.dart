@@ -5,6 +5,7 @@ import '../../providers/auth_provider.dart';
 import '../auth/login_screen.dart';
 import '../customer/edit_customer_profile_screen.dart';
 import '../provider/edit_provider_profile_screen.dart';
+import '../provider/provider_payout_management_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -130,6 +131,50 @@ class ProfileScreen extends StatelessWidget {
                 },
               ),
             ),
+
+            if (isProvider) ...[
+              const SizedBox(height: 12),
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.borderLight),
+                ),
+                child: ListTile(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  leading: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: const BoxDecoration(
+                      color: AppColors.primaryUltraLight,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.account_balance,
+                      color: AppColors.primary,
+                      size: 20,
+                    ),
+                  ),
+                  title: const Text(
+                    'Bank Details & Payouts',
+                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                  ),
+                  subtitle: const Text(
+                    'Link Sri Lankan bank account & request withdrawals',
+                    style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                  ),
+                  trailing: const Icon(Icons.arrow_forward_ios, size: 14),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const ProviderPayoutManagementScreen(),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
 
             const SizedBox(height: 16),
             const SizedBox(height: 10),

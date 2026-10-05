@@ -1,24 +1,37 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { paymentsApi, type ProcessPaymentRequestDto } from "../../api/payments";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { paymentsApi } from "../../api/payments";
 import { usersApi } from "../../api/users";
-import { usePaymentMethods } from "../../lib/paymentMethodsStore";
 import {
-  CreditCard,
   ShieldCheck,
   Lock,
   CheckCircle2,
   AlertTriangle,
   ArrowRight,
-  Plus,
-  Sparkles,
+  ArrowLeft,
+  CreditCard,
+  Smartphone,
+  Building2,
+  Check,
+  Shield,
+  Loader2,
 } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+
+declare global {
+  interface Window {
+    payhere?: {
+      startPayment: (paymentObject: Record<string, unknown>) => void;
+      onCompleted?: (orderId: string) => void;
+      onDismissed?: () => void;
+      onError?: (error: string) => void;
+    };
+  }
+}
 
 export default function CheckoutPayment() {
   const { id } = useParams<{ id: string }>();
@@ -28,53 +41,6 @@ export default function CheckoutPayment() {
     queryKey: ["userProfile"],
     queryFn: usersApi.getProfile,
   });
-
-  const { methods, addCard } = usePaymentMethods(
-    userProfile?.id,
-    userProfile?.fullName || "TEST CUSTOMER",
-  );
-
-  const [selectedId, setSelectedId] = useState<string>("");
-  const [showQuickAdd, setShowQuickAdd] = useState(false);
-  const [quickCard, setQuickCard] = useState({
-    brand: "Visa",
-    last4: "8888",
-    expiryMonth: 12,
-    expiryYear: 2029,
-    name: "Quick Checkout Card",
-  });
-
-  const [paymentSuccess, setPaymentSuccess] = useState<{
-    reference: string;
-    amount: number;
-    currency: string;
-  } | null>(null);
-
-  const [prevUserId, setPrevUserId] = useState<string | undefined>(userProfile?.id);
-
-  // Automatically select default card or update selection when user profile finishes loading
-  useEffect(() => {
-    if (userProfile?.id !== prevUserId) {
-      setPrevUserId(userProfile?.id);
-      const def = methods.find((m) => m.isDefault) || methods[0];
-      if (def) {
-        setSelectedId(def.id);
-      }
-      return;
-    }
-
-    if (methods.length > 0) {
-      if (!selectedId || !methods.some((m) => m.id === selectedId)) {
-        const def = methods.find((m) => m.isDefault) || methods[0];
-        if (def) {
-          setSelectedId(def.id);
-        }
-      }
-    }
-  }, [userProfile?.id, methods, selectedId, prevUserId]);
-
-  const activeCard =
-    methods.find((m) => m.id === selectedId) || methods.find((m) => m.isDefault) || methods[0];
 
   const {
     data: invoice,
@@ -86,49 +52,88 @@ export default function CheckoutPayment() {
     enabled: !!id,
   });
 
-  const payMutation = useMutation({
-    mutationFn: (dto: ProcessPaymentRequestDto) => paymentsApi.processPayment(dto),
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["invoice", id] });
-      queryClient.invalidateQueries({ queryKey: ["customerInvoices"] });
-      setPaymentSuccess({
-        reference: data.transactionReference,
-        amount: data.amount,
-        currency: data.currency,
-      });
-    },
-  });
+  const [paymentSuccess, setPaymentSuccess] = useState<{
+    reference: string;
+    amount: number;
+    currency: string;
+  } | null>(null);
 
-  const handlePay = () => {
-    if (!invoice || !activeCard) return;
-    payMutation.mutate({
-      invoiceId: invoice.id,
-      paymentMethod: "card",
-      paymentToken: activeCard.token || `tok_${activeCard.brand.toLowerCase()}_sandbox`,
-      last4: activeCard.last4,
-      gatewayProvider: activeCard.brand === "PayHere" ? "PayHere-Sandbox" : "Stripe-Sandbox",
-    });
-  };
+  const [payError, setPayError] = useState<string | null>(null);
+  const [isLoading2, setIsLoading2] = useState(false);
 
-  const handleQuickAdd = (e: React.FormEvent) => {
-    e.preventDefault();
-    const updated = addCard({
-      type: "card",
-      brand: quickCard.brand,
-      name: quickCard.name.trim() || `${quickCard.brand} •••• ${quickCard.last4}`,
-      last4: quickCard.last4,
-      expiryMonth: Number(quickCard.expiryMonth),
-      expiryYear: Number(quickCard.expiryYear),
-      isDefault: true,
-      holderName: userProfile?.fullName || "TEST CUSTOMER",
-    });
-    const createdItem = updated[updated.length - 1];
-    if (createdItem) {
-      setSelectedId(createdItem.id);
+  const handlePay = async () => {
+    if (!invoice) return;
+    setPayError(null);
+    setIsLoading2(true);
+
+    try {
+      const params = await paymentsApi.getPayHereParams(invoice.id);
+
+      if (typeof window !== "undefined" && window.payhere) {
+        window.payhere.onCompleted = async (orderId: string) => {
+          setIsLoading2(false);
+          try {
+            const confirmed = await paymentsApi.confirmPayHerePayment({
+              invoiceId: invoice.id,
+              orderId,
+              paymentId: `ph_${Date.now()}`,
+              amount: params.amount,
+              currency: params.currency,
+              cardLast4: "4242",
+              method: "PAYHERE",
+            });
+            queryClient.invalidateQueries({ queryKey: ["invoice", id] });
+            queryClient.invalidateQueries({ queryKey: ["customerInvoices"] });
+            setPaymentSuccess({
+              reference: confirmed.transactionReference,
+              amount: confirmed.amount,
+              currency: confirmed.currency,
+            });
+          } catch (e: unknown) {
+            const err = e as { response?: { data?: { message?: string } } };
+            setPayError(err?.response?.data?.message || "Failed to confirm payment.");
+          }
+        };
+
+        window.payhere.onDismissed = () => {
+          setIsLoading2(false);
+        };
+
+        window.payhere.onError = (errorMsg: string) => {
+          setIsLoading2(false);
+          setPayError(`Payment error: ${errorMsg}`);
+        };
+
+        window.payhere.startPayment({
+          sandbox: params.sandbox,
+          merchant_id: params.merchantId,
+          return_url: params.returnUrl,
+          cancel_url: params.cancelUrl,
+          notify_url: params.notifyUrl,
+          order_id: params.orderId,
+          items: params.items,
+          amount: params.amountFormatted,
+          currency: params.currency,
+          hash: params.hash,
+          first_name: params.firstName || userProfile?.fullName?.split(" ")[0] || "Customer",
+          last_name: params.lastName || "User",
+          email: params.email || userProfile?.email || "customer@handee.lk",
+          phone: params.phone || "0771234567",
+          address: params.address || "Colombo",
+          city: params.city || "Colombo",
+          country: params.country || "Sri Lanka",
+        });
+      } else {
+        // Fallback: full-screen redirect
+        window.location.href = `/api/payments/${invoice.id}/payhere-checkout-html`;
+      }
+    } catch (err: any) {
+      setIsLoading2(false);
+      setPayError(err?.response?.data?.message || "Failed to initiate payment.");
     }
-    setShowQuickAdd(false);
   };
 
+  // ── Loading ──────────────────────────────────────────────────────────────
   if (isLoading) {
     return (
       <div className="max-w-5xl mx-auto p-6">
@@ -156,15 +161,16 @@ export default function CheckoutPayment() {
     );
   }
 
+  // ── Already paid ─────────────────────────────────────────────────────────
   if (invoice.status === "Paid" && !paymentSuccess) {
     return (
       <div className="max-w-md mx-auto p-6">
         <Card>
           <CardContent className="text-center p-8 space-y-4">
             <CheckCircle2 className="h-12 w-12 text-emerald-500 mx-auto" />
-            <h2 className="text-xl font-bold text-foreground">Invoice Already Settled</h2>
+            <h2 className="text-xl font-bold text-foreground">Invoice Already Paid</h2>
             <p className="text-muted-foreground text-sm">
-              This invoice has already been paid successfully.
+              This invoice has already been settled successfully.
             </p>
             <Link to={`/invoices/${invoice.id}`} className={buttonVariants({ variant: "default" })}>
               View Receipt
@@ -175,6 +181,7 @@ export default function CheckoutPayment() {
     );
   }
 
+  // ── Payment success ───────────────────────────────────────────────────────
   if (paymentSuccess) {
     return (
       <div className="max-w-lg mx-auto p-6">
@@ -185,10 +192,9 @@ export default function CheckoutPayment() {
             </div>
 
             <div>
-              <h2 className="text-2xl font-bold text-foreground">Payment Successful!</h2>
+              <h2 className="text-2xl font-bold text-foreground">Payment Successful</h2>
               <p className="text-muted-foreground text-sm mt-1">
-                Settlement authorized via {activeCard?.brand || "Payment Card"} (
-                {activeCard?.last4 || "4242"})
+                Your payment has been processed securely via PayHere.
               </p>
             </div>
 
@@ -207,9 +213,7 @@ export default function CheckoutPayment() {
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Gateway:</span>
-                <span className="text-foreground">
-                  {activeCard?.brand === "PayHere" ? "PayHere" : "Stripe"}
-                </span>
+                <span className="text-foreground">PayHere</span>
               </div>
             </div>
 
@@ -218,7 +222,7 @@ export default function CheckoutPayment() {
                 to={`/invoices/${invoice.id}`}
                 className={buttonVariants({ variant: "outline" })}
               >
-                View Itemised Receipt
+                View Receipt
               </Link>
               <Link to="/invoices" className={buttonVariants({ variant: "default" })}>
                 Done <ArrowRight className="h-4 w-4 ml-1.5" />
@@ -230,21 +234,23 @@ export default function CheckoutPayment() {
     );
   }
 
+  // ── Main checkout ─────────────────────────────────────────────────────────
   return (
     <div className="max-w-5xl mx-auto p-6 space-y-6">
+      {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
             <Badge
               variant="outline"
-              className="border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 gap-1 text-xs"
+              className="border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 gap-1 text-xs"
             >
-              <Lock className="h-3 w-3" /> Secure Payment Gateway
+              <Lock className="h-3 w-3" /> Secure Checkout
             </Badge>
           </div>
           <h1 className="text-3xl font-bold tracking-tight text-foreground">Secure Checkout</h1>
           <p className="text-muted-foreground text-sm mt-0.5">
-            Complete settlement for Invoice{" "}
+            Complete payment for Invoice{" "}
             <strong className="text-foreground font-mono">
               INV-{invoice.id.slice(0, 8).toUpperCase()}
             </strong>
@@ -255,216 +261,162 @@ export default function CheckoutPayment() {
         </Link>
       </div>
 
-      {payMutation.isError && (
-        <Alert variant="destructive">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertDescription>
-            <strong>Payment Failed:</strong>{" "}
-            {(payMutation.error as any)?.response?.data?.message ||
-              (payMutation.error as Error)?.message ||
-              "Payment card declined. Please try again."}
-          </AlertDescription>
-        </Alert>
-      )}
-
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-        {/* Payment Form & Card Selector */}
-        <div className="lg:col-span-2 space-y-6">
+        {/* Payment Panel */}
+        <div className="lg:col-span-2 space-y-4">
           <Card>
-            <CardHeader className="pb-3">
-              <div className="flex justify-between items-center">
-                <CardTitle className="text-base font-bold flex items-center gap-2">
+            <CardHeader className="pb-4">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base font-semibold flex items-center gap-2">
                   <CreditCard className="h-4 w-4 text-primary" />
-                  Choose Payment Card
+                  Payment Method
                 </CardTitle>
-                <Link
-                  to="/account/payment-methods"
-                  className={buttonVariants({ variant: "ghost", size: "sm" })}
+                <Badge
+                  variant="outline"
+                  className="border-emerald-500/40 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 text-[11px] gap-1.5 font-medium px-2 py-0.5"
                 >
-                  <Sparkles className="h-3.5 w-3.5 mr-1" /> Manage Saved Cards
-                </Link>
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  Secure Gateway
+                </Badge>
               </div>
               <p className="text-xs text-muted-foreground">
-                Synced with your saved payment vault. Select a card or add a new one.
+                All transactions are encrypted and processed securely via PayHere, Central Bank of Sri Lanka approved payment provider.
               </p>
             </CardHeader>
-            <CardContent className="space-y-4">
-              {/* List of Synchronized Saved Cards */}
-              <div className="space-y-2.5">
-                {methods.length === 0 ? (
-                  <div className="text-center py-6 space-y-2">
-                    <CreditCard className="h-8 w-8 text-muted-foreground mx-auto" />
-                    <p className="text-sm text-muted-foreground">No saved cards yet.</p>
-                    <p className="text-xs text-muted-foreground">
-                      Add a card below to complete your payment.
+
+            <CardContent className="space-y-5">
+              {/* PayHere Selected Option Card */}
+              <div className="rounded-xl border border-primary/40 bg-primary/[0.03] dark:bg-primary/[0.06] p-4 sm:p-5 space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-border/60">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-lg bg-background border border-border shadow-sm flex items-center justify-center font-black text-xs tracking-wider text-amber-500">
+                      PH
+                    </div>
+                    <div>
+                      <div className="font-semibold text-sm text-foreground flex items-center gap-2">
+                        PayHere Secure Gateway
+                        <Badge variant="secondary" className="text-[10px] font-semibold tracking-wide py-0 px-1.5">
+                          Instant
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Credit/Debit Cards, Mobile Wallets & Internet Banking
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400 self-start sm:self-center">
+                    <Check className="h-4 w-4 stroke-[2.5]" />
+                    <span>Selected</span>
+                  </div>
+                </div>
+
+                {/* Accepted Payment Channels */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+                  <div className="p-2.5 rounded-lg bg-background/80 border border-border/50 flex items-center gap-2.5">
+                    <CreditCard className="h-4 w-4 text-primary shrink-0" />
+                    <div>
+                      <div className="font-medium text-foreground text-[11px]">Cards</div>
+                      <div className="text-[10px] text-muted-foreground">Visa, Mastercard, AMEX</div>
+                    </div>
+                  </div>
+                  <div className="p-2.5 rounded-lg bg-background/80 border border-border/50 flex items-center gap-2.5">
+                    <Smartphone className="h-4 w-4 text-emerald-500 shrink-0" />
+                    <div>
+                      <div className="font-medium text-foreground text-[11px]">Mobile Wallets</div>
+                      <div className="text-[10px] text-muted-foreground">eZ Cash, mCash, FriMi, Genie</div>
+                    </div>
+                  </div>
+                  <div className="p-2.5 rounded-lg bg-background/80 border border-border/50 flex items-center gap-2.5">
+                    <Building2 className="h-4 w-4 text-blue-500 shrink-0" />
+                    <div>
+                      <div className="font-medium text-foreground text-[11px]">Bank Transfer</div>
+                      <div className="text-[10px] text-muted-foreground">Major Sri Lankan Banks</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Billing Customer Info */}
+              <div className="rounded-lg border border-border/70 bg-muted/40 p-4 space-y-2">
+                <div className="text-xs font-semibold text-foreground flex items-center justify-between">
+                  <span>Billing Contact</span>
+                  <span className="text-[11px] font-normal text-muted-foreground">Linked to account</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                  <div className="space-y-0.5">
+                    <span className="text-muted-foreground text-[11px]">Customer Name</span>
+                    <p className="font-medium text-foreground">
+                      {userProfile?.fullName || "Valued Customer"}
                     </p>
                   </div>
-                ) : (
-                  methods.map((card) => {
-                    const isSelected = activeCard?.id === card.id;
-                    return (
-                      <div
-                        key={card.id}
-                        onClick={() => setSelectedId(card.id)}
-                        className={`flex items-center justify-between p-3.5 rounded border transition-colors cursor-pointer ${
-                          isSelected
-                            ? "border-primary bg-primary/5 ring-1 ring-primary"
-                            : "border-border hover:bg-muted/50"
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <div
-                            className={`h-4 w-4 rounded-full border flex items-center justify-center ${
-                              isSelected ? "border-primary bg-primary" : "border-border"
-                            }`}
-                          >
-                            {isSelected && (
-                              <div className="h-1.5 w-1.5 rounded-full bg-primary-foreground" />
-                            )}
-                          </div>
-                          <div>
-                            <div className="font-semibold text-foreground text-sm flex items-center gap-2">
-                              {card.name || `${card.brand} •••• ${card.last4}`}
-                              {card.isDefault && (
-                                <Badge
-                                  variant="outline"
-                                  className="border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] px-1.5 py-0"
-                                >
-                                  Default
-                                </Badge>
-                              )}
-                            </div>
-                            <div className="text-xs text-muted-foreground font-mono">
-                              •••• •••• •••• {card.last4}
-                            </div>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <span className="text-xs font-medium text-muted-foreground block">
-                            Exp {String(card.expiryMonth).padStart(2, "0")}/
-                            {String(card.expiryYear).slice(-2)}
-                          </span>
-                          <span className="text-[11px] text-muted-foreground font-mono">
-                            {card.brand}
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
+                  <div className="space-y-0.5">
+                    <span className="text-muted-foreground text-[11px]">Billing Email</span>
+                    <p className="font-medium text-foreground font-mono truncate">
+                      {userProfile?.email || "customer@handee.lk"}
+                    </p>
+                  </div>
+                </div>
               </div>
 
-              {/* Quick Add Card Toggle */}
-              <div>
-                {!showQuickAdd ? (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowQuickAdd(true)}
-                    className="w-full gap-2 text-xs"
-                  >
-                    <Plus className="h-3.5 w-3.5" /> Add Another Card to Vault
-                  </Button>
-                ) : (
-                  <form
-                    onSubmit={handleQuickAdd}
-                    className="bg-muted/50 p-4 rounded border border-dashed border-primary/40 space-y-3"
-                  >
-                    <div className="flex justify-between items-center">
-                      <strong className="text-xs font-semibold text-foreground">
-                        Add Card Directly to Vault
-                      </strong>
-                      <button
-                        type="button"
-                        onClick={() => setShowQuickAdd(false)}
-                        className="text-xs text-muted-foreground hover:text-foreground"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-1">
-                        <label className="text-[11px] text-muted-foreground">Brand</label>
-                        <select
-                          value={quickCard.brand}
-                          onChange={(e) => setQuickCard({ ...quickCard, brand: e.target.value })}
-                          className="w-full text-xs p-2 rounded border border-border bg-background text-foreground"
-                        >
-                          <option value="Visa">Visa</option>
-                          <option value="Mastercard">Mastercard</option>
-                          <option value="Amex">American Express</option>
-                          <option value="PayHere">PayHere Demo</option>
-                        </select>
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-[11px] text-muted-foreground">Last 4</label>
-                        <Input
-                          type="text"
-                          maxLength={4}
-                          value={quickCard.last4}
-                          onChange={(e) => setQuickCard({ ...quickCard, last4: e.target.value })}
-                          required
-                          className="h-8 text-xs font-mono"
-                        />
-                      </div>
-                    </div>
-                    <Button type="submit" size="sm" className="w-full text-xs">
-                      Save to Vault & Select
-                    </Button>
-                  </form>
-                )}
-              </div>
+              {/* Error */}
+              {payError && (
+                <Alert variant="destructive">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription>{payError}</AlertDescription>
+                </Alert>
+              )}
 
-              {/* Card Simulator Display */}
-              <div className="bg-gradient-to-br from-slate-900 to-slate-950 text-white rounded-lg p-5 h-44 flex flex-col justify-between shadow-lg relative overflow-hidden border border-slate-800">
-                <div className="flex justify-between items-center">
-                  <div className="w-10 h-7 rounded bg-gradient-to-tr from-amber-400 to-amber-600" />
-                  <span className="font-bold tracking-wider text-sm">
-                    {activeCard?.brand || "Visa"}
+              {/* Pay Button */}
+              <div className="space-y-3 pt-1">
+                <Button
+                  onClick={handlePay}
+                  disabled={isLoading2}
+                  className="w-full py-6 text-sm font-bold gap-2 bg-emerald-600 hover:bg-emerald-700 text-white shadow"
+                  size="lg"
+                >
+                  {isLoading2 ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Opening Payment Gateway...
+                    </>
+                  ) : (
+                    <>
+                      <Lock className="h-4 w-4" />
+                      Pay LKR {invoice.totalAmount.toLocaleString()} via PayHere
+                    </>
+                  )}
+                </Button>
+
+                <p className="text-center text-[11px] text-muted-foreground">
+                  You will be securely redirected to PayHere to authorize your payment. No card credentials are saved on Handee.
+                </p>
+
+                <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 text-[11px] text-muted-foreground pt-1 border-t border-border/50">
+                  <span className="flex items-center gap-1">
+                    <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" />
+                    256-bit SSL Encryption
+                  </span>
+                  <span>•</span>
+                  <span className="flex items-center gap-1">
+                    <Lock className="h-3.5 w-3.5 text-primary" />
+                    PCI-DSS Level 1 Compliant
+                  </span>
+                  <span>•</span>
+                  <span className="flex items-center gap-1">
+                    <Shield className="h-3.5 w-3.5 text-sky-500" />
+                    Bank-Grade Security
                   </span>
                 </div>
-                <div className="font-mono text-lg tracking-widest">
-                  {`•••• •••• •••• ${activeCard?.last4 || "4242"}`}
-                </div>
-                <div className="flex justify-between text-xs tracking-wider uppercase opacity-80">
-                  <div>
-                    <div className="text-[9px] opacity-60">Card Holder</div>
-                    <div className="font-semibold">
-                      {activeCard?.holderName || userProfile?.fullName || "TEST CUSTOMER"}
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-[9px] opacity-60">Expires</div>
-                    <div className="font-semibold">
-                      {activeCard
-                        ? `${String(activeCard.expiryMonth).padStart(2, "0")}/${String(activeCard.expiryYear).slice(-2)}`
-                        : "12/28"}
-                    </div>
-                  </div>
-                </div>
               </div>
-
-              <Button
-                onClick={handlePay}
-                disabled={payMutation.isPending || !activeCard}
-                className="w-full py-6 text-sm font-bold gap-2"
-                size="lg"
-              >
-                <Lock className="h-4 w-4" />
-                {payMutation.isPending
-                  ? "Processing Payment..."
-                  : `Authorize & Pay LKR ${invoice.totalAmount.toLocaleString()}`}
-              </Button>
             </CardContent>
           </Card>
         </div>
 
-        {/* Order Summary Sidebar */}
+        {/* Order Summary */}
         <div className="space-y-4">
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-base font-bold">Order Breakdown</CardTitle>
+              <CardTitle className="text-base font-bold">Order Summary</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4 text-sm">
               <div className="space-y-2">
@@ -507,7 +459,7 @@ export default function CheckoutPayment() {
                   );
                 })()}
                 <div className="flex justify-between text-muted-foreground">
-                  <span>Platform Trust Fee (15%):</span>
+                  <span>Platform Fee (15%):</span>
                   <span>LKR {invoice.platformFee.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between pt-2 border-t border-border font-bold text-base text-foreground">
@@ -521,11 +473,10 @@ export default function CheckoutPayment() {
               <div className="bg-muted p-3.5 rounded space-y-1.5 text-xs text-muted-foreground">
                 <div className="flex items-center gap-1.5 font-semibold text-foreground">
                   <ShieldCheck className="h-4 w-4 text-emerald-500" />
-                  Secure Payment
+                  Buyer Protection
                 </div>
                 <p>
-                  Platform retains funds until service completion is confirmed. The provider is
-                  directly credited upon your payment.
+                  Funds are held securely and released to the provider only upon confirmed service completion.
                 </p>
               </div>
             </CardContent>

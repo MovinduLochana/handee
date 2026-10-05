@@ -69,6 +69,15 @@ export default function AdminPaymentsOverview() {
             Processing
           </Badge>
         );
+      case "Withdrawn":
+        return (
+          <Badge
+            variant="outline"
+            className="border-violet-500/30 bg-violet-500/10 text-violet-600 dark:text-violet-400 font-semibold text-xs"
+          >
+            Withdrawn
+          </Badge>
+        );
       default:
         return (
           <Badge variant="outline" className="font-semibold text-xs">
@@ -169,7 +178,7 @@ export default function AdminPaymentsOverview() {
             Disbursement Queue & Settlement
           </CardTitle>
           <div className="flex gap-1.5 flex-wrap">
-            {["ALL", "Pending", "Processing", "Completed"].map((st) => (
+            {["ALL", "Pending", "Completed", "Withdrawn"].map((st) => (
               <Button
                 key={st}
                 variant={filter === st ? "default" : "outline"}

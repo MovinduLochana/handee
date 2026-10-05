@@ -36,3 +36,52 @@ public record PaymentResponseDto(
     public string PaymentMethod => "card";
 }
 
+public record PayHereCheckoutParamsDto(
+    bool Sandbox,
+    string MerchantId,
+    string OrderId,
+    string Items,
+    decimal Amount,
+    string AmountFormatted,
+    string Currency,
+    string Hash,
+    string? FirstName,
+    string? LastName,
+    string? Email,
+    string? Phone,
+    string? Address,
+    string? City,
+    string Country,
+    string ReturnUrl,
+    string CancelUrl,
+    string NotifyUrl,
+    string CheckoutUrl
+);
+
+public record PayHereNotificationDto(
+    string? merchant_id,
+    string? order_id,
+    string? payment_id,
+    string? payhere_amount,
+    string? payhere_currency,
+    string? status_code,
+    string? md5sig,
+    string? custom_1,
+    string? custom_2,
+    string? status_message,
+    string? method,
+    string? card_holder_name,
+    string? card_no,
+    string? card_expiry
+);
+
+public record PayHereConfirmRequestDto(
+    Guid InvoiceId,
+    string? PaymentId = null,
+    string? OrderId = null,
+    decimal? Amount = null,
+    string? Currency = null,
+    string? CardLast4 = null,
+    string? Method = null
+);
+

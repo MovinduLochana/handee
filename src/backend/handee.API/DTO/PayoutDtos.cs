@@ -12,12 +12,34 @@ public record PayoutResponseDto(
     string Status,
     string? PayoutBatchId,
     DateTimeOffset? DisbursedAt,
-    DateTimeOffset CreatedAt
+    DateTimeOffset CreatedAt,
+    Guid? InvoiceId = null
 )
 {
     public DateTimeOffset? ProcessedAt => DisbursedAt;
     public string? PayoutReference => PayoutBatchId;
 }
+
+public record ProviderBankAccountDto(
+    string BankName,
+    string BranchName,
+    string? BranchCode,
+    string AccountNumber,
+    string AccountHolderName,
+    DateTimeOffset? UpdatedAt = null
+);
+
+public record WithdrawalRequestDto(
+    decimal? Amount = null
+);
+
+public record WithdrawalResponseDto(
+    bool Success,
+    string Message,
+    decimal AmountRequested,
+    string BatchReference,
+    int PayoutsProcessed
+);
 
 public record ProviderEarningsSummaryDto(
     Guid ProviderId,
@@ -25,7 +47,8 @@ public record ProviderEarningsSummaryDto(
     decimal AvailableBalance,
     decimal PendingPayouts,
     int CompletedJobsCount,
-    List<PayoutResponseDto> RecentPayouts
+    List<PayoutResponseDto> RecentPayouts,
+    ProviderBankAccountDto? BankAccount = null
 );
 
 public record AdminPayoutsOverviewDto(

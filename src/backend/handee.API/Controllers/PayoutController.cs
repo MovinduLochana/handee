@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using handee.API.Common.Extensions;
+using handee.API.DTO;
 using handee.API.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -43,17 +44,17 @@ public class PayoutController : ControllerBase
     }
 
     [HttpGet("history")]
-    public async Task<IActionResult> GetHistory()
+    public async Task<IActionResult> GetHistory([FromQuery] string? status = null)
     {
         var providerId = User.GetUserId();
         if (providerId is null) return Unauthorized();
 
-        var payouts = await _paymentService.GetProviderPayoutsAsync(providerId.Value);
+        var payouts = await _paymentService.GetProviderPayoutsAsync(providerId.Value, status);
         return Ok(payouts);
     }
 
     [HttpGet("provider/{providerId:guid}")]
-    public async Task<IActionResult> GetByProvider(Guid providerId)
+    public async Task<IActionResult> GetByProvider(Guid providerId, [FromQuery] string? status = null)
     {
         var currentUserId = User.GetUserId();
         if (currentUserId is null) return Unauthorized();
@@ -61,7 +62,7 @@ public class PayoutController : ControllerBase
         if (currentUserId.Value != providerId && !User.IsInRole("Admin"))
             return Forbid("You can only access your own payouts.");
 
-        var payouts = await _paymentService.GetProviderPayoutsAsync(providerId);
+        var payouts = await _paymentService.GetProviderPayoutsAsync(providerId, status);
         return Ok(payouts);
     }
 
@@ -81,5 +82,47 @@ public class PayoutController : ControllerBase
         return updated == null ? NotFound(new { message = $"Payout {id} not found." }) : Ok(updated);
     }
 
+    [HttpGet("bank-account")]
+    public async Task<IActionResult> GetBankAccount()
+    {
+        var providerId = User.GetUserId();
+        if (providerId is null) return Unauthorized();
 
+        var bankAccount = await _paymentService.GetProviderBankAccountAsync(providerId.Value);
+        return Ok(bankAccount);
+    }
+
+    [HttpPost("bank-account")]
+    public async Task<IActionResult> SaveBankAccount([FromBody] ProviderBankAccountDto dto)
+    {
+        var providerId = User.GetUserId();
+        if (providerId is null) return Unauthorized();
+
+        try
+        {
+            var saved = await _paymentService.SaveProviderBankAccountAsync(providerId.Value, dto);
+            return Ok(saved);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpPost("request-withdrawal")]
+    public async Task<IActionResult> RequestWithdrawal([FromBody] WithdrawalRequestDto? dto)
+    {
+        var providerId = User.GetUserId();
+        if (providerId is null) return Unauthorized();
+
+        try
+        {
+            var result = await _paymentService.RequestWithdrawalAsync(providerId.Value, dto?.Amount);
+            return Ok(result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
 }
