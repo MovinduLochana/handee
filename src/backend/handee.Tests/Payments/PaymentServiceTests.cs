@@ -121,7 +121,7 @@ public class PaymentServiceTests
         db.Payouts.AddRange(
             new Payout { ProviderId = providerId, NetAmount = 3000m, Status = PayoutStatus.Completed },
             new Payout { ProviderId = providerId, NetAmount = 4000m, Status = PayoutStatus.Pending },
-            new Payout { ProviderId = providerId, NetAmount = 1500m, Status = PayoutStatus.Processing }
+            new Payout { ProviderId = providerId, NetAmount = 1500m, Status = PayoutStatus.Withdrawn }
         );
         await db.SaveChangesAsync();
 
@@ -130,7 +130,7 @@ public class PaymentServiceTests
 
         Assert.Equal(4500m, summary.TotalEarnings);
         Assert.Equal(3000m, summary.AvailableBalance);
-        Assert.Equal(5500m, summary.PendingPayouts);
+        Assert.Equal(4000m, summary.PendingPayouts);
         Assert.Equal(3, summary.CompletedJobsCount);
     }
 
