@@ -58,9 +58,11 @@ class _WriteReviewBottomSheetState extends State<WriteReviewBottomSheet> {
   bool _isSubmitting = false;
   String? _localError;
   late final List<XFile> _selectedPhotos;
+  late final List<String> _existingPhotos;
   late final ImagePicker _imagePicker;
 
   bool get isEditing => widget.existingReview != null;
+  int get _totalPhotoCount => _existingPhotos.length + _selectedPhotos.length;
 
   @override
   void initState() {
@@ -72,6 +74,7 @@ class _WriteReviewBottomSheetState extends State<WriteReviewBottomSheet> {
     _selectedPhotos = widget.initialPhotos != null
         ? List<XFile>.from(widget.initialPhotos!)
         : [];
+    _existingPhotos = widget.existingReview?.fullPhotoUrls ?? [];
     _imagePicker = widget.imagePicker ?? ImagePicker();
   }
 
@@ -82,6 +85,8 @@ class _WriteReviewBottomSheetState extends State<WriteReviewBottomSheet> {
   }
 
   Future<void> _pickPhoto() async {
+    if (_totalPhotoCount >= 5) return;
+
     final source = await showModalBottomSheet<ImageSource>(
       context: context,
       builder: (ctx) => SafeArea(
@@ -106,7 +111,7 @@ class _WriteReviewBottomSheetState extends State<WriteReviewBottomSheet> {
 
     try {
       final picked = await _imagePicker.pickImage(source: source, imageQuality: 80);
-      if (picked != null && mounted) {
+      if (picked != null && mounted && _totalPhotoCount < 5) {
         setState(() {
           _selectedPhotos.add(picked);
         });
@@ -305,14 +310,14 @@ class _WriteReviewBottomSheetState extends State<WriteReviewBottomSheet> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Attach Photos (${_selectedPhotos.length}/5)',
+                  'Attach Photos ($_totalPhotoCount/5)',
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
                     color: AppColors.textPrimary,
                   ),
                 ),
-                if (_selectedPhotos.length < 5)
+                if (_totalPhotoCount < 5)
                   TextButton.icon(
                     key: const Key('review_add_photo_button'),
                     onPressed: _isSubmitting ? null : _pickPhoto,
@@ -323,55 +328,77 @@ class _WriteReviewBottomSheetState extends State<WriteReviewBottomSheet> {
             ),
             const SizedBox(height: 8),
 
-            if (_selectedPhotos.isNotEmpty) ...[
+            if (_existingPhotos.isNotEmpty || _selectedPhotos.isNotEmpty) ...[
               SizedBox(
                 height: 72,
-                child: ListView.separated(
+                child: ListView(
                   scrollDirection: Axis.horizontal,
-                  itemCount: _selectedPhotos.length,
-                  separatorBuilder: (context, index) => const SizedBox(width: 8),
-                  itemBuilder: (context, i) {
-                    final photo = _selectedPhotos[i];
-                    return Stack(
-                      children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: Image.file(
-                            File(photo.path),
+                  children: [
+                    ..._existingPhotos.map((url) => Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.network(
+                          url,
+                          width: 72,
+                          height: 72,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) => Container(
                             width: 72,
                             height: 72,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) => Container(
-                              width: 72,
-                              height: 72,
-                              color: AppColors.primaryUltraLight,
-                              child: const Icon(Icons.image, color: AppColors.primary),
-                            ),
+                            color: AppColors.primaryUltraLight,
+                            child: const Icon(Icons.broken_image, size: 24, color: AppColors.textMuted),
                           ),
                         ),
-                        Positioned(
-                          top: 2,
-                          right: 2,
-                          child: GestureDetector(
-                            key: Key('review_remove_photo_$i'),
-                            onTap: () {
-                              setState(() {
-                                _selectedPhotos.removeAt(i);
-                              });
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.all(2),
-                              decoration: const BoxDecoration(
-                                color: Colors.black54,
-                                shape: BoxShape.circle,
+                      ),
+                    )),
+                    ..._selectedPhotos.asMap().entries.map((entry) {
+                      final i = entry.key;
+                      final photo = entry.value;
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: Stack(
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: Image.file(
+                                File(photo.path),
+                                width: 72,
+                                height: 72,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) => Container(
+                                  width: 72,
+                                  height: 72,
+                                  color: AppColors.primaryUltraLight,
+                                  child: const Icon(Icons.image, color: AppColors.primary),
+                                ),
                               ),
-                              child: const Icon(Icons.close, size: 14, color: Colors.white),
                             ),
-                          ),
+                            Positioned(
+                              top: 2,
+                              right: 2,
+                              child: GestureDetector(
+                                key: Key('review_remove_photo_$i'),
+                                onTap: () {
+                                  setState(() {
+                                    _selectedPhotos.removeAt(i);
+                                  });
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.all(2),
+                                  decoration: const BoxDecoration(
+                                    color: Colors.black54,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(Icons.close, size: 14, color: Colors.white),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
-                    );
-                  },
+                      );
+                    }),
+                  ],
                 ),
               ),
               const SizedBox(height: 16),

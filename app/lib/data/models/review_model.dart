@@ -39,6 +39,16 @@ class ReviewModel {
     return '${ApiEndpoints.baseUrl}$cleanPath';
   }
 
+  List<String> get fullPhotoUrls {
+    return photoUrls.map((url) {
+      if (url.startsWith('http://') || url.startsWith('https://')) {
+        return url;
+      }
+      final cleanPath = url.startsWith('/') ? url : '/$url';
+      return '${ApiEndpoints.baseUrl}$cleanPath';
+    }).toList();
+  }
+
   factory ReviewModel.fromJson(Map<String, dynamic> json) {
     final rawPhotos = json['photoUrls'] ?? json['PhotoUrls'];
     List<String> photos = [];

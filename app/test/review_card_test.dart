@@ -30,4 +30,29 @@ void main() {
     expect(find.byIcon(Icons.star_outline_rounded), findsNWidgets(1));
     expect(find.textContaining('Oct 2, 2026'), findsOneWidget);
   });
+
+  testWidgets('ReviewCard normalizes relative photoUrls so uploaded images can be viewed', (tester) async {
+    final review = ReviewModel(
+      id: 'rev-02',
+      providerProfileId: 'prov-01',
+      customerId: 'cust-01',
+      customerName: 'Kamal Perera',
+      rating: 5,
+      createdAt: DateTime.now(),
+      photoUrls: ['/uploads/reviews/work.jpg'],
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: ReviewCard(review: review),
+        ),
+      ),
+    );
+
+    final imgFinder = find.byWidgetPredicate(
+      (w) => w is Image && w.image is NetworkImage && (w.image as NetworkImage).url.contains('/uploads/reviews/work.jpg') && (w.image as NetworkImage).url.startsWith('http'),
+    );
+    expect(imgFinder, findsOneWidget);
+  });
 }

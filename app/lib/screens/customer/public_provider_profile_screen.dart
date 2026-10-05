@@ -443,16 +443,32 @@ class _PublicProviderProfileScreenState extends State<PublicProviderProfileScree
                       // Customer Reviews Section
                       Row(
                         children: [
-                          const Icon(Icons.star, size: 28, color: Colors.amber),
+                          const Icon(Icons.star, size: 24, color: Colors.amber),
                           const SizedBox(width: 8),
-                          const Text(
-                            'Customer Reviews',
-                            style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, letterSpacing: -1.0, color: AppColors.textPrimary),
+                          const Expanded(
+                            child: Text(
+                              'Customer Reviews',
+                              style: TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: -0.5,
+                                color: AppColors.textPrimary,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
-                          const Spacer(),
+                          const SizedBox(width: 8),
                           if (canWriteReview)
-                            TextButton.icon(
+                            IconButton(
                               key: const Key('write_review_button'),
+                              tooltip: 'Write a Review',
+                              icon: const Icon(Icons.rate_review_outlined, size: 22, color: AppColors.primary),
+                              style: IconButton.styleFrom(
+                                backgroundColor: AppColors.primaryUltraLight,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                              ),
                               onPressed: () async {
                                 final submitted = await WriteReviewBottomSheet.show(
                                   context,
@@ -464,11 +480,6 @@ class _PublicProviderProfileScreenState extends State<PublicProviderProfileScree
                                   context.read<ServiceDirectoryProvider>().fetchProviderProfile(widget.providerId);
                                 }
                               },
-                              icon: const Icon(Icons.rate_review_outlined, size: 16, color: AppColors.primary),
-                              label: const Text(
-                                'Write a Review',
-                                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.primary),
-                              ),
                             )
                           else if (isOwn && reviewProv != null && reviewProv.totalReviewsFor(widget.providerId) > 0)
                             Container(

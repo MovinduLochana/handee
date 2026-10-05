@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import '../core/constants/api_endpoints.dart';
 import '../core/constants/colors.dart';
 import '../data/models/review_model.dart';
 import 'star_rating_display.dart';
@@ -148,16 +149,16 @@ class ReviewCard extends StatelessWidget {
               ),
             ),
           ],
-          if (review.photoUrls.isNotEmpty) ...[
+          if (review.fullPhotoUrls.isNotEmpty) ...[
             const SizedBox(height: 12),
             SizedBox(
               height: 72,
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
-                itemCount: review.photoUrls.length,
+                itemCount: review.fullPhotoUrls.length,
                 separatorBuilder: (context, index) => const SizedBox(width: 8),
                 itemBuilder: (context, index) {
-                  final url = review.photoUrls[index];
+                  final url = review.fullPhotoUrls[index];
                   return GestureDetector(
                     key: Key('review_photo_thumbnail_$index'),
                     onTap: () => _openPhotoViewer(context, url),
@@ -187,6 +188,10 @@ class ReviewCard extends StatelessWidget {
   }
 
   void _openPhotoViewer(BuildContext context, String imageUrl) {
+    final fullUrl = imageUrl.startsWith('http://') || imageUrl.startsWith('https://')
+        ? imageUrl
+        : '${ApiEndpoints.baseUrl}${imageUrl.startsWith('/') ? imageUrl : '/$imageUrl'}';
+
     showDialog(
       context: context,
       builder: (dialogCtx) => Dialog(
@@ -199,7 +204,7 @@ class ReviewCard extends StatelessWidget {
               minScale: 0.5,
               maxScale: 4.0,
               child: Image.network(
-                imageUrl,
+                fullUrl,
                 fit: BoxFit.contain,
                 errorBuilder: (context, error, stackTrace) => const Center(
                   child: Icon(Icons.broken_image, color: Colors.white, size: 48),

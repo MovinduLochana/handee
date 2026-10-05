@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:app/core/constants/api_endpoints.dart';
 import 'package:app/data/models/review_model.dart';
 
 Map<String, dynamic> realReviewJson() => {
@@ -68,6 +69,21 @@ void main() {
       json['customerProfilePictureUrl'] = 'https://cdn.example.com/avatar.jpg';
       final model = ReviewModel.fromJson(json);
       expect(model.fullCustomerPhotoUrl, 'https://cdn.example.com/avatar.jpg');
+    });
+
+    test('fullPhotoUrls normalizes relative photo URLs with baseUrl and guarantees leading slash', () {
+      final json = realReviewJson();
+      json['photoUrls'] = [
+        'uploads/reviews/work1.jpg',
+        '/uploads/reviews/work2.jpg',
+        'https://cdn.example.com/work3.jpg'
+      ];
+      final model = ReviewModel.fromJson(json);
+
+      expect(model.fullPhotoUrls.length, 3);
+      expect(model.fullPhotoUrls[0], '${ApiEndpoints.baseUrl}/uploads/reviews/work1.jpg');
+      expect(model.fullPhotoUrls[1], '${ApiEndpoints.baseUrl}/uploads/reviews/work2.jpg');
+      expect(model.fullPhotoUrls[2], 'https://cdn.example.com/work3.jpg');
     });
 
     test('parses PagedReviewResponse correctly', () {
