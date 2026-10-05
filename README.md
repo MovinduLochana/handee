@@ -9,6 +9,8 @@
 [![Tests](https://img.shields.io/badge/Tests-687%20Passed-brightgreen)](./docs/testing-evidence/test-suite-master-summary.txt)
 [![Quality Assurance](https://img.shields.io/badge/QA%20%26%20Testing-Passed%20100%25-brightgreen)](./docs/testing/05-software-testing-report.md)
 [![Security](https://img.shields.io/badge/Security-OWASP_Top_10_Audited-blue)](./tests/security/zap-security-report.html)
+[![Azure Deployment](https://img.shields.io/badge/Azure_App_Service-Live-0078D4?logo=microsoftazure&logoColor=white)](https://sefproject-g3cmczhth2cygqgh.southeastasia-01.azurewebsites.net/api/system/info)
+[![Railway AI Subsystem](https://img.shields.io/badge/Railway_AI-Live-0B0D0E?logo=railway&logoColor=white)](https://handee-production.up.railway.app/health)
 
 **Handee** is a trust-verified marketplace connecting homeowners with vetted tradespeople (plumbers, electricians, AC technicians, painters, carpenters, and more) across Sri Lanka.
 
@@ -20,21 +22,25 @@ The platform integrates a **Single Public ASP.NET Core Backend**, an **Internal 
 
 - [1. System Architecture](#1-system-architecture)
   - [Architecture Guarantees](#architecture-guarantees)
-- [2. Quick Start (One-Command Runner)](#2-quick-start-one-command-runner)
-- [3. Platform Ports & Endpoints](#3-platform-ports--endpoints)
-- [4. Default Credentials & Seed Data](#4-default-credentials--seed-data)
-- [5. Environment & Connectivity Topology](#5-environment--connectivity-topology)
+- [2. Live Cloud Deployments & Endpoints](#2-live-cloud-deployments--endpoints)
+  - [Live Infrastructure Matrix](#live-infrastructure-matrix)
+  - [Connecting Clients Directly to Cloud](#connecting-clients-directly-to-cloud)
+  - [Automated Continuous Deployment](#automated-continuous-deployment)
+- [3. Quick Start (One-Command Runner)](#3-quick-start-one-command-runner)
+- [4. Local Platform Ports & Endpoints](#4-local-platform-ports--endpoints)
+- [5. Default Credentials & Seed Data](#5-default-credentials--seed-data)
+- [6. Environment & Connectivity Topology](#6-environment--connectivity-topology)
   - [Environment Matrix](#environment-matrix)
   - [Console Diagnostic Banners](#console-diagnostic-banners)
-- [6. Prerequisites & Manual Execution](#6-prerequisites--manual-execution)
-- [7. Automated Testing & Quality Engineering](#7-automated-testing--quality-engineering)
-  - [7.1 Master Test Suite Runner](#71-master-test-suite-runner)
-  - [7.2 Subsystem Test Suites](#72-subsystem-test-suites)
-  - [7.3 Non-Functional & Security Testing](#73-non-functional--security-testing)
-  - [7.4 Continuous Integration (CI/CD)](#74-continuous-integration-cicd)
-  - [7.5 Quality Assurance & Testing Specifications](#75-quality-assurance--testing-specifications)
-- [8. End-to-End Workflow Verification](#8-end-to-end-workflow-verification)
-- [9. Project Structure](#9-project-structure)
+- [7. Prerequisites & Manual Execution](#7-prerequisites--manual-execution)
+- [8. Automated Testing & Quality Engineering](#8-automated-testing--quality-engineering)
+  - [8.1 Master Test Suite Runner](#81-master-test-suite-runner)
+  - [8.2 Subsystem Test Suites](#82-subsystem-test-suites)
+  - [8.3 Non-Functional & Security Testing](#83-non-functional--security-testing)
+  - [8.4 Continuous Integration (CI/CD)](#84-continuous-integration-cicd)
+  - [8.5 Quality Assurance & Testing Specifications](#85-quality-assurance--testing-specifications)
+- [9. End-to-End Workflow Verification](#9-end-to-end-workflow-verification)
+- [10. Project Structure](#10-project-structure)
 
 ---
 
@@ -77,7 +83,54 @@ flowchart LR
 
 ---
 
-## 2. Quick Start (One-Command Runner)
+## 2. Live Cloud Deployments & Endpoints
+
+Handee is fully deployed across redundant cloud infrastructure, providing live APIs, background AI orchestration, serverless relational persistence, and distributed caching:
+
+### Live Infrastructure Matrix
+
+| Subsystem / Service | Hosting Provider | Live Endpoint URL | Diagnostics / OpenAPI | Notes |
+| :--- | :--- | :--- | :--- | :--- |
+| **Backend Web API** | Azure App Service (.NET 10)<br/>*Southeast Asia* | [`https://sefproject...azurewebsites.net/api`](https://sefproject-g3cmczhth2cygqgh.southeastasia-01.azurewebsites.net/api) | OpenAPI: [`/openapi/v1.json`](https://sefproject-g3cmczhth2cygqgh.southeastasia-01.azurewebsites.net/openapi/v1.json)<br/>System Info: [`/api/system/info`](https://sefproject-g3cmczhth2cygqgh.southeastasia-01.azurewebsites.net/api/system/info) | Single public entry point for all client traffic |
+| **Agentic AI Subsystem** | Railway (FastAPI + LangGraph) | [`https://handee-production.up.railway.app`](https://handee-production.up.railway.app) | Swagger: [`/docs`](https://handee-production.up.railway.app/docs)<br/>Health: [`/health`](https://handee-production.up.railway.app/health) | Internal service; invoked exclusively via Azure Backend |
+| **Relational Database** | Neon Tech Serverless PostgreSQL | `neondb` (PostgreSQL 16) | Pooled SSL connection | Auto-scaling with high availability |
+| **Distributed Cache** | Redis Cloud Labs | Cloud Redis Cluster | In-memory cache | Token blacklist, listings cache & session store |
+| **Mobile Android APK** | GitHub Actions Releases | [Build & Release Workflow](.github/workflows/build-apk.yml) | Release Artifacts: `handee-*.apk` | Pre-configured to communicate with Azure backend |
+
+### Connecting Clients Directly to Cloud
+
+You can run clients locally while connecting directly to live cloud infrastructure without spinning up local databases or backends:
+
+- **React Web Portal** (points to live Azure API):
+  ```powershell
+  cd web
+  npm run dev:cloud
+  ```
+- **Flutter Mobile App** (defaults to live Azure API):
+  ```powershell
+  cd app
+  flutter run --dart-define=USE_LOCAL=false
+  ```
+- **Automated API & E2E Testing against Cloud**:
+  ```powershell
+  # Newman E2E Workflow
+  .\tests\e2e\run-e2e-workflow.ps1 -Cloud
+
+  # Performance SLA Benchmark against Live Azure
+  .\tests\performance\run-load-test.ps1 -Cloud
+
+  # Dynamic Security & OWASP Audit against Live Azure
+  .\tests\security\run-owasp-zap.ps1 -Cloud
+  ```
+
+### Automated Continuous Deployment
+
+- **Azure App Service CD**: The ASP.NET Core backend is automatically built, configured with production secrets, and deployed to Azure upon every merge to `main` via [`.github/workflows/main_sefproject.yml`](./.github/workflows/main_sefproject.yml).
+- **Mobile Release Delivery**: Android APKs are compiled, code-signed, and published to GitHub Releases on-demand or upon version tagging via [`.github/workflows/build-apk.yml`](./.github/workflows/build-apk.yml).
+
+---
+
+## 3. Quick Start (One-Command Runner)
 
 The fastest way to launch the entire platform is with the unified PowerShell runner [`run-services.ps1`](./run-services.ps1):
 
@@ -112,7 +165,7 @@ The fastest way to launch the entire platform is with the unified PowerShell run
 
 ---
 
-## 3. Platform Ports & Endpoints
+## 4. Local Platform Ports & Endpoints
 
 | Component | Technology | Local Port(s) | Documentation / Diagnostics |
 | :--- | :--- | :--- | :--- |
@@ -123,7 +176,7 @@ The fastest way to launch the entire platform is with the unified PowerShell run
 
 ---
 
-## 4. Default Credentials & Seed Data
+## 5. Default Credentials & Seed Data
 
 | Role | Email | Password | Surface | Notes |
 | :--- | :--- | :--- | :--- | :--- |
@@ -133,7 +186,7 @@ The fastest way to launch the entire platform is with the unified PowerShell run
 
 ---
 
-## 5. Environment & Connectivity Topology
+## 6. Environment & Connectivity Topology
 
 Handee supports two clean connectivity profiles to seamlessly switch between local loopback development and cloud staging:
 
@@ -175,7 +228,7 @@ Every service outputs an explicit diagnostic banner upon startup to eliminate gu
 
 ---
 
-## 6. Prerequisites & Manual Execution
+## 7. Prerequisites & Manual Execution
 
 ### Prerequisites
 - **.NET SDK 10.0 / 9.0**: `dotnet --version`
@@ -242,11 +295,11 @@ Launch profiles are pre-configured in [`.vscode/launch.json`](./.vscode/launch.j
 
 ---
 
-## 7. Automated Testing & Quality Engineering
+## 8. Automated Testing & Quality Engineering
 
 The Handee platform features a production-grade, multi-layer testing and quality assurance harness. The suite comprises **687+ automated tests** spanning all 4 subsystems with **100% pass rate**, non-functional performance SLAs, OWASP security audits, and multi-tier CI/CD pipelines.
 
-### 7.1 Master Test Suite Runner
+### 8.1 Master Test Suite Runner
 
 Execute all 6 testing layers and generate unified evidence logs in one command:
 
@@ -262,7 +315,7 @@ Execute all 6 testing layers and generate unified evidence logs in one command:
 
 ---
 
-### 7.2 Subsystem Test Suites
+### 8.2 Subsystem Test Suites
 
 | Subsystem | Framework | Tests | Focus Area | Command |
 | :--- | :--- | :--- | :--- | :--- |
@@ -292,7 +345,7 @@ Execute all 6 testing layers and generate unified evidence logs in one command:
 
 ---
 
-### 7.3 Non-Functional & Security Testing
+### 8.3 Non-Functional & Security Testing
 
 #### Performance & Load Testing (Concurrent VUs & SLA Verifier)
 - **Node.js Automated SLA Runner**:
@@ -323,7 +376,7 @@ Execute all 6 testing layers and generate unified evidence logs in one command:
 
 ---
 
-### 7.4 Continuous Integration (CI/CD)
+### 8.4 Continuous Integration (CI/CD)
 
 Modular, path-filtered GitHub Actions workflows prevent redundant executions while assuring 100% CI coverage:
 
@@ -336,7 +389,7 @@ Modular, path-filtered GitHub Actions workflows prevent redundant executions whi
 
 ---
 
-### 7.5 Quality Assurance & Testing Specifications
+### 8.5 Quality Assurance & Testing Specifications
 
 Detailed test strategies, case specifications, defect reports, and evaluation summaries are maintained in the [`docs/testing/`](./docs/testing/) directory:
 
@@ -350,7 +403,7 @@ Detailed test strategies, case specifications, defect reports, and evaluation su
 
 ---
 
-## 8. End-to-End Workflow Verification
+## 9. End-to-End Workflow Verification
 
 ### Scenario A: Instant Match Job Request with AI Auto-Dispatch (Low Risk)
 1. **Submit Job Request**: Customer submits a job request on Flutter (e.g., Category: *Plumbing*, Description: *"Fix leaking kitchen sink tap"*, Budget: *"3000-4500"*).
@@ -367,9 +420,19 @@ Detailed test strategies, case specifications, defect reports, and evaluation su
 2. Flutter calls Backend `POST /assistant/query` -> invokes Python AI service `/api/v1/assistant/query`.
 3. Assistant returns grounded recommendations with interactive suggestion chips (*"Request Instant Match for AC Repair"*, *"Book AC Cleaning"*).
 
+### Scenario D: Service Completion, Dynamic Surge Pricing & Invoicing
+1. **Job Completion**: Upon service fulfillment, the provider records labor hours and material expenses in their portal.
+2. **Invoice Generation**: Backend generates an `Invoice` dynamically calculating base rates, platform commission, and applying variable surge multipliers if the booking was requested during high-demand peak windows.
+3. **Settlement**: Customer reviews the line-item invoice in mobile/web, initiates digital checkout, and settles the payment. The provider's payout ledger and earnings summary update in real time.
+
+### Scenario E: Post-Job Verified Review & Rating with Photo Evidence
+1. **Review Prompt**: Following successful payment, the customer is invited to rate their service experience.
+2. **Submission**: Customer provides a star rating (1–5), detailed comments, and attaches before/after photos via camera or gallery.
+3. **Profile Aggregation**: Backend validates booking completion, stores normalized photo URLs, and updates the provider's cumulative rating and review feed visible across public profiles.
+
 ---
 
-## 9. Project Structure
+## 10. Project Structure
 
 ```
 .
