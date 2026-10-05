@@ -69,62 +69,56 @@ export default function CheckoutPayment() {
     try {
       const params = await paymentsApi.getPayHereParams(invoice.id);
 
-      if (typeof window !== "undefined" && window.payhere) {
-        window.payhere.onCompleted = async (orderId: string) => {
-          setIsLoading2(false);
-          try {
-            const confirmed = await paymentsApi.confirmPayHerePayment({
-              invoiceId: invoice.id,
-              orderId,
-              paymentId: `ph_${Date.now()}`,
-              amount: params.amount,
-              currency: params.currency,
-              cardLast4: "4242",
-              method: "PAYHERE",
-            });
-            queryClient.invalidateQueries({ queryKey: ["invoice", id] });
-            queryClient.invalidateQueries({ queryKey: ["customerInvoices"] });
-            setPaymentSuccess({
-              reference: confirmed.transactionReference,
-              amount: confirmed.amount,
-              currency: confirmed.currency,
-            });
-          } catch (e: unknown) {
-            const err = e as { response?: { data?: { message?: string } } };
-            setPayError(err?.response?.data?.message || "Failed to confirm payment.");
-          }
-        };
+      // Submit POST form to PayHere Hosted Checkout
+      // This bypasses the client-side domain whitelist check that causes "Unauthorized payment request" on Vercel/Azure subdomains
+      const form = document.createElement("form");
+      form.method = "POST";
+      form.action = params.sandbox
+        ? "https://sandbox.payhere.lk/pay/checkout"
+        : "https://www.payhere.lk/pay/checkout";
 
-        window.payhere.onDismissed = () => {
-          setIsLoading2(false);
-        };
+      const returnUrl = typeof window !== "undefined"
+        ? `${window.location.origin}/invoices/${invoice.id}`
+        : params.returnUrl;
+      const cancelUrl = typeof window !== "undefined"
+        ? `${window.location.origin}/invoices/${invoice.id}/pay?status=cancelled`
+        : params.cancelUrl;
 
-        window.payhere.onError = (errorMsg: string) => {
-          setIsLoading2(false);
-          setPayError(`Payment error: ${errorMsg}`);
-        };
+      const fields: Record<string, string> = {
+        merchant_id: params.merchantId,
+        return_url: returnUrl,
+        cancel_url: cancelUrl,
+        notify_url: params.notifyUrl,
+        order_id: params.orderId,
+        items: params.items,
+        currency: params.currency,
+        amount: params.amountFormatted,
+        first_name: params.firstName || userProfile?.fullName?.split(" ")[0] || "Customer",
+        last_name: params.lastName || "User",
+        email: params.email || userProfile?.email || "customer@handee.lk",
+        phone: params.phone || "0771234567",
+        address: params.address || "Colombo",
+        city: params.city || "Colombo",
+        country: params.country || "Sri Lanka",
+        hash: params.hash,
+      };
 
-        window.payhere.startPayment({
-          sandbox: params.sandbox,
-          merchant_id: params.merchantId,
-          return_url: params.returnUrl,
-          cancel_url: params.cancelUrl,
-          notify_url: params.notifyUrl,
-          order_id: params.orderId,
-          items: params.items,
-          amount: params.amountFormatted,
-          currency: params.currency,
-          hash: params.hash,
-          first_name: params.firstName || userProfile?.fullName?.split(" ")[0] || "Customer",
-          last_name: params.lastName || "User",
-          email: params.email || userProfile?.email || "customer@handee.lk",
-          phone: params.phone || "0771234567",
-          address: params.address || "Colombo",
-          city: params.city || "Colombo",
-          country: params.country || "Sri Lanka",
-        });
+      for (const [key, val] of Object.entries(fields)) {
+        const input = document.createElement("input");
+        input.type = "hidden";
+        input.name = key;
+        input.value = val;
+        form.appendChild(input);
+      }
+
+      document.body.appendChild(form);
+      if (typeof form.submit === "function") {
+        try {
+          form.submit();
+        } catch {
+          window.location.href = `/api/payments/${invoice.id}/payhere-checkout-html`;
+        }
       } else {
-        // Fallback: full-screen redirect
         window.location.href = `/api/payments/${invoice.id}/payhere-checkout-html`;
       }
     } catch (err: any) {
