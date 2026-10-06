@@ -169,7 +169,7 @@ The fastest way to launch the entire platform is with the unified PowerShell run
 
 | Component | Technology | Local Port(s) | Documentation / Diagnostics |
 | :--- | :--- | :--- | :--- |
-| **Backend API** | ASP.NET Core 10 | `http://localhost:5057`<br/>`http://localhost:5000` | OpenAPI: `http://localhost:5057/openapi/v1.json`<br/>Diagnostics: `http://localhost:5057/api/system/info` |
+| **Backend API** | ASP.NET Core 10 | `http://localhost:5057`<br/>`http://localhost:5000` | Swagger UI: `http://localhost:5057/swagger`<br/>OpenAPI: `http://localhost:5057/openapi/v1.json`<br/>Diagnostics: `http://localhost:5057/api/system/info` |
 | **AI Agent Service** | Python FastAPI / LangGraph | `http://localhost:8000` | Swagger: `http://localhost:8000/docs`<br/>Health: `http://localhost:8000/health` |
 | **Web Portal** | React 19 / Vite / TypeScript | `http://localhost:5173` | Browser DevTools Console badge |
 | **Mobile App** | Flutter 3.x / Dart | Android Emulator (`10.0.2.2:5057`) | Hot Reload (`r` in terminal) |

@@ -68,7 +68,7 @@ public class UserController : ControllerBase
     [HttpPost("me/photo")]
     [Consumes("multipart/form-data")]
     public async Task<IActionResult> UploadPhoto(
-        [FromForm] IFormFile photo, CancellationToken ct)
+        IFormFile photo, CancellationToken ct)
     {
         var userId = User.GetUserId();
         if (userId is null) return Unauthorized();
